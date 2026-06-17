@@ -1,10 +1,178 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Blind Sniper OS</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blind Sniper Repository Manager</title>
+<style>
+:root{--bg:#111;--panel:#1b1b1b;--border:#333;--text:#eee}
+*{box-sizing:border-box;font-family:system-ui,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text)}
+header{padding:16px;border-bottom:1px solid var(--border);font-weight:700}
+main{padding:12px 12px 80px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px}
+input,textarea,button,select{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px solid #444}
+textarea{min-height:220px}
+button{cursor:pointer}
+.tab{display:none}
+.tab.active{display:block}
+nav{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:1px solid var(--border);display:flex}
+nav button{margin:0;border-radius:0}
+.small{font-size:12px;color:#aaa}
+pre{white-space:pre-wrap;word-break:break-word}
+</style>
 </head>
 <body>
-<h1>Blind Sniper OS</h1>
-<p>Repository initialized.</p>
+<header>Blind Sniper Repository Manager v1</header>
+
+<main>
+<section id="dashboard" class="tab active">
+<div class="panel">
+<h3>Dashboard</h3>
+<p>Bootstrap console for Blind Sniper OS.</p>
+<button onclick="initStructure()">Initialize Structure</button>
+<pre id="status">Ready.</pre>
+</div>
+</section>
+
+<section id="explorer" class="tab">
+<div class="panel">
+<h3>Explorer</h3>
+<button onclick="listRoot()">Load Repository Tree</button>
+<pre id="tree"></pre>
+</div>
+</section>
+
+<section id="editor" class="tab">
+<div class="panel">
+<h3>Editor</h3>
+<input id="filepath" placeholder="js/app.js">
+<textarea id="content" placeholder="File contents"></textarea>
+<button onclick="loadFile()">Load File</button>
+<button onclick="saveFile()">Save File</button>
+</div>
+</section>
+
+<section id="reports" class="tab">
+<div class="panel">
+<h3>Reports</h3>
+<button onclick="snapshot()">Generate Snapshot</button>
+<pre id="report"></pre>
+</div>
+</section>
+
+<section id="settings" class="tab">
+<div class="panel">
+<h3>GitHub Settings</h3>
+<input id="token" placeholder="GitHub Token">
+<input id="owner" placeholder="Owner">
+<input id="repo" placeholder="Repository">
+<input id="branch" value="main">
+<p class="small">Stored only in browser localStorage.</p>
+<button onclick="saveSettings()">Save Settings</button>
+</div>
+</section>
+</main>
+
+<nav>
+<button onclick="showTab('dashboard')">Home</button>
+<button onclick="showTab('explorer')">Explorer</button>
+<button onclick="showTab('editor')">Editor</button>
+<button onclick="showTab('reports')">Reports</button>
+<button onclick="showTab('settings')">Settings</button>
+</nav>
+
+<script>
+function showTab(id){
+ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+}
+
+function saveSettings(){
+ ['token','owner','repo','branch'].forEach(id=>localStorage.setItem(id,document.getElementById(id).value));
+ alert('Saved');
+}
+
+['token','owner','repo','branch'].forEach(id=>{
+ const v=localStorage.getItem(id);
+ if(v) window.addEventListener('load',()=>document.getElementById(id).value=v);
+});
+
+function cfg(){
+ return {
+  token:token.value,
+  owner:owner.value,
+  repo:repo.value,
+  branch:branch.value||'main'
+ };
+}
+
+async function gh(path='',method='GET',body=null){
+ const c=cfg();
+ const res=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,{
+  method,
+  headers:{
+   'Authorization':'Bearer '+c.token,
+   'Accept':'application/vnd.github+json'
+  },
+  body:body?JSON.stringify(body):null
+ });
+ return res.json();
+}
+
+async function createFile(path,text){
+ let sha=null;
+ try{ const existing=await gh(path); sha=existing.sha||null; }catch(e){}
+ const content=btoa(unescape(encodeURIComponent(text)));
+ return gh(path,'PUT',{
+  message:'Blind Sniper update '+path,
+  content,
+  branch:cfg().branch,
+  sha
+ });
+}
+
+async function initStructure(){
+ const files=[
+ 'css/.gitkeep',
+ 'js/.gitkeep',
+ 'schemas/.gitkeep',
+ 'mishstate/missions/.gitkeep',
+ 'mishstate/outputs/.gitkeep',
+ 'mishstate/knowledge/.gitkeep',
+ 'mishstate/queue/.gitkeep',
+ 'mishstate/archives/.gitkeep',
+ 'uploads/.gitkeep'
+ ];
+ status.textContent='Creating...';
+ for(const f of files){
+  await createFile(f,'');
+ }
+ status.textContent='Structure initialization completed.';
+}
+
+async function listRoot(){
+ const data=await gh('');
+ tree.textContent=JSON.stringify(data,null,2);
+}
+
+async function loadFile(){
+ const path=filepath.value.trim();
+ const data=await gh(path);
+ if(data.content){
+  content.value=decodeURIComponent(escape(atob(data.content.replace(/\n/g,''))));
+ }
+}
+
+async function saveFile(){
+ const path=filepath.value.trim();
+ await createFile(path,content.value);
+ alert('Saved');
+}
+
+async function snapshot(){
+ report.textContent='Repository: '+repo.value+'\nBranch: '+branch.value+'\nGenerated: '+new Date().toISOString();
+}
+</script>
 </body>
 </html>
