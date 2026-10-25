@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Miss Noor">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#615bff"/>
+      <stop offset="100%" stop-color="#26b8a8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <path d="M256 132c-52 0-94 42-94 94v128a18 18 0 0 0 36 0v-58h116v58a18 18 0 0 0 36 0V226c0-52-42-94-94-94zm0 36c32 0 58 26 58 58v34H198v-34c0-32 26-58 58-58z" fill="#fff"/>
+  <circle cx="256" cy="248" r="22" fill="#17233b"/>
+</svg>

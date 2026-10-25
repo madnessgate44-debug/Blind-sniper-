@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Miss Noor — AI School Companion</title>
+    <script>
+      // Static hosts (GitHub Pages) serve this page for any unknown path. Send a
+      // deep link back to the app's own directory. It only ever navigates to a
+      // shorter path, so it can never bounce forever.
+      // ponytail: real deep-link restore needs a router; this only sends the visitor home.
+      var parts = location.pathname.split('/').filter(Boolean);
+      if (parts.length > 1) location.replace('/' + parts[0] + '/');
+      else if (parts.length === 1) location.replace('/');
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to <a href="./">Miss Noor</a>…</p>
+  </body>
+</html>
