@@ -10,3 +10,13 @@ current state in a browser without touching the real app.
 - The Blind Sniper app is untouched; this lives in its own subfolder.
 - Rebuild: `npx vite build --base=/Blind-sniper-/miss-noor/` in the Amina repo,
   then copy `dist/` here.
+
+## Live URL
+
+https://madnessgate44-debug.github.io/Blind-sniper-/miss-noor/
+
+## Why here
+
+Hugging Face Docker Spaces return HTTP 402 Payment Required on the free
+cpu-basic tier, so no paid target is needed at all: this repo's GitHub Pages is
+already enabled and costs nothing.
