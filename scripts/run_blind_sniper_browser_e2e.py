@@ -16,13 +16,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 
-from scripts.blind_sniper_browser import BrowserAdapter
-from scripts.blind_sniper_browser_dispatch import (
-    BrowserDispatchError,
-    dispatch_browser_action,
-)
-from scripts.blind_sniper_ledger import TaskLedger
+# Use the same top-level module identities as the dispatcher CLI and its tests;
+# duplicate package/top-level imports would create distinct LedgerError classes.
+from blind_sniper_browser import BrowserAdapter
+from blind_sniper_browser_dispatch import BrowserDispatchError, dispatch_browser_action
+from blind_sniper_ledger import TaskLedger
 
 FIXTURE = ROOT / "tests" / "fixtures" / "browser"
 OWNER_ID = "ci-browser-runner"
