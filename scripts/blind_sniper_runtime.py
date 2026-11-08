@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import tempfile
@@ -15,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from blind_sniper_ledger import LedgerError, TaskLedger
+from blind_sniper_ledger import GitHubContentsLedger, LedgerError, TaskLedger
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / "chatgpt-home" / "runtime"
@@ -388,9 +389,9 @@ def transition_task(
     return updated
 
 
-def recover_task_state(ledger_path: str | Path, task_id: str) -> dict[str, Any]:
-    """Reconstruct the latest committed task snapshot from the verified ledger."""
-    ledger = TaskLedger(ledger_path)
+def recover_task_state(ledger_source: str | Path | TaskLedger | GitHubContentsLedger, task_id: str) -> dict[str, Any]:
+    """Reconstruct the latest committed task snapshot from a verified local or GitHub ledger."""
+    ledger = ledger_source if hasattr(ledger_source, "task_history") else TaskLedger(ledger_source)
     try:
         history = ledger.task_history(task_id)
     except LedgerError:
@@ -406,7 +407,7 @@ def recover_task_state(ledger_path: str | Path, task_id: str) -> dict[str, Any]:
 
 
 def persist_task_state(
-    ledger: TaskLedger,
+    ledger: TaskLedger | GitHubContentsLedger,
     state: dict[str, Any],
     *,
     event_type: str,
@@ -418,6 +419,34 @@ def persist_task_state(
         event_type=event_type,
         payload={"state": state},
         idempotency_key=idempotency_key,
+    )
+
+
+def add_ledger_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--ledger", default=".blind-sniper/state/events.jsonl")
+    parser.add_argument("--github-ledger", action="store_true", help="Use GitHub Contents API compare-and-swap storage")
+    parser.add_argument("--github-owner")
+    parser.add_argument("--github-repo")
+    parser.add_argument("--github-branch")
+    parser.add_argument("--github-path", default=".blind-sniper/state/events.jsonl")
+    parser.add_argument("--github-token-env", default="GITHUB_TOKEN")
+
+
+def configure_ledger(args) -> TaskLedger | GitHubContentsLedger:
+    if not args.github_ledger:
+        return TaskLedger(args.ledger)
+    token = os.environ.get(args.github_token_env, "")
+    if not token:
+        raise RuntimeErrorBase(f"GitHub ledger requires token in environment variable {args.github_token_env}")
+    required = (args.github_owner, args.github_repo, args.github_branch)
+    if not all(value and value.strip() for value in required):
+        raise RuntimeErrorBase("--github-ledger requires --github-owner, --github-repo and --github-branch")
+    return GitHubContentsLedger(
+        owner=args.github_owner,
+        repo=args.github_repo,
+        path=args.github_path,
+        branch=args.github_branch,
+        token=token,
     )
 
 
@@ -436,16 +465,16 @@ def main(argv: list[str] | None = None) -> int:
     plan_parser = sub.add_parser("plan", help="route a task through the registries")
     plan_parser.add_argument("--task-file", required=True)
     plan_parser.add_argument("--output", required=True)
-    plan_parser.add_argument("--ledger", default=".blind-sniper/state/events.jsonl")
+    add_ledger_arguments(plan_parser)
     move_parser = sub.add_parser("transition", help="advance a guarded task lifecycle state")
     move_parser.add_argument("--state-file", required=True)
     move_parser.add_argument("--to", required=True, choices=STATES)
     move_parser.add_argument("--output", required=True)
     move_parser.add_argument("--evidence-file")
     move_parser.add_argument("--approval-record-file", help="Host-supplied JSON file containing action, approver, verbatim_words, and timestamp approval records")
-    move_parser.add_argument("--ledger", default=".blind-sniper/state/events.jsonl")
+    add_ledger_arguments(move_parser)
     recover_parser = sub.add_parser("recover", help="rebuild the latest task checkpoint from the verified native ledger")
-    recover_parser.add_argument("--ledger", default=".blind-sniper/state/events.jsonl")
+    add_ledger_arguments(recover_parser)
     recover_parser.add_argument("--task-id", required=True)
     recover_parser.add_argument("--output", required=True)
     args = parser.parse_args(argv)
@@ -454,7 +483,7 @@ def main(argv: list[str] | None = None) -> int:
             task = read_json(Path(args.task_file))
             plan = build_plan(task)
             state = create_task_state(plan)
-            ledger = TaskLedger(args.ledger)
+            ledger = configure_ledger(args)
             try:
                 ledger.task_history(state["task_id"])
             except LedgerError as exc:
@@ -462,19 +491,19 @@ def main(argv: list[str] | None = None) -> int:
                     raise
             else:
                 raise RuntimeErrorBase(f"Task {state['task_id']} already exists in the ledger; use recover")
-            persist_task_state(
+            ledger_event = persist_task_state(
                 ledger, state, event_type="TASK_CREATED",
                 idempotency_key=f"{state['task_id']}:created",
             )
             write_json(Path(args.output), state)
             print(json.dumps({"task_id": plan["task_id"], "workflow": plan["workflow"],
                               "profile": plan["profile"], "readiness": plan["execution_readiness"],
-                              "next_action": plan["next_action"], "ledger": args.ledger}, indent=2))
+                              "next_action": plan["next_action"], "ledger_commit": ledger_event.get("commit_sha")}, indent=2))
         elif args.command == "transition":
             checkpoint = read_json(Path(args.state_file))
-            ledger = TaskLedger(args.ledger)
+            ledger = configure_ledger(args)
             try:
-                state = recover_task_state(args.ledger, checkpoint["task_id"])
+                state = recover_task_state(ledger, checkpoint["task_id"])
             except LedgerError as exc:
                 if not str(exc).startswith("Unknown task_id:"):
                     raise
@@ -491,19 +520,20 @@ def main(argv: list[str] | None = None) -> int:
                 approval_records = read_json(Path(args.approval_record_file)).get("approvals", []) if args.approval_record_file else []
                 updated = transition_task(state, args.to, evidence, approval_records=approval_records)
                 transition_number = len(updated.get("events", [])) - 1
-                persist_task_state(
+                ledger_event = persist_task_state(
                     ledger, updated, event_type="TASK_TRANSITIONED",
                     idempotency_key=f"{updated['task_id']}:transition:{transition_number}:{args.to}",
                 )
             write_json(Path(args.output), updated)
             print(json.dumps({"task_id": updated["task_id"], "status": updated["status"],
-                              "ledger": args.ledger}, indent=2))
+                              "ledger_commit": (ledger_event.get("commit_sha") if "ledger_event" in locals() else None)}, indent=2))
         else:
-            state = recover_task_state(args.ledger, args.task_id)
+            ledger = configure_ledger(args)
+            state = recover_task_state(ledger, args.task_id)
             write_json(Path(args.output), state)
             print(json.dumps({"task_id": state["task_id"], "status": state["status"],
                               "event_count": len(state.get("events", [])),
-                              "ledger": args.ledger}, indent=2))
+                              "ledger_commit": None}, indent=2))
         return 0
     except (RuntimeErrorBase, LedgerError, OSError) as exc:
         print(f"BLOCKED: {exc}", file=sys.stderr)
