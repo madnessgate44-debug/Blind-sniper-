@@ -96,3 +96,13 @@ Session boot, task lifecycle, agent handoff, session close and release gate are 
 ### Lifecycle hooks and MCP/browser contracts
 - `hooks/HOOKS_AND_GUARDS.md` defines session, tool, permission, sub-agent and closeout lifecycle behavior; not automatically installed in ChatGPT.
 - `mcp/MCP_AND_BROWSER_INTEGRATIONS.md` records the live state and acceptance gates for GitHub, OpenHands, Brain, Forge and Codex MCP/browser integrations.
+
+
+## Unified runtime index — 2026-11-08
+- Runtime entrypoint: `chatgpt-home/runtime/README.md`.
+- Native + imported skill index: `chatgpt-home/runtime/skills.index.json` (10 native skills + 33 OpenHands skill/rule files).
+- Agent registry: `chatgpt-home/runtime/agents.json` (26 unique roles/contracts).
+- Profiles and permission posture: `chatgpt-home/runtime/profiles.json`.
+- Tool/adapter truth: `chatgpt-home/runtime/capabilities.json`.
+- Workflow contracts: `chatgpt-home/runtime/workflows.json`.
+- The native environment and imported OpenHands library remain distinct sources; only skills actually retrieved and adapted for the current host may be applied.
