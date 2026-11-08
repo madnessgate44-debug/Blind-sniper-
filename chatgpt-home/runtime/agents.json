@@ -38,17 +38,10 @@
     },
     {
       "id": "shadow",
-      "source": "Brain repository",
-      "role": "independent audit and evidence review",
-      "authority": "review only; no merge authority",
-      "status": "audit_workflow_exists_live_coverage_unverified"
-    },
-    {
-      "id": "ghost",
-      "source": "Owner-reported credential service",
-      "role": "credential health and secure provider allocation",
-      "authority": "never reveal credentials; no unverified key use",
-      "status": "unverified"
+      "source": "Brain WATCHER.md §14 and shadow-keys.yml",
+      "role": "independent adversarial auditor and credential-pool custodian",
+      "authority": "owns the replacement pool per Brain WATCHER.md §14; key checks and allocation use approved workflows; never reads or prints secret values; audit and merge authority remain governed by Shadow/Watcher policy",
+      "status": "custodian_designated_pool_health_blocked_latest_sweep_0_working_8_not_set"
     },
     {
       "id": "architect",
