@@ -40,6 +40,11 @@ class BrowserPolicyTests(unittest.TestCase):
         with self.assertRaises(BrowserPolicyError):
             validate_url("file:///etc/passwd")
 
+    def test_wildcard_domain_rule_covers_subdomains(self):
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "*.example.test"}):
+            self.assertEqual(validate_url("https://app.example.test/"), "app.example.test")
+            self.assertEqual(validate_url("https://example.test/"), "example.test")
+
     def test_embedded_url_credentials_are_rejected(self):
         with self.assertRaises(BrowserPolicyError):
             validate_url("https://user:secret@example.test/")
@@ -73,6 +78,14 @@ class BrowserPolicyTests(unittest.TestCase):
         adapter.receipt_file.write_text(json.dumps({"step_id": "step-1"}) + "\n", encoding="utf-8")
         with self.assertRaises(BrowserPolicyError):
             adapter._append_receipt({"step_id": "step-1"})
+
+    def test_action_policy_is_deny_by_default(self):
+        adapter = self.adapter()
+        policy = json.loads(adapter.policy_file.read_text(encoding="utf-8"))
+        self.assertEqual(policy["default"], "deny")
+        self.assertNotIn("eval", policy["allow"])
+        self.assertNotIn("upload", policy["allow"])
+        self.assertNotIn("download", policy["allow"])
 
     def test_browser_command_never_uses_shell(self):
         adapter = self.adapter()
