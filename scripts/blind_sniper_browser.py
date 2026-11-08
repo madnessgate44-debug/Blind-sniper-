@@ -146,8 +146,12 @@ class BrowserAdapter:
         )
         if not allowed_domains:
             raise BrowserPolicyError("The host must provide BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS")
+        idle_timeout = os.environ.get("BLIND_SNIPER_BROWSER_IDLE_TIMEOUT", "1h").strip()
+        if not re.fullmatch(r"(?:0|[1-9][0-9]*(?:ms|s|m|h))", idle_timeout):
+            raise BrowserPolicyError("BLIND_SNIPER_BROWSER_IDLE_TIMEOUT must be 0 or a positive duration such as 30m or 1h")
         command = [
             self.binary, "--session", self.session_id,
+            "--idle-timeout", idle_timeout,
             "--allowed-domains", allowed_domains,
             "--action-policy", str(self.policy_file),
             "--content-boundaries", "--max-output", "50000", "--json",
