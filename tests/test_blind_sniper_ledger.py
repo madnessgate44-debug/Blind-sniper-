@@ -1,6 +1,8 @@
 """Tests for Blind Sniper's native append-only task ledger."""
 from __future__ import annotations
 
+import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -51,7 +53,21 @@ class TaskLedgerTests(unittest.TestCase):
         with self.assertRaisesRegex(LedgerError, "hash mismatch"):
             self.ledger.events()
 
-    def test_cli_append_and_show(self):\n        payload = Path(self.temp.name) / "payload.json"\n        payload.write_text(json.dumps({"status": "REQUESTED"}), encoding="utf-8")\n        command = [sys.executable, str(ROOT / "scripts" / "blind_sniper_ledger.py")]\n        appended = subprocess.run(command + ["append", "--ledger", str(self.ledger.path),\n            "--task-id", "BS-LEDGER-CLI", "--event-type", "TASK_CREATED",\n            "--idempotency-key", "cli-create", "--payload-file", str(payload)],\n            capture_output=True, text=True, check=False)\n        self.assertEqual(appended.returncode, 0, appended.stderr)\n        shown = subprocess.run(command + ["show", "--ledger", str(self.ledger.path),\n            "--task-id", "BS-LEDGER-CLI"], capture_output=True, text=True, check=False)\n        self.assertEqual(shown.returncode, 0, shown.stderr)\n        self.assertEqual(json.loads(shown.stdout)["event_count"], 1)\n\n    def test_unknown_task_has_no_recovery_snapshot(self):
+    def test_cli_append_and_show(self):
+        payload = Path(self.temp.name) / "payload.json"
+        payload.write_text(json.dumps({"status": "REQUESTED"}), encoding="utf-8")
+        command = [sys.executable, str(ROOT / "scripts" / "blind_sniper_ledger.py")]
+        appended = subprocess.run(command + ["append", "--ledger", str(self.ledger.path),
+            "--task-id", "BS-LEDGER-CLI", "--event-type", "TASK_CREATED",
+            "--idempotency-key", "cli-create", "--payload-file", str(payload)],
+            capture_output=True, text=True, check=False)
+        self.assertEqual(appended.returncode, 0, appended.stderr)
+        shown = subprocess.run(command + ["show", "--ledger", str(self.ledger.path),
+            "--task-id", "BS-LEDGER-CLI"], capture_output=True, text=True, check=False)
+        self.assertEqual(shown.returncode, 0, shown.stderr)
+        self.assertEqual(json.loads(shown.stdout)["event_count"], 1)
+
+    def test_unknown_task_has_no_recovery_snapshot(self):
         with self.assertRaisesRegex(LedgerError, "Unknown task_id"):
             self.ledger.task_history("missing")
 
