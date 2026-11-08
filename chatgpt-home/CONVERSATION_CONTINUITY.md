@@ -91,3 +91,14 @@
 - [IMPORTANT LIMITATION] GitHub persistence is not equivalent to an always-running agent. GitHub Actions execute only configured workflows on their triggers; self-owned automations or cloud agents must be created and their runs inspected. No background run is claimed from this instruction alone.
 - [DECISION] Canonical BLIND_SNIPER.md must contain an explicit Owner/NI ↔ Blind Sniper/AI covenant, autonomous-work default, inactive-chat execution mechanisms, automation design/verification rules, status vocabulary and proactive operating behavior.
 - [NEXT] Implement this covenant in the canonical entrypoint and supporting profile, memory, project map and synchronization protocol; add a standalone autonomy protocol and checkpoint the resulting PR.
+
+
+## 2026-11-08 — OpenHands scope reconstruction and operating agreement
+
+- [VERIFIED] Brain #292 history establishes the Owner's role charter, scope reset to five active products, revenue-oriented production loop, automation inventory, checkpoint rhythm, Forge browser P0, and ChatGPT conversation archive requirement.
+- [VERIFIED] Current role and scope are consolidated in OPENHANDS_WORKING_AGREEMENT.md and BLIND_SNIPER.md §14. This is a curated synthesis, not a verbatim transcript.
+- [VERIFIED] Firstborn #146 is the Forge↔ChatGPT browser mission. PR #147 reports an authenticated Streamable HTTP MCP endpoint and 323 passing tests, but the PR was observed open/not merged and actual ChatGPT invocation remained blocked on public HTTPS deployment and connector registration.
+- [REPORTED / HISTORICAL] Brain comment #6719093241 reports three OpenHands automations and 44 scheduled workflow runs. These are point-in-time claims; live status must be rechecked before relying on them.
+- [BLOCKED] Full enumeration of all OpenHands Cloud conversation history remains incomplete. The Brain session archive index lists 142 conversations / 577 Owner messages across 19 days, but the daily manifests/counts require reconciliation.
+- [BLOCKED] ChatGPT personal web/mobile conversation export remains distinct from OpenHands Cloud export and is not verified as automatically available.
+- [DECISION] Maintain five-product scope only; track Amina delivery and Forge #146 separately, reconcile priority from latest Owner checkpoint; continue direct AI-side work and use real automation triggers for inactive-chat execution.
