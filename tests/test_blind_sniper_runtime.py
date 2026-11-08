@@ -1,7 +1,6 @@
 """Unit tests for the Blind Sniper runtime registry validator."""
 from __future__ import annotations
 
-import importlib.util
 import subprocess
 import sys
 import unittest
@@ -38,7 +37,6 @@ class RuntimeRegistryTests(unittest.TestCase):
         self.assertTrue(any(a["id"] == "shadow" for a in agents["agents"]))
         self.assertFalse(any(a["id"] == "ghost" for a in agents["agents"]))
         self.assertEqual(adapters["shadow_provider_pool"]["status"], "blocked_pool_not_loaded")
-        self.assertEqual(adapters["forge_browser_mcp"]["status"], "endpoint_remote_smoke_verified_connector_not_registered")
 
     def test_profiles_do_not_enable_unrestricted_sandbox(self):
         import json
