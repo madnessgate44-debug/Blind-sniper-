@@ -63,3 +63,11 @@
 6. Move routing ownership into registries and remove duplicated routing maps.
 7. Reduce boot payload and measure actual bytes/lines before optimizing.
 8. Reconcile branch graph and prepare a privacy-safe consolidated draft PR only after storage containment.
+
+
+## Local lease lifecycle
+
+- TaskLedger now supports atomic local claims, renewal by the current owner, expiry-based reclamation and owner-only release under an exclusive file lock.
+- The runtime suite includes concurrent-claim, expiry, renewal, release and invalid-duration tests.
+- The E2E simulation now exercises claim → competing-owner denial → expiry reclaim → owner release in a separate local ledger.
+- This is single-workspace lease control. GitHub CAS-backed distributed leases and stale-owner takeover across hosts remain unimplemented and unverified.
