@@ -55,6 +55,8 @@ def validate_url(url: str) -> str:
     parsed = urlsplit(url)
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         raise BrowserPolicyError("Only absolute HTTP(S) URLs are permitted")
+    if parsed.username is not None or parsed.password is not None:
+        raise BrowserPolicyError("URLs containing embedded credentials are not permitted")
     host = parsed.hostname.lower().rstrip(".")
     blocked = _domain_list("BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS")
     allowed = _domain_list("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS")
