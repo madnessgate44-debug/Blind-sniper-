@@ -217,6 +217,7 @@ Pass only when every hop has evidence. If the bridge is unavailable, mark BLOCKE
 - Brain #292 T004 (comment 6720117018): Watcher digest, source coverage and direct communication path requested.
 - Brain #292 T005 (comment 6720244514): current OpenHands execution checkpoint and actual automated delivery trigger requested.
 - Firstborn #146 comment 6720244793: same execution evidence requested directly on the Forge mission.
+- Brain #292 T006 (comment 6720277355): @openhands mention used to test the GitHub App receive path; bot response comment 6720280271 returned session ID 7543e363514b4435a71a60546c79501c. Channel receipt verified; task-specific result pending.
 - Blind Sniper PR #3: existing continuity/OS work remains open and unmerged; this architecture is being added to that branch.
 - No claim is made that the OpenHands event bridge, Forge connector, persistent terminal or background Blind Sniper daemon is operational.
 
