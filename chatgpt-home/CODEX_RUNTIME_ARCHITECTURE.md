@@ -43,6 +43,7 @@ The canonical operating home is the chatgpt-home directory. Preserve the reposit
 
 The target structure is:
 - BLIND_SNIPER.md — canonical boot and authority contract
+- CODEX_PROFILE_AND_SETTINGS.md — research-informed host profile, permission tiers, tool settings and hooks
 - CODEX_RUNTIME_ARCHITECTURE.md — this system design
 - FOUNDATION_RECOVERY_PLAN.md — P0 recovery and integration gates
 - AUTONOMY_PROTOCOL.md — scheduled/background work rules
