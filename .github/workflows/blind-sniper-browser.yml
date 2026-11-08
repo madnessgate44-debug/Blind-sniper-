@@ -1,4 +1,5 @@
 name: Blind Sniper Browser Adapter
+# Includes atomic native task-lease reservation and replay-prevention tests.
 
 on:
   pull_request:
