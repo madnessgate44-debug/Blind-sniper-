@@ -21,9 +21,12 @@ class FakeContentsAPI:
         self.sha = None
         self.put_count = 0
         self.conflict_once = False
+        self.is_private = True
 
     def __call__(self, method, url, headers, body=None):
         if method == "GET":
+            if url == "https://api.github.com/repos/example/blind-sniper":
+                return 200, json.dumps({"private": self.is_private}).encode()
             if self.content is None:
                 return 404, b'{"message":"Not Found"}'
             return 200, json.dumps({
@@ -158,6 +161,16 @@ class GitHubContentsLedgerTests(unittest.TestCase):
         finally:
             if old is not None:
                 os.environ["BLIND_SNIPER_TEST_TOKEN"] = old
+
+
+    def test_public_repository_is_refused_before_ledger_content_access(self):
+        self.api.is_private = False
+        with self.assertRaisesRegex(GitHubLedgerError, "public repository"):
+            self.ledger.append(
+                task_id="BS-GH-008", event_type="CREATED",
+                payload={"must_not_leak": True}, idempotency_key="eight:create",
+            )
+        self.assertEqual(self.api.put_count, 0)
 
 
 if __name__ == "__main__":
