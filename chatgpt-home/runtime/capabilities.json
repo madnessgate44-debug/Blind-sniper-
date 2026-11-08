@@ -183,5 +183,14 @@
   "exclusions": [
     "TinyFish is intentionally excluded by Owner preference.",
     "No provider credentials or secret values are stored in this registry."
-  ]
+  ],
+  "native_registries": {
+    "environment_manifest": "chatgpt-home/ENVIRONMENT_MANIFEST.md",
+    "tool_registry": "chatgpt-home/tools/TOOL_REGISTRY.md",
+    "adapter_contract": "chatgpt-home/runtime/ADAPTER_CONTRACT.md",
+    "host_config_templates": "chatgpt-home/config/",
+    "validation_workflow": ".github/workflows/blind-sniper-environment-validation.yml",
+    "native_validation_script": "scripts/check-blind-sniper-environment.mjs"
+  },
+  "host_config_status": "Codex-compatible TOML templates are versioned; they do not configure the ChatGPT hosted runtime."
 }
