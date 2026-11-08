@@ -13,7 +13,7 @@ import hashlib
 import json
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -105,7 +105,7 @@ class TaskLedger:
         }
         event = {**body, "event_hash": _digest(body)}
         handle.seek(0, os.SEEK_END)
-        handle.write(json.dumps(event, sort_keys=True, ensure_ascii=False) + "\\n")
+        handle.write(json.dumps(event, sort_keys=True, ensure_ascii=False) + "\n")
         handle.flush()
         os.fsync(handle.fileno())
         return event, True
@@ -183,7 +183,7 @@ class TaskLedger:
             raise LedgerError("claim time must include a timezone")
         if not task_id.strip() or not owner_id.strip() or not idempotency_key.strip():
             raise LedgerError("task_id, owner_id and idempotency_key are required")
-        if not isinstance(lease_seconds, int) or lease_seconds < 1 or lease_seconds > 3600:
+        if isinstance(lease_seconds, bool) or not isinstance(lease_seconds, int) or lease_seconds < 1 or lease_seconds > 3600:
             raise LedgerError("lease_seconds must be between 1 and 3600")
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a+", encoding="utf-8") as handle:
@@ -192,7 +192,7 @@ class TaskLedger:
                 rows = self._read_unlocked()
                 existing = next((row for row in rows if row["idempotency_key"] == idempotency_key), None)
                 if existing:
-                    if existing["task_id"] != task_id or existing["payload"].get("owner_id") != owner_id:
+                    if existing["task_id"] != task_id or existing["event_type"] not in ("TASK_LEASE_CLAIMED", "TASK_LEASE_RENEWED") or existing["payload"].get("owner_id") != owner_id:
                         raise LedgerError("idempotency key already used for different lease content")
                     active = self._active_lease(rows, task_id, instant)
                     return {
@@ -212,7 +212,7 @@ class TaskLedger:
                         "event_created": False,
                     }
                 event_type = "TASK_LEASE_RENEWED" if active else "TASK_LEASE_CLAIMED"
-                expiry = (instant + __import__("datetime").timedelta(seconds=lease_seconds)).isoformat()
+                expiry = (instant + timedelta(seconds=lease_seconds)).isoformat()
                 payload = {
                     "owner_id": owner_id,
                     "lease_seconds": lease_seconds,
