@@ -5,7 +5,7 @@
 **Pinned version:** 0.41.2
 **License:** Apache-2.0
 **Execution host:** GitHub Actions ubuntu-latest (ephemeral CI host)
-**Status:** PARTIAL — initial Chromium adapter passed CI; native lease-gated dispatch is implemented and awaiting CI verification
+**Status:** PARTIAL — native lease-gated dispatch and real Chromium CI acceptance passed; persistent host remains unverified
 
 ## Scope
 
