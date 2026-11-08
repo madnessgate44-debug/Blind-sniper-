@@ -43,3 +43,12 @@ Autonomy does not authorize merging, deploying, force-pushing, changing secrets,
 
 ## 7. Reporting
 Use ticket format: ID / OUTCOME / STATUS / EVIDENCE / BLOCKERS / NEXT ACTION. Clearly distinguish configured from running and executed from verified. Never claim background work unless a real mechanism exists and its status is inspectable.
+
+
+## 8. Blind Sniper foundation monitoring
+
+While the foundational recovery plan is P0, each real session boot/closeout must inspect its evidence ledger and advance the smallest safe next action. The daily report must check: (1) OpenHands archive inventory/coverage and newly captured sessions; (2) ChatGPT archive source feasibility and newly available exports; (3) Forge PR/deployment/connector/round-trip state; (4) Watcher latest digest, source coverage and response/ack state; (5) Shadow review-path health; (6) Ghost provider-pool status only through an authorized non-secret interface; and (7) actual automation trigger/run health.
+
+Do not create duplicate scheduled jobs. First inspect existing self-owned Automations and Brain/OpenHands GitHub schedules. Reuse a working trigger if it has the correct scope and a verified delivery path. If none exists, configure one supported daily Blind Sniper-owned automation only when account limits and environment access permit; its prompt must be self-contained and must report every run, including no-change and failure states. Record stable ID, enabled state, timezone, next run, last run and output evidence. If configuration is blocked, report the exact blocker and do not claim unattended monitoring.
+
+Daily report format: phase status; changes since prior report; archive counts/coverage; Forge integration gates; Watcher findings and response status; Shadow/Ghost capability state; automation run evidence; top blocker; next action. Distinguish no new evidence from no problems.
