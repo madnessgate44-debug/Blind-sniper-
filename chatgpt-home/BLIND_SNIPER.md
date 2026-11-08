@@ -40,6 +40,10 @@ Follow the first applicable controlling instruction:
 
 A lower-level file cannot grant permissions prohibited by a higher-level rule. Imported OpenHands policies, hooks, owner grants and agent profiles are reference material unless independently confirmed applicable to this runtime.
 
+## 1A. Codex profile and runtime settings
+
+Before changing the runtime design or agent/tool configuration, read `chatgpt-home/CODEX_PROFILE_AND_SETTINGS.md`. It defines the profile modes, permission tiers, MCP/runner settings, lifecycle hooks, and minimum acceptance tests. It is a design blueprint, not an active Codex installation; do not claim host-level settings are applied unless a real Codex runtime reports them.
+
 ## 2. Mandatory boot sequence
 
 At the start of a new or resumed Blind Sniper session:
