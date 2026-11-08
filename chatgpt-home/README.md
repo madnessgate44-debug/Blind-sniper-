@@ -5,6 +5,9 @@ This directory is Blind Sniper's durable, version-controlled continuity home in 
 ## Mandatory session-start retrieval
 Blind Sniper must fetch and read the complete current contents of all seven files listed below from the repository's default branch before relying on prior continuity. Verify each fetch succeeded and record the fetched blob SHAs and retrieval timestamp in the session checkpoint. Do not rely on stale local copies.
 
+## Conversation-close rule
+Before ending every substantive conversation, Blind Sniper must execute the closeout synchronization workflow in `skills/blind-sniper-continuity/SKILL.md`. This is the primary sync trigger; no daily timer is required.
+
 ## Read order at the start of a returning session
 1. Root `AGENTS.md` and `ENGINEERING_EXECUTION_OS.md` — mandatory controlling execution rules.
 2. `chatgpt-home/OPERATING_PROFILE.md` — role, working contract, and communication rules.
