@@ -135,3 +135,16 @@
 - **PR state:** #3 remains OPEN / NOT MERGED.
 - **OpenHands receipt:** bot response 6720280271 / session 7543e363514b4435a71a60546c79501c. No task-specific result or further response observed.
 - **Next action:** retrieve the OpenHands session result through a verified tool; if unavailable, wait for its correlated Brain #292 response. Do not create duplicate sessions or enable the cost-uncertain event receiver.
+
+
+## 2026-11-08T12:24:29+02:00 — Runtime delivery and execution environment refresh
+
+- **Latest implementation commit before this checkpoint write:** 9a43e150d2203d3c0807108316d74245aa405dcb.
+- **Read-back:** AUTONOMY_PROTOCOL.md blob 9f3d71db64718cd3d8748eabf6feb629e7a19fae (non-empty); task BS-20261108-001 blob 316fa61fb118152737f9cdf7f097a0b495601818 (non-empty); checkpoint previously blob 5f467b5bc486b9da7d66bf3dff4dd0f0944473ba (non-empty).
+- **PR #3 changed-file inventory:** 15 paths; includes AUTONOMY_PROTOCOL, BLIND_SNIPER, CODEX_RUNTIME_ARCHITECTURE, repository registry, task template and active task record.
+- **Latest compliance workflow for commit 9a43e150d2203d3c0807108316d74245aa405dcb:** run 42471301213 (run #111) was QUEUED at last check; result pending. Do not claim pass until completed and inspected.
+- **Forge / Firstborn:** PR #147 OPEN; eight changed files; no review threads returned. PR body reports 323 tests pass, lint/build pass and a local /mcp check, but the current workflow-run lookup for commit e5ba1f0d4b3fe9f87e68e07c1e1791332011cfc5 returned no runs. Treat those test claims as [REPORTED], not independently CI-verified. Public HTTPS, ChatGPT connector registration and OpenHands two-way proof remain unchecked in the PR body.
+- **Cloud execution:** Vercel projects amina and brain are visible. Vercel sessions and named sandboxes for brain both returned zero. No cloud sandbox was provisioned because cost/plan impact was not established.
+- **OpenHands delivery:** @openhands mention comment 6720277355 produced bot response 6720280271 and session 7543e363514b4435a71a60546c79501c. One receive path is proven; task-specific output remains pending.
+- **Automation safety:** historical event receiver remains disabled due unresolved spend. Three active ChatGPT checkpoints are team-owned; none is an OpenHands receiver.
+- **No merge, deployment, secret/permission modification, sandbox provisioning or paid automation activation performed.**
