@@ -267,6 +267,39 @@ class TaskLedger:
             finally:
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
+    def append_transition_if_lease(
+        self,
+        *,
+        task_id: str,
+        owner_id: str,
+        payload: dict[str, Any],
+        idempotency_key: str,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """Atomically verify lease ownership and append an EXECUTING transition receipt."""
+        instant = now or datetime.now(timezone.utc)
+        if instant.tzinfo is None:
+            raise LedgerError("transition time must include a timezone")
+        if not task_id.strip() or not owner_id.strip() or not idempotency_key.strip():
+            raise LedgerError("task_id, owner_id and idempotency_key are required")
+        if not isinstance(payload, dict):
+            raise LedgerError("payload must be an object")
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a+", encoding="utf-8") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                rows = self._read_unlocked()
+                active = self._active_lease(rows, task_id, instant)
+                if not active or active.get("owner_id") != owner_id:
+                    raise LedgerError("Execution transition requires an active lease held by this owner")
+                event, _ = self._append_locked(
+                    handle, rows, task_id=task_id, event_type="TASK_TRANSITIONED",
+                    payload=payload, idempotency_key=idempotency_key,
+                )
+                return event
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
     def task_history(self, task_id: str) -> dict[str, Any]:
         rows = self.events(task_id)
         if not rows:
