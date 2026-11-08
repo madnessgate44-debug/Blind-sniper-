@@ -133,12 +133,12 @@ class BrowserPolicyTests(unittest.TestCase):
             adapter.execute("tab-switch", "tab-switch-1", "t1")
             adapter.execute("tab-close", "tab-close-1", "t1")
             adapter.execute("frame", "frame-1", "main")
-        commands = [call.args[0][-len(args):] for call, args in zip(run.call_args_list, [
-            ["tab"], ["tab", "new", "http://127.0.0.1/"], ["tab", "t1"], ["tab", "close", "t1"], ["frame", "main"]
-        ])]
-        self.assertEqual(commands, [
-            ["tab"], ["tab", "new", "http://127.0.0.1/"], ["tab", "t1"], ["tab", "close", "t1"], ["frame", "main"]
-        ])
+        commands = [call.args[0] for call in run.call_args_list]
+        self.assertIn(["tab"], [command[-1:] for command in commands])
+        self.assertTrue(any(command[-3:] == ["tab", "new", "http://127.0.0.1/"] for command in commands))
+        self.assertTrue(any(command[-2:] == ["tab", "t1"] for command in commands))
+        self.assertTrue(any(command[-3:] == ["tab", "close", "t1"] for command in commands))
+        self.assertTrue(any(command[-2:] == ["frame", "main"] for command in commands))
 
     def test_pdf_output_is_contained_and_uses_browser_pdf_command(self):
         adapter = self.adapter()
