@@ -1,6 +1,7 @@
 name: Blind Sniper Runtime Registry
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - "chatgpt-home/runtime/**"
@@ -10,6 +11,7 @@ on:
   push:
     branches:
       - main
+      - "feat/**"
     paths:
       - "chatgpt-home/runtime/**"
       - "scripts/validate_blind_sniper_runtime.py"
