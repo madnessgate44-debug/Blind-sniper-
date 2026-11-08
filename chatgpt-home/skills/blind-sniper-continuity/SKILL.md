@@ -72,3 +72,16 @@ Every run writes a dated checkpoint with:
 - Do not alter the Miss Noor application or unrelated product files while performing continuity maintenance.
 - Respect repository root `AGENTS.md` and `ENGINEERING_EXECUTION_OS.md`.
 - Do not claim automatic startup, background execution, transcript access, or successful sync unless verified in the current environment.
+
+
+## Conversation-close synchronization (primary trigger)
+Run this workflow at the end of every substantive conversation, immediately before sending the closing response, whenever the assistant determines the current exchange is complete or the Owner says to stop/end/close it. This replaces a daily timer as the primary sync trigger.
+
+1. Review the current conversation for new decisions, instructions, completed work, verified findings, blockers, and next actions.
+2. Fetch the latest versions of the relevant continuity files from GitHub before editing. Do not rely on earlier copies or SHAs.
+3. Append a dated closeout entry to the appropriate file(s), with provenance labels and a concise summary. Preserve existing history. Include the conversation-close checkpoint and next-session pickup point.
+4. If there are no durable changes, do not create empty commits; still perform the seven-file retrieval check and record a no-change checkpoint only if a meaningful checkpoint file/location is designated.
+5. Verify each write by fetching the resulting file and checking its content and SHA. Report exact commits and any failures in the closing response.
+6. If GitHub connector access is unavailable, state that closeout sync is BLOCKED; provide the exact pending update in the response. Never claim it ran later in the background.
+
+**Inactivity limitation:** The assistant cannot independently detect that a chat has become inactive, wake itself after the user leaves, or execute a deferred action after the conversation has ended unless a supported external event trigger is actually configured. Therefore, execute closeout synchronously while composing the final response, not after an assumed inactivity timeout. If a session is abandoned without a closing assistant turn, no closeout can be guaranteed.
