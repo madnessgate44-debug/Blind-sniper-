@@ -86,3 +86,22 @@ The GitHub Actions workflow runs both checks for changes to this runtime. Passin
 - Engineering Execution OS compliance: run `42475103913`, job `128714562852` — PASS.
 
 These runs verify the preceding implementation checkpoint. Re-run the workflow after any registry, validator, test or workflow change. They do not prove external adapter end-to-end readiness.
+
+
+## Executable orchestration engine
+
+- `EXECUTION_ENGINE.md` defines the executable planning and lifecycle contract.
+- `../../scripts/blind_sniper_runtime.py` is the registry-driven entrypoint, registered in `workflows.json`.
+- The engine resolves task → workflow → profile → agent contracts → skill paths → required adapters and capability status.
+- It enforces exact action approvals, blocked-adapter gates, ordered lifecycle transitions, verification evidence and independent review before closure.
+- It creates plans and task-state JSON; it does not spawn agents or claim external execution. Host tools remain responsible for actual execution and live permission checks.
+- Runtime CI now runs all Python tests under `tests/test_*.py`, including routing and negative gate tests.
+
+## Imported harness integration
+
+The licensed source imports and native adaptations are now part of this integration branch:
+- `../source-library/README.md` is the provenance and license index.
+- `../source-library/0xenzyme__agent-harness/` preserves MIT-licensed intake/init/execute skills and worker contracts.
+- `../source-library/SUNRNEHUI__agent-harness/` preserves MIT-licensed harness synthesis and task/subagent templates.
+- `../source-library/os-factory__har/` preserves Apache-2.0 factory-line and plugin workflows.
+- Native agent and workflow adaptations are indexed in `chatgpt-home/README.md`; imported source files remain reference material, not auto-executed plugins.
