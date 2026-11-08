@@ -43,7 +43,7 @@
 - [VERIFIED] Runtime CI run `42481250763` passed on `46fc7dfb3479f95f43fef8b70decbc4108174e9d`; it ran the same 20-test code/test state. The 20-test log is also directly confirmed in run `42481163242` on `92abb690fa3e3026ef68c2073e0c79d5801037fc`.
 - [VERIFIED] The test log shows **20 tests, all passed**, including six ledger tests, native role contract checks, routine merge authorization, production deployment approval and task-envelope self-approval rejection.
 - [VERIFIED] Environment Validation passed on final checkpoint SHA `d171c83ba3223553bb672f0c67a688c8e5e9c586`: run `42481253355`.
-- [VERIFIED] Engineering Execution OS Compliance passed on final checkpoint SHA `d171c83ba3223553bb672f0c67a688c8e5e9c586`: run `42481168139`.
+- [VERIFIED] Engineering Execution OS Compliance passed on final checkpoint SHA `d171c83ba3223553bb672f0c67a688c8e5e9c586`: run `42481253345`.
 - [FAILED → FIXED] Two test-authoring issues were caught by CI and corrected: literal newline escapes in the CLI test, then a test treating the adapter dictionary as a list. The final 20-test run passed.
 
 ## Explicit limitations
