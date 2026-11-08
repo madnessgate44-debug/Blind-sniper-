@@ -7,12 +7,16 @@ GitHub-backed compare-and-swap adapter.
 """
 from __future__ import annotations
 
+import base64
 import fcntl
 import hashlib
 import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 from typing import Any
 
 
@@ -124,6 +128,138 @@ class TaskLedger:
             "last_event": rows[-1],
             "events": rows,
         }
+
+
+class GitHubLedgerError(LedgerError):
+    """GitHub Contents API ledger failure or exhausted concurrency retries."""
+
+
+class GitHubContentsLedger:
+    """Optional append-only ledger adapter using GitHub Contents API SHA compare-and-swap.
+
+    Each append creates a commit containing the complete validated JSONL ledger.
+    This is suitable for small control-plane state files, not large transcripts.
+    """
+
+    def __init__(
+        self,
+        *,
+        owner: str,
+        repo: str,
+        path: str,
+        branch: str,
+        token: str,
+        transport=None,
+        max_retries: int = 3,
+    ):
+        if not all(value.strip() for value in (owner, repo, path, branch, token)):
+            raise GitHubLedgerError("owner, repo, path, branch and token are required")
+        if max_retries < 1:
+            raise GitHubLedgerError("max_retries must be at least one")
+        self.owner = owner
+        self.repo = repo
+        self.path = path
+        self.branch = branch
+        self.token = token
+        self.transport = transport or self._urlopen_transport
+        self.max_retries = max_retries
+        self.api_url = (
+            f"https://api.github.com/repos/{quote(owner)}/{quote(repo)}"
+            f"/contents/{quote(path, safe='/')}"
+        )
+
+    @staticmethod
+    def _urlopen_transport(method: str, url: str, headers: dict, body: bytes | None = None):
+        request = Request(url, data=body, headers=headers, method=method)
+        try:
+            with urlopen(request, timeout=20) as response:
+                return response.status, response.read()
+        except HTTPError as exc:
+            return exc.code, exc.read()
+        except URLError as exc:
+            raise GitHubLedgerError(f"GitHub Contents API transport failed: {exc.reason}") from exc
+
+    def _request(self, method: str, url: str, body: bytes | None = None):
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {self.token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "Blind-Sniper-Native-Ledger",
+        }
+        return self.transport(method, url, headers, body)
+
+    def _read_remote(self) -> tuple[bytes, str | None]:
+        status, raw = self._request("GET", f"{self.api_url}?ref={quote(self.branch)}")
+        if status == 404:
+            return b"", None
+        if status != 200:
+            raise GitHubLedgerError(f"GitHub ledger read failed with HTTP {status}")
+        try:
+            response = json.loads(raw.decode("utf-8"))
+            if response.get("encoding") != "base64":
+                raise GitHubLedgerError("GitHub ledger response is not base64 encoded")
+            content = base64.b64decode(response["content"], validate=False)
+            sha = str(response["sha"])
+        except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            if isinstance(exc, GitHubLedgerError):
+                raise
+            raise GitHubLedgerError("GitHub ledger response is malformed") from exc
+        return content, sha
+
+    def append(
+        self,
+        *,
+        task_id: str,
+        event_type: str,
+        payload: dict[str, Any],
+        idempotency_key: str,
+    ) -> dict[str, Any]:
+        for attempt in range(1, self.max_retries + 1):
+            remote_content, remote_sha = self._read_remote()
+            with tempfile.TemporaryDirectory() as tmp:
+                local_path = Path(tmp) / "events.jsonl"
+                local_path.write_bytes(remote_content)
+                local = TaskLedger(local_path)
+                rows = local.events()  # validates the entire remote hash chain
+                existing = next((row for row in rows if row.get("idempotency_key") == idempotency_key), None)
+                try:
+                    event = local.append(
+                        task_id=task_id,
+                        event_type=event_type,
+                        payload=payload,
+                        idempotency_key=idempotency_key,
+                    )
+                except LedgerError as exc:
+                    raise GitHubLedgerError(str(exc)) from exc
+                if existing is not None:
+                    return {**event, "already_present": True, "commit_sha": None}
+                updated_content = local_path.read_bytes()
+            put_payload = {
+                "message": f"blind-sniper: append task event {task_id}/{event_type}",
+                "content": base64.b64encode(updated_content).decode("ascii"),
+                "branch": self.branch,
+            }
+            if remote_sha:
+                put_payload["sha"] = remote_sha
+            status, raw = self._request(
+                "PUT", self.api_url,
+                json.dumps(put_payload, separators=(",", ":")).encode("utf-8"),
+            )
+            if status in (409, 422):
+                # Another writer changed the blob SHA. Reload and re-append against
+                # the latest hash-chain head rather than overwriting that writer.
+                continue
+            if status not in (200, 201):
+                raise GitHubLedgerError(f"GitHub ledger write failed with HTTP {status}")
+            try:
+                response = json.loads(raw.decode("utf-8"))
+                commit_sha = response["commit"]["sha"]
+            except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
+                raise GitHubLedgerError("GitHub ledger write receipt is malformed") from exc
+            return {**event, "already_present": False, "commit_sha": commit_sha}
+        raise GitHubLedgerError(
+            f"GitHub ledger compare-and-swap failed after {self.max_retries} attempts"
+        )
 
 
 def main(argv: list[str] | None = None) -> int:
