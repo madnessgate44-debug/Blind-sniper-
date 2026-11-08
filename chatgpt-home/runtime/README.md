@@ -81,8 +81,8 @@ The GitHub Actions workflow runs both checks for changes to this runtime. Passin
 
 ## Final corrected CI verification receipt
 
-- Runtime registry: GitHub Actions run `42474872020`, job `128713837077` — PASS; 6 profiles, 26 agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 unit tests OK.
-- Native environment: run `42474871763`, job `128713835937` — PASS; 39 required assets, 9 skill contracts, 9 agent contracts, 5 workflows, 6 safe Codex config templates, credential-pattern scan clean.
-- Engineering Execution OS compliance: run `42474871764`, job `128713835979` — PASS.
+- Runtime registry: GitHub Actions run `42475103888`, job `128714562891` — PASS; 6 profiles, 26 agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 unit tests OK.
+- Native environment: run `42475103885`, job `128714562694` — PASS; 39 required assets, 9 skill contracts, 9 agent contracts, 5 workflows, 6 safe Codex config templates, credential-pattern scan clean.
+- Engineering Execution OS compliance: run `42475103913`, job `128714562852` — PASS.
 
 These runs verify the preceding implementation checkpoint. Re-run the workflow after any registry, validator, test or workflow change. They do not prove external adapter end-to-end readiness.
