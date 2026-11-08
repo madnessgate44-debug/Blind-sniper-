@@ -216,6 +216,34 @@
         "GitHub continuity files and Memory summary are not a substitute for complete conversation archives.",
         "Resume only when an authorized export API or user-supplied archive is available."
       ]
+    },
+    {
+      "id": "agent_browser_cli",
+      "kind": "ephemeral_browser_execution",
+      "status": "partial_ci_adapter_implemented_runtime_acceptance_pending",
+      "tools": [
+        "scripts/blind_sniper_browser.py",
+        "agent-browser@0.41.2",
+        "GitHub Actions: .github/workflows/blind-sniper-browser.yml"
+      ],
+      "capabilities": [
+        "allowlisted_http_navigation",
+        "accessibility_snapshot",
+        "click_fill_press_with_host_approval",
+        "screenshot",
+        "task_scoped_session_metadata",
+        "structured_action_receipts"
+      ],
+      "limitations": [
+        "Native adapter and controlled fixture have been added on the browser feature branch; real browser acceptance has not yet passed CI.",
+        "GitHub Actions runners are ephemeral per job; this is not a persistent authenticated browser host or cross-job live-session service.",
+        "Upload/download, tabs/frames, PDF, authenticated profiles, cookie transfer and persistent browser recovery are not implemented in this first slice.",
+        "The browser adapter is not directly callable as a ChatGPT tool in the current session; it runs only from an authorized shell/CI host.",
+        "Mutating actions require host-supplied write approval and an approval reference; this is an auditable host attestation, not cryptographic identity proof."
+      ],
+      "license": "Apache-2.0",
+      "version": "0.41.2",
+      "upstream": "https://github.com/vercel-labs/agent-browser"
     }
   ],
   "exclusions": [
