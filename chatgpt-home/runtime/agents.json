@@ -19,7 +19,7 @@
       "source": "external-github-app",
       "role": "implementation executor",
       "authority": "bounded branch/PR work only",
-      "status": "mention_session_creation_verified_completion_unverified"
+      "status": "mention_session_creation_and_one_correlated_read_only_receipt_verified_code_execution_roundtrip_unproven"
     },
     {
       "id": "forge",
