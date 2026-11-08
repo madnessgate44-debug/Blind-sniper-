@@ -55,3 +55,17 @@ Blind Sniper should progress authorized work directly and use supported automati
 - `FOUNDATION_RECOVERY_PLAN.md` — P0 integration and archive recovery plan.
 
 ChatGPT is the interactive interface. This directory is the persistent Blind Sniper body/control plane. GitHub Actions or an authorized cloud runner provides compute; repositories are workspaces; Forge/OpenHands are workers only through verified adapters. Read the runtime architecture before dispatching work.
+
+
+## Complete agent environment
+- `ENVIRONMENT_MANIFEST.md` — capability architecture and readiness gates.
+- `skills/` — Blind Sniper-native skills with metadata, triggers, permissions, procedures and acceptance criteria.
+- `agents/` — specialist agent contracts (research, planning, engineering, review, QA, recovery, watcher, shadow, release).
+- `tools/TOOL_REGISTRY.md` — live capability and connector status; refresh against the active tool inventory.
+- `workflows/` — session boot, task lifecycle, agent handoff, closeout and release gates.
+- `templates/` — task envelope, run receipt, verification ledger and independent review report.
+- `runtime/ADAPTER_CONTRACT.md` — common dispatch/status/artifact/callback contract for GitHub Actions, OpenHands, Forge and Codex.
+- `config/` — least-privilege Codex host templates; these do not configure ChatGPT itself.
+- `scripts/check-blind-sniper-environment.mjs` — structural validation used by the new GitHub Actions workflow.
+
+Read `ENVIRONMENT_MANIFEST.md` as the top-level capability map. Read the relevant skill before task execution. Treat imported OpenHands files as source-preserving reference material and native skills/agents as the adapted Blind Sniper operating layer.
