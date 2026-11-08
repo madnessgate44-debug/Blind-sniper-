@@ -331,7 +331,7 @@
       "adapters": [
         "agent_browser_cli"
       ],
-      "status": "partial_ci_implementation_acceptance_pending",
+      "status": "partial_ci_acceptance_passed_persistent_host_unverified",
       "required_capabilities": {
         "agent_browser_cli": [
           "allowlisted_http_navigation",
