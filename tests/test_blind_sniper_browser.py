@@ -169,6 +169,26 @@ class BrowserPolicyTests(unittest.TestCase):
             with self.assertRaises(BrowserPolicyError):
                 adapter.execute("upload", "upload-exe", "input[type=file]", "payload.exe")
 
+    def test_download_is_saved_only_inside_artifact_workspace(self):
+        adapter = self.adapter()
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        def fake_run(command, **kwargs):
+            Path(command[-1]).write_bytes(b"downloaded")
+            return CompletedProcess(command, 0, "{}", "")
+        with patch("scripts.blind_sniper_browser.subprocess.run", side_effect=fake_run) as run:
+            result = adapter.execute("download", "download-1", "a.download", "report.pdf")
+        target = adapter.artifacts_dir / "report.pdf"
+        self.assertTrue(target.is_file())
+        self.assertEqual(target.read_bytes(), b"downloaded")
+        self.assertEqual(run.call_args.args[0][-2], "download")
+        self.assertEqual(result["receipt"]["artifact_paths"], [str(target)])
+
+    def test_download_rejects_path_traversal(self):
+        adapter = self.adapter()
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        with self.assertRaises(BrowserPolicyError):
+            adapter.execute("download", "download-traversal", "a.download", "../outside.pdf")
+
     def test_standalone_adapter_cli_is_blocked(self):
         output = io.StringIO()
         with redirect_stderr(output):
