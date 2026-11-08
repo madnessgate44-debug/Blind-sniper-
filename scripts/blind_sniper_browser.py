@@ -104,12 +104,13 @@ class BrowserAdapter:
         self.sessions_dir = self.state_dir / "sessions"
         self.receipts_dir = self.state_dir / "receipts"
         self.artifacts_dir = self.state_dir / "artifacts"
+        self.uploads_dir = self.state_dir / "uploads"
         self.policy_file = self.state_dir / "action-policy.json"
-        for directory in (self.sessions_dir, self.receipts_dir, self.artifacts_dir):
+        for directory in (self.sessions_dir, self.receipts_dir, self.artifacts_dir, self.uploads_dir):
             directory.mkdir(parents=True, exist_ok=True)
         self.policy_file.write_text(json.dumps({
             "default": "deny",
-            "allow": ["launch", "close", "navigate", "snapshot", "screenshot", "click", "fill", "scroll", "wait", "get", "interact", "read"],
+            "allow": ["launch", "close", "navigate", "snapshot", "screenshot", "click", "fill", "upload", "tab", "frame", "pdf", "scroll", "wait", "get", "interact", "read"],
         }, indent=2) + "\n", encoding="utf-8")
         self.session_file = self.sessions_dir / f"{session_id}.json"
         self.receipt_file = self.receipts_dir / f"{self.task_id}__{self.run_id}.jsonl"
