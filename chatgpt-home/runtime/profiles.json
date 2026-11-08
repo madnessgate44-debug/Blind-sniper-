@@ -25,12 +25,7 @@
         "reviewer",
         "qa-verifier",
         "recovery",
-        "watcher",
-        "shadow-auditor",
-        "release-manager",
-        "openhands",
-        "forge",
-        "shadow"
+        "release-manager"
       ],
       "workflow": "task-control-loop",
       "config_template": "chatgpt-home/config/blind-sniper.config.toml.example"
@@ -49,8 +44,7 @@
       ],
       "agents": [
         "researcher",
-        "planner",
-        "architect"
+        "planner"
       ],
       "workflow": "research-and-synthesis",
       "config_template": "chatgpt-home/config/research.config.toml.example"
@@ -76,9 +70,7 @@
         "planner",
         "engineer",
         "qa-verifier",
-        "backend-engineer",
-        "frontend-engineer",
-        "devops-engineer"
+        "reviewer"
       ],
       "workflow": "inspect-plan-implement-verify",
       "config_template": "chatgpt-home/config/engineering.config.toml.example"
@@ -98,12 +90,7 @@
       ],
       "agents": [
         "reviewer",
-        "shadow-auditor",
-        "qa-verifier",
-        "code-reviewer",
-        "pr-auditor",
-        "security-engineer",
-        "evidence-verifier"
+        "qa-verifier"
       ],
       "workflow": "independent-review",
       "config_template": "chatgpt-home/config/review.config.toml.example"
@@ -123,8 +110,7 @@
       ],
       "agents": [
         "recovery",
-        "conversation-exporter",
-        "sre-incident-responder"
+        "planner"
       ],
       "workflow": "recovery-and-reconciliation",
       "config_template": "chatgpt-home/config/recovery.config.toml.example"
@@ -146,7 +132,7 @@
       "agents": [
         "release-manager",
         "qa-verifier",
-        "sre-incident-responder"
+        "reviewer"
       ],
       "workflow": "release-gate",
       "config_template": "chatgpt-home/config/base.config.toml.example"
