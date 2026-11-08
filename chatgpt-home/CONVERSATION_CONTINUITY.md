@@ -80,3 +80,14 @@
 - [VERIFIED] Implementation commits: `0326a35905d408cb80825ed3df8dd874bb267b54`, `b258396f277233aa88ef958a1cd1f1423bd83854`, `6a30f195f9e9593f15e50e319983131acc410be3`, `61d30447ad5f555383ce4c11876087e565e4feab`, `7541c489401db5c2a167ec8177ecfaa93f9e4a56`, `3b1bf6386eb154c4b66bb73412d8c5b3c18a78d3`.
 - [LIMITATION] This operating file is a repository-backed instruction layer, not a modification of ChatGPT's hidden system prompt. It must be retrieved in each new session. Raw account-wide ChatGPT history is not yet imported; continuity summaries are not verbatim transcripts.
 - Next: use `BLIND_SNIPER.md` as the canonical entrypoint. When an authorized ChatGPT export is supplied, perform the full transcript inventory/migration and make it searchable from this home.
+
+
+## 2026-11-08 — Owner clarifies autonomous AI operating responsibility
+
+- [VERIFIED — direct Owner instruction] Ahmed is the Owner and Natural Intelligence (NI), responsible for direction, judgment, priorities, product intent and approvals.
+- [VERIFIED — direct Owner instruction] Blind Sniper is the Artificial Intelligence (AI) partner, responsible for its own operating system and the AI-side work: context retrieval, continuity, tools/skills, planning, coordination, authorized execution, verification and operating-system improvement.
+- [VERIFIED — direct Owner instruction] The agreement includes continuing authorized work while the chat is inactive through GitHub/automation mechanisms.
+- [VERIFIED — tool inventory] Current session exposes GitHub repository actions and an Automations create action. The Automations tool supports self-owned tasks and saved schedules, subject to actual account limits and configuration.
+- [IMPORTANT LIMITATION] GitHub persistence is not equivalent to an always-running agent. GitHub Actions execute only configured workflows on their triggers; self-owned automations or cloud agents must be created and their runs inspected. No background run is claimed from this instruction alone.
+- [DECISION] Canonical BLIND_SNIPER.md must contain an explicit Owner/NI ↔ Blind Sniper/AI covenant, autonomous-work default, inactive-chat execution mechanisms, automation design/verification rules, status vocabulary and proactive operating behavior.
+- [NEXT] Implement this covenant in the canonical entrypoint and supporting profile, memory, project map and synchronization protocol; add a standalone autonomy protocol and checkpoint the resulting PR.
