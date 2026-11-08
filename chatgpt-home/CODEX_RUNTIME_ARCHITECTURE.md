@@ -258,3 +258,18 @@ Acceptance for hub reconciliation:
 3. The @openhands mention path is verified by a correlated session/run receipt and response.
 4. Any event receiver is proven disabled or active from live state; documentation alone is insufficient.
 5. No receiver is enabled if its cost/credit behavior is unknown without the Owner's explicit approval.
+
+
+## 13. Operating boundary correction — 8 November 2026
+
+This section supersedes older references in this document that describe Brain, Watcher, Shadow, Ghost, OpenHands or Forge as core control-plane dependencies.
+
+- Blind Sniper is its own operating system, control plane and native workforce.
+- The core workflow is owned inside this repository: task intake → plan → native execution → evidence → review → recovery → closeout.
+- No external agent, external coordination hub, credential custodian or provider pool is required for any core lifecycle step.
+- OpenHands, Forge and other services may be connected later as optional capacity adapters. They are not the identity, memory, authority, dispatcher or approval chain of Blind Sniper.
+- Do not introduce or reference a Ghost role. Do not assign Shadow/Watcher responsibilities to the native core.
+- Repository-backed task records and the native ledger are the source of continuity. Any cross-runner synchronization must be implemented and verified here, not delegated to an external agent system.
+- Ahmed supplies direction and human-only decisions. Blind Sniper makes and records routine technical decisions and performs bounded engineering without asking for repetitive approval.
+
+Historical integration notes below remain historical evidence only; they do not define current core architecture.
