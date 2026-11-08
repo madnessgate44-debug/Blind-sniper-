@@ -39,3 +39,26 @@
 - No automation was created from this covenant alone because no specific recurring task/cadence was named. Do not claim inactive-chat execution until a real mechanism is configured and its run is inspected.
 - Implementation branch: docs/openhands-workscope-continuity-2026-11-08.
 - Status: operating-system updates being prepared; PR and read-back verification pending.
+
+
+## PR #3 — ownership, autonomy and OpenHands scope closeout
+
+- PR: https://github.com/madnessgate44-debug/Blind-sniper-/pull/3
+- Branch: docs/openhands-workscope-continuity-2026-11-08
+- Status: OPEN / NOT MERGED (review required).
+- [VERIFIED] Re-fetched all 10 changed/new files from the PR branch; all returned non-empty content.
+- [VERIFIED] Canonical BLIND_SNIPER.md now contains the Owner/NI ↔ Blind Sniper/AI covenant, autonomous-work mandate, inactive-chat mechanisms and §14 OpenHands/Brain operating scope.
+- [VERIFIED] Added AUTONOMY_PROTOCOL.md and OPENHANDS_WORKING_AGREEMENT.md; updated profile, memory, project map, continuity, sync protocol, README and this checkpoint.
+- [VERIFIED] File read-back blob SHAs:
+  - chatgpt-home/BLIND_SNIPER.md: c74644caf8c187c3cc0e5264d015b39bc9da7a76
+  - chatgpt-home/AUTONOMY_PROTOCOL.md: 9c09e46cfcf687d862fa4b04d1022d638fba0d79
+  - chatgpt-home/OPENHANDS_WORKING_AGREEMENT.md: f7245c20fd11feb1594844557db5edf5682c80ba
+  - chatgpt-home/OPERATING_PROFILE.md: 152897e2c8045d0bc5c6e27922ee4279cdd2f558
+  - chatgpt-home/MEMORY.md: 51c189e1b1d133655dafeb6a1dc22691fbc42597
+  - chatgpt-home/PROJECTS.md: 44d88b0e1b0870a8acd387963a0a484e7265b966
+  - chatgpt-home/CONVERSATION_CONTINUITY.md: 8fad51aed49d15f7c9be36eb29a78148515a6f7d
+  - chatgpt-home/SYNC_PROTOCOL.md: 791728eb7df800e71a0ddbce6ccc30f09c0d2420
+  - chatgpt-home/README.md: 141b37b7cc46e1571e249f76102159c86640a7b9
+  - chatgpt-home/checkpoints/CURRENT_SESSION.md: b14a3b120e93f1f691a301b0990e159472fec092
+- [NOT RUN] Runtime tests; documentation-only change. No automation was created or activated; no workflow was enabled; no merge/deployment performed.
+- [BLOCKED] Full OpenHands Cloud archive reconciliation and ChatGPT personal transcript export remain separate follow-up workstreams.
