@@ -188,3 +188,13 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 - [VERIFIED] Engineering Execution OS compliance run `42473825927` / job `128710593387` passed.
 - [VERIFIED] Older runtime PRs #4 and #5 were closed as superseded; PR #6 is the canonical review target.
 - [LIMITATION] The registry and static workflows are verified. Actual Codex CLI installation, Forge public HTTPS + ChatGPT connector round trip, OpenHands task-result retrieval, generic isolated runner and background autonomy remain unproven/blocked. No merge, deployment, paid provisioning or secret changes performed.
+
+
+## Final re-verification — 2026-11-08T11:02 UTC
+
+- [VERIFIED] Final runtime implementation head before this checkpoint update: `5854e12e95742cea7c4fe4e4fd17edf72fd917dc`.
+- [VERIFIED] Runtime registry run `42473977913` / job `128711054365`: PASS. Registry output: 6 profiles, 26 agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 unit tests ran and returned OK.
+- [VERIFIED] Native environment run `42473977906` / job `128711054231`: PASS. Output: 39 required assets, 9 skill contracts, 9 agent contracts, 5 workflows, 6 safe Codex config templates, credential-pattern scan clean.
+- [VERIFIED] Engineering Execution OS compliance run `42473977941` / job `128711054293`: PASS.
+- [VERIFIED] PR #6 is the canonical runtime review target. PRs #4 and #5 are closed as superseded. PR #6 remains OPEN / NOT MERGED.
+- [LIMITATION] These checks validate the repository environment and registries. They do not establish a callable Forge browser MCP connector, complete OpenHands task-result round trip, generic isolated runner, or continuous background dispatcher.
