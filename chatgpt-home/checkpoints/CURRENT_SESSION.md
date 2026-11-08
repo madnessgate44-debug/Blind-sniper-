@@ -224,3 +224,11 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 - [VERIFIED] Forge adapter now reflects Firstborn PR #148's authenticated public-HTTPS sandbox smoke test and CI success (run `42473077287`), while recording that the sandbox is ephemeral and no ChatGPT connector is registered. PR #149 overlaps on `browser_wait`; merge reconciliation is still needed.
 - [VERIFIED] Corrected runtime head `ef393c75a30d52909c21fcdd0f513a0704563827`: runtime run `42474578987` / job `128712914885` PASS (6 profiles, 25 agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 tests OK); environment run `42474579048` / job `128712914983` PASS (39 assets); OS compliance run `42474578991` / job `128712914797` PASS.
 - [VERIFIED] PR #6 remains OPEN / NOT MERGED; mergeable state was clean at corrected head. Later task-ledger-only update records this evidence; no runtime code changed after the corrected test run.
+
+
+## Final evidence-grade re-run — 2026-11-08T11:14 UTC
+
+- [VERIFIED] Corrected runtime head `781a17a5502c94ed0ad8587c80151dc77bed5e04`: runtime run `42474872020` / job `128713837077` PASS (6 profiles, 25 agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 tests OK); native environment run `42474871763` / job `128713835937` PASS (39 assets); OS compliance run `42474871764` / job `128713835979` PASS.
+- [CORRECTION] Forge's remote HTTPS smoke is reported by OpenHands and supported by its CI; the URL is ephemeral. The registry now labels this as REMOTE-SMOKE-REPORTED, not independently invoked by ChatGPT. ChatGPT connector remains absent.
+- [CORRECTION] Shadow, not Ghost, is the designated credential-pool custodian per Brain WATCHER.md §14. The latest reported pool state is 0 WORKING / 8 NOT SET.
+- [VERIFIED] PR #6 remains the canonical runtime PR. No merge, durable deployment, connector registration, secret mutation or paid provisioning occurred.
