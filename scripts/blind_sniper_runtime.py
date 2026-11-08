@@ -334,7 +334,7 @@ def validate_owner_approval(record: dict[str, Any], task_id: str, now: datetime 
     expires_at = str(record.get("expires_at", "")).strip()
     if not approval_id or record_task != task_id:
         raise RuntimeErrorBase("Owner approval must have a unique approval_id bound to this task")
-    if not action or approver != "Ahmed" or not words or task_id not in words or action not in words.lower():
+    if not action or approver != "OWNER" or not words or task_id not in words or action not in words.lower():
         raise RuntimeErrorBase("Owner approval must identify Ahmed, the exact action, and task ID in verbatim words")
     try:
         issued = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
