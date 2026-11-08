@@ -124,3 +124,38 @@ class TaskLedger:
             "last_event": rows[-1],
             "events": rows,
         }
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Blind Sniper durable task event ledger")
+    sub = parser.add_subparsers(dest="command", required=True)
+    add = sub.add_parser("append", help="append one idempotent task event")
+    add.add_argument("--ledger", required=True)
+    add.add_argument("--task-id", required=True)
+    add.add_argument("--event-type", required=True)
+    add.add_argument("--idempotency-key", required=True)
+    add.add_argument("--payload-file", required=True)
+    show = sub.add_parser("show", help="verify and display task history")
+    show.add_argument("--ledger", required=True)
+    show.add_argument("--task-id", required=True)
+    args = parser.parse_args(argv)
+    try:
+        ledger = TaskLedger(args.ledger)
+        if args.command == "append":
+            payload = json.loads(Path(args.payload_file).read_text(encoding="utf-8"))
+            event = ledger.append(task_id=args.task_id, event_type=args.event_type,
+                                  payload=payload, idempotency_key=args.idempotency_key)
+            print(json.dumps({"task_id": args.task_id, "seq": event["seq"],
+                              "event_hash": event["event_hash"]}, indent=2))
+        else:
+            print(json.dumps(ledger.task_history(args.task_id), indent=2, ensure_ascii=False))
+        return 0
+    except (LedgerError, OSError, json.JSONDecodeError) as exc:
+        print(f"BLOCKED: {exc}", file=__import__("sys").stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
