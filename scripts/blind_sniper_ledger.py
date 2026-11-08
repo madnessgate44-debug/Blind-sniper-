@@ -292,8 +292,14 @@ class TaskLedger:
         if not isinstance(payload, dict):
             raise LedgerError("payload must be an object")
         snapshot = payload.get("state")
-        if not isinstance(snapshot, dict) or snapshot.get("task_id") != task_id or snapshot.get("status") != "EXECUTING":
-            raise LedgerError("Lease-gated transition requires a matching EXECUTING snapshot")
+        allowed_statuses = {"EXECUTING", "VERIFYING", "REVIEWING", "CLOSED", "BLOCKED", "FAILED", "OWNER-DECISION", "CANCELLED"}
+        if (
+            not isinstance(snapshot, dict)
+            or snapshot.get("task_id") != task_id
+            or snapshot.get("status") not in allowed_statuses
+            or snapshot.get("implementer_id") != owner_id
+        ):
+            raise LedgerError("Lease-gated transition requires a matching post-EXECUTING snapshot and implementer")
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a+", encoding="utf-8") as handle:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
