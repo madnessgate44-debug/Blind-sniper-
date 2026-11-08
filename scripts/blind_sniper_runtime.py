@@ -20,22 +20,6 @@ from blind_sniper_ledger import LedgerError, TaskLedger
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / "chatgpt-home" / "runtime"
 
-PROFILE_BY_WORKFLOW = {
-    "research-and-synthesis": "research",
-    "inspect-plan-implement-verify": "engineering",
-    "independent-review": "review",
-    "release-gate": "release",
-    "recovery-and-reconciliation": "recovery",
-    "task-control-loop": "blind-sniper",
-}
-AGENTS_BY_WORKFLOW = {
-    "research-and-synthesis": ["researcher", "planner"],
-    "inspect-plan-implement-verify": ["planner", "engineer", "qa-verifier", "reviewer"],
-    "independent-review": ["reviewer", "qa-verifier"],
-    "release-gate": ["release-manager", "qa-verifier"],
-    "recovery-and-reconciliation": ["recovery", "planner"],
-    "task-control-loop": ["blind-sniper", "planner"],
-}
 SKILL_KEYWORDS = {
     "github-workspace": {"github", "repository", "repo", "branch", "pull", "request", "issue", "commit"},
     "workflow-authoring": {"workflow", "orchestration", "orchestrate", "dispatch", "agent", "runtime", "skill"},
@@ -132,21 +116,20 @@ def choose_workflow(task: dict[str, Any], workflows: list[dict[str, Any]]) -> st
         str(task.get("task_type", "")),
         " ".join(map(str, task.get("requested_actions", []))),
     ]).lower()
-    if any(word in text for word in ("fix ", "implement", "build", "patch", "refactor", "test ")):
-        candidate = "inspect-plan-implement-verify"
-    elif any(word in text for word in ("research", "investigate", "compare", "look up")):
-        candidate = "research-and-synthesis"
-    elif any(word in text for word in ("security review", "independent review", "audit diff", "review this diff")):
-        candidate = "independent-review"
-    elif any(word in text for word in ("deploy", "release", "merge to main", "merge pull request")):
-        candidate = "release-gate"
-    elif any(word in text for word in ("recover", "restore", "reconcile", "continuity failure")):
-        candidate = "recovery-and-reconciliation"
-    else:
-        candidate = "task-control-loop"
-    if candidate not in known:
-        raise RuntimeErrorBase(f"Workflow registry is missing routed workflow: {candidate}")
-    return candidate
+    matches = []
+    for row in workflows:
+        rule = row.get("routing", {})
+        matched = [
+            keyword for keyword in rule.get("keywords", [])
+            if re.search(r"(?<![a-z0-9])" + re.escape(str(keyword).lower()) + r"(?![a-z0-9])", text)
+        ]
+        if matched:
+            matches.append((int(rule.get("priority", 0)), len(matched), row["id"]))
+    if matches:
+        return max(matches)[2]
+    if "task-control-loop" not in known:
+        raise RuntimeErrorBase("Workflow registry has no task-control-loop fallback")
+    return "task-control-loop"
 
 
 def resolve_skill_path(skill: str, index: dict[str, Any]) -> str:
@@ -171,11 +154,12 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
 
     workflow_id = choose_workflow(task, workflows)
     workflow = next(row for row in workflows if row["id"] == workflow_id)
-    # Profile selection is host policy; task JSON cannot choose its own privilege profile.
-    profile_id = PROFILE_BY_WORKFLOW.get(workflow_id, "blind-sniper")
-    profile = next((row for row in profiles if row.get("id") == profile_id), None)
-    if profile is None:
-        raise RuntimeErrorBase(f"Unknown operating profile: {profile_id}")
+    # The profile bound to the selected workflow is host policy; task JSON cannot select it.
+    matching_profiles = [row for row in profiles if row.get("workflow") == workflow_id]
+    if len(matching_profiles) != 1:
+        raise RuntimeErrorBase(f"Workflow {workflow_id} must map to exactly one operating profile")
+    profile = matching_profiles[0]
+    profile_id = profile["id"]
 
     adapters = {row.get("id"): row for row in caps.get("adapters", [])}
     required_adapters = []
@@ -204,7 +188,7 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
     )
 
     agent_index = {row.get("id"): row for row in agents}
-    preferred_agents = AGENTS_BY_WORKFLOW.get(workflow_id, ["blind-sniper", "planner"])
+    preferred_agents = workflow.get("agents", [])
     selected_agents = []
     for agent_id in preferred_agents:
         if agent_id not in profile.get("agents", []):
