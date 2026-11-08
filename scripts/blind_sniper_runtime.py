@@ -592,6 +592,7 @@ def main(argv: list[str] | None = None) -> int:
                     extra_payload={"import_approval": import_records[0]},
                 )
             approval_records = read_json(Path(args.approval_record_file)).get("approvals", []) if args.approval_record_file else []
+            approval_records = [record for record in approval_records if str(record.get("action", "")).lower() != "task_import"]
             if args.to == state.get("status"):
                 if state.get("status") in {"EXECUTING", "VERIFYING", "REVIEWING"}:
                     if not args.lease_owner or args.lease_owner != state.get("implementer_id"):
