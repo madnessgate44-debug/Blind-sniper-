@@ -290,3 +290,10 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 
 ### Next pickup
 Continue BS-20261108-004 only after preserving the current PR boundary. Next engineering tranche: close the remaining browser acceptance gaps in small independently verified slices; do not represent the ephemeral CI runner as a persistent browser service.
+
+
+### Final closeout addendum — 2026-11-08T15:24Z
+- [VERIFIED] Task record read-back: chatgpt-home/tasks/BS-20261108-004.md blob c1f095b3e37b7c3d07a13f724ed88781562f2d55; R9–R11 atomic reservation verification is now explicitly closed PASS; R12–R13 security fixes are PASS.
+- [VERIFIED] Browser contract read-back: chatgpt-home/runtime/BROWSER_ADAPTER.md blob 33caf888678694eb5c611d3041de63ebd8ae5a2a; stale pending-verification wording corrected.
+- [VERIFIED] Latest PR #11 head after documentation closeout: 728d484b268e61abae9bcae5189a3a7933c9827d; OPEN / DRAFT / NOT MERGED; mergeable true; base integration SHA db4e82ad831fbd231689a359d66a1153fc601407.
+- [VERIFIED] Latest code-and-doc verification remains browser 42494489650, runtime 42494489779, environment 42494489680 and OS compliance 42494489781 — all SUCCESS. Subsequent edits were documentation/checkpoint-only; no browser/runtime source changed.
