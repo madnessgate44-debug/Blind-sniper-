@@ -52,4 +52,4 @@ Host policy is supplied outside task content:
 
 **Execution boundary:** GitHub Actions provides an ephemeral Linux host for controlled acceptance tests. It is not a durable authenticated browser service, and the adapter is not directly callable from the current ChatGPT session. Real browser capability remains PARTIAL until the browser workflow passes and a supported dispatch/result path is proven.
 
-- The first-slice domain allowlist checks top-level navigation and post-action URL state only; it is not a request-level egress firewall for subresources or cross-origin form targets. Use only controlled fixtures until network interception is added.
+- The adapter passes agent-browser's built-in --allowed-domains flag, which blocks non-allowlisted navigations and subresource requests and applies supported WebSocket/EventSource/WebRTC containment. This is browser-level containment, not an operating-system firewall; use host/container egress controls for stronger isolation.
