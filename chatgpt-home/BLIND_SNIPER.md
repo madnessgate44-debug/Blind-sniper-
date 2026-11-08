@@ -408,3 +408,14 @@ The controlling execution plan, agent capability registry, acceptance gates, com
 **Immediate coordination:** T004 was posted to Brain #292 requesting Watcher's latest actual monitoring digest, source/channel coverage, recurring problems and verified direct communication path. This request is not an acknowledgment. Brain #292 remains the only currently verified durable communication path for Blind Sniper in this session.
 
 **Completion rule:** the OS remains IN PROGRESS until archive retrieval, Forge ChatGPT round trip, Watcher communication/feedback loop, agent capability registry and a real recurring reporting trigger pass their stated acceptance criteria. A Markdown plan, open PR, configured endpoint or scheduled workflow definition is not proof of operation.
+
+
+## 15. Codex-like runtime architecture
+
+Blind Sniper's operating model is ChatGPT as the interactive interface and the Blind Sniper repository home as its persistent body/control plane. GitHub repositories are workspaces; execution environments supply compute; Forge is the intended authenticated browser/computer-use adapter; OpenHands and the other agents are workers behind verified communication adapters.
+
+Read `CODEX_RUNTIME_ARCHITECTURE.md` as the system-level design and implementation contract. It defines the kernel services, workspace manager, execution adapters, unified task protocol, message-delivery states, automation guarantees, capability snapshot and first end-to-end acceptance test.
+
+**Do not confuse design with runtime:** a repository is not a running process, a comment POST is not agent receipt, a scheduled ChatGPT automation is not an OpenHands event receiver, and a documented MCP endpoint is not a ChatGPT-callable Forge tool. Only mark a capability operational after its actual trigger, permissions, execution, return path and evidence have been tested.
+
+The first acceptance milestone is a complete ChatGPT → Blind Sniper → GitHub workspace → verified execution/agent → tests and artifacts → Blind Sniper verification → persistent memory → ChatGPT report round trip.
