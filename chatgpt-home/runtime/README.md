@@ -16,6 +16,8 @@ It deliberately distinguishes:
 
 ## Components
 
+The native Blind Sniper pack is maintained alongside this registry: `../ENVIRONMENT_MANIFEST.md`, `../skills/`, `../agents/`, `../workflows/`, `../templates/`, `../tools/TOOL_REGISTRY.md` and `../config/`. Prefer the native skills/contracts for this ChatGPT host. The `openhands-library/` mirror remains the broader source-preserving specialist library.
+
 | File | Responsibility |
 |---|---|
 | `capabilities.json` | Live-session adapter and capability truth registry |
