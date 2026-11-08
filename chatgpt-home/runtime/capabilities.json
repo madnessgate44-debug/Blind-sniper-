@@ -220,7 +220,7 @@
     {
       "id": "agent_browser_cli",
       "kind": "ephemeral_browser_execution",
-      "status": "partial_two_cycle_native_dispatch_e2e_passed_persistent_host_unverified",
+      "status": "extended_native_actions_implemented_ci_pending_persistent_host_not_provisioned",
       "tools": [
         "scripts/blind_sniper_browser.py",
         "scripts/blind_sniper_browser_dispatch.py",
@@ -240,15 +240,22 @@
         "duplicate_and_interrupted_step_replay_block",
         "two_cycle_native_dispatch_e2e",
         "started_only_interruption_reconciliation",
-        "no_replay_before_adapter_construction"
+        "no_replay_before_adapter_construction",
+        "tabs_list_create_switch_close",
+        "iframe_frame_switching",
+        "workspace_contained_file_upload_with_approval",
+        "workspace_contained_file_download",
+        "pdf_export"
       ],
       "limitations": [
         "Atomic local-lock/GitHub-CAS reservation, concurrent duplicate exclusion, replay blocking and correlated receipts passed browser workflow run 42494894841; real Chromium completed two consecutive native-dispatch cycles with interruption reconciliation.",
         "GitHub Actions runners are ephemeral per job; this is not a persistent authenticated browser host or cross-job live-session service.",
-        "Upload/download, tabs/frames, PDF, authenticated profiles, cookie transfer and persistent browser recovery are not implemented.",
         "The adapter is not directly callable as a ChatGPT tool in the current session; it runs only from an authorized shell/CI host.",
         "Mutating actions require host-supplied write approval and an approval reference; this is an auditable host attestation, not cryptographic identity proof.",
-        "The built-in agent-browser domain allowlist is browser-level containment, not an operating-system firewall. Use host/container egress controls for stronger isolation."
+        "The built-in agent-browser domain allowlist is browser-level containment, not an operating-system firewall. Use host/container egress controls for stronger isolation.",
+        "Tabs/frames, upload/download and PDF wrappers have been added to the native dispatcher; PR-head CI and real Chromium acceptance are pending.",
+        "An Oracle Always Free ARM64 self-hosted-runner bootstrap is versioned, but no OCI tenancy/VM was provisioned and persistent cross-job browser recovery is not verified.",
+        "Authenticated profiles, cookie transfer and credential-state persistence remain intentionally unsupported."
       ],
       "license": "Apache-2.0",
       "version": "0.41.2",
