@@ -125,6 +125,50 @@ class BrowserPolicyTests(unittest.TestCase):
             "https://example.test/[REDACTED]",
         )
 
+    def test_tab_and_frame_actions_map_to_supported_cli(self):
+        adapter = self.adapter()
+        with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, '{"tabs":[]}', "")) as run:
+            adapter.execute("tabs", "tabs-1")
+            adapter.execute("tab-new", "tab-new-1", "http://127.0.0.1/")
+            adapter.execute("tab-switch", "tab-switch-1", "t1")
+            adapter.execute("tab-close", "tab-close-1", "t1")
+            adapter.execute("frame", "frame-1", "main")
+        commands = [call.args[0][-len(args):] for call, args in zip(run.call_args_list, [
+            ["tab"], ["tab", "new", "http://127.0.0.1/"], ["tab", "t1"], ["tab", "close", "t1"], ["frame", "main"]
+        ])]
+        self.assertEqual(commands, [
+            ["tab"], ["tab", "new", "http://127.0.0.1/"], ["tab", "t1"], ["tab", "close", "t1"], ["frame", "main"]
+        ])
+
+    def test_pdf_output_is_contained_and_uses_browser_pdf_command(self):
+        adapter = self.adapter()
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
+            result = adapter.execute("pdf", "pdf-1", "page.pdf")
+        self.assertEqual(run.call_args.args[0][-2], "pdf")
+        self.assertTrue(run.call_args.args[0][-1].startswith(str(adapter.artifacts_dir)))
+        self.assertEqual(result["receipt"]["artifact_paths"], [str(adapter.artifacts_dir / "page.pdf")])
+
+    def test_upload_requires_approval_and_contained_workspace_file(self):
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        source = adapter.uploads_dir / "fixture.txt"
+        source.write_text("fixture", encoding="utf-8")
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
+                adapter.execute("upload", "upload-1", "input[type=file]", "fixture.txt")
+        self.assertEqual(run.call_args.args[0][-3:], ["upload", "input[type=file]", str(source)])
+
+    def test_upload_rejects_path_traversal_and_unsupported_types(self):
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with self.assertRaises(BrowserPolicyError):
+                adapter.execute("upload", "upload-traversal", "input[type=file]", "../outside.txt")
+            (adapter.uploads_dir / "payload.exe").write_text("x", encoding="utf-8")
+            with self.assertRaises(BrowserPolicyError):
+                adapter.execute("upload", "upload-exe", "input[type=file]", "payload.exe")
+
     def test_standalone_adapter_cli_is_blocked(self):
         output = io.StringIO()
         with redirect_stderr(output):
