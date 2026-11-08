@@ -185,6 +185,14 @@ def run_cycle(*, cycle: int, base_url: str, root_state_dir: Path, base_run_id: s
     if closed["receipt"]["exit_code"] != 0:
         raise RuntimeError("Browser session did not close cleanly")
 
+    released = ledger.release_task(
+        task_id=task_id,
+        owner_id=OWNER_ID,
+        idempotency_key=f"{task_id}:lease-release",
+    )
+    if not released["released"]:
+        raise AssertionError("E2E task lease was not released by its owner")
+
     history = ledger.task_history(task_id)
     events = history["events"]
     started = [row for row in events if row["event_type"] == "BROWSER_ACTION_STARTED"]
@@ -195,9 +203,8 @@ def run_cycle(*, cycle: int, base_url: str, root_state_dir: Path, base_run_id: s
             f"Unexpected native ledger counts: started={len(started)}, "
             f"completed={len(completed)}, reconciled={len(reconciled)}"
         )
-    if len(receipts) != 7:
-        # The close receipt is written after the first read, so re-read once.
-        receipts = [json.loads(line) for line in receipts_file.read_text(encoding="utf-8").splitlines()]
+    # Re-read after close so the final receipt is included.
+    receipts = [json.loads(line) for line in receipts_file.read_text(encoding="utf-8").splitlines()]
     if len(receipts) != 8:
         raise AssertionError(f"Expected 8 browser receipts, got {len(receipts)}")
 
