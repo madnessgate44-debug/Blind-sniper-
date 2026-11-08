@@ -189,7 +189,20 @@ class GitHubContentsLedger:
         }
         return self.transport(method, url, headers, body)
 
+    def _assert_private_repository(self) -> None:
+        repo_url = f"https://api.github.com/repos/{quote(self.owner)}/{quote(self.repo)}"
+        status, raw = self._request("GET", repo_url)
+        if status != 200:
+            raise GitHubLedgerError(f"GitHub ledger repository metadata check failed with HTTP {status}")
+        try:
+            metadata = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise GitHubLedgerError("GitHub ledger repository metadata is malformed") from exc
+        if metadata.get("private") is not True:
+            raise GitHubLedgerError("GitHub ledger refuses to write or read task state in a public repository")
+
     def _read_remote(self) -> tuple[bytes, str | None]:
+        self._assert_private_repository()
         status, raw = self._request("GET", f"{self.api_url}?ref={quote(self.branch)}")
         if status == 404:
             return b"", None
