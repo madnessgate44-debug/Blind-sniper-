@@ -8,6 +8,7 @@ on:
       - ".blind-sniper/tasks/**"
       - "scripts/blind_sniper_executor.py"
       - ".github/workflows/blind-sniper-allowlisted-executor.yml"
+      - "chatgpt-home/runtime/EXECUTION_ENGINE.md"
 
 permissions:
   contents: read
