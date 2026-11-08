@@ -1,10 +1,12 @@
 # Blind Sniper — Foundational Recovery and Agent Operations Plan
 
+> **SUPERSEDED — 2026-11-08.** This is a retained historical plan, not active operating policy. Its external-agent network, archive assumptions and automation sequence are obsolete. Follow `chatgpt-home/BLIND_SNIPER.md` v3.0, `chatgpt-home/CODEX_RUNTIME_ARCHITECTURE.md` and the active branch's `chatgpt-home/CURRENT_STATE.md`. The native roster and current execution boundaries are defined by the runtime registries. Do not execute this document's historical role assignments or migration instructions.
+
 **Owner:** Ahmed / Natural Intelligence (NI)  
 **Operator:** Blind Sniper / ChatGPT (AI)  
 **Priority:** P0 — highest operating-system priority  
 **Coordination hub:** https://github.com/madnessgate44-debug/brain/issues/292  
-**Status:** ACTIVE PLAN; execution evidence is tracked per phase below.  
+**Status:** SUPERSEDED / HISTORICAL REFERENCE.  
 **Last reconciled:** 2026-11-08
 
 ## 1. Mission and ownership
