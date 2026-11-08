@@ -309,3 +309,16 @@ Continue BS-20261108-004 only after preserving the current PR boundary. Next eng
 - [VERIFIED] Updated capability registry, workflow registry, runtime README, browser adapter contract and task BS-20261108-004 with R14 and current evidence. R6 is PASS for workspace-surviving interruption/no-replay/reconciliation; cross-job live browser session recovery remains PARTIAL.
 - [VERIFIED] Latest inspected PR #11 head before this checkpoint write: 12957916f507e3f3b8f16112eb156eac92edc2c6; OPEN / DRAFT / NOT MERGED; mergeable true at last PR read; base integration SHA db4e82ad831fbd231689a359d66a1153fc601407.
 - [PARTIAL] Tabs/frames, uploads/downloads, PDF, authenticated profiles, durable browser hosting and direct ChatGPT browser-tool registration remain unimplemented or unproven. No merge or deployment.
+
+
+## 2026-11-08 — Browser adapter R15 and free-hosting tranche
+
+- [VERIFIED] Added native dispatcher actions for tabs list/create/switch/close, iframe frame switching, approved upload, bounded download and PDF export.
+- [VERIFIED] Extended real Chromium E2E passed two consecutive cycles in run 42496827462. Each cycle: 18 started, 17 completed, one started-only action reconciled without replay, 18 receipts; tabs, frames, upload, download and PDF all exercised. Total 36 receipts; 38,746 screenshot bytes; artifact 13623019051; SHA-256 c4615fb9f7b98c9ddf78a9d05b385d72a773b04f1abedd8b082af69ea09825b4.
+- [VERIFIED] Runtime registry, environment validation and OS compliance passed on PR head 9c71cb92f1471fc44dbc647b2701c3a94e32db54. Latest head has additional documentation/workflow commits and its CI is being re-run.
+- [VERIFIED] Added Oracle Always Free ARM64 bootstrap. Because pinned agent-browser@0.41.2's bundled Chrome installer rejects Linux ARM64, the bootstrap downloads Chrome for Testing's official Linux ARM64 binary and sets AGENT_BROWSER_EXECUTABLE_PATH.
+- [VERIFIED] Added optional two-job self-hosted persistence acceptance, gated by repository variable BLIND_SNIPER_SELF_HOSTED_ENABLED=true and manual workflow_dispatch. It opens a page in job 1 and verifies the same browser session in job 2. It has not run because no Oracle VM/runner exists.
+- [PARTIAL] Oracle Always Free is the selected $0 recurring-cost cloud candidate, but signup normally requires payment-card verification and Oracle may reclaim low-utilization VMs. No tenancy or VM was provisioned; no persistent host is claimed.
+- [BLOCKED] Direct ChatGPT custom MCP connector registration is unavailable on the current Free plan; ChatGPT custom MCP connections are web-only. The browser adapter is not callable from the current ChatGPT tool surface.
+- [PENDING] Independent Claude full-diff review requested in PR #11 comment 6723622077; no review response received yet.
+- [NOT DONE] PR #11 remains OPEN / DRAFT / NOT MERGED. No production deployment target exists in Vercel for this repository. No merge or deployment performed.
