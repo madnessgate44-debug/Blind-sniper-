@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import re
 import sys
 import tempfile
 from datetime import datetime, timezone
@@ -50,8 +51,17 @@ SKILL_KEYWORDS = {
 HIGH_RISK_ACTIONS = {
     "production_deploy", "secret_mutation",
     "permission_change", "paid_provisioning", "production_data_mutation",
-    "delete", "irreversible",
+    "delete", "irreversible", "merge", "merge_to_main", "default_branch_push",
+    "force_push", "delete_branch", "ci_cd_edit", "workflow_edit", "deploy",
 }
+ROUTINE_ACTIONS = {
+    "read", "inspect", "research", "analyze", "write_file", "create_branch",
+    "open_pr", "run_tests", "format", "lint",
+}
+HOST_FORBIDDEN_ACTIONS = [
+    "production_deploy", "secret_mutation", "permission_change",
+    "paid_provisioning", "production_data_mutation",
+]
 STATES = (
     "REQUESTED", "INSPECTING", "SPECIFIED", "PLANNED", "EXECUTING",
     "VERIFYING", "REVIEWING", "CLOSED", "BLOCKED", "CANCELLED",
@@ -121,16 +131,16 @@ def choose_workflow(task: dict[str, Any], workflows: list[dict[str, Any]]) -> st
         str(task.get("task_type", "")),
         " ".join(map(str, task.get("requested_actions", []))),
     ]).lower()
-    if any(word in text for word in ("review", "audit", "inspect diff", "security review")):
+    if any(word in text for word in ("fix ", "implement", "build", "patch", "refactor", "test ")):
+        candidate = "inspect-plan-implement-verify"
+    elif any(word in text for word in ("research", "investigate", "compare", "look up")):
+        candidate = "research-and-synthesis"
+    elif any(word in text for word in ("security review", "independent review", "audit diff", "review this diff")):
         candidate = "independent-review"
-    elif any(word in text for word in ("deploy", "release", "merge")):
+    elif any(word in text for word in ("deploy", "release", "merge to main", "merge pull request")):
         candidate = "release-gate"
     elif any(word in text for word in ("recover", "restore", "reconcile", "continuity failure")):
         candidate = "recovery-and-reconciliation"
-    elif any(word in text for word in ("research", "investigate", "compare", "look up")):
-        candidate = "research-and-synthesis"
-    elif any(word in text for word in ("implement", "build", "fix", "code", "test", "engineering", "repository")):
-        candidate = "inspect-plan-implement-verify"
     else:
         candidate = "task-control-loop"
     if candidate not in known:
@@ -160,7 +170,8 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
 
     workflow_id = choose_workflow(task, workflows)
     workflow = next(row for row in workflows if row["id"] == workflow_id)
-    profile_id = task.get("profile") or PROFILE_BY_WORKFLOW.get(workflow_id, "blind-sniper")
+    # Profile selection is host policy; task JSON cannot choose its own privilege profile.
+    profile_id = PROFILE_BY_WORKFLOW.get(workflow_id, "blind-sniper")
     profile = next((row for row in profiles if row.get("id") == profile_id), None)
     if profile is None:
         raise RuntimeErrorBase(f"Unknown operating profile: {profile_id}")
@@ -243,8 +254,9 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
             "automatic_execution": False,
         })
 
-    requested_actions = {str(x).lower() for x in task.get("requested_actions", [])}
-    approval_actions = sorted(requested_actions & HIGH_RISK_ACTIONS)
+    requested_actions = {str(x).strip().lower() for x in task.get("requested_actions", []) if str(x).strip()}
+    # Anything not explicitly classified as routine is high-risk by default.
+    approval_actions = sorted(requested_actions - ROUTINE_ACTIONS)
     # Task envelopes are untrusted input. They may request consequential actions,
     # but they cannot assert Owner consent. Approval is accepted only at the
     # guarded transition boundary from the authorized host caller.
@@ -291,10 +303,7 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
         },
         "steps": steps,
         "constraints": {
-            "forbidden_actions": task.get("forbidden_actions", [
-                "production_deploy", "secret_mutation",
-                "permission_change", "paid_provisioning", "production_data_mutation",
-            ]),
+            "forbidden_actions": list(HOST_FORBIDDEN_ACTIONS),
             "external_execution_performed": False,
             "host_must_recheck_tools_and_permissions": True,
         },
@@ -305,6 +314,7 @@ def create_task_state(plan: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema_version": "1.0.0",
         "task_id": plan["task_id"],
+        "implementer_id": "blind-sniper",
         "status": "REQUESTED",
         "plan": plan,
         "events": [{
@@ -321,6 +331,7 @@ def transition_task(
     target: str,
     evidence: dict[str, Any] | None = None,
     approved_actions: list[str] | None = None,
+    approval_records: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     evidence = evidence or {}
     current = state.get("status")
@@ -330,8 +341,19 @@ def transition_task(
         raise RuntimeErrorBase(f"Invalid transition: {current} -> {target}")
 
     plan = state.get("plan", {})
-    approved = set(approved_actions or [])
+    approved = set()
     pending = set(plan.get("approval", {}).get("pending_actions", []))
+    for record in approval_records or []:
+        action = str(record.get("action", "")).strip().lower()
+        words = str(record.get("verbatim_words", "")).strip()
+        timestamp = str(record.get("timestamp", "")).strip()
+        try:
+            parsed_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        except ValueError:
+            parsed_time = None
+        if action not in pending or not words or parsed_time is None or parsed_time.tzinfo is None:
+            raise RuntimeErrorBase("Owner approval record requires a pending action, verbatim words, and an offset-aware timestamp")
+        approved.add(action)
     if target == "EXECUTING":
         if plan.get("execution_readiness") == "BLOCKED":
             raise RuntimeErrorBase("Execution blocked: a required adapter or capability is blocked or unverified")
@@ -339,8 +361,13 @@ def transition_task(
             raise RuntimeErrorBase(f"Execution blocked: explicit Owner approval is pending for {sorted(pending - approved)}")
     if target == "REVIEWING" and evidence.get("verification_passed") is not True:
         raise RuntimeErrorBase("Cannot enter REVIEWING without verification_passed=true")
-    if target == "CLOSED" and evidence.get("review_verdict") != "PASS":
-        raise RuntimeErrorBase("Cannot close without an independent PASS review verdict")
+    if target == "CLOSED":
+        reviewer = str(evidence.get("reviewer_id", "")).strip()
+        implementer = str(state.get("implementer_id", "")).strip()
+        if evidence.get("review_verdict") != "PASS" or not reviewer or reviewer == implementer:
+            raise RuntimeErrorBase("Cannot close without a PASS from a reviewer distinct from the implementer")
+        if evidence.get("task_id") != state.get("task_id") or not re.fullmatch(r"[0-9a-f]{40}", str(evidence.get("commit_sha", ""))) or not str(evidence.get("ci_run_id", "")).strip():
+            raise RuntimeErrorBase("Cannot close without matching task ID, full commit SHA, and CI run ID")
 
     updated = dict(state)
     updated["events"] = list(state.get("events", []))
