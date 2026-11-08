@@ -216,3 +216,11 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 - [VERIFIED] Firstborn PR #148 reports public HTTPS sandbox reachability and has CI run `42473077287` SUCCESS. The sandbox URL is ephemeral, not a durable deployment. PR #149 overlaps on `browser_wait`; reconcile before merge.
 - [BLOCKED] ChatGPT connector registration and durable Forge host remain Owner/platform gates. No live ChatGPT-to-Forge tool call is proven.
 - [VERIFIED] OpenHands session execution states and PR artifacts were returned in Brain #292 comments. Direct OpenHands Cloud API is not callable from this ChatGPT tool inventory; Blind Sniper still needs correlated task results and two consecutive full handoffs to claim E2E readiness.
+
+
+## Corrected capability registry verification — 2026-11-08T11:10 UTC
+
+- [VERIFIED] Removed the erroneous Ghost agent; Brain `WATCHER.md §14` designates Shadow as provider-pool custodian. The Shadow pool remains blocked: latest reported sweep 0 WORKING / 8 NOT SET.
+- [VERIFIED] Forge adapter now reflects Firstborn PR #148's authenticated public-HTTPS sandbox smoke test and CI success (run `42473077287`), while recording that the sandbox is ephemeral and no ChatGPT connector is registered. PR #149 overlaps on `browser_wait`; merge reconciliation is still needed.
+- [VERIFIED] Corrected runtime head `ef393c75a30d52909c21fcdd0f513a0704563827`: runtime run `42474578987` / job `128712914885` PASS (6 profiles, 25 agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 tests OK); environment run `42474579048` / job `128712914983` PASS (39 assets); OS compliance run `42474578991` / job `128712914797` PASS.
+- [VERIFIED] PR #6 remains OPEN / NOT MERGED; mergeable state was clean at corrected head. Later task-ledger-only update records this evidence; no runtime code changed after the corrected test run.
