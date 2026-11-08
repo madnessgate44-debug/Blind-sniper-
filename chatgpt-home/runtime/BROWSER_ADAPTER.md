@@ -47,3 +47,10 @@ The browser daemon itself is not proven recoverable after a GitHub Actions job/r
 ## CI boundary
 
 The GitHub Actions workflow installs Node.js 22, `agent-browser@0.41.2`, Chromium and Linux dependencies; it runs browser policy tests, lease-dispatch tests and a real Chromium round trip against a local fixture. CI acceptance proves only this ephemeral controlled-fixture path. It does not prove a persistent browser host, authenticated browsing, direct ChatGPT tool invocation or unattended autonomy.
+
+
+## Additional safety hardening
+
+- URL paths, query strings and fragments are redacted from persisted action receipts, command metadata and session URL state. Only the origin is retained for diagnostics.
+- The standalone scripts/blind_sniper_browser.py CLI is disabled so host actions use the native lease-gated dispatcher. The Python adapter class remains an internal implementation component, not a security boundary against arbitrary code running on the host.
+- These corrections passed the PR-head browser suite (13 tests), dispatcher suite (8 tests), and real Chromium fixture in run 42494392033.
