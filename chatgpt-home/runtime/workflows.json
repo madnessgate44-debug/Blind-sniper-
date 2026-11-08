@@ -311,6 +311,35 @@
           "export_conversations"
         ]
       }
+    },
+    {
+      "id": "native-browser-acceptance",
+      "trigger": "GitHub Actions push, pull_request or workflow_dispatch",
+      "steps": [
+        "install pinned agent-browser CLI",
+        "install Chromium and Linux dependencies",
+        "run browser adapter policy unit tests",
+        "start local controlled fixture",
+        "navigate and capture accessibility snapshot",
+        "capture screenshot",
+        "fill fixture form with CI-only approval",
+        "verify resulting page state",
+        "persist correlated receipts",
+        "close browser session",
+        "upload short-retention evidence artifacts"
+      ],
+      "adapters": [
+        "agent_browser_cli"
+      ],
+      "status": "partial_ci_implementation_acceptance_pending",
+      "required_capabilities": {
+        "agent_browser_cli": [
+          "allowlisted_http_navigation",
+          "accessibility_snapshot",
+          "screenshot",
+          "structured_action_receipts"
+        ]
+      }
     }
   ],
   "native_workflow_library": "chatgpt-home/workflows/",
