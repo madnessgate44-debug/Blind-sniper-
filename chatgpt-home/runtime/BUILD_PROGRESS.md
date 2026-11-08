@@ -72,3 +72,12 @@
 6. Move routing ownership into registries and remove duplicated routing maps.
 7. Reduce boot payload and measure actual bytes/lines before optimizing.
 8. Reconcile branch graph and prepare a privacy-safe consolidated draft PR only after storage containment.
+
+
+## End-to-end task/lease/recovery simulation
+
+- The deterministic CI harness drives the runtime CLI through plan, local lease claim, competing-owner denial, lease-gated EXECUTING, artifact verification, injected interruption, recovery, resume, close, owner release and lease-status inspection.
+- The execution transition is atomically committed under the ledger lock and records the lease owner as implementer; the E2E receipt asserts this binding.
+- A separate local lease exercise proves expiry/reclaim and owner-only release.
+- The runtime suite tests GitHub Contents CAS remote lease claim/release/status and atomic execution-transition ownership with a fake transport. This is adapter logic coverage, not a live remote write.
+- The E2E harness remains simulation-only: no external agent is spawned and no external service is invoked.
