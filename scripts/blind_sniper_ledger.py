@@ -207,6 +207,27 @@ class GitHubContentsLedger:
             raise GitHubLedgerError("GitHub ledger response is malformed") from exc
         return content, sha
 
+    def events(self, task_id: str | None = None) -> list[dict[str, Any]]:
+        remote_content, _ = self._read_remote()
+        with tempfile.TemporaryDirectory() as tmp:
+            local_path = Path(tmp) / "events.jsonl"
+            local_path.write_bytes(remote_content)
+            try:
+                return TaskLedger(local_path).events(task_id)
+            except LedgerError as exc:
+                raise GitHubLedgerError(f"Remote ledger integrity check failed: {exc}") from exc
+
+    def task_history(self, task_id: str) -> dict[str, Any]:
+        rows = self.events(task_id)
+        if not rows:
+            raise GitHubLedgerError(f"Unknown task_id: {task_id}")
+        return {
+            "task_id": task_id,
+            "event_count": len(rows),
+            "last_event": rows[-1],
+            "events": rows,
+        }
+
     def append(
         self,
         *,
