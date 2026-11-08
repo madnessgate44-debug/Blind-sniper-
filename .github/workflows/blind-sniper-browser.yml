@@ -52,8 +52,10 @@ jobs:
           npm install --global agent-browser@0.41.2
           agent-browser install --with-deps
           agent-browser --version
-      - name: Validate Oracle host bootstrap shell syntax
-        run: bash -n ops/oracle-free/bootstrap-self-hosted-runner.sh
+      - name: Validate Oracle host bootstrap and persistence probe syntax
+        run: |
+          bash -n ops/oracle-free/bootstrap-self-hosted-runner.sh
+          python -m py_compile scripts/run_blind_sniper_browser_persistence_probe.py
       - name: Run browser adapter and native lease-dispatch tests
         run: |
           python -m unittest discover -s tests -p 'test_blind_sniper_browser.py' -v
