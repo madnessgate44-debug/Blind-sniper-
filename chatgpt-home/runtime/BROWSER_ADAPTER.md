@@ -5,7 +5,7 @@
 **Pinned version:** 0.41.2
 **License:** Apache-2.0
 **Execution host:** GitHub Actions ubuntu-latest (ephemeral CI host)
-**Status:** PARTIAL — initial lease-dispatch CI passed; atomic local-lock/GitHub-CAS reservation hardening is implemented and awaiting final CI re-verification; persistent host remains unverified
+**Status:** PARTIAL — atomic local-lock/GitHub-CAS reservation, URL redaction and dispatcher-only CLI passed CI; persistent host remains unverified
 
 ## Scope
 
@@ -54,3 +54,6 @@ The GitHub Actions workflow installs Node.js 22, `agent-browser@0.41.2`, Chromiu
 - URL paths, query strings and fragments are redacted from persisted action receipts, command metadata and session URL state. Only the origin is retained for diagnostics.
 - The standalone scripts/blind_sniper_browser.py CLI is disabled so host actions use the native lease-gated dispatcher. The Python adapter class remains an internal implementation component, not a security boundary against arbitrary code running on the host.
 - These corrections passed the PR-head browser suite (13 tests), dispatcher suite (8 tests), and real Chromium fixture in run 42494392033.
+
+
+Atomic reservation concurrency, URL redaction and dispatcher-only CLI checks passed on PR-head CI run 42494489650; the full runtime suite passed in run 42494489779. These results do not establish a persistent browser host or cross-job session recovery.
