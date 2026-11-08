@@ -1,0 +1,40 @@
+name: Validate library
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Cancel a superseded run on the same ref so a phone-only owner is not billed
+# for minutes spent on stale commits.
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      # Actions are pinned to a commit SHA (not a moving tag) so an upstream
+      # tag move cannot change what runs in this job.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip pyyaml "openhands-sdk==1.58.2"
+      - name: Validate manifests, skills, sub-agents and hooks
+        run: python3 scripts/validate.py
+      # Fail closed: the test file is part of the repo, so a missing one is an
+      # error, not a reason to skip.
+      - name: Run hook tests
+        run: bash tests/hooks_test.sh
+      # Load the plugin through the real SDK loader, which catches a component
+      # that is well-formed on disk but silently dropped at load time.
+      - name: Loader smoke test
+        env:
+          OPENHANDS_SUPPRESS_BANNER: "1"
+        run: python3 scripts/loader_smoke.py
