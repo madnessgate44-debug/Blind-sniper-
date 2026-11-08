@@ -16,6 +16,9 @@
 8. Transition retries repair a stale checkpoint from ledger state; a repeated already-committed target does not append a duplicate transition.
 9. Legacy task-state JSON can be adopted once as `TASK_IMPORTED`.
 10. Host-forbidden actions are non-overridable; an Owner approval record cannot authorize force-push, branch deletion, credential/secret export, disabling branch protection or unbounded shell execution.
+11. Optional `GitHubContentsLedger` adapter reads/writes the event file through GitHub Contents API, validates the full hash chain, uses blob-SHA compare-and-swap, retries conflicts and supports remote history/recovery reads.
+12. Runtime CLI supports optional `--github-ledger` mode for plan, transition and recover; token is read only from a named environment variable.
+13. Workflow routing priorities, keywords and per-workflow agent assignments live in `workflows.json`; profile binding comes from `profiles.json`. Duplicate runtime maps removed.
 
 ## Latest implementation evidence
 
@@ -24,16 +27,21 @@
 - Registry-owned routing commit: `56cdf4f54ab360c85f8ff547d21c8590273346be`.
 - Runtime registry-driven selection commit: `a741f908f85184d4fe285205b61254aa95f91f58`.
 - Safe fallback profile/agents correction: `eec6f124cba2612473f700290ea3dc273bf6f313`.
+- GitHub Contents CAS adapter and runtime option: `156f6ba51a135986dfaf8f867391ac8b52e83b95`, `dcf38a1837be0cb620768f3bb0543e01d9f92218`, `f3527e88f174882db16d7d47aa491c92510f7449`.
+- Remote adapter/recovery test checkpoint: `8a28e5076fd219f083a06ac04a3ece856aee6cac`.
 - Regression tests commit: `12a4a4149a163ed3c6870ba8ba543d06565cf1ae`.
 - Runtime CI run [42484343595](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343595): SUCCESS; **29 tests passed**, including ledger-backed plan, transition, replay, stale-checkpoint recovery and host-forbidden denial.
 - Latest runtime CI run [42484643917](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484643917): SUCCESS; **31 tests passed**, including registry-owned routing, profile/agent selection, and the unprofiled browser workflow safely falling back to the default native profile/agents.
 - Latest OS compliance run [42484643930](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484643930): SUCCESS.
+- Runtime CI run [42485004894](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485004894): SUCCESS; **41 tests passed**, including six mocked GitHub Contents adapter tests, remote task-history recovery, CAS conflict retry and integrity failure.
+- OS compliance run [42485004801](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485004801): SUCCESS on the same test checkpoint.
 - Engineering Execution OS compliance run [42484343610](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343610): SUCCESS on test commit `12a4a41`.
 - Documentation was updated after that runtime pass; latest HEAD and exact CI checks are maintained in `CURRENT_STATE.md`.
 
 ## Explicit limits
 
-- The ledger is local-workspace durable only. It does not synchronize across ephemeral GitHub Actions runners or remote workspaces.
+- The local ledger is workspace durable. An optional GitHub Contents API adapter is implemented and mock-tested, but no live write has been performed.
+- The checked-in GitHub Actions workflow has `contents: read`; it cannot write through the GitHub ledger adapter. No workflow permission was changed. A host must explicitly supply a token with Contents write permission and an authorized target branch.
 - The hash chain detects edits but is not a signed or tamper-proof audit log.
 - Approval records are host-supplied attestations; the runtime cannot cryptographically prove who supplied the record.
 - Reviewer identity is a distinct metadata field, not cryptographically authenticated.
