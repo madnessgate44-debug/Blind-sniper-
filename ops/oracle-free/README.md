@@ -2,19 +2,20 @@
 
 ## Why this is the selected $0 option
 
-Oracle lists Always Free compute resources including Ampere A1: 1,500 OCPU-hours and 9,000 GB-hours monthly (equivalent to 2 OCPUs and 12 GB RAM), plus two AMD micro VMs. The free compute quota can support a persistent ARM64 host, unlike GitHub-hosted runners which are ephemeral per job. Oracle's free-tier FAQ says Always Free resources remain available after the trial, but idle compute may be reclaimed under its published utilization test. Sources: Oracle Free Tier and Always Free resource documentation.
+Oracle lists Always Free Ampere A1 resources: 1,500 OCPU-hours and 9,000 GB-hours monthly (equivalent to 2 OCPUs and 12 GB RAM total), plus up to two AMD micro VMs. This is the strongest $0 recurring-cost VM option found for a persistent browser host. It is not an uptime guarantee: Oracle may reclaim an Always Free compute instance after a 7-day period when CPU, network and (for A1) memory utilization all remain below its published thresholds. A lightly used browser runner can therefore be reclaimed. Sources: https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm and https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier.htm.
 
 **Important constraints**
-- Oracle account signup normally requires a payment card for verification; Oracle may place a temporary verification hold. It states the card is not charged unless the account is upgraded.
+- Oracle account signup normally requires a credit/debit card and phone for verification; Oracle may place a temporary authorization hold (typically removed within 3–5 days). Oracle states the card is not charged unless the account is upgraded. If you will not provide a card, this cloud-host option is unavailable.
 - Keep all compute and storage within Always Free limits. Do not upgrade to Pay As You Go. Use OCI budget/compartment quotas where available.
 - A1 capacity can be unavailable in a home region. Oracle may show an out-of-host-capacity error.
+- Oracle can reclaim idle Always Free compute. A browser runner with little real workload may not remain online indefinitely; do not claim guaranteed persistence.
 - This is a self-managed VM: OS patching, firewall, backups, monitoring and runner maintenance are the owner's responsibility.
 - This host bootstrap does not provision an Oracle account or VM and does not claim that a host is online.
 
 ## Deployment
 
 1. Create an Oracle Cloud Free Tier account and select a home region. Confirm the region offers the Always Free Ampere A1 shape.
-2. Create one Ubuntu 22.04 or 24.04 ARM64 VM using no more than 2 OCPUs and 12 GB RAM total, with boot volume within Always Free limits. Do not select paid shapes or paid add-ons.
+2. Create one Ubuntu 22.04 or 24.04 ARM64 VM using no more than 2 OCPUs and 12 GB RAM total, with boot volume within Always Free limits. Oracle documents a 47 GB minimum boot volume and 200 GB total Always Free block storage. Do not select paid shapes or paid add-ons.
 3. Configure ingress to expose no browser debugging/CDP port publicly. SSH should be restricted to the owner's IP; the GitHub runner makes outbound HTTPS connections.
 4. SSH to the VM and upload/run `bootstrap-self-hosted-runner.sh` as root.
 5. In GitHub, create a short-lived **repository runner registration token** for `madnessgate44-debug/Blind-sniper-` and enter it at the script prompt. The token is not written into this repository or a plaintext file.
