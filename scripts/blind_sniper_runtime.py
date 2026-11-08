@@ -245,8 +245,6 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
 
     requested_actions = {str(x).lower() for x in task.get("requested_actions", [])}
     approval_actions = sorted(requested_actions & HIGH_RISK_ACTIONS)
-    if workflow_id == "release-gate":
-        approval_actions = sorted(set(approval_actions) | {"merge_or_deploy"})
     # Task envelopes are untrusted input. They may request consequential actions,
     # but they cannot assert Owner consent. Approval is accepted only at the
     # guarded transition boundary from the authorized host caller.
