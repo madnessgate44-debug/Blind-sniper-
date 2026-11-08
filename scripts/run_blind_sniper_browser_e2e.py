@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import os
-import tempfile
+import sys
 import threading
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 from scripts.blind_sniper_browser import BrowserAdapter
 
-ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "browser"
 
 
@@ -27,8 +28,7 @@ def main() -> int:
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    temp = tempfile.TemporaryDirectory()
-    state_dir = Path(temp.name) / "browser-state"
+    state_dir = Path(os.environ.get("BLIND_SNIPER_BROWSER_STATE_DIR", ".blind-sniper/browser")).resolve()
     base = f"http://127.0.0.1:{server.server_port}/"
     adapter = BrowserAdapter(
         task_id="BS-BROWSER-CI-001",
@@ -69,7 +69,6 @@ def main() -> int:
     finally:
         server.shutdown()
         server.server_close()
-        temp.cleanup()
 
 
 if __name__ == "__main__":
