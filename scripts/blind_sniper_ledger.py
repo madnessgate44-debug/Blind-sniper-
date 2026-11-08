@@ -326,41 +326,6 @@ class TaskLedger:
             finally:
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
-    def reserve_browser_action_if_lease(
-        self,
-        *,
-        task_id: str,
-        owner_id: str,
-        payload: dict[str, Any],
-        idempotency_key: str,
-        min_remaining_seconds: int,
-        now: datetime | None = None,
-    ) -> dict[str, Any]:
-        """Reserve a browser step using GitHub Contents SHA-CAS and native lease checks."""
-        for _ in range(self.max_retries):
-            remote_content, remote_sha = self._read_remote()
-            with tempfile.TemporaryDirectory() as tmp:
-                local_path = Path(tmp) / "events.jsonl"
-                local_path.write_bytes(remote_content)
-                local = TaskLedger(local_path)
-                try:
-                    result = local.reserve_browser_action_if_lease(
-                        task_id=task_id, owner_id=owner_id, payload=payload,
-                        idempotency_key=idempotency_key,
-                        min_remaining_seconds=min_remaining_seconds, now=now,
-                    )
-                except LedgerError as exc:
-                    raise GitHubLedgerError(str(exc)) from exc
-                updated_content = local_path.read_bytes()
-            commit_sha = self._write_remote_content(
-                content=updated_content, remote_sha=remote_sha,
-                task_id=task_id, event_type="BROWSER_ACTION_STARTED",
-            )
-            if commit_sha is None:
-                continue
-            return {"reserved": True, "event": {**result["event"], "commit_sha": commit_sha}}
-        raise GitHubLedgerError(f"GitHub browser reservation CAS failed after {self.max_retries} attempts")
-
     def append_transition_if_lease(
         self,
         *,
@@ -626,6 +591,41 @@ class GitHubContentsLedger:
                 return TaskLedger(local_path).lease_status(task_id, now)
             except LedgerError as exc:
                 raise GitHubLedgerError(f"Remote lease history is invalid: {exc}") from exc
+
+    def reserve_browser_action_if_lease(
+        self,
+        *,
+        task_id: str,
+        owner_id: str,
+        payload: dict[str, Any],
+        idempotency_key: str,
+        min_remaining_seconds: int,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """Reserve a browser step using GitHub Contents SHA-CAS and native lease checks."""
+        for _ in range(self.max_retries):
+            remote_content, remote_sha = self._read_remote()
+            with tempfile.TemporaryDirectory() as tmp:
+                local_path = Path(tmp) / "events.jsonl"
+                local_path.write_bytes(remote_content)
+                local = TaskLedger(local_path)
+                try:
+                    result = local.reserve_browser_action_if_lease(
+                        task_id=task_id, owner_id=owner_id, payload=payload,
+                        idempotency_key=idempotency_key,
+                        min_remaining_seconds=min_remaining_seconds, now=now,
+                    )
+                except LedgerError as exc:
+                    raise GitHubLedgerError(str(exc)) from exc
+                updated_content = local_path.read_bytes()
+            commit_sha = self._write_remote_content(
+                content=updated_content, remote_sha=remote_sha,
+                task_id=task_id, event_type="BROWSER_ACTION_STARTED",
+            )
+            if commit_sha is None:
+                continue
+            return {"reserved": True, "event": {**result["event"], "commit_sha": commit_sha}}
+        raise GitHubLedgerError(f"GitHub browser reservation CAS failed after {self.max_retries} attempts")
 
     def append_transition_if_lease(
         self,
