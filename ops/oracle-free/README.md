@@ -22,13 +22,13 @@ Oracle lists Always Free compute resources including Ampere A1: 1,500 OCPU-hours
 
 ## Runtime contract
 
-The bootstrap installs Node.js 22, `agent-browser@0.41.2`, Chromium dependencies and the official GitHub Actions Linux ARM64 runner. It sets:
+The bootstrap installs Node.js 22, `agent-browser@0.41.2`, the official GitHub Actions Linux ARM64 runner, and the published Chrome for Testing Linux ARM64 binary. Important: the pinned agent-browser CLI supports Linux ARM64, but its own bundled Chrome installer rejects Linux aarch64; the bootstrap therefore downloads the official `linux-arm64` Chrome asset directly and supplies `AGENT_BROWSER_EXECUTABLE_PATH`. It sets:
 - `BLIND_SNIPER_BROWSER_STATE_DIR=/var/lib/blind-sniper/browser` — survives job workspace cleanup.
 - `BLIND_SNIPER_BROWSER_IDLE_TIMEOUT=0` — browser daemon is not idled out by the CLI.
 - Empty domain allowlist — deny all until a workflow supplies an explicit per-task allowlist.
 - `BLIND_SNIPER_BROWSER_WRITE_APPROVED=0` — no write actions until a separately authorized job sets approval and reference.
 
-The browser adapter and dispatcher must be invoked with the task ledger and active owner lease. Never expose the Chrome CDP port, browser dashboard, or MCP stdio endpoint directly to the public internet. A future remote MCP gateway must authenticate every request and invoke the native lease-gated dispatcher; a raw agent-browser MCP endpoint is not an acceptable production boundary.
+The browser adapter and dispatcher must be invoked with the task ledger and active owner lease. The ARM64 Chrome binary has not yet been smoke-tested on a provisioned Oracle VM; the host capability remains unverified until that happens. Never expose the Chrome CDP port, browser dashboard, or MCP stdio endpoint directly to the public internet. A future remote MCP gateway must authenticate every request and invoke the native lease-gated dispatcher; a raw agent-browser MCP endpoint is not an acceptable production boundary.
 
 ## What remains owner-dependent
 
