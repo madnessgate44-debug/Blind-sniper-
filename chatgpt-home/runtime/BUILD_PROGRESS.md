@@ -34,6 +34,7 @@
 - Atomic local execution transition checkpoint: `91a1ec8e0199cb6b833d5427d3bc8d9eb3471ed2`.
 - Remote lease CAS and CLI integration checkpoint: `71c4aaaf7818c9327915d257f0ed126f3372d96c`, `61f4faf21ffe875bdaa72bb11f9ec226c4c01a70`.
 - Atomic lease/snapshot validation and implementer binding checkpoint: `e78a7cb5a175ff1180826eed6e8985157573b74a`, `38f9e189305742cd872546546d8ff3ff26927335`.
+- Native-first boot/profile and legacy-plan supersession checkpoints: `672e64c741ec8a0cd998273a0cc7a163bbd63daa`, `9fc2b42c80f89a75b8b734fc26f33164b35db120`, `584a0be123784efb3ab5b9ea5ec45da856ad8faa`.
 - Regression tests commit: `12a4a4149a163ed3c6870ba8ba543d06565cf1ae`.
 - Runtime CI run [42484343595](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343595): SUCCESS; **29 tests passed**, including ledger-backed plan, transition, replay, stale-checkpoint recovery and host-forbidden denial.
 - Latest runtime CI run [42484643917](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484643917): SUCCESS; **31 tests passed**, including registry-owned routing, profile/agent selection, and the unprofiled browser workflow safely falling back to the default native profile/agents.
@@ -72,3 +73,12 @@
 6. Move routing ownership into registries and remove duplicated routing maps.
 7. Reduce boot payload and measure actual bytes/lines before optimizing.
 8. Reconcile branch graph and prepare a privacy-safe consolidated draft PR only after storage containment.
+
+
+## End-to-end task/lease/recovery simulation
+
+- The deterministic CI harness drives the runtime CLI through plan, local lease claim, competing-owner denial, lease-gated EXECUTING, artifact verification, injected interruption, recovery, resume, close, owner release and lease-status inspection.
+- The execution transition is atomically committed under the ledger lock and records the lease owner as implementer; the E2E receipt asserts this binding.
+- A separate local lease exercise proves expiry/reclaim and owner-only release.
+- The runtime suite tests GitHub Contents CAS remote lease claim/release/status and atomic execution-transition ownership with a fake transport. This is adapter logic coverage, not a live remote write.
+- The E2E harness remains simulation-only: no external agent is spawned and no external service is invoked.

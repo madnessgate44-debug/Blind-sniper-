@@ -1,39 +1,49 @@
 # Blind Sniper — Current State
 
-**Snapshot:** 2026-11-08 15:48 Cairo time
+**Snapshot:** 2026-11-08 15:43 Cairo time
 **Architecture:** Native-first CONFIRMED by Ahmed; external workers are optional adapters.
-**Integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`
-**Runtime / lease test checkpoint:** `38f9e189305742cd872546546d8ff3ff26927335`
-**Latest handoff/docs checkpoint before this snapshot:** `e703f080dd842928531bbfe6fa9c7d64f878907a`
+**Integration branch:** feat/blind-sniper-orchestration-integration-2026-11-08
+**E2E remediation branch:** feat/blind-sniper-e2e-simulation-2026-11-08
+**Runtime / lease code checkpoint:** 38f9e189305742cd872546546d8ff3ff26927335
+**E2E / simulation checkpoint:** 7f3c4cdc8c8aaffbf2dbc88e6746f82dba996795
 
 ## Runtime / evidence
-- [Runtime CI](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078702) — PASS, 54 tests.
-- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486181021) — PASS on latest handoff checkpoint.
-- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486180907) — PASS on latest handoff checkpoint.
-- Plan/transition automatically persist snapshots; `recover` reconstructs state and repairs stale checkpoints.
-- Workflow routing and agent assignments live in `workflows.json`; profile binding lives in `profiles.json`.
-- Local and GitHub-CAS ledgers support claim, renewal, expiry-based reclaim, owner-only release and lease status.
-- CLI entry into EXECUTING requires a matching active lease. Lease ownership check and transition append are atomic; the persisted `implementer_id` is the lease owner.
-- Atomic EXECUTING receipts must match event task ID and status. GitHub adapter refuses public repositories; mocked API tests pass. No live write performed.
-- Current Actions token remains `contents: read`; no workflow permission changed. Remote writes need a private repo and separately authorized Contents-write token.
-- Approval/reviewer identity remains metadata, not cryptographic proof. Runtime does not spawn agent processes.
-- Detailed limits/next steps: `chatgpt-home/runtime/BUILD_PROGRESS.md`.
+
+- [Runtime CI + E2E simulation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486265131) — PASS, **54 tests** plus full deterministic lifecycle/lease/recovery simulation.
+- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486265234) — PASS on the E2E remediation checkpoint.
+- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486265162) — PASS on the E2E remediation checkpoint.
+- [Uploaded E2E evidence artifact](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486265131/artifacts/13619244113) — 14-day retention, created 2026-11-08 13:43:03Z.
+- The simulation completed all eight states: REQUESTED → INSPECTING → SPECIFIED → PLANNED → EXECUTING → VERIFYING → REVIEWING → CLOSED.
+- The simulation injected a stale checkpoint, recovered VERIFYING from the ledger, resumed, verified the output artifact and closed. Hash-chain validation passed.
+- The runtime CLI claimed a local lease, rejected a competing owner, required the lease owner for EXECUTING, bound implementer_id to that owner, released the lease and confirmed lease-status was empty.
+- Separate local lease simulation passed exclusive claim, expiry reclaim and owner-only release.
+- Runtime unit suite covers local leases and GitHub Contents CAS remote lease/atomic-transition behavior using fake transport. Remote adapter has NOT performed a live write.
+- Local and GitHub-CAS ledgers support claim, renewal, expiry-based reclaim, owner-only release and lease status. Remote adapter refuses public repositories.
+- Current Actions token remains contents: read; no workflow permission changed. Remote writes require a private repository and a separately authorized Contents-write token.
+- Approval/reviewer identity remains metadata, not cryptographic proof. Runtime does not spawn external agent processes.
 
 ## Pull requests
+
 - [#3](https://github.com/madnessgate44-debug/Blind-sniper-/pull/3) — OPEN, NOT MERGED.
 - [#6](https://github.com/madnessgate44-debug/Blind-sniper-/pull/6) — OPEN, NOT MERGED.
 - [#7](https://github.com/madnessgate44-debug/Blind-sniper-/pull/7) — OPEN, NOT MERGED.
-- No consolidated draft PR; privacy containment must precede it. No PR closures authorized.
+- [#9 — E2E simulation and recovery harness](https://github.com/madnessgate44-debug/Blind-sniper-/pull/9) — OPEN, DRAFT, NOT MERGED.
 
 ## Issues
+
 - [#1](https://github.com/madnessgate44-debug/Blind-sniper-/issues/1) — canonical continuity issue, OPEN.
 - [#2](https://github.com/madnessgate44-debug/Blind-sniper-/issues/2) — CLOSED as duplicate of #1.
 - [#8](https://github.com/madnessgate44-debug/Blind-sniper-/issues/8) — SUPERSEDED, remains OPEN.
 
-## Blockers / decisions
-- Repository is PUBLIC and contains personal, child-related and client-context information in memory/continuity files. Do not add raw transcripts or private memory here.
-- Private memory repository not created; connector cannot create repositories. Proposed name: `blind-sniper-private-memory`.
-- Remote lease adapter is mock-tested only; live write requires private repo plus host Contents-write token.
-- Lease heartbeat scheduler, cancellation, stale-worker supervisor, bounded executor, interruption E2E and boot-size measurement remain future work.
-- Native-first is confirmed. Closing PRs #3/#6/#7 has not been authorized.
-- No main merge, deploy, paid resource, secret/permission mutation, transcript import, browser/Forge or OpenHands execution performed.
+## Remaining blockers / decisions
+
+- Repository is PUBLIC and existing history contains personal, child-related and client-context continuity material. Do not add raw transcripts or private memory here. A branch update does not erase public Git history.
+- Private memory repository has not been created; connector cannot create repositories. Proposed name: blind-sniper-private-memory.
+- Remote CAS ledger/leases are mock-tested only; live write requires a private repository and a host-supplied Contents-write token. No secret or workflow permission was changed.
+- No heartbeat scheduler, cancellation flow, stale-worker supervisor or distributed lease sweeper.
+- No bounded native executor or independently spawned model agents. The E2E is deterministic simulation only.
+- OpenHands session API and Forge MCP browser connector are not callable in this session; no real OpenHands/Forge execution was performed.
+- Background autonomous operation is not proven.
+- Approval/reviewer identity is not cryptographically authenticated; hash chain is not a signed tamper-proof audit log.
+- Boot-size measurement remains future work.
+- No merge to main, deployment, paid resource, secret/permission mutation, transcript import or public-history rewrite was performed.
