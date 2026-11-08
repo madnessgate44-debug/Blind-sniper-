@@ -109,7 +109,7 @@ The licensed source imports and native adaptations are now part of this integrat
 
 ## Native task persistence and recovery
 
-`../../scripts/blind_sniper_ledger.py` provides an append-only JSONL event ledger with process locking, fsync, idempotent event keys, monotonic sequence validation and a SHA-256 hash chain. `../../scripts/blind_sniper_runtime.py` now writes TASK_CREATED and TASK_TRANSITIONED snapshots automatically, and its `recover` command rebuilds the latest state from the verified ledger. The ledger remains local-workspace durable only; it does not synchronize across ephemeral runners or cloud hosts.
+`../../scripts/blind_sniper_ledger.py` provides an append-only JSONL event ledger with process locking, fsync, idempotency, sequence validation and a SHA-256 hash chain. The runtime automatically persists TASK_CREATED/TASK_TRANSITIONED snapshots and recovers from the ledger. An optional GitHub Contents API adapter adds file-SHA compare-and-swap, bounded conflict retries and remote recovery reads. Its behavior is unit-tested with a mocked API; no live write has been performed. The current Actions workflow has `contents: read`, so remote writes require a separately authorized host token with Contents write permission. This is not yet an active cross-runner service.
 
 
 ## Native core status — 8 November 2026
