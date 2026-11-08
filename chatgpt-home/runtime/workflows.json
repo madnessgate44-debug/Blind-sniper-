@@ -201,5 +201,11 @@
     }
   ],
   "native_workflow_library": "chatgpt-home/workflows/",
-  "native_template_library": "chatgpt-home/templates/"
+  "native_template_library": "chatgpt-home/templates/",
+  "execution_engine": {
+    "path": "scripts/blind_sniper_runtime.py",
+    "contract": "chatgpt-home/runtime/EXECUTION_ENGINE.md",
+    "mode": "registry_driven_planning_and_guarded_state_machine",
+    "external_execution": "host_adapter_only"
+  }
 }
