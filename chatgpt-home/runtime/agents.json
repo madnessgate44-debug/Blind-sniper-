@@ -15,112 +15,11 @@
       "status": "active_in_chat_session"
     },
     {
-      "id": "openhands",
-      "source": "external-github-app",
-      "role": "implementation executor",
-      "authority": "bounded branch/PR work only",
-      "status": "mention_session_creation_and_one_correlated_read_only_receipt_verified_code_execution_roundtrip_unproven"
-    },
-    {
-      "id": "forge",
-      "source": "Firstborn repository",
-      "role": "browser/computer-use and tool adapter",
-      "authority": "no deployment or connector registration without approval",
-      "status": "remote_https_smoke_reported_ephemeral_host_chatgpt_connector_not_registered"
-    },
-    {
-      "id": "watcher",
-      "source": "Brain repository",
-      "role": "task relay, status collection and health observation",
-      "authority": "reporting and bounded routing only",
-      "status": "runtime_end_to_end_unverified",
-      "native_contract_path": "chatgpt-home/agents/watcher.md"
-    },
-    {
-      "id": "shadow",
-      "source": "Brain WATCHER.md §14 and shadow-keys.yml",
-      "role": "independent adversarial auditor and credential-pool custodian",
-      "authority": "owns the replacement pool per Brain WATCHER.md §14; key checks and allocation use approved workflows; never reads or prints secret values; audit and merge authority remain governed by Shadow/Watcher policy",
-      "status": "custodian_designated_pool_health_blocked_latest_sweep_0_working_8_not_set"
-    },
-    {
-      "id": "architect",
-      "source": "openhands-library",
-      "role": "architecture and ADR specialist",
-      "status": "reference_profile_present"
-    },
-    {
-      "id": "backend-engineer",
-      "source": "openhands-library",
-      "role": "backend implementation",
-      "status": "reference_profile_present"
-    },
-    {
-      "id": "frontend-engineer",
-      "source": "openhands-library",
-      "role": "frontend implementation",
-      "status": "reference_profile_present"
-    },
-    {
-      "id": "qa-engineer",
-      "source": "openhands-library",
-      "role": "test strategy and execution",
-      "status": "reference_profile_present"
-    },
-    {
-      "id": "code-reviewer",
-      "source": "openhands-library",
-      "role": "read-only code review",
-      "status": "reference_profile_present"
-    },
-    {
-      "id": "security-engineer",
-      "source": "openhands-library",
-      "role": "threat modeling and security review",
-      "status": "reference_profile_present"
-    },
-    {
-      "id": "devops-engineer",
-      "source": "openhands-library",
-      "role": "CI/CD and runtime operations",
-      "status": "reference_profile_present"
-    },
-    {
-      "id": "evidence-verifier",
-      "source": "openhands-library",
-      "role": "verify claims against artifacts",
-      "status": "reference_profile_present"
-    },
-    {
-      "id": "pr-auditor",
-      "source": "openhands-library",
-      "role": "PR acceptance and scope audit",
-      "status": "reference_profile_present"
-    },
-    {
       "id": "release-manager",
       "source": "openhands-library",
       "role": "release planning and gates",
       "status": "reference_profile_present",
       "native_contract_path": "chatgpt-home/agents/release-manager.md"
-    },
-    {
-      "id": "research-analyst",
-      "source": "native-runtime-contract",
-      "role": "source-backed web and repository research",
-      "status": "role_defined_tool_use_is_host_dependent"
-    },
-    {
-      "id": "conversation-exporter",
-      "source": "openhands-library",
-      "role": "export and reconcile authorized conversation artifacts",
-      "status": "reference_profile_present"
-    },
-    {
-      "id": "sre-incident-responder",
-      "source": "openhands-library",
-      "role": "incident response and runtime recovery",
-      "status": "reference_profile_present"
     },
     {
       "id": "researcher",
@@ -162,13 +61,6 @@
       "source": "native-blind-sniper-contract",
       "path": "chatgpt-home/agents/recovery.md",
       "role": "diagnose failed runs and restore safe state",
-      "status": "native_contract_present_execution_depends_on_host_or_worker"
-    },
-    {
-      "id": "shadow-auditor",
-      "source": "native-blind-sniper-contract",
-      "path": "chatgpt-home/agents/shadow.md",
-      "role": "adversarial audit and policy review",
       "status": "native_contract_present_execution_depends_on_host_or_worker"
     }
   ],
