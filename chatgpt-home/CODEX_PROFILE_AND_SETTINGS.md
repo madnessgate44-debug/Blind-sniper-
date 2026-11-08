@@ -124,7 +124,9 @@ Hooks should be deterministic policy enforcement, not another place to hide broa
 
 ## 7. Codex-host configuration template
 
-This is a **starter template for a future Codex CLI host**, not an active configuration for this ChatGPT session. Validate key names and profile schema against the installed Codex version and its published schema before enabling. Use the user-level `$CODEX_HOME/config.toml` for host-wide settings and profile selection; use project `.codex/config.toml` only for trusted, project-specific overrides. Keep authentication and secrets outside Git.
+This is a **starter template for a future Codex CLI host**, not an active configuration for this ChatGPT session. Validate key names and profile files against the installed Codex version and its published schema before enabling. User-level settings live in `$CODEX_HOME/config.toml` (normally `~/.codex/config.toml`). Project-scoped `.codex/config.toml` is loaded only for trusted projects and must not be used to grant itself host-level authority.
+
+### 7.1 Base host configuration — `$CODEX_HOME/config.toml`
 
 ```toml
 #:schema https://developers.openai.com/codex/config-schema.json
@@ -133,7 +135,6 @@ This is a **starter template for a future Codex CLI host**, not an active config
 approval_policy = "on-request"
 sandbox_mode = "read-only"
 web_search = "live"
-model = "gpt-6"
 
 [history]
 persistence = "save-all"
@@ -147,28 +148,50 @@ memories = true
 [agents]
 enabled = true
 max_concurrent_threads_per_session = 3
+```
 
-[profiles.blind-sniper]
-# Keep the default session conservative; elevate per task only.
-approval_policy = "on-request"
-sandbox_mode = "read-only"
+No model ID is pinned here: the host should use a model actually advertised to the signed-in account/workspace. Select a stronger reasoning setting for architecture, debugging and independent review only when available; keep routine repository inspection efficient.
 
-[profiles.engineering]
-approval_policy = "on-request"
-sandbox_mode = "workspace-write"
+### 7.2 Separate profile files
 
-[profiles.review]
-approval_policy = "on-request"
-sandbox_mode = "read-only"
+Codex profile files live next to `config.toml` as `$CODEX_HOME/<profile-name>.config.toml` and are selected with `--profile <profile-name>`. Keep each file small and task-specific.
 
-[profiles.recovery]
+`$CODEX_HOME/blind-sniper.config.toml`:
+```toml
 approval_policy = "on-request"
 sandbox_mode = "read-only"
 ```
 
-**Important validation note:** Codex supports named profiles in `config.toml` and separate profile config files selected with `--profile`. The exact profile inheritance/override shape must be checked against the current schema before this sample is treated as executable. This sample intentionally omits model IDs that may not be available to the signed-in account; replace `gpt-6` only with a currently advertised model ID.
+`$CODEX_HOME/research.config.toml`:
+```toml
+approval_policy = "on-request"
+sandbox_mode = "read-only"
+web_search = "live"
+```
 
-### 7.1 Future MCP adapter pattern
+`$CODEX_HOME/engineering.config.toml`:
+```toml
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+```
+
+`$CODEX_HOME/review.config.toml`:
+```toml
+approval_policy = "on-request"
+sandbox_mode = "read-only"
+```
+
+`$CODEX_HOME/recovery.config.toml`:
+```toml
+approval_policy = "on-request"
+sandbox_mode = "read-only"
+```
+
+Select one explicitly, for example: `codex --profile engineering --cd <verified-worktree>`. This selects a runtime configuration; it does not create a worktree or grant access to other repositories. Use a separate isolated worktree for each concurrent writer.
+
+**Permission-model note:** Codex also exposes named permission profiles through `default_permissions` and `[permissions.<name>]`. The built-ins are `:read-only`, `:workspace` and `:danger-full-access`. Do not combine `default_permissions` with `sandbox_mode` or `[sandbox_workspace_write]` in the same configuration layer. For the first implementation, use the simpler `sandbox_mode` profile files above; add custom permission profiles only after their filesystem and network rules are validated against the current schema.
+
+### 7.3 Future MCP adapter pattern
 
 Only register an endpoint after HTTPS, authentication, tool allowlists and an end-to-end connection test are proven. Example shape (values are intentionally symbolic):
 
