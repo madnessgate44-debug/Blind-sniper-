@@ -483,3 +483,57 @@ A planner that only emits JSON is a useful intermediate milestone, **not the com
 ---
 
 **Final instruction to Claude:** Treat this as a serious architecture review of an evolving AI operating environment. Challenge assumptions, inspect actual files and report evidence. Do not confuse design intent with implementation reality. The goal is a dependable, owner-governed operating system—not an impressive-looking directory tree.
+
+
+---
+
+# Current implementation addendum — native Codex core and task ledger
+
+**Updated:** 8 November 2026  
+**Branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`
+
+This addendum supersedes earlier role/authority descriptions where they conflict with the current architecture.
+
+## Operating boundary
+
+- Blind Sniper is self-contained first: native planner, researcher, engineer, reviewer, QA, security and recovery contracts are the core workforce.
+- OpenHands and Forge are optional future adapters. No external agent or external coordination repository is required for core task intake, planning, execution, memory, recovery or verification.
+- Do not introduce a Ghost role. Do not depend on Shadow or Watcher.
+- Ahmed provides direction and human-only decisions. Blind Sniper owns routine technical decisions and bounded engineering execution; no routine code edit, test, documentation change or engineering choice is routed to Ahmed for approval.
+
+## Changes committed in this window
+
+| Commit | Change |
+|---|---|
+| `85243d273ddde9fa0c6eb6c431a96551a103ed87` | Added native append-only hash-chained JSONL task ledger |
+| `e8384870d78ae4bc4935fcd2b37bf00b9a640468` | Added five ledger tests |
+| `32f38a7cf1e1be8a590fcc14fe52c76aa48fc016` | Added ledger module and tests to runtime CI path filters |
+| `d2326a14ca772cb96f0846208be169e8bf30c52d` | Routed review/recovery through native role contracts |
+| `0393a2b14e15df0e5cbe301d4b00585e26660fa6` | Documented ledger semantics and limits |
+| `869d6bc2fd688a8360f0fb10e1cfa4b8153f2a66` | Rewrote architecture authority boundary: native core, external adapters optional |
+| `fb2005b23161fe0b61b248fe138e2ac4f0e7e289` | Updated runtime README to remove external provider-custodian dependency |
+
+## Verification
+
+- [VERIFIED] Runtime registry validator passed on `fb2005b23161fe0b61b248fe138e2ac4f0e7e289`.
+- [VERIFIED] GitHub Actions runtime run `42480781716` succeeded on exact SHA `fb2005b23161fe0b61b248fe138e2ac4f0e7e289`.
+- [VERIFIED] Full Python discovery ran 18 tests, all passed. This includes all five new ledger tests: restart/replay, idempotency, idempotency-key conflict, tamper detection and unknown task handling.
+- [VERIFIED] Runtime registry validation passed: 6 profiles, 25 agents, 13 adapters, 11 workflows, 10 native skills, 33 mirrored OpenHands skills.
+- [VERIFIED] Engineering Execution OS compliance and environment validation were also triggered on the updated architecture commit; see run IDs `42480778796` and `42480778739` (check final conclusions before relying on them).
+
+## Honest remaining limits
+
+- The ledger is durable only while its workspace/file survives. It does not yet synchronize state across ephemeral GitHub Actions runners or concurrent remote workspaces.
+- There is no GitHub-backed compare-and-swap event store, no lease/claim queue, no stale-run recovery scheduler, and no full task submission→execution→resume E2E yet.
+- The current runtime still plans and validates lifecycle state; it does not execute arbitrary shell commands or spawn native subagents. Role contracts are not separate running processes.
+- PRs #3, #6 and #7 remain separate historical review artifacts; no merge to `main` occurred in this work window.
+
+## Next implementation sequence
+
+1. Add a GitHub-backed append-only task ledger with optimistic concurrency and immutable event commits.
+2. Connect the planner/lifecycle CLI to the ledger and expose create, append, inspect and resume commands.
+3. Implement a bounded native executor interface using only actual host tools/CI runners.
+4. Add task claims/leases, idempotent step execution, cancellation and stale-lease recovery.
+5. Bind verification receipts to task ID, exact commit SHA, workflow run ID and reviewer identity.
+6. Add a restart/recovery end-to-end test against the GitHub-backed ledger.
+7. Reconcile the full integration branch and open one consolidated PR to `main` after the runtime and privacy boundaries are sound.
