@@ -1,0 +1,56 @@
+name: Blind Sniper Browser Adapter
+
+on:
+  pull_request:
+    paths:
+      - "scripts/blind_sniper_browser.py"
+      - "scripts/run_blind_sniper_browser_e2e.py"
+      - "tests/test_blind_sniper_browser.py"
+      - "tests/fixtures/browser/**"
+      - ".github/workflows/blind-sniper-browser.yml"
+  push:
+    branches:
+      - "feat/blind-sniper-browser-adapter-2026-11-08"
+    paths:
+      - "scripts/blind_sniper_browser.py"
+      - "scripts/run_blind_sniper_browser_e2e.py"
+      - "tests/test_blind_sniper_browser.py"
+      - "tests/fixtures/browser/**"
+      - ".github/workflows/blind-sniper-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned agent-browser
+        run: |
+          npm install --global agent-browser@0.41.2
+          agent-browser install --with-deps
+          agent-browser --version
+      - name: Run browser policy unit tests
+        run: python -m unittest discover -s tests -p 'test_blind_sniper_browser.py' -v
+      - name: Run real Chromium local-fixture acceptance
+        run: python scripts/run_blind_sniper_browser_e2e.py
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blind-sniper-browser-\${{ github.run_id }}
+          path: .blind-sniper/browser/
+          if-no-files-found: warn
+          retention-days: 3
