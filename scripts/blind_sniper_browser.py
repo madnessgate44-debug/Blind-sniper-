@@ -18,8 +18,8 @@ from typing import Any
 from urllib.parse import urlsplit
 
 SCHEMA_VERSION = "1.0.0"
-ACTIONS = {"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "close"}
-MUTATING_ACTIONS = {"click", "fill", "press"}
+ACTIONS = {"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "pdf"}
+MUTATING_ACTIONS = {"click", "fill", "press", "upload"}
 SAFE_KEY_NAMES = {"ENTER", "TAB", "ESCAPE", "ARROWDOWN", "ARROWUP", "ARROWLEFT", "ARROWRIGHT"}
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 SESSION_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -203,6 +203,25 @@ class BrowserAdapter:
         with self.receipt_file.open("a", encoding="utf-8") as stream:
             stream.write(json.dumps(receipt, sort_keys=True) + "\n")
 
+    def _contained_file(self, root: Path, supplied: str, *, must_exist: bool, max_bytes: int = 10 * 1024 * 1024) -> Path:
+        candidate = Path(supplied)
+        if candidate.is_absolute() or any(part in {"", ".", ".."} for part in candidate.parts):
+            raise BrowserPolicyError("File paths must be relative and cannot traverse directories")
+        root_resolved = root.resolve()
+        target = (root_resolved / candidate).resolve()
+        if target != root_resolved and root_resolved not in target.parents:
+            raise BrowserPolicyError("File path escapes its permitted workspace")
+        if must_exist:
+            if not target.is_file():
+                raise BrowserPolicyError("Upload source must be an existing regular file in the upload workspace")
+            if target.stat().st_size > max_bytes:
+                raise BrowserPolicyError(f"File exceeds the {max_bytes}-byte limit")
+        else:
+            if target.exists():
+                raise BrowserPolicyError("Output file already exists; choose a new filename")
+            target.parent.mkdir(parents=True, exist_ok=True)
+        return target
+
     def execute(self, action: str, step_id: str, *args: str) -> dict[str, Any]:
         if action not in ACTIONS:
             raise BrowserPolicyError(f"Unsupported browser action: {action}")
@@ -248,24 +267,63 @@ class BrowserAdapter:
             validate_url(self.state.get("current_url") or "")
             if len(args) != 1 or Path(args[0]).name != args[0] or args[0] in {"", ".", ".."}:
                 raise BrowserPolicyError("screenshot requires a simple filename")
-            target = (self.artifacts_dir / args[0]).resolve()
-            if self.artifacts_dir not in target.parents:
-                raise BrowserPolicyError("Screenshot path escapes the artifact directory")
+            target = self._contained_file(self.artifacts_dir, args[0], must_exist=False)
             cli_args = ["screenshot", str(target)]
+            artifact_paths.append(str(target))
+        elif action == "tabs":
+            if args:
+                raise BrowserPolicyError("tabs takes no arguments")
+            cli_args = ["tab"]
+        elif action == "tab-new":
+            if len(args) > 1:
+                raise BrowserPolicyError("tab-new accepts at most one URL")
+            cli_args = ["tab", "new"]
+            if args:
+                validate_url(args[0])
+                cli_args.append(args[0])
+        elif action == "tab-switch":
+            if len(args) != 1 or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,31}|t[1-9][0-9]*", args[0]):
+                raise BrowserPolicyError("tab-switch requires a valid tab id or label")
+            cli_args = ["tab", args[0]]
+        elif action == "tab-close":
+            if len(args) != 1 or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,31}|t[1-9][0-9]*", args[0]):
+                raise BrowserPolicyError("tab-close requires a valid tab id or label")
+            cli_args = ["tab", "close", args[0]]
+        elif action == "frame":
+            if len(args) != 1 or not args[0] or len(args[0]) > 256:
+                raise BrowserPolicyError("frame requires one bounded selector, element ref, name or URL")
+            if args[0].lower() != "main" and not args[0].startswith("@") and re.match(r"^[a-z]+:", args[0], re.I):
+                validate_url(args[0])
+            cli_args = ["frame", args[0]]
+        elif action == "upload":
+            self._assert_write_approved()
+            if len(args) != 2 or not args[0] or len(args[0]) > 256:
+                raise BrowserPolicyError("upload requires a selector and a workspace-relative filename")
+            validate_url(self.state.get("current_url") or "")
+            source = self._contained_file(self.state_dir / "uploads", args[1], must_exist=True)
+            if source.suffix.lower() not in {".pdf", ".png", ".jpg", ".jpeg", ".txt", ".csv", ".docx", ".xlsx"}:
+                raise BrowserPolicyError("Upload file type is not permitted")
+            cli_args = ["upload", args[0], str(source)]
+        elif action == "pdf":
+            validate_url(self.state.get("current_url") or "")
+            if len(args) != 1 or Path(args[0]).name != args[0] or not args[0].lower().endswith(".pdf"):
+                raise BrowserPolicyError("pdf requires a simple .pdf filename")
+            target = self._contained_file(self.artifacts_dir, args[0], must_exist=False, max_bytes=25 * 1024 * 1024)
+            cli_args = ["pdf", str(target)]
             artifact_paths.append(str(target))
         elif action == "get-url":
             cli_args = ["get", "url"]
         else:
             cli_args = ["close"]
 
-        if action not in {"open", "get-url", "close"}:
+        if action not in {"open", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame"}:
             requested_url = self.state.get("current_url")
         code, stdout, stderr, command = self._command(*cli_args)
         observed_url = requested_url
         policy_error = None
-        if action == "open":
+        if action in {"open", "tab-new"}:
             self.state["status"] = "OPEN"
-        if action == "open" or action in MUTATING_ACTIONS or action == "get-url":
+        if action == "open" or action in MUTATING_ACTIONS or action == "get-url" or action == "tab-new" or action == "tab-switch":
             observed_url = self._current_url()
             if observed_url:
                 try:
