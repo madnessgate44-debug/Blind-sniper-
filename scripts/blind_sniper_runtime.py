@@ -472,6 +472,7 @@ def main(argv: list[str] | None = None) -> int:
     move_parser.add_argument("--output", required=True)
     move_parser.add_argument("--evidence-file")
     move_parser.add_argument("--approval-record-file", help="Host-supplied JSON file containing action, approver, verbatim_words, and timestamp approval records")
+    move_parser.add_argument("--lease-owner", help="Owner ID of the active task lease required for EXECUTING")
     add_ledger_arguments(move_parser)
     recover_parser = sub.add_parser("recover", help="rebuild the latest task checkpoint from the verified native ledger")
     add_ledger_arguments(recover_parser)
