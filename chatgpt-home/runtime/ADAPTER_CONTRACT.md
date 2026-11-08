@@ -46,5 +46,5 @@ A started event without a completion event is a reconciliation state, not permis
 
 - GitHub Actions remains an ephemeral runner, not a persistent browser service.
 - No direct ChatGPT browser tool/connector registration is established.
-- Tabs/frames, uploads/downloads, PDF, authenticated profiles, cookies and live browser recovery are not implemented.
+- Tabs/frames, approved workspace upload, bounded download and PDF export are implemented and passed two-cycle real Chromium E2E (run 42496827462). Authenticated profiles/cookies remain intentionally unsupported. Persistent host and cross-job browser recovery are pending actual Oracle VM provisioning and the opt-in two-job acceptance workflow.
 - The browser allowlist is not an OS firewall; host/container egress restrictions remain a separate defense-in-depth control.
