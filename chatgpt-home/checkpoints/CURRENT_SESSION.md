@@ -73,3 +73,53 @@
 - [BLOCKED] A new self-owned daily foundation automation was rejected by the platform: active scheduled-task limit 3/3. No duplicate task created.
 - [UNKNOWN] Watcher has not yet replied to T004; no direct Watcher channel is verified in this session.
 - [BLOCKED] Forge still needs deployment, connector registration and an actual ChatGPT→Forge round trip. OpenHands raw archive access and ChatGPT personal archive access remain separate unverified workstreams.
+
+
+## 2026-11-08T12:22:13+02:00 — Codex runtime build checkpoint
+
+- **Implementation branch:** docs/openhands-workscope-continuity-2026-11-08
+- **Latest inspected commit:** a7bf7a11b5437d806d281f087fd06267817652e9
+- **PR:** https://github.com/madnessgate44-debug/Blind-sniper-/pull/3 — OPEN / NOT MERGED.
+- **Boot:** COMPLETE for this checkpoint. Root AGENTS.md and ENGINEERING_EXECUTION_OS.md were fetched in full from main. All seven continuity files were fetched in full from main. Branch-specific BLIND_SNIPER.md and FOUNDATION_RECOVERY_PLAN.md were retrieved for the current implementation.
+- **Root policy SHAs:** AGENTS.md 91d63a56818ebf5d757ac7cda0e0786fff88b058; ENGINEERING_EXECUTION_OS.md 7c339a090eaf23fc1e4f9112f72a4ba28f2bfe1c.
+- **Seven default-branch continuity SHAs:** README.md ed5678c548aa1e02e77bad79908499e1c2da7845; OPERATING_PROFILE.md d024a92c471f29a8b68bf33f9eaeccadc374d3fb; MEMORY.md 26b415e075b69e5f4af177b0dfcc844f1598bb7c; PROJECTS.md 97e848953da5ead22656f0a684438f3d73077536; CONVERSATION_CONTINUITY.md e767e8a8c8986776ae365e463477cfe8814f16ba; SKILLS_CATALOG.md 5589a1b2e768f7629648df090dc2c023e862c980; SYNC_PROTOCOL.md 1ed3ee1814dc3de5f628a1697f04eea215b57145.
+
+### Codex body files re-fetched from implementation branch
+
+| Path | Blob SHA | Read-back |
+|---|---|---|
+| chatgpt-home/CODEX_RUNTIME_ARCHITECTURE.md | b6b5a45ef94b2842cbf0034308906df18866f193 | PASS |
+| chatgpt-home/BLIND_SNIPER.md | 50232db7374451edc0c57e2f3a9a6d1925ccf4f4 | PASS |
+| chatgpt-home/README.md | 63cd069638a01af363f2e21ee65866875b2576e7 | PASS |
+| chatgpt-home/REPOSITORY_REGISTRY.md | 60431da651893d750f604010eaf11c19ae048fa0 | PASS |
+| chatgpt-home/TASK_TEMPLATE.md | 6aaebe0f9784ea1d74c646c24869255acf00c729 | PASS |
+| chatgpt-home/tasks/BS-20261108-001.md | bd425657e74916f7c0cd211ff28bbc76a36fa37a | PASS |
+| chatgpt-home/PROJECTS.md | 3de127abd5c180781971124f07913aa3ffe41f5b | PASS |
+| chatgpt-home/MEMORY.md | e5d9aada6593c5b169a95f06ea0289d9e7d6e2b3 | PASS |
+| chatgpt-home/CONVERSATION_CONTINUITY.md | 16e567b1def6636b67171e5219a07e4de61ea912 | PASS |
+
+### Verification ledger
+
+- GitHub file read-back of the nine listed branch artifacts: all non-empty; PASS; 2026-11-08T12:22:13+02:00.
+- GitHub Actions compliance run 42470970491 (run #77): completed success; job policy-compliance and node scripts/check-engineering-execution-os.mjs succeeded. PASS for policy compliance only.
+- GitHub Actions compliance run 42471092974 (run #93): completed success; job policy-compliance and node scripts/check-engineering-execution-os.mjs succeeded. PASS for policy compliance only.
+- Latest commit a7bf7a11b5437d806d281f087fd06267817652e9: compliance run 42471144331 (run #97) was QUEUED at last check; result pending.
+- No application tests or shell commands were run against project code; this change set is documentation/operating-artifact work.
+
+### Communication and agent state
+
+- Brain #292 T005: comment 6720244514.
+- Firstborn #146 execution checkpoint request: comment 6720244793.
+- Brain #292 T006 with @openhands mention: comment 6720277355.
+- OpenHands GitHub App response: comment 6720280271, session ID 7543e363514b4435a71a60546c79501c. Channel receive path VERIFIED for one test; task-specific acknowledgment, result and second round trip pending.
+- Brain #292 is the current Owner-facing hub per docs/TICKETING_PROTOCOL.md. Brain #240 remains the legacy Watcher/OpenHands loop per docs/WORKFLOW.md and the hardcoded bridge scripts; reconciliation requested.
+- Historical event automation is documented disabled due spend uncertainty. It was not re-enabled.
+- Three active ChatGPT coordination automations are team-owned; they do not prove OpenHands event delivery.
+- Forge browser tool and direct OpenHands session API are absent from this ChatGPT tool inventory. The linked All Hands session could not be opened with the web reader.
+
+### Current status
+
+- **Completed artifacts:** Codex runtime architecture, repository registry, reusable task template, active task record, OS/README/project-map pointers, memory and continuity updates.
+- **IN PROGRESS:** OpenHands task-specific response; hub reconciliation; reusable execution adapter; Forge ChatGPT connector.
+- **NOT AUTHORIZED / NOT DONE:** no merge, deployment, secret/permission changes, paid automation activation or production action.
+- **Next:** retrieve OpenHands session output through a verified channel, inspect current Firstborn PR #147/Forge status, then prove one complete correlated execution round trip.
