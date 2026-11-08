@@ -550,13 +550,38 @@ def main(argv: list[str] | None = None) -> int:
             write_json(Path(args.output), updated)
             print(json.dumps({"task_id": updated["task_id"], "status": updated["status"],
                               "ledger_commit": (ledger_event.get("commit_sha") if "ledger_event" in locals() else None)}, indent=2))
-        else:
+        elif args.command == "recover":
             ledger = configure_ledger(args)
             state = recover_task_state(ledger, args.task_id)
             write_json(Path(args.output), state)
             print(json.dumps({"task_id": state["task_id"], "status": state["status"],
                               "event_count": len(state.get("events", [])),
                               "ledger_commit": None}, indent=2))
+        elif args.command == "claim":
+            ledger = TaskLedger(args.ledger)
+            ledger.task_history(args.task_id)
+            result = ledger.claim_task(
+                task_id=args.task_id, owner_id=args.owner_id,
+                lease_seconds=args.lease_seconds, idempotency_key=args.idempotency_key,
+            )
+            if not result["claimed"]:
+                raise RuntimeErrorBase(f"Task lease held by {result.get('owner_id')} until {result.get('lease_expires_at')}")
+            print(json.dumps({"task_id": args.task_id, "owner_id": result["owner_id"],
+                              "lease_expires_at": result["lease_expires_at"],
+                              "event_created": result["event_created"]}, indent=2))
+        elif args.command == "release":
+            ledger = TaskLedger(args.ledger)
+            result = ledger.release_task(
+                task_id=args.task_id, owner_id=args.owner_id,
+                idempotency_key=args.idempotency_key,
+            )
+            if not result["released"]:
+                raise RuntimeErrorBase("No active task lease is owned by this runner")
+            print(json.dumps({"task_id": args.task_id, "released": True,
+                              "event_created": result["event_created"]}, indent=2))
+        else:
+            lease = TaskLedger(args.ledger).lease_status(args.task_id)
+            print(json.dumps({"task_id": args.task_id, "lease": lease}, indent=2))
         return 0
     except (RuntimeErrorBase, LedgerError, OSError) as exc:
         print(f"BLOCKED: {exc}", file=sys.stderr)
