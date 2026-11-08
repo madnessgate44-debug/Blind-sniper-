@@ -5,29 +5,16 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from blind_sniper_ledger import GitHubLedgerError, LedgerError, TaskLedger
-from blind_sniper_runtime import add_ledger_arguments, configure_ledger, recover_task_state
+from blind_sniper_ledger import GitHubLedgerError, LedgerError
+from blind_sniper_runtime import add_ledger_arguments, configure_ledger
 from blind_sniper_browser import BrowserAdapter, BrowserAdapterError, BrowserPolicyError
 
 
 class BrowserDispatchError(RuntimeError):
     """A browser dispatch rejected by native task or lease policy."""
-
-
-def _lease_has_budget(lease: dict[str, Any], owner_id: str, timeout: int) -> bool:
-    if lease.get("owner_id") != owner_id:
-        return False
-    try:
-        expires = datetime.fromisoformat(str(lease["lease_expires_at"]).replace("Z", "+00:00"))
-    except (KeyError, TypeError, ValueError) as exc:
-        raise BrowserDispatchError("Task lease expiry is missing or malformed") from exc
-    if expires.tzinfo is None:
-        raise BrowserDispatchError("Task lease expiry must include a timezone")
-    return (expires - datetime.now(timezone.utc)).total_seconds() > timeout + 10
 
 
 def dispatch_browser_action(
@@ -48,39 +35,22 @@ def dispatch_browser_action(
     """Verify task state and lease, reserve the step, execute once, and ledger the receipt."""
     if not all(isinstance(value, str) and value for value in action_args):
         raise BrowserDispatchError("Browser action arguments must be non-empty strings")
-    try:
-        state = recover_task_state(ledger, task_id)
-        history = ledger.task_history(task_id)
-    except LedgerError as exc:
-        raise BrowserDispatchError(f"Cannot recover native task state: {exc}") from exc
-
-    if state.get("status") != "EXECUTING":
-        raise BrowserDispatchError("Browser dispatch requires task lifecycle status EXECUTING")
-    if state.get("implementer_id") != owner_id:
-        raise BrowserDispatchError("Lease owner does not match the task's executing implementer")
-    lease = ledger.lease_status(task_id)
-    if not lease or not _lease_has_budget(lease, owner_id, timeout):
-        raise BrowserDispatchError("No matching active lease with enough remaining time for this browser action")
-
     prefix = f"browser:{run_id}:{session_id}:{step_id}"
     started_key = f"{prefix}:started"
     completed_key = f"{prefix}:completed"
-    events = history.get("events", [])
-    prior_keys = {row.get("idempotency_key") for row in events}
-    if completed_key in prior_keys:
-        raise BrowserDispatchError("Browser step already completed; duplicate execution is forbidden")
-    if started_key in prior_keys:
-        raise BrowserDispatchError("Browser step was reserved previously without a completion receipt; reconcile before retry")
-
-    ledger.append(
-        task_id=task_id,
-        event_type="BROWSER_ACTION_STARTED",
-        payload={
-            "owner_id": owner_id, "run_id": run_id, "session_id": session_id,
-            "step_id": step_id, "action": action,
-        },
-        idempotency_key=started_key,
-    )
+    reservation_payload = {
+        "owner_id": owner_id, "run_id": run_id, "session_id": session_id,
+        "step_id": step_id, "action": action,
+    }
+    try:
+        # State, owner, lease budget and idempotency reservation are checked under
+        # one local lock or one remote GitHub Contents compare-and-swap.
+        ledger.reserve_browser_action_if_lease(
+            task_id=task_id, owner_id=owner_id, payload=reservation_payload,
+            idempotency_key=started_key, min_remaining_seconds=timeout + 10,
+        )
+    except LedgerError as exc:
+        raise BrowserDispatchError(str(exc)) from exc
 
     adapter = adapter_factory(
         task_id=task_id, run_id=run_id, session_id=session_id,
