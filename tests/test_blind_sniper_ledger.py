@@ -164,5 +164,25 @@ class TaskLedgerTests(unittest.TestCase):
             )
 
 
+    def test_execution_transition_append_checks_lease_owner_atomically(self):
+        now = datetime(2026, 11, 8, 15, 0, tzinfo=timezone.utc)
+        self.ledger.claim_task(
+            task_id="BS-LEASE-006", owner_id="runner-a", lease_seconds=60,
+            idempotency_key="lease-a", now=now,
+        )
+        payload = {"state": {"task_id": "BS-LEASE-006", "status": "EXECUTING"}}
+        with self.assertRaisesRegex(LedgerError, "active lease"):
+            self.ledger.append_transition_if_lease(
+                task_id="BS-LEASE-006", owner_id="runner-b", payload=payload,
+                idempotency_key="transition-b", now=now,
+            )
+        event = self.ledger.append_transition_if_lease(
+            task_id="BS-LEASE-006", owner_id="runner-a", payload=payload,
+            idempotency_key="transition-a", now=now,
+        )
+        self.assertEqual(event["event_type"], "TASK_TRANSITIONED")
+        self.assertEqual(event["payload"], payload)
+
+
 if __name__ == "__main__":
     unittest.main()
