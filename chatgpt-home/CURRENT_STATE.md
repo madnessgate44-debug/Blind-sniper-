@@ -1,20 +1,21 @@
 # Blind Sniper — Current State
 
-**Snapshot:** 2026-11-08 15:25 Cairo time
+**Snapshot:** 2026-11-08 15:30 Cairo time
 **Architecture:** Native-first CONFIRMED by Ahmed; external workers are optional adapters.
 **Integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`
-**Runtime code checkpoint:** `eec6f124cba2612473f700290ea3dc273bf6f313`
-**Registry/test checkpoint:** `d963c78d2e0c95d093b20ceea49c066c059409b1`
-**Documentation checkpoint before this snapshot:** `36b59bb959886021c4a406fcacde9700cbae6920`
+**Runtime + remote-ledger test checkpoint:** `165fdff5fde9c7e18fc3f30384ecfd44c2ef5705`
+**Documentation checkpoint before this snapshot:** `d94ef76e4b2a51653b0173f9ced3440f2a672188`
 
 ## Runtime / evidence
-- [Runtime CI](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484643917) — PASS, 31 tests.
-- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484643930) — PASS.
-- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484620328) — PASS on registry checkpoint `f4938a1`.
-- Plan and transition commands persist snapshots to the native ledger; `recover` rebuilds state and repairs stale checkpoints.
-- Workflow routing, priorities and agent assignments now live in `workflows.json`; profile binding comes from `profiles.json`. Duplicate runtime maps removed.
-- Host-forbidden actions cannot be overridden. Approval and reviewer identities remain metadata, not cryptographic proof.
-- Implementation limits and next steps: `chatgpt-home/runtime/BUILD_PROGRESS.md`.
+- [Runtime CI](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485134477) — PASS, 43 tests.
+- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485134395) — PASS.
+- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485083496) — PASS on prior documentation checkpoint.
+- Plan/transition automatically persist snapshots to the native ledger; `recover` rebuilds state and repairs stale checkpoints.
+- Workflow routing, priorities and agent assignments live in `workflows.json`; profile binding lives in `profiles.json`. Duplicate runtime maps removed.
+- Optional GitHub Contents API adapter supports CAS writes, bounded conflict retry and remote recovery reads; mock-tested. It refuses public repositories.
+- Remote adapter has NOT performed a live write. Current Actions token is `contents: read`; no workflow permission was changed. A private repo and separately authorized write-capable host token are required.
+- Approval/reviewer identities remain metadata, not cryptographic proof. Runtime does not spawn agent processes.
+- Implementation limits and next sequence: `chatgpt-home/runtime/BUILD_PROGRESS.md`.
 
 ## Pull requests
 - [#3](https://github.com/madnessgate44-debug/Blind-sniper-/pull/3) — OPEN, NOT MERGED.
@@ -30,6 +31,7 @@
 ## Blockers / decisions
 - Repository is PUBLIC and contains personal, child-related and client-context information in memory/continuity files. Do not add raw transcripts or private memory here.
 - Private memory repository not created; connector cannot create repositories. Proposed name: `blind-sniper-private-memory`.
-- GitHub-backed ledger, leases, bounded executor, interruption E2E and boot-size measurement remain future work.
+- GitHub-backed persistence needs that private repo plus a host token with Contents write permission; current workflow remains read-only.
+- Leases, bounded executor, interruption E2E and boot-size measurement remain future work.
 - Native-first is confirmed. Closing PRs #3/#6/#7 has not been authorized.
 - No main merge, deploy, paid resource, secret/permission mutation, transcript import, browser/Forge or OpenHands execution performed.
