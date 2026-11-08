@@ -52,3 +52,14 @@ While the foundational recovery plan is P0, each real session boot/closeout must
 Do not create duplicate scheduled jobs. First inspect existing self-owned Automations and Brain/OpenHands GitHub schedules. Reuse a working trigger if it has the correct scope and a verified delivery path. If none exists, configure one supported daily Blind Sniper-owned automation only when account limits and environment access permit; its prompt must be self-contained and must report every run, including no-change and failure states. Record stable ID, enabled state, timezone, next run, last run and output evidence. If configuration is blocked, report the exact blocker and do not claim unattended monitoring.
 
 Daily report format: phase status; changes since prior report; archive counts/coverage; Forge integration gates; Watcher findings and response status; Shadow/Ghost capability state; automation run evidence; top blocker; next action. Distinguish no new evidence from no problems.
+
+
+## 9. OpenHands delivery route — verified checkpoint 2026-11-08
+
+- Primary Owner-facing coordination record: Brain issue #292.
+- One GitHub App mention test was performed: Brain #292 comment 6720277355 included @openhands; openhands-ai[bot] replied in comment 6720280271 with session ID 7543e363514b4435a71a60546c79501c.
+- This proves one mention → bot response/session creation. It does not prove task-specific acknowledgment, completed execution, artifact return, or a second consecutive handoff.
+- The linked All Hands session was not accessible through the current ChatGPT web reader. A direct Forge browser/computer-use tool and direct OpenHands session API are not exposed in the current tool inventory.
+- Brain's historical event receiver for issue_comment.created is documented disabled due unresolved spend. Do not reactivate it unless the Owner explicitly approves the cost boundary.
+- Three active ChatGPT coordination checkpoints are team-owned. They are not OpenHands event receivers and must not be represented as guaranteed delivery.
+- Continue using @openhands GitHub App mentions as the documented no-extra-cost fallback, but require a correlated reply that names the source comment/task ID and returns evidence before marking RECEIVED/ACKNOWLEDGED/VERIFIED beyond the level actually proven.
