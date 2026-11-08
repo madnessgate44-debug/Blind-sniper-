@@ -179,6 +179,25 @@
       ],
       "status": "available_read_only_recovery_write_gated",
       "native_contract_path": "chatgpt-home/workflows/session-close.md"
+    },
+    {
+      "id": "conversation-archive-export",
+      "trigger": "owner_requests_chat_history_archive",
+      "steps": [
+        "obtain_authorized_conversation_export",
+        "verify_scope_and_source",
+        "redact_secrets_and_sensitive_data",
+        "normalize_transcript_metadata",
+        "store_in_private_or_owner-approved_repository_path",
+        "index_for_search",
+        "verify_export_completeness",
+        "record_archive_receipt"
+      ],
+      "adapters": [
+        "chatgpt_history_export",
+        "github"
+      ],
+      "status": "blocked_no_native_chat_history_export_action"
     }
   ],
   "native_workflow_library": "chatgpt-home/workflows/",
