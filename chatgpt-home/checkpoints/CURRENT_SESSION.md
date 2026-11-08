@@ -297,3 +297,15 @@ Continue BS-20261108-004 only after preserving the current PR boundary. Next eng
 - [VERIFIED] Browser contract read-back: chatgpt-home/runtime/BROWSER_ADAPTER.md blob 33caf888678694eb5c611d3041de63ebd8ae5a2a; stale pending-verification wording corrected.
 - [VERIFIED] Latest PR #11 head after documentation closeout: 728d484b268e61abae9bcae5189a3a7933c9827d; OPEN / DRAFT / NOT MERGED; mergeable true; base integration SHA db4e82ad831fbd231689a359d66a1153fc601407.
 - [VERIFIED] Latest code-and-doc verification remains browser 42494489650, runtime 42494489779, environment 42494489680 and OS compliance 42494489781 — all SUCCESS. Subsequent edits were documentation/checkpoint-only; no browser/runtime source changed.
+
+
+## Native browser E2E extension — 2026-11-08T15:27Z
+
+- [VERIFIED] Replaced adapter-direct E2E with the real native dispatcher, local TaskLedger, active owner lease and canonical action events.
+- [VERIFIED] The first expanded E2E attempt (run 42494797871) exposed duplicate Python module identities: the E2E imported scripts.blind_sniper_ledger while the dispatcher imported blind_sniper_ledger, so the retry LedgerError class was not caught as BrowserDispatchError. Fixed by putting the scripts directory on sys.path and importing all three modules under the same top-level names in commit e515fecff3d2ac7e1529ef593d541cf06ed1dc29.
+- [VERIFIED] Final native E2E run 42494894841 passed: two consecutive real Chromium cycles; each cycle 8 started, 7 completed, 1 started-only interrupted action reconciled, 8 receipts; same-step retry blocked before adapter construction; each lease released. Total 16 receipts and 25,710 screenshot bytes.
+- [VERIFIED] Same run: 13 browser-policy tests and 8 native-dispatch tests passed, including concurrent atomic reservation. Runtime suite run 42494894866 passed 76 tests. Environment run 42494894828 and OS compliance run 42494894875 completed SUCCESS.
+- [VERIFIED] Artifact ID 13623151218; 29,755 bytes; SHA-256 340dc2a588b0ea0cb546c83421f02c114e7730313783f950a180f6b5054937e1.
+- [VERIFIED] Updated capability registry, workflow registry, runtime README, browser adapter contract and task BS-20261108-004 with R14 and current evidence. R6 is PASS for workspace-surviving interruption/no-replay/reconciliation; cross-job live browser session recovery remains PARTIAL.
+- [VERIFIED] Latest inspected PR #11 head before this checkpoint write: 12957916f507e3f3b8f16112eb156eac92edc2c6; OPEN / DRAFT / NOT MERGED; mergeable true at last PR read; base integration SHA db4e82ad831fbd231689a359d66a1153fc601407.
+- [PARTIAL] Tabs/frames, uploads/downloads, PDF, authenticated profiles, durable browser hosting and direct ChatGPT browser-tool registration remain unimplemented or unproven. No merge or deployment.
