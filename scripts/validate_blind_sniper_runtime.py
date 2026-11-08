@@ -99,10 +99,10 @@ def main() -> int:
         if skill not in native_skill_names or not path.is_file():
             fail(f"missing native skill path or index mismatch: {path_text}")
 
-    for row in profile_rows:
-        template = row.get("config_template")
-        if template and not (ROOT / template).is_file():
-            fail(f"profile {row.get('id')}: missing config template {template}")
+    for row in agent_rows:
+        native_path = row.get("path") or row.get("native_contract_path")
+        if native_path and not (ROOT / native_path).is_file():
+            fail(f"agent {row.get('id')}: missing native contract {native_path}")
 
     for row in workflow_rows:
         contract = row.get("native_contract_path")
