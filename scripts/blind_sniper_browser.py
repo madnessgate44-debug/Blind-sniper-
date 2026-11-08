@@ -324,7 +324,7 @@ class BrowserAdapter:
         policy_error = None
         if action in {"open", "tab-new"}:
             self.state["status"] = "OPEN"
-        if action == "open" or action in MUTATING_ACTIONS or action == "get-url" or action == "tab-new" or action == "tab-switch":
+        if action == "open" or action in MUTATING_ACTIONS or action == "get-url":
             observed_url = self._current_url()
             if observed_url:
                 try:
@@ -351,6 +351,7 @@ class BrowserAdapter:
             "started_at": started, "completed_at": utc_now(),
             "command": [
                 "[REDACTED]" if action == "fill" and i == len(command) - 1
+                else "[WORKSPACE_FILE]" if action == "upload" and i == len(command) - 1
                 else redact_url_for_receipt(value) if value.startswith(("http://", "https://"))
                 else value
                 for i, value in enumerate(command)
