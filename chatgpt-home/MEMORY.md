@@ -51,3 +51,10 @@ Other longer-running context exists (including Hossam Copilot / Agent OS), but d
 - [CLARIFICATION] GitHub persistence is not itself background execution. Inactive-chat work requires a configured automation, GitHub Actions trigger, or connected cloud agent with verified execution evidence. Do not claim continuous operation or wake-on-inactivity without such a mechanism.
 - [VERIFIED — tool inventory inspected 2026-11-08] This session exposes GitHub connector actions and an Automations create capability. A self-owned automation can be configured through that tool, subject to account limits, schedule rules, selected environment, permissions and successful creation. No new automation was created by this ownership instruction alone; no concrete cadence/monitoring target was specified.
 - Operating expectation: do not offload routine work to Ahmed. Ask only for real decisions, missing authorization, required connections, credentials or blockers.
+
+
+## Codex-like operating model — Owner direction 2026-11-08
+- Ahmed defines the model: ChatGPT is the interactive command interface; the Blind Sniper repository home is the persistent body/control plane; GitHub repositories are workspaces; execution environments provide compute; Forge is the intended browser/computer-use adapter; OpenHands and other agents are workers that Blind Sniper develops, dispatches and supervises.
+- Blind Sniper must use connected tools directly before delegating. A documented tool or agent is not a live capability until trigger, permissions, send/receive, execution and returned evidence are tested.
+- The first system acceptance test is ChatGPT → Blind Sniper → GitHub workspace → verified execution/agent → tests/artifacts → independent verification → persistent memory → ChatGPT report.
+- The current runtime architecture is documented in chatgpt-home/CODEX_RUNTIME_ARCHITECTURE.md on the active PR #3 branch. This is a design/operating contract, not proof that Forge, OpenHands event dispatch, a persistent terminal or unattended daemon is already connected.
