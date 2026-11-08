@@ -175,7 +175,7 @@ Ahmed remains Owner and final authority over direction, priorities and approvals
 |---|---|---|
 | GitHub repository discovery | Connected tool returned 22 repositories; listed repos report admin permissions | Available in this session |
 | GitHub file read/write | Fetch/create/update tools exposed; branch-specific reads succeeded | Available in this session |
-| GitHub issue communication | Brain #292 POST returned comment 6720244514; Firstborn #146 POST returned 6720244793 | Posted; agent receipt pending |
+| GitHub issue communication | Brain #292 T006 mention POST returned 6720277355; OpenHands bot replied with session ID 7543e363514b4435a71a60546c79501c in comment 6720280271 | Mention path RECEIVED; task-specific result pending |
 | GitHub workflow execution | Workflow evidence retrieval tools exist; no generic GitHub workflow-dispatch action found in current tool inventory | Partial |
 | Persistent shell/cloud workspace | No persistent Blind Sniper workspace established by this document | Not established |
 | Forge browser/computer use | Firstborn PR #147 reports HTTP MCP vertical slice; ChatGPT tool registration and real round trip unproven | Partial / blocked |
@@ -243,9 +243,9 @@ The coordination system currently has two distinct issue references, and they mu
 
 **Interpretation:** #292 is the current Owner-facing coordination hub used by Blind Sniper. #240 remains a legacy Watcher/OpenHands loop until its owner confirms migration or continued separation. This is a routing discrepancy requiring explicit reconciliation, not permission to change either issue's history or retarget the loop blindly.
 
-**Current test:** Blind Sniper posted T006 with an @openhands mention to Brain #292 (comment 6720277355) to test the documented GitHub App fallback and request correlated receipt plus a current hub map. At the last readback, no OpenHands response was present. State remains POSTED / RECEIPT PENDING.
+**Current test:** Blind Sniper posted T006 with an @openhands mention to Brain #292 (comment 6720277355). OpenHands bot replied in comment 6720280271: “I'm on it!” and supplied conversation/session ID 7543e363514b4435a71a60546c79501c. This verifies the GitHub App mention was received and spawned a session. The bot reply did not name T006 or return the requested branch/diff/test/hub evidence, so task-specific ACK and result remain pending. The linked All Hands session URL was not accessible through the web reader in this session; no direct Forge browser tool is exposed in the current ChatGPT tool inventory.
 
-**Do not reactivate** the historical event automation while its spend status remains unresolved. A safe delivery guarantee requires a verified zero-cost route or explicit Owner approval for any cost-bearing route, followed by two consecutive correlated send/receive tests.
+**Do not reactivate** the historical event automation while its spend status remains unresolved. The @openhands mention route has now passed one receive test, but it is not yet a complete delivery guarantee. A safe delivery guarantee requires a verified zero-cost route or explicit Owner approval for any cost-bearing route, followed by two consecutive correlated task-specific send/receive/result tests.
 
 Acceptance for hub reconciliation:
 1. OpenHands/Watcher names the authoritative purpose of #240 and #292.
