@@ -1,0 +1,161 @@
+{
+  "schema_version": "1.0.0",
+  "default_profile": "blind-sniper",
+  "profiles": [
+    {
+      "id": "blind-sniper",
+      "purpose": "Cross-repository AI operating lead",
+      "sandbox": "read-only-by-default",
+      "approval": "on-request",
+      "skills": [
+        "owner-policy",
+        "agent-dispatch",
+        "blind-sniper-continuity",
+        "codex-environment-maintenance",
+        "memory-and-continuity",
+        "multi-session-pr-coordination",
+        "openhands-conversation-export",
+        "zero-cost-gate"
+      ],
+      "agents": [
+        "blind-sniper",
+        "planner",
+        "researcher",
+        "engineer",
+        "reviewer",
+        "qa-verifier",
+        "recovery",
+        "watcher",
+        "shadow-auditor",
+        "release-manager",
+        "openhands",
+        "forge",
+        "ghost"
+      ],
+      "workflow": "task-control-loop",
+      "config_template": "chatgpt-home/config/blind-sniper.config.toml.example"
+    },
+    {
+      "id": "research",
+      "purpose": "Public and repository research",
+      "sandbox": "read-only",
+      "approval": "none-for-read-only",
+      "skills": [
+        "web-research",
+        "architecture-and-adr",
+        "prd-authoring",
+        "documentation-standards",
+        "owner-brief"
+      ],
+      "agents": [
+        "researcher",
+        "planner",
+        "architect"
+      ],
+      "workflow": "research-and-synthesis",
+      "config_template": "chatgpt-home/config/research.config.toml.example"
+    },
+    {
+      "id": "engineering",
+      "purpose": "Bounded implementation on an isolated feature branch",
+      "sandbox": "scoped-workspace-write",
+      "approval": "on-request",
+      "skills": [
+        "github-workspace",
+        "workflow-authoring",
+        "test-and-evidence",
+        "security-and-permissions",
+        "engineering-execution-os",
+        "git-workflow",
+        "testing-strategy",
+        "scope-discipline",
+        "secret-redaction-scan",
+        "zero-cost-gate"
+      ],
+      "agents": [
+        "planner",
+        "engineer",
+        "qa-verifier",
+        "backend-engineer",
+        "frontend-engineer",
+        "devops-engineer"
+      ],
+      "workflow": "inspect-plan-implement-verify",
+      "config_template": "chatgpt-home/config/engineering.config.toml.example"
+    },
+    {
+      "id": "review",
+      "purpose": "Independent read-only requirements, code and security review",
+      "sandbox": "read-only",
+      "approval": "none-for-read-only",
+      "skills": [
+        "test-and-evidence",
+        "security-and-permissions",
+        "code-review-rubric",
+        "security-threat-model",
+        "dependency-supply-chain",
+        "docs-evidence-format"
+      ],
+      "agents": [
+        "reviewer",
+        "shadow-auditor",
+        "qa-verifier",
+        "code-reviewer",
+        "pr-auditor",
+        "security-engineer",
+        "evidence-verifier"
+      ],
+      "workflow": "independent-review",
+      "config_template": "chatgpt-home/config/review.config.toml.example"
+    },
+    {
+      "id": "recovery",
+      "purpose": "Continuity, task and delivery recovery",
+      "sandbox": "read-only-first",
+      "approval": "on-request-for-recovery-write",
+      "skills": [
+        "memory-and-continuity",
+        "blind-sniper-continuity",
+        "incident-response",
+        "sandbox-lifecycle",
+        "multi-session-pr-coordination",
+        "openhands-conversation-export"
+      ],
+      "agents": [
+        "recovery",
+        "conversation-exporter",
+        "sre-incident-responder"
+      ],
+      "workflow": "recovery-and-reconciliation",
+      "config_template": "chatgpt-home/config/recovery.config.toml.example"
+    },
+    {
+      "id": "release",
+      "purpose": "Release readiness and post-release verification",
+      "sandbox": "read-only-until-approved",
+      "approval": "explicit-owner-approval-for-merge-deploy",
+      "skills": [
+        "workflow-authoring",
+        "test-and-evidence",
+        "release-management",
+        "ci-cd-pipelines",
+        "testing-strategy",
+        "observability",
+        "zero-cost-gate"
+      ],
+      "agents": [
+        "release-manager",
+        "qa-verifier",
+        "sre-incident-responder"
+      ],
+      "workflow": "release-gate",
+      "config_template": "chatgpt-home/config/base.config.toml.example"
+    }
+  ],
+  "global_rules": [
+    "No profile can grant permissions beyond the host and Owner authority.",
+    "No dangerous full-access bypass by default.",
+    "Merge, deployment, secret mutation, permission change, paid provisioning and production data mutation require explicit Owner approval.",
+    "Model identifiers are selected from the host's actually available model list; no model is hardcoded."
+  ]
+}
