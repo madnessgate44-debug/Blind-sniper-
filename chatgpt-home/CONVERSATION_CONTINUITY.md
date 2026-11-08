@@ -115,3 +115,12 @@
 - [UNKNOWN] No Watcher response to T004/T005 or OpenHands response to the new Firstborn #146 checkpoint was present in the comments inspected at this checkpoint. A GitHub comment POST proves POSTED, not RECEIVED/ACKNOWLEDGED.
 - [BLOCKED] Current ChatGPT tool inventory does not expose a direct Forge browser MCP tool or direct OpenHands session API. No automatic Brain-comment → OpenHands dispatch/ack bridge has been proven. Three active ChatGPT coordination automations are team-owned; their existence does not guarantee OpenHands delivery.
 - Next: verify the Brain/Firstborn event trigger and automation wiring, obtain correlated agent receipts, and prove one harmless end-to-end execution round trip.
+
+
+## 2026-11-08 — OpenHands mention delivery test
+- [VERIFIED] Posted T006 with an @openhands mention to Brain #292 (comment 6720277355).
+- [VERIFIED] GitHub App replied as openhands-ai[bot] in comment 6720280271: “I'm on it!” and supplied All Hands conversation/session ID 7543e363514b4435a71a60546c79501c.
+- [VERIFIED] This demonstrates one mention → bot response/session creation. It does not yet demonstrate task-specific acknowledgment, execution, artifact return, or the required second consecutive handoff.
+- [BLOCKED] The linked All Hands session was not accessible through the current web reader; no direct Forge browser tool or OpenHands session API is exposed in this ChatGPT session.
+- [VERIFIED] Historical Watcher event automation was disabled due spend uncertainty in the 2026-11-01 status record. No event receiver was re-enabled and no spend was incurred by this action.
+- Next: retrieve the session's task-specific result through an authorized interface and prove a second correlated handoff before declaring the communication channel reliable.
