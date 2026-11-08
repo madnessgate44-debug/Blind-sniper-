@@ -76,3 +76,16 @@ Read `ENVIRONMENT_MANIFEST.md` as the top-level capability map. Read the relevan
 
 ## Codex-like runtime integration
 The executable capability registries and CI validation live in `chatgpt-home/runtime/`. Start with its `README.md`, then inspect `capabilities.json`, `profiles.json`, `agents.json`, `workflows.json` and `skills.index.json`. This is a host-aware control-plane registry and workflow contract; it does not install Codex CLI or make unregistered MCP endpoints callable.
+
+
+## External harness imports and orchestration engine
+
+- `source-library/README.md` — source provenance, licenses and activation rules.
+- `source-library/0xenzyme__agent-harness/` — MIT source-preserving intake/init/execute skills and worker contracts.
+- `source-library/SUNRNEHUI__agent-harness/` — MIT source-preserving harness skill and task/subagent templates.
+- `source-library/os-factory__har/` — Apache-2.0 factory-line and plugin skills.
+- `agents/harness-controller.md`, `worker-executor.md`, `independent-reviewer.md`, `factory-orchestrator.md` — native Blind Sniper adaptations.
+- `workflows/idea-to-contract.md`, `isolated-execution-line.md`, `plugin-and-tool-onboarding.md`, `verification-and-handoff.md` — host-neutral workflow adaptations.
+- `runtime/EXECUTION_ENGINE.md` and `../scripts/blind_sniper_runtime.py` — executable registry-driven planner and guarded lifecycle state machine.
+- `runtime/workflows.json` registers the engine entrypoint. The engine plans and gates; it does not pretend to spawn unavailable external agents or activate unregistered tools.
+- `mendelevium/claude-code-config` remains unlicensed at source and was not copied verbatim; compatible patterns were independently authored.
