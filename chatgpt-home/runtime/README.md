@@ -61,7 +61,7 @@ Brain `WATCHER.md §14` designates **Shadow** as the credential-pool custodian. 
 
 Python and temporary shell execution are available in the current ChatGPT session, but they are ephemeral and are not a persistent runner. Complete ChatGPT conversation archive export is not exposed as a native action here; continuity Markdown and Memory summaries must not be described as full transcript export.
 
-GitHub file/branch/PR operations are available. Configured GitHub Actions can run CI on their declared events. There is no verified generic workflow-dispatch action or persistent shell in this ChatGPT session. OpenHands mention-to-session creation has been observed, but correlated task completion and artifact retrieval are not yet proven.
+GitHub file/branch/PR operations are available. Configured GitHub Actions can run CI on their declared events. There is no verified generic workflow-dispatch action or persistent shell in this ChatGPT session. One correlated read-only OpenHands task report was returned through Brain #292 (T013 comment 6720817754; session e341bd8463694d68bd79dc609e408f33). Direct OpenHands Cloud API access is not exposed to Blind Sniper in this ChatGPT session. Code-execution artifact return and two consecutive correlated round trips remain unproven.
 
 ## License and provenance
 
