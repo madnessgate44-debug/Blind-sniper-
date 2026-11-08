@@ -95,7 +95,16 @@ class OrchestrationEngineTests(unittest.TestCase):
         with self.assertRaisesRegex(runtime.RuntimeErrorBase, "Owner approval is pending"):
             runtime.transition_task(state, "EXECUTING")
 
-    def test_merge_is_a_routine_ai_engineering_action(self):\n        plan = runtime.build_plan({\n            "task_id": "BS-TEST-010",\n            "objective": "Integrate verified repository changes",\n            "workflow": "task-control-loop",\n            "requested_actions": ["merge"],\n        })\n        self.assertEqual(plan["approval"]["pending_actions"], [])\n\n    def test_release_gate_detects_missing_deploy_and_merge_capabilities(self):
+    def test_merge_is_a_routine_ai_engineering_action(self):
+        plan = runtime.build_plan({
+            "task_id": "BS-TEST-010",
+            "objective": "Integrate verified repository changes",
+            "workflow": "task-control-loop",
+            "requested_actions": ["merge"],
+        })
+        self.assertEqual(plan["approval"]["pending_actions"], [])
+
+    def test_release_gate_detects_missing_deploy_and_merge_capabilities(self):
         plan = runtime.build_plan({
             "task_id": "BS-TEST-008",
             "objective": "Prepare a release",
