@@ -4,12 +4,12 @@
 **Architecture:** Native-first CONFIRMED by Ahmed; external workers are optional adapters.
 **Integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`
 **Runtime / lease test checkpoint:** `38f9e189305742cd872546546d8ff3ff26927335`
-**Latest docs checkpoint before this snapshot:** `a50a9b2016c0b6f56f4415d00db9302ddc9534d8`
+**Latest handoff checkpoint before this snapshot:** `7fd0fdb80b07db5102586a217d20e0609a571ef9`
 
 ## Runtime / evidence
 - [Runtime CI](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486676603) — PASS, 55 tests.
-- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486743736) — PASS on latest docs checkpoint.
-- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486743751) — PASS on latest docs checkpoint.
+- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486812809) — PASS on latest handoff checkpoint.
+- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486812813) — PASS on latest handoff checkpoint.
 - Plan/transition persist snapshots; `recover` reconstructs state and repairs stale checkpoints.
 - Workflow routing and agent assignments live in `workflows.json`; profile binding lives in `profiles.json`.
 - Local and GitHub-CAS ledgers support claim, renewal, expiry-based reclaim, owner-only release and lease status.
