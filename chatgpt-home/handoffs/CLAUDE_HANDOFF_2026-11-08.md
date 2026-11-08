@@ -1,51 +1,50 @@
 # Blind Sniper — Claude Handoff & Independent Architecture Review
 
+# Current evidence anchor — 8 November 2026, 15:20 Cairo time
 
-# Current-state addendum — 8 November 2026, 14:10 Cairo time
+This block is authoritative for current state. The material after the divider is historical project context; do not treat its old SHAs, role lists, policy claims or CI references as current.
 
-This addendum supersedes any conflicting point-in-time status statements in the historical handoff sections below. Preserve the original notes as history; use this section as the current evidence anchor.
-
-## Repository snapshot
-
+## Current repository state
+- Repository: `madnessgate44-debug/Blind-sniper-` (PUBLIC).
 - Integration branch: `feat/blind-sniper-orchestration-integration-2026-11-08`.
-- Current branch HEAD: `74463b279bbe87957c3431f0732db35ae1ee80f6` — `test(security): prevent task-envelope self-approval`.
-- Parent commit: `93e5c089c6456b5cfafb97c9be1bb000926aeac1` — `fix(security): reject task-envelope self-approval`.
-- PR #6 and PR #7 are both currently OPEN and NOT MERGED. Their source branches remain separate; the integration branch is not a merge of either PR.
-- No integration PR has been opened from the current integration branch.
+- Current branch HEAD at this update: `e92ab3a29f13a2b28844749a81cc9a2ad979278d`.
+- Architecture decision: Ahmed confirmed **native-first**. Blind Sniper's own policy, runtime, workforce contracts, persistence and recovery are core. External workers are optional adapters.
+- Main was not changed. No PR was merged. PRs #3, #6 and #7 remain OPEN; no authorization to close them was given.
+- Issues: #1 canonical continuity issue OPEN; #2 CLOSED as duplicate of #1; #8 marked SUPERSEDED but remains OPEN.
 
-## Verification evidence
+## Current implementation
+- Native workforce: eight internal roles with checked-in contracts. No external worker identity is a core agent.
+- Runtime: guarded planner/state machine; not yet an autonomous agent executor and does not spawn separate model processes.
+- Task ledger: append-only JSONL, global sequence, idempotency, process lock, fsync and SHA-256 chain validation.
+- Runtime `plan` persists `TASK_CREATED`; every accepted `transition` persists a full `TASK_TRANSITIONED` snapshot before checkpoint write; `recover` reconstructs latest state from ledger.
+- Stale checkpoint recovery is implemented. Repeating the already-committed target repairs the checkpoint without duplicate ledger event.
+- Host-forbidden actions cannot be overridden by task JSON or approval records. Other consequential actions require action-specific approval.
+- Closure requires PASS, reviewer different from implementer, matching task ID, full commit SHA and CI run ID. These are metadata checks, not cryptographic authentication.
 
-- GitHub Actions run `42478361100`, workflow `Blind Sniper Runtime Registry`, completed with conclusion `success` on commit `013ed5dc00fe3be953a841528cbaebfbc5801e69`: https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42478361100
-- The runtime validator and the full discovered Python test suite passed in that run; the orchestration test set was reported as 12/12 passing in the verified run log.
-- The current HEAD `2a163402...` changes only the Claude handoff document relative to its parent, so the runtime CI result remains applicable to the unchanged runtime code. It is not a fresh runtime run on the documentation commit.
-- The handoff-document commit also passed the Environment Validation and Engineering Execution OS Compliance workflows, as recorded in the current session report. Do not represent those as runtime test runs.
-- Latest runtime CI run: `42479139321`, on exact HEAD `74463b279bbe87957c3431f0732db35ae1ee80f6`, completed SUCCESS. Registry validator passed (6 profiles, 25 agents, 13 adapters, 11 workflows, 10 native skills, 33 mirrored OpenHands skills); full unittest discovery ran **13 tests, all OK**. Job: `128727022927`. Run: https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42479139321
+## Verified CI
+- Runtime [run 42484343595](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343595): SUCCESS, 29 tests on code/test commit `12a4a4149a163ed3c6870ba8ba543d06565cf1ae`.
+- OS compliance [run 42484343610](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343610): SUCCESS on the same commit.
+- Environment validation [run 42484392320](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484392320): SUCCESS on documentation checkpoint `302ae664d6bbf859fd2729a019a16f327dfcc097`.
+- Latest documentation/current-state commits have their CI checks in progress at this update. Do not describe them as passed until completed.
 
-## Security correction completed after the initial handoff
+## Privacy and integration blockers
+- The repository is PUBLIC and contains personal, child-related and client-context material in memory/continuity files. Do not copy, quote, archive or import raw conversation transcripts here.
+- A private memory repository has not been created. Proposed name: `blind-sniper-private-memory`. The available GitHub connector cannot create repositories; Ahmed must create it through GitHub's UI.
+- No consolidated draft PR to main has been opened because privacy containment must precede it. No merge is authorized.
+- No paid resource, deployment, secret/permission change, transcript import, browser/Forge task or OpenHands execution was performed.
 
-- Finding: `build_plan()` previously trusted `task.owner_approval.approved_actions` from the task JSON envelope. Because task envelopes are untrusted input, this allowed the request itself to assert Owner consent.
-- Correction: `scripts/blind_sniper_runtime.py` now initializes approved actions as empty during planning; task-envelope approval claims cannot satisfy consequential-action gates. Approval must be supplied at the guarded transition boundary by the host caller.
-- Regression test: `test_task_envelope_cannot_self_approve_high_risk_action` proves a task that requests `merge` and self-asserts approval still has `merge` pending and cannot enter `EXECUTING` without a separate transition approval.
-- Evidence: commits `93e5c089c6456b5cfafb97c9be1bb000926aeac1` and `74463b279bbe87957c3431f0732db35ae1ee80f6`; runtime CI run `42479139321` passed 13/13.
-- Remaining limitation: transition-level approval is still a caller-supplied action list, not a cryptographically authenticated Owner receipt. Do not claim Owner identity/provenance is solved.
+## Next engineering priorities
+1. GitHub-backed append-only persistence using immutable commits and optimistic concurrency; no paid database.
+2. Task claims/leases, expiry, cancellation and stale-lease recovery.
+3. Bounded native executor over real host tools/CI runners, with receipts tied to task/step/commit/run/artifact.
+4. Submit → execute → interrupt → recover → resume → verify → close E2E.
+5. Move workflow routing into registries; remove duplicated routing dictionaries.
+6. Measure and reduce boot payload; don't rely on old estimates.
+7. Reconcile branch graph only after privacy containment; keep PRs #3/#6/#7 open until Ahmed decides.
 
-## OpenHands dispatch status — important distinction
+## Review request to Claude
+Independently inspect current HEAD and specifically challenge: ledger crash consistency and concurrency, replay invariants, task-state tampering, approval provenance, reviewer identity, registry ownership/routing, and what is still required before a bounded executor is safe. Report evidence by file/line and distinguish implemented behavior from metadata claims. Do not edit, merge, deploy, provision paid services, alter secrets/permissions, import transcripts or perform browser/OpenHands work.
 
-- Issue #8, `[OpenHands] Complete existing Blind Sniper OS orchestration integration and E2E verification`, is open: https://github.com/madnessgate44-debug/Blind-sniper-/issues/8
-- A live fetch of issue #8 returned **zero comments**. No dispatch receipt, OpenHands session ID, correlated result, PR or execution artifact is recorded on that issue. Therefore the requested OpenHands coding task is **NOT VERIFIED AS DISPATCHED OR STARTED**.
-- PR #6's description separately reports one correlated, read-only OpenHands handoff (T013) through Brain issue #292, with a request comment, resolver session ID and result comments. That is evidence for that separate read-only handoff only; it does not prove issue #8 was dispatched, nor does it prove code execution or artifact return.
-
-## Runtime capability truth
-
-The engine remains a registry-aware planner and guarded task lifecycle state machine. It does not itself spawn agents, invoke tools, run browser sessions, or provide a durable shared cross-session task store. Approval flags are caller-supplied and are not cryptographically authenticated Owner receipts. Verification/review gates still accept simple evidence fields and need stronger task/commit/reviewer provenance. The browser, continuous background runner, and automatic transcript export remain unproven or blocked as described in the main handoff.
-
-## Required Claude review focus
-
-1. Review the exact current integration HEAD above, not the older PR #6/#7 heads.
-2. Treat runtime CI run `42478361100` as passing evidence for parent `013ed5d...`, and distinguish it from checks on the documentation-only HEAD.
-3. Explicitly state that issue #8 has no dispatch/result comments and that PR #6's T013 is a separate read-only Brain handoff.
-4. Prioritize registry/runtime duplication, approval provenance, evidence binding, durable persistence/recovery, idempotent dispatch, and a real callable execution receipt before expanding browser scope.
-5. Do not modify files, merge PRs, deploy, provision paid resources, or alter secrets/permissions as part of the review.
 
 ---
 
