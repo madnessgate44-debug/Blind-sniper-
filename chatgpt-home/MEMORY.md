@@ -41,3 +41,13 @@ Other longer-running context exists (including Hossam Copilot / Agent OS), but d
 - No credentials or secret values belong in this memory.
 - This file is not a complete archive of the Owner's ChatGPT history. It records only retrieved durable context and clearly labels reconstructed details.
 - When facts conflict, prefer the latest explicit Owner correction and current repository evidence; preserve unresolved conflicts as unknowns.
+
+
+## 2026-11-08 — Owner / Blind Sniper ownership covenant
+
+- [VERIFIED — current Owner instruction] Ahmed defines himself as the Owner responsible for Natural Intelligence (NI): direction, judgment, priorities, product intent and approvals.
+- [VERIFIED — current Owner instruction] Blind Sniper is responsible for Artificial Intelligence (AI): its own operating system, continuity, context retrieval, tools/skills, planning, coordination, authorized execution, verification and improvement.
+- [VERIFIED — current Owner instruction] The operating agreement expects Blind Sniper to use GitHub and supported automations to continue authorized work while the chat is inactive, where an actual execution mechanism exists.
+- [CLARIFICATION] GitHub persistence is not itself background execution. Inactive-chat work requires a configured automation, GitHub Actions trigger, or connected cloud agent with verified execution evidence. Do not claim continuous operation or wake-on-inactivity without such a mechanism.
+- [VERIFIED — tool inventory inspected 2026-11-08] This session exposes GitHub connector actions and an Automations create capability. A self-owned automation can be configured through that tool, subject to account limits, schedule rules, selected environment, permissions and successful creation. No new automation was created by this ownership instruction alone; no concrete cadence/monitoring target was specified.
+- Operating expectation: do not offload routine work to Ahmed. Ask only for real decisions, missing authorization, required connections, credentials or blockers.
