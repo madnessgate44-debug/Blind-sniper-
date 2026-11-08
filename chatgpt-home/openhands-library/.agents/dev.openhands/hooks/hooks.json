@@ -1,0 +1,31 @@
+{
+  "pre_tool_use": [
+    {
+      "matcher": "terminal",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "f=$(find \"$HOME/.openhands/cache/plugins\" -name guard.py -path '*/.agents/dev.openhands/hooks/guard.py' -printf '%T@ %p\\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-); if [ -n \"$f\" ]; then exec python3 \"$f\"; fi; echo 'account-library guard not found in plugin cache; guard inactive' >&2; exit 0",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "stop": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "f=$(find \"$HOME/.openhands/cache/plugins\" -name quality_gate.sh -path '*/.agents/dev.openhands/hooks/quality_gate.sh' -printf '%T@ %p\\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-); if [ -n \"$f\" ]; then exec bash \"$f\"; fi; echo 'account-library quality gate not found in plugin cache; gate inactive' >&2; exit 0",
+          "timeout": 180
+        },
+        {
+          "type": "command",
+          "command": "f=$(find \"$HOME/.openhands/cache/plugins\" -name backlog_gate.sh -path '*/.agents/dev.openhands/hooks/backlog_gate.sh' -printf '%T@ %p\\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-); if [ -n \"$f\" ]; then exec bash \"$f\"; fi; echo 'account-library backlog gate not found in plugin cache; gate inactive' >&2; exit 0",
+          "timeout": 180
+        }
+      ]
+    }
+  ]
+}
