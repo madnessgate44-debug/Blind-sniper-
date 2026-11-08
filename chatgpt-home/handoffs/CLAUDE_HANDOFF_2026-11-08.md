@@ -8,8 +8,8 @@ This addendum supersedes any conflicting point-in-time status statements in the 
 ## Repository snapshot
 
 - Integration branch: `feat/blind-sniper-orchestration-integration-2026-11-08`.
-- Current branch HEAD: `2a1634024419e0353d0591e6ed7ade436e518736` — documentation-only commit, message: `docs(handoff): brief Claude on Blind Sniper architecture and today's work`.
-- Parent commit: `013ed5dc00fe3be953a841528cbaebfbc5801e69` — `refactor(runtime): make workflow registry own capability requirements`.
+- Current branch HEAD: `74463b279bbe87957c3431f0732db35ae1ee80f6` — `test(security): prevent task-envelope self-approval`.
+- Parent commit: `93e5c089c6456b5cfafb97c9be1bb000926aeac1` — `fix(security): reject task-envelope self-approval`.
 - PR #6 and PR #7 are both currently OPEN and NOT MERGED. Their source branches remain separate; the integration branch is not a merge of either PR.
 - No integration PR has been opened from the current integration branch.
 
@@ -19,6 +19,15 @@ This addendum supersedes any conflicting point-in-time status statements in the 
 - The runtime validator and the full discovered Python test suite passed in that run; the orchestration test set was reported as 12/12 passing in the verified run log.
 - The current HEAD `2a163402...` changes only the Claude handoff document relative to its parent, so the runtime CI result remains applicable to the unchanged runtime code. It is not a fresh runtime run on the documentation commit.
 - The handoff-document commit also passed the Environment Validation and Engineering Execution OS Compliance workflows, as recorded in the current session report. Do not represent those as runtime test runs.
+- Latest runtime CI run: `42479139321`, on exact HEAD `74463b279bbe87957c3431f0732db35ae1ee80f6`, completed SUCCESS. Registry validator passed (6 profiles, 25 agents, 13 adapters, 11 workflows, 10 native skills, 33 mirrored OpenHands skills); full unittest discovery ran **13 tests, all OK**. Job: `128727022927`. Run: https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42479139321
+
+## Security correction completed after the initial handoff
+
+- Finding: `build_plan()` previously trusted `task.owner_approval.approved_actions` from the task JSON envelope. Because task envelopes are untrusted input, this allowed the request itself to assert Owner consent.
+- Correction: `scripts/blind_sniper_runtime.py` now initializes approved actions as empty during planning; task-envelope approval claims cannot satisfy consequential-action gates. Approval must be supplied at the guarded transition boundary by the host caller.
+- Regression test: `test_task_envelope_cannot_self_approve_high_risk_action` proves a task that requests `merge` and self-asserts approval still has `merge` pending and cannot enter `EXECUTING` without a separate transition approval.
+- Evidence: commits `93e5c089c6456b5cfafb97c9be1bb000926aeac1` and `74463b279bbe87957c3431f0732db35ae1ee80f6`; runtime CI run `42479139321` passed 13/13.
+- Remaining limitation: transition-level approval is still a caller-supplied action list, not a cryptographically authenticated Owner receipt. Do not claim Owner identity/provenance is solved.
 
 ## OpenHands dispatch status — important distinction
 
