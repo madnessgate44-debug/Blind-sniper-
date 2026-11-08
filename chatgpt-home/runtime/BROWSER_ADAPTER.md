@@ -9,7 +9,7 @@
 
 ## Scope
 
-The adapter in `scripts/blind_sniper_browser.py` invokes the CLI with a fixed argument vector and `shell=False`. It exposes `open`, `snapshot`, `click`, `fill`, `press`, `screenshot`, `get-url`, and `close`.
+The adapter in `scripts/blind_sniper_browser.py` invokes the CLI with a fixed argument vector and `shell=False`. It exposes `open`, `snapshot`, `click`, `fill`, `press`, `screenshot`, `get-url`, `close`, `tabs`, `tab-new`, `tab-switch`, `tab-close`, `frame`, `upload`, `download`, and `pdf`. File operations are confined to the adapter upload/artifact workspaces; upload requires explicit host write approval and is limited to 10 MiB and an allowlisted extension; downloads are limited to 25 MiB and PDF/screenshot outputs cannot overwrite existing files.
 
 The native dispatch bridge is `scripts/blind_sniper_browser_dispatch.py`. It is the only supported route from Blind Sniper's native task runtime to browser actions:
 
@@ -34,7 +34,7 @@ The bridge supports both the local `TaskLedger` and the GitHub Contents compare-
 - `BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS`: comma-separated allowlist; empty means deny all.
 - `BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS`: comma-separated denylist; deny takes precedence.
 - `BLIND_SNIPER_BROWSER_WRITE_APPROVED=1` and a non-empty approval reference are required for click/fill/press.
-- Browser engine action policy is deny-by-default. No arbitrary JavaScript, uploads, downloads, cookies, credentials, personal profiles or authentication-state transfer.
+- Browser engine action policy is deny-by-default. Arbitrary JavaScript, cookies, credentials, personal profiles and authentication-state transfer remain disabled. Upload requires host approval and a contained file in the upload workspace; downloads and PDF output are confined to the artifact workspace with size and overwrite limits.
 - Page content is untrusted data, never instructions to the operating system or Blind Sniper.
 - Agent-browser's domain allowlist is browser-level containment, not an OS firewall. Host/container egress controls remain recommended.
 
@@ -42,18 +42,18 @@ The bridge supports both the local `TaskLedger` and the GitHub Contents compare-
 
 Each action requires `task_id`, `run_id`, `session_id`, and unique `step_id`. The adapter writes task-scoped session metadata, JSONL receipts and screenshots. The dispatch bridge writes `BROWSER_ACTION_STARTED` before the external action and `BROWSER_ACTION_COMPLETED` with the receipt after it. A started-without-completed record is deliberately not replayed automatically.
 
-The browser daemon itself is not proven recoverable after a GitHub Actions job/runner is destroyed. Local metadata and receipts survive only while the workspace survives. Cross-job live-session recovery remains unimplemented.
+The browser daemon itself is not proven recoverable after a GitHub-hosted Actions runner is destroyed. The Oracle Always Free ARM64 self-hosted-runner bootstrap stores browser state under `/var/lib/blind-sniper/browser` and sets the browser daemon idle timeout to `0`, but it has not been provisioned or tested. Cross-job live-session recovery remains pending a real two-job host acceptance run.
 
 ## CI boundary
 
-The GitHub Actions workflow installs Node.js 22, `agent-browser@0.41.2`, Chromium and Linux dependencies; it runs browser policy tests, lease-dispatch tests and a real Chromium round trip against a local fixture. CI acceptance proves only this ephemeral controlled-fixture path. It does not prove a persistent browser host, authenticated browsing, direct ChatGPT tool invocation or unattended autonomy.
+The GitHub Actions workflow installs Node.js 22, `agent-browser@0.41.2`, Chromium and Linux dependencies; it runs browser policy tests, lease-dispatch tests and a real Chromium round trip against a local fixture. The PR branch now includes a zero-recurring-cost Oracle Always Free ARM64 self-hosted-runner bootstrap; provisioning remains owner/account dependent. CI acceptance proves only this ephemeral controlled-fixture path. It does not prove a persistent browser host, authenticated browsing, direct ChatGPT tool invocation or unattended autonomy.
 
 
 ## Additional safety hardening
 
 - URL paths, query strings and fragments are redacted from persisted action receipts, command metadata and session URL state. Only the origin is retained for diagnostics.
 - The standalone scripts/blind_sniper_browser.py CLI is disabled so host actions use the native lease-gated dispatcher. The Python adapter class remains an internal implementation component, not a security boundary against arbitrary code running on the host.
-- These corrections passed the PR-head browser suite (13 tests), dispatcher suite (8 tests), and real Chromium fixture in run 42494392033.
+- URL redaction and dispatcher-only CLI corrections passed earlier PR-head CI. Extended tabs/frames, upload/download and PDF actions are awaiting the new CI run.
 
 
 Atomic reservation concurrency, URL redaction and dispatcher-only CLI checks passed on PR-head CI run 42494489650; the full runtime suite passed in run 42494489779. These results do not establish a persistent browser host or cross-job session recovery.
