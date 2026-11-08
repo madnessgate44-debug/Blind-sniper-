@@ -100,6 +100,8 @@ class BrowserAdapter:
         self.approval_reference = approval_reference
         self.timeout = timeout
         self.binary = binary or os.environ.get("AGENT_BROWSER_BIN", "agent-browser")
+        if str(state_dir) == ".blind-sniper/browser":
+            state_dir = os.environ.get("BLIND_SNIPER_BROWSER_STATE_DIR", str(state_dir))
         self.state_dir = Path(state_dir).resolve()
         self.sessions_dir = self.state_dir / "sessions"
         self.receipts_dir = self.state_dir / "receipts"
