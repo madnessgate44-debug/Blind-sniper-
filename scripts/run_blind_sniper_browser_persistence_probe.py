@@ -21,7 +21,7 @@ from blind_sniper_browser_dispatch import dispatch_browser_action
 from blind_sniper_ledger import TaskLedger
 
 OWNER_ID = "blind-sniper-oracle-runner"
-FIXTURE_URL = "http://127.0.0.1:8765/"
+FIXTURE_URL = f"http://127.0.0.1:{int(os.environ.get('BLIND_SNIPER_FIXTURE_PORT', '8765'))}/"
 
 
 def context():
