@@ -54,3 +54,7 @@ Never store raw credentials, tokens, personal secrets, or unnecessary sensitive 
 - A reconstructed memory summary is not a transcript. Never label it complete, verbatim, or migrated.
 - Scheduled synchronization can only use sources and connectors actually available to that run. If GitHub or transcript export access is absent, report BLOCKED with the missing permission/input; do not fabricate a successful sync.
 - Never store secrets, access tokens, passwords, or sensitive personal data in the repository.
+
+
+## Conversation-close trigger
+The primary synchronization trigger is the end of each substantive conversation, immediately before Blind Sniper sends its closing response. Review the current exchange, append verified continuity updates, verify GitHub writes, and report the checkpoint. Do not wait for a daily schedule. Inactivity itself is not observable by the assistant; no post-session background execution is implied. If no closing assistant turn occurs, sync cannot be guaranteed.
