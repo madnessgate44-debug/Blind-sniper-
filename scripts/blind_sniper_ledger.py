@@ -77,6 +77,39 @@ class TaskLedger:
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
         return [row for row in rows if task_id is None or row["task_id"] == task_id]
 
+    def _append_locked(
+        self,
+        handle,
+        rows: list[dict[str, Any]],
+        *,
+        task_id: str,
+        event_type: str,
+        payload: dict[str, Any],
+        idempotency_key: str,
+    ) -> tuple[dict[str, Any], bool]:
+        for row in rows:
+            if row["idempotency_key"] == idempotency_key:
+                if row["task_id"] != task_id or row["event_type"] != event_type or row["payload"] != payload:
+                    raise LedgerError("idempotency key already used for different event content")
+                return row, False
+        previous_hash = rows[-1]["event_hash"] if rows else "GENESIS"
+        body = {
+            "schema_version": "1.0.0",
+            "seq": len(rows) + 1,
+            "task_id": task_id,
+            "event_type": event_type,
+            "idempotency_key": idempotency_key,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "payload": payload,
+            "prev_hash": previous_hash,
+        }
+        event = {**body, "event_hash": _digest(body)}
+        handle.seek(0, os.SEEK_END)
+        handle.write(json.dumps(event, sort_keys=True, ensure_ascii=False) + "\\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+        return event, True
+
     def append(
         self,
         *,
@@ -94,28 +127,143 @@ class TaskLedger:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
             try:
                 rows = self._read_unlocked()
-                for row in rows:
-                    if row["idempotency_key"] == idempotency_key:
-                        if row["task_id"] != task_id or row["event_type"] != event_type or row["payload"] != payload:
-                            raise LedgerError("idempotency key already used for different event content")
-                        return row
-                previous_hash = rows[-1]["event_hash"] if rows else "GENESIS"
-                body = {
-                    "schema_version": "1.0.0",
-                    "seq": len(rows) + 1,
-                    "task_id": task_id,
-                    "event_type": event_type,
-                    "idempotency_key": idempotency_key,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                    "payload": payload,
-                    "prev_hash": previous_hash,
-                }
-                event = {**body, "event_hash": _digest(body)}
-                handle.seek(0, os.SEEK_END)
-                handle.write(json.dumps(event, sort_keys=True, ensure_ascii=False) + "\n")
-                handle.flush()
-                os.fsync(handle.fileno())
+                event, _ = self._append_locked(
+                    handle, rows, task_id=task_id, event_type=event_type,
+                    payload=payload, idempotency_key=idempotency_key,
+                )
                 return event
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+    @staticmethod
+    def _active_lease(rows: list[dict[str, Any]], task_id: str, now: datetime):
+        lease = None
+        for row in rows:
+            if row.get("task_id") != task_id:
+                continue
+            if row.get("event_type") in ("TASK_LEASE_CLAIMED", "TASK_LEASE_RENEWED"):
+                lease = row.get("payload")
+            elif row.get("event_type") == "TASK_LEASE_RELEASED":
+                lease = None
+        if not lease:
+            return None
+        try:
+            expiry = datetime.fromisoformat(str(lease["lease_expires_at"]).replace("Z", "+00:00"))
+        except (KeyError, ValueError, TypeError) as exc:
+            raise LedgerError("Malformed task lease event") from exc
+        if expiry.tzinfo is None:
+            raise LedgerError("Task lease expiry must include a timezone")
+        return lease if expiry > now else None
+
+    def lease_status(self, task_id: str, now: datetime | None = None):
+        instant = now or datetime.now(timezone.utc)
+        if instant.tzinfo is None:
+            raise LedgerError("lease status time must include a timezone")
+        rows = self.events(task_id)
+        lease = self._active_lease(rows, task_id, instant)
+        if lease is None:
+            return None
+        return {
+            "task_id": task_id,
+            "owner_id": lease["owner_id"],
+            "lease_expires_at": lease["lease_expires_at"],
+        }
+
+    def claim_task(
+        self,
+        *,
+        task_id: str,
+        owner_id: str,
+        lease_seconds: int,
+        idempotency_key: str,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        instant = now or datetime.now(timezone.utc)
+        if instant.tzinfo is None:
+            raise LedgerError("claim time must include a timezone")
+        if not task_id.strip() or not owner_id.strip() or not idempotency_key.strip():
+            raise LedgerError("task_id, owner_id and idempotency_key are required")
+        if not isinstance(lease_seconds, int) or lease_seconds < 1 or lease_seconds > 3600:
+            raise LedgerError("lease_seconds must be between 1 and 3600")
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a+", encoding="utf-8") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                rows = self._read_unlocked()
+                existing = next((row for row in rows if row["idempotency_key"] == idempotency_key), None)
+                if existing:
+                    if existing["task_id"] != task_id or existing["payload"].get("owner_id") != owner_id:
+                        raise LedgerError("idempotency key already used for different lease content")
+                    active = self._active_lease(rows, task_id, instant)
+                    return {
+                        "claimed": bool(active and active.get("owner_id") == owner_id),
+                        "owner_id": active.get("owner_id") if active else None,
+                        "lease_expires_at": active.get("lease_expires_at") if active else None,
+                        "event": existing,
+                        "event_created": False,
+                    }
+                active = self._active_lease(rows, task_id, instant)
+                if active and active.get("owner_id") != owner_id:
+                    return {
+                        "claimed": False,
+                        "owner_id": active["owner_id"],
+                        "lease_expires_at": active["lease_expires_at"],
+                        "event": None,
+                        "event_created": False,
+                    }
+                event_type = "TASK_LEASE_RENEWED" if active else "TASK_LEASE_CLAIMED"
+                expiry = (instant + __import__("datetime").timedelta(seconds=lease_seconds)).isoformat()
+                payload = {
+                    "owner_id": owner_id,
+                    "lease_seconds": lease_seconds,
+                    "lease_expires_at": expiry,
+                }
+                event, created = self._append_locked(
+                    handle, rows, task_id=task_id, event_type=event_type,
+                    payload=payload, idempotency_key=idempotency_key,
+                )
+                return {
+                    "claimed": True,
+                    "owner_id": owner_id,
+                    "lease_expires_at": expiry,
+                    "event": event,
+                    "event_created": created,
+                }
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+    def release_task(
+        self,
+        *,
+        task_id: str,
+        owner_id: str,
+        idempotency_key: str,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        instant = now or datetime.now(timezone.utc)
+        if instant.tzinfo is None:
+            raise LedgerError("release time must include a timezone")
+        if not task_id.strip() or not owner_id.strip() or not idempotency_key.strip():
+            raise LedgerError("task_id, owner_id and idempotency_key are required")
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a+", encoding="utf-8") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                rows = self._read_unlocked()
+                existing = next((row for row in rows if row["idempotency_key"] == idempotency_key), None)
+                if existing:
+                    if existing["task_id"] != task_id or existing["event_type"] != "TASK_LEASE_RELEASED" or existing["payload"].get("owner_id") != owner_id:
+                        raise LedgerError("idempotency key already used for different release content")
+                    return {"released": True, "event": existing, "event_created": False}
+                active = self._active_lease(rows, task_id, instant)
+                if not active or active.get("owner_id") != owner_id:
+                    return {"released": False, "event": None, "event_created": False}
+                payload = {"owner_id": owner_id, "released_at": instant.isoformat()}
+                event, created = self._append_locked(
+                    handle, rows, task_id=task_id, event_type="TASK_LEASE_RELEASED",
+                    payload=payload, idempotency_key=idempotency_key,
+                )
+                return {"released": True, "event": event, "event_created": created}
             finally:
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
