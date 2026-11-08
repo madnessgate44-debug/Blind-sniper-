@@ -58,3 +58,14 @@ Never store raw credentials, tokens, personal secrets, or unnecessary sensitive 
 
 ## Conversation-close trigger
 The primary synchronization trigger is the end of each substantive conversation, immediately before Blind Sniper sends its closing response. Review the current exchange, append verified continuity updates, verify GitHub writes, and report the checkpoint. Do not wait for a daily schedule. Inactivity itself is not observable by the assistant; no post-session background execution is implied. If no closing assistant turn occurs, sync cannot be guaranteed.
+
+
+## Autonomous work and inactive-chat continuity
+
+- At session boot, inspect the active queue and latest relevant Brain/OpenHands handoffs. Identify already-authorized work that can safely proceed without an Owner decision.
+- If work should continue while chat is inactive, select a real execution mechanism: self-owned ChatGPT Automation, configured GitHub Actions workflow, or connected cloud agent/environment.
+- Before relying on it, inspect exact trigger/schedule, timezone, prompt/workflow, permissions, selected environment, source access, notifications, stopping rules and failure handling.
+- A repository instruction, issue, PR, commit or workflow file is not proof of an active worker. GitHub Actions are trigger-bound and do not automatically grant ChatGPT reasoning or account-history access.
+- Record automation ID/workflow path, enabled state, next run, last run, result and evidence. Distinguish DESIGNED, CONFIGURED, RUNNING, EXECUTED, VERIFIED, BLOCKED and STOPPED.
+- Do not create duplicate or recurring automation with invented cadence. Use the actual Automations tool schema and respect account quotas. Do not store secrets in prompts or repository content.
+- At closeout, record what can continue asynchronously, which real mechanism owns it, and what is still waiting for an Owner decision. Never claim the assistant can observe inactivity or wake itself absent a trigger.
