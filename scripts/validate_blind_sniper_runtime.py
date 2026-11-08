@@ -69,6 +69,12 @@ def main() -> int:
         fail("profiles.json: default_profile does not exist")
     if agents.get("controller") not in agent_ids:
         fail("agents.json: controller does not exist")
+    default_profile = next((row for row in profile_rows if row.get("id") == profiles.get("default_profile")), None)
+    default_agents = set(workflows.get("default_agent_selection", []))
+    if default_agents - agent_ids:
+        fail(f"workflows.json: unknown default agents {sorted(default_agents - agent_ids)}")
+    if default_profile and not default_agents.issubset(set(default_profile.get("agents", []))):
+        fail("workflows.json: default agent selection exceeds default profile allowlist")
 
     for row in profile_rows:
         unknown = set(row.get("skills", [])) - all_skill_names
