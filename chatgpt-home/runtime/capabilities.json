@@ -134,12 +134,27 @@
     {
       "id": "forge_browser_mcp",
       "kind": "authenticated_browser_and_computer_use",
-      "status": "blocked_not_registered",
+      "status": "endpoint_remote_smoke_verified_connector_not_registered",
       "tools": [],
-      "capabilities": [],
+      "capabilities": [
+        "authenticated_Streamable_HTTP_MCP_endpoint",
+        "browser_open_view_wait_click_type_press_scroll_extract_query_screenshot_history_close",
+        "read_only_default",
+        "audit_receipts",
+        "credential_redaction"
+      ],
       "limitations": [
-        "Firstborn PR #147 contains an HTTP MCP implementation proposal; public HTTPS, authentication, ChatGPT connector registration and a live round trip are not verified."
-      ]
+        "Firstborn PR #148 reports a successful public-HTTPS sandbox round trip and GitHub CI run 42473077287; the sandbox URL is ephemeral and is not a durable host.",
+        "ChatGPT custom connector registration is not present in this session, so these browser tools are not callable from Blind Sniper yet.",
+        "Firstborn PR #149 overlaps PR #148 on browser_wait; reconcile the two open changes before merging."
+      ],
+      "evidence": {
+        "pr147": "https://github.com/madnessgate44-debug/Firstborn/pull/147",
+        "pr148": "https://github.com/madnessgate44-debug/Firstborn/pull/148",
+        "pr149": "https://github.com/madnessgate44-debug/Firstborn/pull/149",
+        "ci_run": 42473077287,
+        "remote_smoke": "reported PASS by OpenHands in Firstborn issue #146 comment 6720609474"
+      }
     },
     {
       "id": "openhands_dispatch",
@@ -152,7 +167,8 @@
         "mention_can_create_session_receipt"
       ],
       "limitations": [
-        "Task-correlated completion, artifact retrieval and two consecutive end-to-end handoffs remain unverified."
+        "GitHub @openhands mention creates session receipts. OpenHands has returned session state and PR artifacts in Brain #292 comments, but direct OpenHands Cloud API access is not exposed to Blind Sniper in this ChatGPT tool inventory.",
+        "A correlated Blind Sniper task still requires a returned task-specific receipt and independently verified artifacts; two consecutive round trips have not been demonstrated."
       ]
     },
     {
@@ -170,13 +186,20 @@
       ]
     },
     {
-      "id": "ghost_credential_broker",
-      "kind": "credential_health_and_distribution",
-      "status": "unverified",
+      "id": "shadow_provider_pool",
+      "kind": "provider_credential_custody",
+      "status": "blocked_pool_not_loaded",
       "tools": [],
-      "capabilities": [],
+      "capabilities": [
+        "credential_pool_ownership",
+        "scheduled_key_and_model_health_sweep",
+        "replacement_and_distribution_via_repository_actions_secrets"
+      ],
       "limitations": [
-        "Credential pool existence, health checks, secure lease and agent delivery must be evidenced before use. Never expose key material in GitHub."
+        "Brain WATCHER.md §14 designates Shadow as custodian, not Ghost.",
+        "The authorized Brain shadow-keys.yml sweep is designed to report PASS/FAIL only and never print values.",
+        "Latest reported sweep: 0 WORKING, 8 NOT SET; no Gemini provider route is currently available to agents.",
+        "No key values may be copied into chat, repository files, issues or logs."
       ]
     }
   ],
