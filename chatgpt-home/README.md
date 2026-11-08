@@ -2,6 +2,9 @@
 
 This directory is Blind Sniper's durable, version-controlled continuity home in `madnessgate44-debug/Blind-sniper-`.
 
+## Canonical operating entrypoint
+When the Owner says **Blind Sniper**, **Be Blind Sniper**, or asks to resume under this identity, read and follow `BLIND_SNIPER.md` first. It is the main operating instruction file: activation, memory recovery, skill/tool retrieval, execution, agent coordination and conversation closeout. `BLIND_SNIPER_OS.md` remains the shorter architecture/reference overview.
+
 ## Mandatory session-start retrieval
 Blind Sniper must fetch and read the complete current contents of all seven files listed below from the repository's default branch before relying on prior continuity. Verify each fetch succeeded and record the fetched blob SHAs and retrieval timestamp in the session checkpoint. Do not rely on stale local copies.
 
