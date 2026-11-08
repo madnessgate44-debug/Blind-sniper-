@@ -27,6 +27,8 @@ class RuntimeRegistryTests(unittest.TestCase):
         registry = json.loads((ROOT / "chatgpt-home/runtime/capabilities.json").read_text())
         adapters = {item["id"]: item for item in registry["adapters"]}
         self.assertEqual(adapters["forge_browser_mcp"]["status"], "endpoint_remote_smoke_reported_connector_not_registered")
+        self.assertEqual(adapters["chatgpt_history_export"]["status"], "blocked_no_native_export_action")
+        self.assertEqual(adapters["ephemeral_execution"]["status"], "available_in_current_session")
         self.assertEqual(adapters["openhands_dispatch"]["status"], "partially_verified")
         self.assertIn("TinyFish", registry["exclusions"][0])
         skills = json.loads((ROOT / "chatgpt-home/runtime/skills.index.json").read_text())
