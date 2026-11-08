@@ -45,3 +45,13 @@ Blind Sniper should progress authorized work directly and use supported automati
 ## P0 foundation recovery
 - Read FOUNDATION_RECOVERY_PLAN.md after BLIND_SNIPER.md. It is the controlling execution plan for the highest-priority OS recovery: OpenHands archive, ChatGPT archive, Forge browser integration, Watcher feedback loop, agent capability registry and recurring reporting.
 - Do not declare the foundation complete until its evidence ledger and end-to-end acceptance gates pass.
+
+
+## Codex runtime body
+- `CODEX_RUNTIME_ARCHITECTURE.md` — system-level design and first end-to-end acceptance test.
+- `REPOSITORY_REGISTRY.md` — dated inventory of all repositories visible to the connected GitHub account; refresh before use.
+- `TASK_TEMPLATE.md` — standard task envelope, correlation IDs and verification ledger.
+- `tasks/` — durable task state, evidence and next actions.
+- `FOUNDATION_RECOVERY_PLAN.md` — P0 integration and archive recovery plan.
+
+ChatGPT is the interactive interface. This directory is the persistent Blind Sniper body/control plane. GitHub Actions or an authorized cloud runner provides compute; repositories are workspaces; Forge/OpenHands are workers only through verified adapters. Read the runtime architecture before dispatching work.
