@@ -1,54 +1,41 @@
 # Blind Sniper build progress — 8 November 2026
 
 **Architecture:** Native-first. Blind Sniper's own runtime, policy, workforce contracts, ledger and recovery are core. External agents are optional adapters.
-**Integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`
-**Current state anchor:** `chatgpt-home/CURRENT_STATE.md`
+**Integration baseline:** feat/blind-sniper-orchestration-integration-2026-11-08
+**Remediation branch:** feat/blind-sniper-e2e-simulation-2026-11-08
 
-## Completed
+## Completed before this remediation
 
 1. Native roster contains eight internal roles with checked-in contracts; external worker identities are not core roles.
 2. Runtime policy prevents task envelopes from selecting profiles or overriding host-forbidden actions. Unknown/unclassified actions require action-specific approval; merge/default-branch/CI-CD actions are gated.
 3. Closure requires PASS, reviewer distinct from implementer, matching task ID, full commit SHA and CI run ID. This is metadata validation, not cryptographic reviewer authentication.
 4. Native append-only JSONL ledger provides sequence numbers, idempotency, process locking, fsync and SHA-256 chain validation.
-5. Runtime `plan` now writes a `TASK_CREATED` snapshot to the ledger.
-6. Every accepted `transition` writes a complete `TASK_TRANSITIONED` snapshot to the ledger before writing the convenience JSON checkpoint.
-7. `recover` reconstructs the latest task state from the verified ledger.
-8. Transition retries repair a stale checkpoint from ledger state; a repeated already-committed target does not append a duplicate transition.
-9. Legacy task-state JSON can be adopted once as `TASK_IMPORTED`.
-10. Host-forbidden actions are non-overridable; an Owner approval record cannot authorize force-push, branch deletion, credential/secret export, disabling branch protection or unbounded shell execution.
+5. Runtime plan and transition commands persist full state snapshots; recovery reconstructs the latest task state.
+6. Workflow routing and agent assignment are registry-owned; profiles bind allowed agents and skills.
 
-## Latest implementation evidence
+## Remediation artifact
 
-- Runtime implementation commit: `cdad18b952b58dd3404fa66cee368724f5902627`.
-- Host-forbidden policy commit: `d5e76f04533ce9ac9085cf471bf740966695fb3b`.
-- Registry-owned routing commit: `56cdf4f54ab360c85f8ff547d21c8590273346be`.
-- Runtime registry-driven selection commit: `a741f908f85184d4fe285205b61254aa95f91f58`.
-- Safe fallback profile/agents correction: `eec6f124cba2612473f700290ea3dc273bf6f313`.
-- Regression tests commit: `12a4a4149a163ed3c6870ba8ba543d06565cf1ae`.
-- Runtime CI run [42484343595](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343595): SUCCESS; **29 tests passed**, including ledger-backed plan, transition, replay, stale-checkpoint recovery and host-forbidden denial.
-- Latest runtime CI run [42484643917](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484643917): SUCCESS; **31 tests passed**, including registry-owned routing, profile/agent selection, and the unprofiled browser workflow safely falling back to the default native profile/agents.
-- Latest OS compliance run [42484643930](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484643930): SUCCESS.
-- Engineering Execution OS compliance run [42484343610](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343610): SUCCESS on test commit `12a4a41`.
-- Documentation was updated after that runtime pass; latest HEAD and exact CI checks are maintained in `CURRENT_STATE.md`.
+- scripts/simulate_blind_sniper_e2e.py drives the actual runtime CLI through plan → execute (deterministic local action) → verify → injected interruption → recover → resume → close.
+- .github/workflows/blind-sniper-runtime.yml runs the simulation after registry validation and unit tests, then uploads raw ledger, command logs, receipt, final state and execution artifact for 14 days.
+- chatgpt-home/runtime/E2E_SIMULATION.md defines exactly what a simulation PASS proves and what it does not prove.
 
-## Explicit limits
+## Remaining gaps — not silently promoted to complete
 
-- The ledger is local-workspace durable only. It does not synchronize across ephemeral GitHub Actions runners or remote workspaces.
-- The hash chain detects edits but is not a signed or tamper-proof audit log.
-- Approval records are host-supplied attestations; the runtime cannot cryptographically prove who supplied the record.
-- Reviewer identity is a distinct metadata field, not cryptographically authenticated.
-- Native role contracts are not separately spawned model processes. The runtime is still a planner and guarded state engine, not an autonomous agent executor.
-- No GitHub-backed compare-and-swap store, multi-host lease/claim queue, cancellation scheduler or full interrupted-run E2E has been implemented.
-- Public-repository privacy containment remains unresolved; do not move or import private memory/transcripts into this public repository.
-- No PR was merged; PRs #3, #6 and #7 remain open pending an explicit later consolidation decision.
+- **Cross-runner persistence:** the hash-chained ledger is local workspace storage. The uploaded CI artifact is finite evidence retention, not a transactional shared ledger.
+- **Leases/concurrency:** no distributed task claims, lease expiry, heartbeat, cancellation or stale-owner takeover.
+- **Real executor:** native agent contracts are not separately spawned model processes. The new E2E is explicitly a deterministic simulation, not an OpenHands/Forge/model execution.
+- **External integrations:** direct OpenHands API, Forge MCP registration and authenticated browser execution are not callable in the current ChatGPT session.
+- **Privacy:** this repository is public and its existing history includes personal/client-context continuity data. A branch update cannot erase public history. Repository visibility changes and history cleanup require repository-owner/admin action and a separately approved recovery plan. Do not add further personal memory or raw transcripts here.
+- **Provider credentials:** the provider pool is not accessible through this session; do not copy or expose key material.
+- **Approval identity:** current approval/reviewer identities are auditable metadata, not cryptographic authentication.
 
-## Next engineering sequence
+## Acceptance sequence
 
-1. Add GitHub-backed append-only persistence using immutable commits and optimistic concurrency, with no paid database.
-2. Add task claims/leases, expiry, cancellation and stale-lease recovery.
-3. Implement a bounded native executor adapter over only real host tools/CI runners; never represent contracts as spawned agents.
-4. Bind executor receipts to task ID, step ID, exact commit SHA, workflow run ID and result artifact.
-5. Exercise submit → execute → interrupt → recover → resume → verify → close.
-6. Move routing ownership into registries and remove duplicated routing maps.
-7. Reduce boot payload and measure actual bytes/lines before optimizing.
-8. Reconcile branch graph and prepare a privacy-safe consolidated draft PR only after storage containment.
+1. CI registry validation and all runtime unit tests pass.
+2. E2E simulation receipt reports the exact commit and run ID.
+3. The receipt shows all eight lifecycle states in order and a verified ledger hash chain.
+4. The injected stale checkpoint recovers to VERIFYING before resuming.
+5. Artifact and command logs are uploaded and retrievable.
+6. Remaining gaps stay explicitly BLOCKED/NOT PROVEN until their real adapters and cross-runner tests exist.
+
+No merge, default-branch push, deployment, secret mutation, permission change, paid provisioning or public-history rewrite is included in this remediation.
