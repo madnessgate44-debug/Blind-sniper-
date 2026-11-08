@@ -184,5 +184,25 @@ class TaskLedgerTests(unittest.TestCase):
         self.assertEqual(event["payload"], payload)
 
 
+    def test_execution_transition_append_rejects_nonexecuting_or_mismatched_snapshot(self):
+        now = datetime(2026, 11, 8, 15, 0, tzinfo=timezone.utc)
+        self.ledger.claim_task(
+            task_id="BS-LEASE-007", owner_id="runner-a", lease_seconds=60,
+            idempotency_key="lease-a", now=now,
+        )
+        with self.assertRaisesRegex(LedgerError, "EXECUTING snapshot"):
+            self.ledger.append_transition_if_lease(
+                task_id="BS-LEASE-007", owner_id="runner-a",
+                payload={"state": {"task_id": "BS-LEASE-007", "status": "PLANNED"}},
+                idempotency_key="wrong-state", now=now,
+            )
+        with self.assertRaisesRegex(LedgerError, "EXECUTING snapshot"):
+            self.ledger.append_transition_if_lease(
+                task_id="BS-LEASE-007", owner_id="runner-a",
+                payload={"state": {"task_id": "OTHER", "status": "EXECUTING"}},
+                idempotency_key="wrong-task", now=now,
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
