@@ -1,5 +1,45 @@
 # Blind Sniper — Claude Handoff & Independent Architecture Review
 
+
+# Current-state addendum — 8 November 2026, 14:10 Cairo time
+
+This addendum supersedes any conflicting point-in-time status statements in the historical handoff sections below. Preserve the original notes as history; use this section as the current evidence anchor.
+
+## Repository snapshot
+
+- Integration branch: `feat/blind-sniper-orchestration-integration-2026-11-08`.
+- Current branch HEAD: `2a1634024419e0353d0591e6ed7ade436e518736` — documentation-only commit, message: `docs(handoff): brief Claude on Blind Sniper architecture and today's work`.
+- Parent commit: `013ed5dc00fe3be953a841528cbaebfbc5801e69` — `refactor(runtime): make workflow registry own capability requirements`.
+- PR #6 and PR #7 are both currently OPEN and NOT MERGED. Their source branches remain separate; the integration branch is not a merge of either PR.
+- No integration PR has been opened from the current integration branch.
+
+## Verification evidence
+
+- GitHub Actions run `42478361100`, workflow `Blind Sniper Runtime Registry`, completed with conclusion `success` on commit `013ed5dc00fe3be953a841528cbaebfbc5801e69`: https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42478361100
+- The runtime validator and the full discovered Python test suite passed in that run; the orchestration test set was reported as 12/12 passing in the verified run log.
+- The current HEAD `2a163402...` changes only the Claude handoff document relative to its parent, so the runtime CI result remains applicable to the unchanged runtime code. It is not a fresh runtime run on the documentation commit.
+- The handoff-document commit also passed the Environment Validation and Engineering Execution OS Compliance workflows, as recorded in the current session report. Do not represent those as runtime test runs.
+
+## OpenHands dispatch status — important distinction
+
+- Issue #8, `[OpenHands] Complete existing Blind Sniper OS orchestration integration and E2E verification`, is open: https://github.com/madnessgate44-debug/Blind-sniper-/issues/8
+- A live fetch of issue #8 returned **zero comments**. No dispatch receipt, OpenHands session ID, correlated result, PR or execution artifact is recorded on that issue. Therefore the requested OpenHands coding task is **NOT VERIFIED AS DISPATCHED OR STARTED**.
+- PR #6's description separately reports one correlated, read-only OpenHands handoff (T013) through Brain issue #292, with a request comment, resolver session ID and result comments. That is evidence for that separate read-only handoff only; it does not prove issue #8 was dispatched, nor does it prove code execution or artifact return.
+
+## Runtime capability truth
+
+The engine remains a registry-aware planner and guarded task lifecycle state machine. It does not itself spawn agents, invoke tools, run browser sessions, or provide a durable shared cross-session task store. Approval flags are caller-supplied and are not cryptographically authenticated Owner receipts. Verification/review gates still accept simple evidence fields and need stronger task/commit/reviewer provenance. The browser, continuous background runner, and automatic transcript export remain unproven or blocked as described in the main handoff.
+
+## Required Claude review focus
+
+1. Review the exact current integration HEAD above, not the older PR #6/#7 heads.
+2. Treat runtime CI run `42478361100` as passing evidence for parent `013ed5d...`, and distinguish it from checks on the documentation-only HEAD.
+3. Explicitly state that issue #8 has no dispatch/result comments and that PR #6's T013 is a separate read-only Brain handoff.
+4. Prioritize registry/runtime duplication, approval provenance, evidence binding, durable persistence/recovery, idempotent dispatch, and a real callable execution receipt before expanding browser scope.
+5. Do not modify files, merge PRs, deploy, provision paid resources, or alter secrets/permissions as part of the review.
+
+---
+
 **Prepared:** 8 November 2026  
 **Repository:** https://github.com/madnessgate44-debug/Blind-sniper-  
 **Integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`  
