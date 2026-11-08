@@ -13,7 +13,7 @@
 | Figma | Design files and implementation workflows | Connector namespace present; skill prerequisites apply | HOST-AVAILABLE / VERIFY ACTION |
 | Notion | Workspace research/documentation | Connector namespace present; action-specific auth must be checked | HOST-AVAILABLE / VERIFY ACTION |
 | OpenHands | Coding worker/session dispatch | GitHub mention route created session IDs; task-specific result retrieval not yet proven | PARTIAL |
-| Forge browser MCP | Authenticated browser/computer interaction | Firstborn PR #147 endpoint + PR #148 remote HTTPS smoke/CI; sandbox host is ephemeral; ChatGPT connector not registered | ENDPOINT-PROVEN / CONNECTOR-BLOCKED |
+| Forge browser MCP | Authenticated browser/computer interaction | Firstborn PR #147 endpoint + PR #148 remote HTTPS smoke/CI; sandbox host is ephemeral; ChatGPT connector not registered | REMOTE-SMOKE-REPORTED / CONNECTOR-BLOCKED |
 | Codex CLI | Local terminal, profile and sandbox runtime | No local Codex host exposed to this ChatGPT session | NOT-AVAILABLE-HERE |
 | Persistent cloud shell | Isolated terminal/worktree execution | No verified sandbox/session currently established | NOT-ESTABLISHED |
 | Brain bridge | Durable agent coordination and callback | GitHub issue #292 available; OpenHands session results returned in correlated comments; direct ChatGPT session API and two consecutive Blind Sniper round trips unproven | PARTIAL |
