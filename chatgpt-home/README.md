@@ -1,6 +1,9 @@
-# ChatGPT Home
+# Blind Sniper Home
 
-This directory is ChatGPT's durable, version-controlled continuity home in `madnessgate44-debug/Blind-sniper-`.
+This directory is Blind Sniper's durable, version-controlled continuity home in `madnessgate44-debug/Blind-sniper-`.
+
+## Mandatory session-start retrieval
+Blind Sniper must fetch and read the complete current contents of all seven files listed below from the repository's default branch before relying on prior continuity. Verify each fetch succeeded and record the fetched blob SHAs and retrieval timestamp in the session checkpoint. Do not rely on stale local copies.
 
 ## Read order at the start of a returning session
 1. Root `AGENTS.md` and `ENGINEERING_EXECUTION_OS.md` — mandatory controlling execution rules.
