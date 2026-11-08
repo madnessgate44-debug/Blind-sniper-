@@ -2,7 +2,7 @@
 
 **Entrypoint:** `scripts/blind_sniper_runtime.py`  
 **Registry source:** `chatgpt-home/runtime/*.json`  
-**Status:** Executable planning and guarded lifecycle state machine. It is not an autonomous agent or an external tool runner.
+**Status:** Executable planning and guarded lifecycle state machine, with a native append-only task ledger. It is not yet a distributed runner or cross-runner task store.
 
 ## What is executable now
 
@@ -15,7 +15,7 @@ The engine reads the current registries and:
 6. Resolves every workflow adapter and normalizes its evidence status to AVAILABLE, PARTIAL, BLOCKED or UNVERIFIED.
 7. Calculates readiness and the next safe action.
 8. Enforces task-state transitions, explicit Owner approval, verification and independent-review gates.
-9. Persists task state as JSON with an append-only transition event list.
+9. Persists task state as JSON with an append-only transition event list.\n10. Provides a separate native JSONL task ledger with process locking, idempotency keys, sequence checks and a SHA-256 hash chain.
 
 ## Commands
 
@@ -64,3 +64,26 @@ python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 Tests cover workflow/profile routing, skill and agent selection, capability readiness, unknown workflow rejection, blocked browser adapter rejection, Owner approval, lifecycle sequencing, verification, review and closure guards.
+
+
+## Native task ledger (new)
+
+**Module:** `scripts/blind_sniper_ledger.py`
+
+The ledger stores append-only JSONL events. Each event carries a global sequence number, task ID, event type, idempotency key, timestamp, payload, previous-event hash and its own SHA-256 hash. Reads validate the full chain and fail closed on malformed or tampered records. Appends use an exclusive OS file lock, flush and fsync; repeated identical idempotency keys return the original event, while key reuse with different content is rejected.
+
+Example:
+```python
+from scripts.blind_sniper_ledger import TaskLedger
+
+ledger = TaskLedger(".blind-sniper/state/events.jsonl")
+ledger.append(
+    task_id="BS-20261108-001",
+    event_type="TASK_CREATED",
+    payload={"objective": "Example"},
+    idempotency_key="BS-20261108-001:create",
+)
+snapshot = ledger.task_history("BS-20261108-001")
+```
+
+**Persistence boundary:** this provides process-restart recovery only when the workspace and ledger file persist. GitHub-hosted ephemeral runners do not share this local file automatically. Cross-runner durability and multi-writer compare-and-swap synchronization are not implemented yet. Do not store secrets in event payloads.
