@@ -1,0 +1,19 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "account-library",
+  "version": "1.0.0",
+  "description": "Account-level OpenHands library: 33 skills, 19 sub-agents and 3 lifecycle hooks.",
+  "author": {
+    "name": "madnessgate44-debug"
+  },
+  "homepage": "https://github.com/madnessgate44-debug/Openhands",
+  "repository": "https://github.com/madnessgate44-debug/Openhands",
+  "license": "MIT",
+  "keywords": [
+    "openhands",
+    "skills",
+    "subagents",
+    "hooks",
+    "marketplace"
+  ]
+}
