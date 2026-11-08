@@ -318,6 +318,9 @@
       "steps": [
         "install pinned agent-browser CLI",
         "install Chromium and Linux dependencies",
+        "verify task EXECUTING state and active owner lease before every browser action",
+        "reserve run/session/step idempotency key in canonical task ledger",
+        "persist browser action receipt to canonical task ledger",
         "run browser adapter policy unit tests",
         "start local controlled fixture",
         "navigate and capture accessibility snapshot",
@@ -331,13 +334,17 @@
       "adapters": [
         "agent_browser_cli"
       ],
-      "status": "partial_ci_acceptance_passed_persistent_host_unverified",
+      "status": "partial_native_lease_dispatch_implemented_ci_pending_persistent_host_unverified",
       "required_capabilities": {
         "agent_browser_cli": [
           "allowlisted_http_navigation",
           "accessibility_snapshot",
           "screenshot",
-          "structured_action_receipts"
+          "structured_action_receipts",
+          "native_task_state_and_lease_gate",
+          "pre_action_step_reservation",
+          "canonical_ledger_browser_receipts",
+          "duplicate_and_interrupted_step_replay_block"
         ]
       }
     }
