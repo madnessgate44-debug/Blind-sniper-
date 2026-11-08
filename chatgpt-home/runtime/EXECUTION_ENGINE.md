@@ -139,3 +139,14 @@ python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 Tests cover registry resolution, routing, task-envelope authority boundaries, Owner approval records, host-forbidden actions, correlated review receipts, local ledger persistence, GitHub CAS retries, remote hash-chain validation and recovery reads.
+
+
+## Allowlisted task executor
+
+**Entrypoint:** \`scripts/blind_sniper_executor.py\`  
+**Workflow:** \`.github/workflows/blind-sniper-allowlisted-executor.yml\`  
+**Task contract:** \`.blind-sniper/tasks/<task>.json\`
+
+The executor accepts only the fixed IDs \`unit-tests\` and \`runtime-validator\`. Task files cannot supply shell text or arguments. The runner checks the named branch and full commit SHA, reserves a core task lease using GitHub's HTTP Date header, runs the allowlisted commands with shell disabled and a minimal child-process environment, and uploads logs, a compact ledger and a machine-readable receipt. The workflow uses \`contents: read\` only and sparse-checks out required runtime/test/contracts paths rather than the full \`chatgpt-home\` tree.
+
+A successful run ends in \`REVIEWING\`, not \`CLOSED\`. An independent reviewer must inspect the artifact and supply a task-correlated PASS receipt before closure. A green executor job is not an independent review and is not a closure receipt. The current executor uses a per-run local ledger artifact; it does not claim cross-run durable lease storage.
