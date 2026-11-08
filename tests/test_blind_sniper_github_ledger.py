@@ -12,6 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from blind_sniper_ledger import GitHubContentsLedger, GitHubLedgerError, TaskLedger  # noqa: E402
+import blind_sniper_runtime as runtime  # noqa: E402
 
 
 class FakeContentsAPI:
@@ -122,6 +123,41 @@ class GitHubContentsLedgerTests(unittest.TestCase):
         with self.assertRaises(GitHubLedgerError):
             self.ledger.append(task_id="BS-GH-006", event_type="CREATED",
                                payload={}, idempotency_key="six:create")
+
+
+    def test_remote_task_history_and_runtime_recovery_read_latest_snapshot(self):
+        state = {
+            "task_id": "BS-GH-007",
+            "status": "SPECIFIED",
+            "events": [
+                {"from": None, "to": "REQUESTED"},
+                {"from": "REQUESTED", "to": "INSPECTING"},
+                {"from": "INSPECTING", "to": "SPECIFIED"},
+            ],
+        }
+        self.ledger.append(
+            task_id="BS-GH-007", event_type="TASK_TRANSITIONED",
+            payload={"state": state}, idempotency_key="seven:specified",
+        )
+        self.assertEqual(self.ledger.task_history("BS-GH-007")["event_count"], 1)
+        recovered = runtime.recover_task_state(self.ledger, "BS-GH-007")
+        self.assertEqual(recovered["status"], "SPECIFIED")
+
+    def test_runtime_github_mode_requires_owner_repo_branch_and_token(self):
+        import argparse
+        import os
+        args = argparse.Namespace(
+            github_ledger=True, github_token_env="BLIND_SNIPER_TEST_TOKEN",
+            github_owner="owner", github_repo="repo", github_branch="branch",
+            github_path=".blind-sniper/events.jsonl", ledger="unused.jsonl",
+        )
+        old = os.environ.pop("BLIND_SNIPER_TEST_TOKEN", None)
+        try:
+            with self.assertRaises(runtime.RuntimeErrorBase):
+                runtime.configure_ledger(args)
+        finally:
+            if old is not None:
+                os.environ["BLIND_SNIPER_TEST_TOKEN"] = old
 
 
 if __name__ == "__main__":
