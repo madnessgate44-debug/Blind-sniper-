@@ -35,3 +35,14 @@
 - Covered here: the specific prior decisions and project context returned by conversation retrieval for this initialization.
 - Not covered: every historical message, attachments, images, voice recordings, tool call, and complete raw transcript across all conversations.
 - Do not label this file a full export. Append dated entries as real source conversations or export artifacts become retrievable.
+
+
+## 2026-11-08 — Blind Sniper continuity capability build
+
+- [VERIFIED] Owner renamed this operating identity to **Blind Sniper**.
+- [VERIFIED] Re-fetched and verified all seven complete continuity files from `main`; all returned non-empty content and blob SHAs.
+- [VERIFIED] Added `chatgpt-home/skills/blind-sniper-continuity/SKILL.md` covering mandatory seven-file retrieval, evidence-tagged incremental synchronization, and full historical transcript migration.
+- [VERIFIED] Updated README, OPERATING_PROFILE, MEMORY, SYNC_PROTOCOL, and SKILLS_CATALOG to register the Blind Sniper identity and skill.
+- [BLOCKED] Recurring ChatGPT automation creation was rejected because the account has reached its scheduled-task limit (3 of 3). No background sync task was created.
+- [BLOCKED] Full historical transcript migration cannot start until an authorized ChatGPT data export archive is supplied or a supported account-history connector is available. Existing recovered conversation notes remain reconstructed summaries, not raw transcripts.
+- Next: free one scheduled-task slot or use an approved external scheduler for recurring checks; provide the ChatGPT export archive for full transcript migration.
