@@ -6,7 +6,7 @@
 
 ## Purpose
 
-This layer joins the existing OpenHands skill/agent library, Codex-inspired profiles, current ChatGPT connectors, GitHub workspaces, external execution agents and evidence workflows behind one capability registry.
+This layer implements Blind Sniper's native-first control plane: its own policy, registries, role contracts, task lifecycle, local persistence and recovery. Mirrored OpenHands assets and external execution agents are optional reference/adapters, never core dependencies.
 
 It deliberately distinguishes:
 - **Available now:** tool exposed in the active ChatGPT session.
@@ -16,7 +16,7 @@ It deliberately distinguishes:
 
 ## Components
 
-The native Blind Sniper pack is maintained alongside this registry: `../ENVIRONMENT_MANIFEST.md`, `../skills/`, `../agents/`, `../workflows/`, `../templates/`, `../tools/TOOL_REGISTRY.md` and `../config/`. Prefer the native skills/contracts for this ChatGPT host. The `openhands-library/` mirror remains the broader source-preserving specialist library.
+The native Blind Sniper pack is maintained alongside this registry: `../ENVIRONMENT_MANIFEST.md`, `../skills/`, `../agents/`, `../workflows/`, `../templates/`, `../tools/TOOL_REGISTRY.md` and `../config/`. Prefer native skills/contracts. The `openhands-library/` mirror is source-preserving reference material only.
 
 | File | Responsibility |
 |---|---|
@@ -107,15 +107,15 @@ The licensed source imports and native adaptations are now part of this integrat
 - Native agent and workflow adaptations are indexed in `chatgpt-home/README.md`; imported source files remain reference material, not auto-executed plugins.
 
 
-## Native task persistence — initial implementation
+## Native task persistence and recovery
 
-`../../scripts/blind_sniper_ledger.py` provides an append-only JSONL event ledger with process locking, fsync, idempotent event keys, monotonic sequence validation and a SHA-256 hash chain. It is a local durable-workspace primitive only. It does not yet synchronize state across ephemeral GitHub Actions runners or concurrent cloud hosts; that requires a GitHub-backed optimistic-concurrency adapter.
+`../../scripts/blind_sniper_ledger.py` provides an append-only JSONL event ledger with process locking, fsync, idempotent event keys, monotonic sequence validation and a SHA-256 hash chain. `../../scripts/blind_sniper_runtime.py` now writes TASK_CREATED and TASK_TRANSITIONED snapshots automatically, and its `recover` command rebuilds the latest state from the verified ledger. The ledger remains local-workspace durable only; it does not synchronize across ephemeral runners or cloud hosts.
 
 
 ## Native core status — 8 November 2026
 
-The native runtime roster has been narrowed to **8 implemented internal roles**: Blind Sniper, researcher, planner, engineer, reviewer, QA verifier, recovery and release manager. Operating profiles select only these roles. OpenHands and Forge remain optional capability adapters, not native agents or required execution dependencies. No Watcher, Shadow or Ghost role is part of the native core; the provider-pool adapter has been removed.
+Ahmed confirmed **native-first** as the single target architecture. The native roster has eight internal roles: Blind Sniper, researcher, planner, engineer, reviewer, QA verifier, recovery and release manager. Operating profiles and workflow-specific agent assignments are checked in. External OpenHands/Forge/other worker identities are not native agents or required execution dependencies. TinyFish remains excluded.
 
-The native task ledger is `../../scripts/blind_sniper_ledger.py`. It supports append/show, hash-chain validation, process locking, idempotency and local workspace replay. It is not yet a GitHub-backed shared store and is not automatically wired into every planner transition.
+Workflow routing keywords, priorities and agent assignments now live in `workflows.json`; profile binding is resolved through `profiles.json`. The runtime no longer maintains duplicate workflow-to-profile or workflow-to-agent dictionaries. The registry validator checks workflow agent IDs, profile allowlists, routing rules and default agents.
 
-Latest verified runtime checkpoint: **20 Python tests passed** on runtime code/test SHA `92abb690fa3e3026ef68c2073e0c79d5801037fc` (Actions run `42481163242`). Environment validation and OS compliance passed on final documentation HEAD `21950fbc85e73176edf642476f960e72dc1edbba`.
+The runtime remains a planner and guarded state machine, not an autonomous executor. It does not spawn separate model processes or claim that role contracts have run. Current test and CI evidence is in `chatgpt-home/CURRENT_STATE.md`; implementation limits and next work are in `chatgpt-home/runtime/BUILD_PROGRESS.md`.
