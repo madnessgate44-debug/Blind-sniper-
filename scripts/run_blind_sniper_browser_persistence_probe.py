@@ -73,7 +73,7 @@ def open_phase():
     lease = ledger.claim_task(
         task_id=task_id,
         owner_id=OWNER_ID,
-        lease_seconds=7200,
+        lease_seconds=3600,
         idempotency_key=f"{task_id}:lease",
     )
     if not lease["claimed"]:
