@@ -6,7 +6,7 @@ description: Retrieve Blind Sniper's seven-file GitHub memory, synchronize verif
 # Blind Sniper Continuity Skill
 
 ## Trigger
-Use whenever a session starts, the Owner says "resume", asks what was done before, asks to synchronize memory, asks to export/archive conversations, or material project decisions/work are completed.
+Use whenever the Owner says "Blind Sniper", "Be Blind Sniper", "load OS" or "resume". The first action is to retrieve and follow `chatgpt-home/BLIND_SNIPER.md` as the canonical operating entrypoint. Also use whenever a session starts, the Owner says "resume", asks what was done before, asks to synchronize memory, asks to export/archive conversations, or material project decisions/work are completed.
 
 ## Source of truth
 Repository: `madnessgate44-debug/Blind-sniper-`
