@@ -11,8 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from blind_sniper_github_ledger import GitHubContentsLedger, GitHubLedgerError  # noqa: E402
-from blind_sniper_ledger import TaskLedger  # noqa: E402
+from blind_sniper_ledger import GitHubContentsLedger, GitHubLedgerError, TaskLedger  # noqa: E402
 
 
 class FakeContentsAPI:
