@@ -63,3 +63,11 @@
 6. Move routing ownership into registries and remove duplicated routing maps.
 7. Reduce boot payload and measure actual bytes/lines before optimizing.
 8. Reconcile branch graph and prepare a privacy-safe consolidated draft PR only after storage containment.
+
+
+## End-to-end task/lease/recovery simulation
+
+- The deterministic CI harness drives the runtime CLI through plan, local lease claim, competing-owner denial, lease-gated EXECUTING, artifact verification, injected interruption, recovery, resume, close and lease release.
+- The runtime now commits the EXECUTING transition under the local ledger's atomic lease lock, closing the check-then-append race for a single shared workspace.
+- The simulation also tests expiry/reclaim and owner-only release in an isolated local ledger.
+- It remains a deterministic local simulation. No external agent is spawned and no live GitHub CAS write or distributed lease is claimed.
