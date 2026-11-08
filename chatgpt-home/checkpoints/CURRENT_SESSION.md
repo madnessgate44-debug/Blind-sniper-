@@ -260,3 +260,33 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 - [VERIFIED] OS compliance run `42475329895` / job `128715259743` PASS.
 - [PASS] One correlated read-only OpenHands report handoff completed: T013 request `6720767727` → session `e341bd8463694d68bd79dc609e408f33` → result `6720817754` / final report `6720827623`.
 - [NOT PASSED] Two consecutive handoffs, direct OpenHands Cloud API from ChatGPT, code-execution artifact return and ChatGPT→Forge tool invocation.
+
+
+## 2026-11-08T15:23Z — Blind Sniper session resumed; BS-20261108-004 advanced
+
+### Boot evidence
+- [VERIFIED] Root AGENTS.md SHA: 91d63a56818ebf5d757ac7cda0e0786fff88b058.
+- [VERIFIED] Root ENGINEERING_EXECUTION_OS.md v2.2 SHA: 7c339a090eaf23fc1e4f9112f72a4ba28f2bfe1c.
+- [VERIFIED] Canonical chatgpt-home/BLIND_SNIPER.md SHA: 3d2f1fc661ef99b00589cbaafae12647f6339ee4.
+- [VERIFIED] Seven default-branch continuity files fetched non-empty:
+  - README.md: ed5678c548aa1e02e77bad79908499e1c2da7845
+  - OPERATING_PROFILE.md: d024a92c471f29a8b68bf33f9eaeccadc374d3fb
+  - MEMORY.md: 26b415e075b69e5f4af177b0dfcc844f1598bb7c
+  - PROJECTS.md: 97e848953da5ead22656f0a684438f3d73077536
+  - CONVERSATION_CONTINUITY.md: e767e8a8c8986776ae365e463477cfe8814f16ba
+  - SKILLS_CATALOG.md: 5589a1b2e768f7629648df090dc2c023e862c980
+  - SYNC_PROTOCOL.md: 1ed3ee1814dc3de5f628a1697f04eea215b57145
+- [VERIFIED] Relevant native review, security and testing skill checklists retrieved from the OpenHands mirror and applied as review lenses; no external reviewer was spawned.
+
+### BS-20261108-004 — native browser adapter
+- [VERIFIED] Inspected PR #11 and task record. Corrected two gaps: URL path/query/fragment redaction in receipts and session metadata; disabled the standalone adapter CLI to prevent bypassing the native task/lease dispatch entrypoint.
+- [VERIFIED] The first correction run exposed a missing sys import in the blocked-CLI entrypoint (run 42494306777). Added import sys in commit b48a5f9f0658f1210a66af02231079723039fbb6.
+- [VERIFIED] Corrected code CI: browser run 42494392033 passed 13 browser-policy tests, 8 dispatcher tests and the 7-step real Chromium fixture; runtime run 42494391958 passed 76 tests; environment run 42494391967 passed; OS compliance run 42494391928 passed.
+- [VERIFIED] Documentation-head recheck: browser run 42494489650 passed; runtime run 42494489779 passed (76 tests); environment run 42494489680 passed; OS compliance run 42494489781 passed. Browser artifact ID 13622514585, 11,772 bytes.
+- [VERIFIED] Latest inspected PR #11 head before this checkpoint write: e5c70bb2c24372cd5d3f58c4567739945987c38c. PR remains OPEN / DRAFT / NOT MERGED, base integration SHA db4e82ad831fbd231689a359d66a1153fc601407.
+- [VERIFIED] Task record and BROWSER_ADAPTER.md were appended with the security fixes, failure correction and evidence.
+- [PARTIAL] Persistent browser hosting, direct ChatGPT tool registration, cross-job live-session recovery, tabs/frames, upload/download, PDF, authenticated profiles and full interruption/recovery acceptance remain open. Independent external full-diff review remains pending.
+- [NOT DONE] No merge, deployment, secret/permission change, paid service or user-device extension.
+
+### Next pickup
+Continue BS-20261108-004 only after preserving the current PR boundary. Next engineering tranche: close the remaining browser acceptance gaps in small independently verified slices; do not represent the ephemeral CI runner as a persistent browser service.
