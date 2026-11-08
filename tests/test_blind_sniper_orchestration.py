@@ -225,5 +225,96 @@ class OrchestrationEngineTests(unittest.TestCase):
         self.assertEqual(plan["workflow"], "inspect-plan-implement-verify")
 
 
+    def test_runtime_plan_cli_persists_created_state_to_native_ledger(self):
+        import json
+        import subprocess
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            task = Path(tmp) / "task.json"
+            state = Path(tmp) / "state.json"
+            ledger = Path(tmp) / "events.jsonl"
+            task.write_text(json.dumps({
+                "task_id": "BS-LIFECYCLE-001",
+                "objective": "Research durable task recovery",
+            }), encoding="utf-8")
+            result = subprocess.run([
+                sys.executable, str(ROOT / "scripts" / "blind_sniper_runtime.py"),
+                "plan", "--task-file", str(task), "--output", str(state),
+                "--ledger", str(ledger),
+            ], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            history = runtime.TaskLedger(ledger).task_history("BS-LIFECYCLE-001")
+            self.assertEqual(history["event_count"], 1)
+            self.assertEqual(history["last_event"]["event_type"], "TASK_CREATED")
+            self.assertEqual(history["last_event"]["payload"]["state"]["status"], "REQUESTED")
+
+    def test_transition_cli_appends_every_state_and_recovery_reconstructs_latest(self):
+        import json
+        import subprocess
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            task = Path(tmp) / "task.json"
+            state = Path(tmp) / "state.json"
+            ledger = Path(tmp) / "events.jsonl"
+            recovered = Path(tmp) / "recovered.json"
+            task.write_text(json.dumps({
+                "task_id": "BS-LIFECYCLE-002",
+                "objective": "Research durable task recovery",
+            }), encoding="utf-8")
+            command = [sys.executable, str(ROOT / "scripts" / "blind_sniper_runtime.py")]
+            created = subprocess.run(command + [
+                "plan", "--task-file", str(task), "--output", str(state), "--ledger", str(ledger),
+            ], capture_output=True, text=True)
+            self.assertEqual(created.returncode, 0, created.stderr)
+            for target in ("INSPECTING", "SPECIFIED"):
+                moved = subprocess.run(command + [
+                    "transition", "--state-file", str(state), "--to", target,
+                    "--output", str(state), "--ledger", str(ledger),
+                ], capture_output=True, text=True)
+                self.assertEqual(moved.returncode, 0, moved.stderr)
+            state.write_text('{"task_id":"BS-LIFECYCLE-002","status":"REQUESTED"}', encoding="utf-8")
+            replay = subprocess.run(command + [
+                "recover", "--ledger", str(ledger), "--task-id", "BS-LIFECYCLE-002",
+                "--output", str(recovered),
+            ], capture_output=True, text=True)
+            self.assertEqual(replay.returncode, 0, replay.stderr)
+            restored = json.loads(recovered.read_text(encoding="utf-8"))
+            self.assertEqual(restored["status"], "SPECIFIED")
+            self.assertEqual(len(restored["events"]), 3)
+            self.assertEqual(runtime.TaskLedger(ledger).task_history("BS-LIFECYCLE-002")["event_count"], 3)
+
+    def test_transition_cli_recovers_ledger_state_before_advancing_stale_checkpoint(self):
+        import json
+        import subprocess
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            task = Path(tmp) / "task.json"
+            state = Path(tmp) / "state.json"
+            ledger = Path(tmp) / "events.jsonl"
+            task.write_text(json.dumps({
+                "task_id": "BS-LIFECYCLE-003",
+                "objective": "Research stale checkpoint recovery",
+            }), encoding="utf-8")
+            command = [sys.executable, str(ROOT / "scripts" / "blind_sniper_runtime.py")]
+            subprocess.run(command + [
+                "plan", "--task-file", str(task), "--output", str(state), "--ledger", str(ledger),
+            ], check=True, capture_output=True, text=True)
+            for target in ("INSPECTING", "SPECIFIED"):
+                subprocess.run(command + [
+                    "transition", "--state-file", str(state), "--to", target,
+                    "--output", str(state), "--ledger", str(ledger),
+                ], check=True, capture_output=True, text=True)
+            stale = json.loads(state.read_text(encoding="utf-8"))
+            stale["status"] = "REQUESTED"
+            state.write_text(json.dumps(stale), encoding="utf-8")
+            moved = subprocess.run(command + [
+                "transition", "--state-file", str(state), "--to", "PLANNED",
+                "--output", str(state), "--ledger", str(ledger),
+            ], capture_output=True, text=True)
+            self.assertEqual(moved.returncode, 0, moved.stderr)
+            self.assertEqual(json.loads(state.read_text(encoding="utf-8"))["status"], "PLANNED")
+            self.assertEqual(runtime.TaskLedger(ledger).task_history("BS-LIFECYCLE-003")["event_count"], 4)
+
+
 if __name__ == "__main__":
     unittest.main()
