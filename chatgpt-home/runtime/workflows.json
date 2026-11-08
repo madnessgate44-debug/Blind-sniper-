@@ -138,7 +138,8 @@
           "independent review",
           "audit diff",
           "review this diff",
-          "review pull request"
+          "review pull request",
+          "review"
         ]
       }
     },
