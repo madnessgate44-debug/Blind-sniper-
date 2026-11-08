@@ -12,7 +12,8 @@
         "write_session_checkpoint"
       ],
       "execution": "conversation_procedure",
-      "status": "documented"
+      "status": "documented",
+      "native_contract_path": "chatgpt-home/workflows/session-boot.md"
     },
     {
       "id": "research-and-synthesis",
@@ -50,7 +51,8 @@
         "openhands_dispatch",
         "persistent_runner"
       ],
-      "status": "partially_operational"
+      "status": "partially_operational",
+      "native_contract_path": "chatgpt-home/workflows/task-lifecycle.md"
     },
     {
       "id": "inspect-plan-implement-verify",
@@ -69,7 +71,8 @@
         "github",
         "persistent_runner"
       ],
-      "status": "repository_changes_and_PR_available_ci_trigger_dependent"
+      "status": "repository_changes_and_PR_available_ci_trigger_dependent",
+      "native_contract_path": "chatgpt-home/workflows/task-lifecycle.md"
     },
     {
       "id": "independent-review",
@@ -84,7 +87,8 @@
       "adapters": [
         "github"
       ],
-      "status": "read_only_review_available"
+      "status": "read_only_review_available",
+      "native_contract_path": "chatgpt-home/templates/REVIEW_REPORT.md"
     },
     {
       "id": "release-gate",
@@ -102,7 +106,8 @@
         "github",
         "vercel"
       ],
-      "status": "approval_gated"
+      "status": "approval_gated",
+      "native_contract_path": "chatgpt-home/workflows/release-gate.md"
     },
     {
       "id": "openhands-two-way-handoff",
@@ -118,7 +123,8 @@
         "github",
         "openhands_dispatch"
       ],
-      "status": "blocked_until_result_retrieval_is_proven"
+      "status": "blocked_until_result_retrieval_is_proven",
+      "native_contract_path": "chatgpt-home/workflows/agent-handoff.md"
     },
     {
       "id": "forge-browser-roundtrip",
@@ -171,7 +177,10 @@
         "files",
         "openhands_dispatch"
       ],
-      "status": "available_read_only_recovery_write_gated"
+      "status": "available_read_only_recovery_write_gated",
+      "native_contract_path": "chatgpt-home/workflows/session-close.md"
     }
-  ]
+  ],
+  "native_workflow_library": "chatgpt-home/workflows/",
+  "native_template_library": "chatgpt-home/templates/"
 }
