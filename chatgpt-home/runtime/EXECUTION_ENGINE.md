@@ -97,12 +97,14 @@ The GitHub adapter first checks repository metadata and refuses any target where
 
 `REQUESTED → INSPECTING → SPECIFIED → PLANNED → EXECUTING → VERIFYING → REVIEWING → CLOSED`
 
-- Every accepted transition appends a full state snapshot to the ledger.
+- The first accepted state event stores a compact snapshot without its event history. Later transitions store a hash-verified top-level diff plus one lifecycle event; recovery rebuilds the event list from the ledger. Legacy full snapshots remain readable.
+- Appends are refused when the resulting JSONL ledger would exceed 512 KiB. Keep transcripts and artifacts outside this control-plane ledger.
 - The ledger append happens before the JSON checkpoint write. If the process stops between those operations, the next transition reloads the ledger's latest state. Repeating the already-committed target repairs the checkpoint without a duplicate event.
 - The CLI exposes `claim`, `release` and `lease-status`. Lease duration is bounded to 1–3600 seconds. The same owner may renew with a new idempotency key; another owner is blocked until expiry or release. Tasks with a latest state of CLOSED or CANCELLED cannot be claimed.
-- CLI entry into EXECUTING requires an active lease and matching `--lease-owner`. The lease check and EXECUTING event append occur under one local file lock or one GitHub blob-SHA CAS operation, avoiding a check-then-write race. The committed snapshot records that lease owner as `implementer_id`, so closure review cannot compare against a generic controller identity.
+- Entry into EXECUTING, every transition from EXECUTING/VERIFYING/REVIEWING, and same-state retries in those states require the active lease and matching `--lease-owner`. The lease check and event append occur under one local file lock or one GitHub blob-SHA CAS operation. The committed state binds `implementer_id` to that lease owner.
+- GitHub-backed lease expiry uses the server's HTTP `Date` response header. If the header is absent or invalid, lease operations fail closed rather than trusting a runner's local clock.
 - The atomic ledger method rejects any receipt whose snapshot is not `EXECUTING` or whose embedded task ID differs from the event task ID.
-- Legacy task JSON without ledger history can be adopted once as `TASK_IMPORTED`; subsequent transitions use ledger state as authoritative.
+- Legacy task JSON without ledger history can be adopted only when its status is `REQUESTED`, its complete plan re-derives identically from its objective, and the host supplies one valid Owner approval for `task_import`. Approval records bind `approval_id`, `task_id`, action, approver, verbatim words, issuance time and expiry; the ledger records consumed IDs and rejects replay.
 - Unknown/unclassified requested actions require explicit action-specific Owner approval.
 - Host-forbidden actions (force-push, branch deletion, credential/secret export, disabling branch protection and unbounded shell execution) cannot be overridden by task JSON or approval records.
 - Other consequential actions, including merges, default-branch pushes, deployments, CI/CD edits, secret/permission changes, paid provisioning and destructive production-data changes, remain approval-gated.

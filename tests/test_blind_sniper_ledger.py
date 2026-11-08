@@ -69,6 +69,17 @@ class TaskLedgerTests(unittest.TestCase):
         self.assertEqual(shown.returncode, 0, shown.stderr)
         self.assertEqual(json.loads(shown.stdout)["event_count"], 1)
 
+    def test_append_refuses_to_exceed_512_kibibytes(self):
+        before = self.ledger.path.read_bytes() if self.ledger.path.exists() else b""
+        with self.assertRaisesRegex(LedgerError, "524288"):
+            self.ledger.append(
+                task_id="BS-LEDGER-LIMIT", event_type="OVERSIZED",
+                payload={"blob": "x" * (512 * 1024)},
+                idempotency_key="oversized:append",
+            )
+        after = self.ledger.path.read_bytes() if self.ledger.path.exists() else b""
+        self.assertEqual(after, before)
+
     def test_unknown_task_has_no_recovery_snapshot(self):
         with self.assertRaisesRegex(LedgerError, "Unknown task_id"):
             self.ledger.task_history("missing")

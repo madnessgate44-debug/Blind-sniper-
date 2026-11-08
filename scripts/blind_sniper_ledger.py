@@ -14,6 +14,7 @@ import json
 import os
 import tempfile
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -23,6 +24,9 @@ from typing import Any
 
 class LedgerError(ValueError):
     """Invalid, corrupt, or conflicting ledger operation."""
+
+
+MAX_LEDGER_BYTES = 512 * 1024
 
 
 def _canonical(value: dict[str, Any]) -> bytes:
@@ -104,8 +108,11 @@ class TaskLedger:
             "prev_hash": previous_hash,
         }
         event = {**body, "event_hash": _digest(body)}
+        line = (json.dumps(event, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
         handle.seek(0, os.SEEK_END)
-        handle.write(json.dumps(event, sort_keys=True, ensure_ascii=False) + "\n")
+        if handle.tell() + len(line) > MAX_LEDGER_BYTES:
+            raise LedgerError(f"Ledger append refused: total size would exceed {MAX_LEDGER_BYTES} bytes")
+        handle.write(line.decode("utf-8"))
         handle.flush()
         os.fsync(handle.fileno())
         return event, True
@@ -190,12 +197,21 @@ class TaskLedger:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
             try:
                 rows = self._read_unlocked()
-                snapshots = [
-                    row.get("payload", {}).get("state")
-                    for row in rows
-                    if row.get("task_id") == task_id and isinstance(row.get("payload", {}).get("state"), dict)
-                ]
-                if snapshots and snapshots[-1].get("status") in ("CLOSED", "CANCELLED"):
+                latest_status = None
+                for row in rows:
+                    if row.get("task_id") != task_id:
+                        continue
+                    payload = row.get("payload", {})
+                    legacy = payload.get("state")
+                    snapshot = payload.get("state_snapshot")
+                    delta = payload.get("state_delta", {})
+                    if isinstance(legacy, dict):
+                        latest_status = legacy.get("status", latest_status)
+                    elif isinstance(snapshot, dict):
+                        latest_status = snapshot.get("status", latest_status)
+                    if isinstance(delta, dict) and "status" in delta.get("set", {}):
+                        latest_status = delta["set"]["status"]
+                if latest_status in ("CLOSED", "CANCELLED"):
                     raise LedgerError("A terminal task cannot be claimed")
                 existing = next((row for row in rows if row["idempotency_key"] == idempotency_key), None)
                 if existing:
@@ -292,13 +308,12 @@ class TaskLedger:
         if not isinstance(payload, dict):
             raise LedgerError("payload must be an object")
         snapshot = payload.get("state")
+        guard = payload.get("lease_guard", {})
+        snapshot_task = snapshot.get("task_id") if isinstance(snapshot, dict) else guard.get("task_id")
+        snapshot_status = snapshot.get("status") if isinstance(snapshot, dict) else guard.get("status")
+        snapshot_owner = snapshot.get("implementer_id") if isinstance(snapshot, dict) else guard.get("implementer_id")
         allowed_statuses = {"EXECUTING", "VERIFYING", "REVIEWING", "CLOSED", "BLOCKED", "FAILED", "OWNER-DECISION", "CANCELLED"}
-        if (
-            not isinstance(snapshot, dict)
-            or snapshot.get("task_id") != task_id
-            or snapshot.get("status") not in allowed_statuses
-            or snapshot.get("implementer_id") != owner_id
-        ):
+        if snapshot_task != task_id or snapshot_status not in allowed_statuses or snapshot_owner != owner_id:
             raise LedgerError("Lease-gated transition requires an active lease and matching post-EXECUTING snapshot implementer")
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a+", encoding="utf-8") as handle:
@@ -371,9 +386,9 @@ class GitHubContentsLedger:
         request = Request(url, data=body, headers=headers, method=method)
         try:
             with urlopen(request, timeout=20) as response:
-                return response.status, response.read()
+                return response.status, response.read(), dict(response.headers.items())
         except HTTPError as exc:
-            return exc.code, exc.read()
+            return exc.code, exc.read(), dict(exc.headers.items())
         except URLError as exc:
             raise GitHubLedgerError(f"GitHub Contents API transport failed: {exc.reason}") from exc
 
@@ -384,7 +399,25 @@ class GitHubContentsLedger:
             "X-GitHub-Api-Version": "2022-11-28",
             "User-Agent": "Blind-Sniper-Native-Ledger",
         }
-        return self.transport(method, url, headers, body)
+        self._server_time = None
+        response = self.transport(method, url, headers, body)
+        if len(response) == 3:
+            status, raw, response_headers = response
+            date_value = next((value for key, value in response_headers.items() if key.lower() == "date"), None)
+            if date_value:
+                try:
+                    parsed = parsedate_to_datetime(date_value)
+                    self._server_time = parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
+                except (TypeError, ValueError, OverflowError) as exc:
+                    raise GitHubLedgerError("GitHub response Date header is invalid") from exc
+        else:
+            status, raw = response
+        return status, raw
+
+    def _server_now(self) -> datetime:
+        if self._server_time is None:
+            raise GitHubLedgerError("GitHub response Date header is required for lease expiry")
+        return self._server_time
 
     def _assert_private_repository(self) -> None:
         repo_url = f"https://api.github.com/repos/{quote(self.owner)}/{quote(self.repo)}"
@@ -410,6 +443,8 @@ class GitHubContentsLedger:
             if response.get("encoding") != "base64":
                 raise GitHubLedgerError("GitHub ledger response is not base64 encoded")
             content = base64.b64decode(response["content"], validate=False)
+            if len(content) > MAX_LEDGER_BYTES:
+                raise GitHubLedgerError(f"Remote ledger exceeds the {MAX_LEDGER_BYTES}-byte safety limit")
             sha = str(response["sha"])
         except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
             if isinstance(exc, GitHubLedgerError):
@@ -485,7 +520,7 @@ class GitHubContentsLedger:
                 try:
                     result = local.claim_task(
                         task_id=task_id, owner_id=owner_id, lease_seconds=lease_seconds,
-                        idempotency_key=idempotency_key, now=now,
+                        idempotency_key=idempotency_key, now=self._server_now(),
                     )
                 except LedgerError as exc:
                     raise GitHubLedgerError(str(exc)) from exc
@@ -519,7 +554,7 @@ class GitHubContentsLedger:
                 try:
                     result = local.release_task(
                         task_id=task_id, owner_id=owner_id,
-                        idempotency_key=idempotency_key, now=now,
+                        idempotency_key=idempotency_key, now=self._server_now(),
                     )
                 except LedgerError as exc:
                     raise GitHubLedgerError(str(exc)) from exc
@@ -542,7 +577,7 @@ class GitHubContentsLedger:
             local_path = Path(tmp) / "events.jsonl"
             local_path.write_bytes(remote_content)
             try:
-                return TaskLedger(local_path).lease_status(task_id, now)
+                return TaskLedger(local_path).lease_status(task_id, self._server_now())
             except LedgerError as exc:
                 raise GitHubLedgerError(f"Remote lease history is invalid: {exc}") from exc
 
@@ -564,7 +599,7 @@ class GitHubContentsLedger:
                 try:
                     event = local.append_transition_if_lease(
                         task_id=task_id, owner_id=owner_id, payload=payload,
-                        idempotency_key=idempotency_key, now=now,
+                        idempotency_key=idempotency_key, now=self._server_now(),
                     )
                 except LedgerError as exc:
                     raise GitHubLedgerError(str(exc)) from exc
