@@ -47,13 +47,6 @@ SKILL_KEYWORDS = {
     "memory-and-continuity": {"memory", "session", "checkpoint", "continuity"},
     "scope-discipline": {"scope", "constraint", "non-goal", "boundary"},
 }
-CAPABILITY_REQUIREMENTS = {
-    "release-gate": {"github": ["merge"], "vercel": ["deploy"]},
-    "openhands-two-way-handoff": {"openhands_dispatch": ["session_result_retrieval"]},
-    "forge-browser-roundtrip": {"forge_browser_mcp": ["authenticated_browser_interaction"]},
-    "continuous-autonomy": {"automation": ["background_execution_receiver"], "persistent_runner": ["persistent_runner"]},
-    "conversation-archive-export": {"chatgpt_history_export": ["export_conversations"]},
-}
 HIGH_RISK_ACTIONS = {
     "merge", "production_deploy", "deploy", "secret_mutation",
     "permission_change", "paid_provisioning", "production_data_mutation",
@@ -179,7 +172,7 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
         if adapter is None:
             raise RuntimeErrorBase(f"Workflow {workflow_id} references unknown adapter {adapter_id}")
         declared_capabilities = set(adapter.get("capabilities", []))
-        required_capabilities = set(CAPABILITY_REQUIREMENTS.get(workflow_id, {}).get(adapter_id, []))
+        required_capabilities = set(workflow.get("required_capabilities", {}).get(adapter_id, []))
         missing_capabilities = sorted(required_capabilities - declared_capabilities)
         status = capability_state(str(adapter.get("status", "")))
         if missing_capabilities:
