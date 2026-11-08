@@ -75,6 +75,30 @@ class RuntimeHardeningTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2, result.stdout)
         self.assertIn("import", result.stderr.lower())
 
+    def test_approval_id_cannot_be_replayed(self):
+        record = {
+            "approval_id": "approval-used-once",
+            "task_id": "BS-HARDEN-001",
+            "action": "production_deploy",
+            "approver": "Ahmed",
+            "verbatim_words": "I approve production_deploy for BS-HARDEN-001",
+            "timestamp": "2026-11-08T23:00:00Z",
+            "expires_at": "2026-11-09T01:00:00Z",
+        }
+        self.ledger.append(
+            task_id="BS-HARDEN-001", event_type="TASK_TRANSITIONED",
+            payload={"approval_records": [record]}, idempotency_key="approval-used",
+        )
+        with self.assertRaisesRegex(runtime.RuntimeErrorBase, "already consumed"):
+            runtime.ensure_approvals_unused(self.ledger, [record])
+
+    def test_import_requires_owner_approval_even_for_canonical_requested_state(self):
+        state = runtime.create_task_state(self.plan)
+        self.state_path.write_text(json.dumps(state), encoding="utf-8")
+        result = self.run_transition("INSPECTING")
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn("Owner approval", result.stderr)
+
     def test_approval_record_must_be_bound_to_task_and_expiry(self):
         now = datetime(2026, 11, 9, 0, 0, tzinfo=timezone.utc)
         base = {
@@ -82,7 +106,7 @@ class RuntimeHardeningTests(unittest.TestCase):
             "task_id": "OTHER-TASK",
             "action": "production_deploy",
             "approver": "Ahmed",
-            "verbatim_words": "I approve production_deploy",
+            "verbatim_words": "I approve production_deploy for BS-HARDEN-001",
             "timestamp": "2026-11-08T23:00:00Z",
             "expires_at": "2026-11-09T01:00:00Z",
         }
