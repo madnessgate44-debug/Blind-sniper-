@@ -29,6 +29,9 @@ jobs:
             tests/
             chatgpt-home/runtime/
             chatgpt-home/skills/
+            chatgpt-home/agents/
+            chatgpt-home/workflows/
+            chatgpt-home/templates/
             chatgpt-home/openhands-library/.agents/skills/
           sparse-checkout-cone-mode: true
 
