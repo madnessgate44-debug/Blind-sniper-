@@ -59,3 +59,11 @@ When OpenHands skills or agents change, update this catalog from the live `Openh
 - Path: `chatgpt-home/skills/blind-sniper-continuity/SKILL.md`
 - Covers mandatory complete retrieval of all seven continuity files, evidence-tagged incremental GitHub synchronization, and complete historical ChatGPT transcript migration from an authorized account export.
 - Includes explicit honesty gates: summaries are not transcripts; no claim of automatic history access or completed migration without source access and reconciliation.
+
+
+## OpenHands library mirror — imported 2026-11-08
+- Destination: `chatgpt-home/openhands-library/`
+- Source: `madnessgate44-debug/Openhands` main, tree `ea9f6151e2d1524d8413b1b7994556a7f5495929`.
+- Imported 68 source files: 33 skill/rule files, 19 specialist profiles, plugin manifests, hook definitions/scripts, loop/status/backlog docs, validation scripts, tests, workflow, README and AGENTS guidance.
+- Blind Sniper's adapted runtime contract: `chatgpt-home/BLIND_SNIPER_OS.md`.
+- The mirror is reference material. OpenHands SDK agents/hooks do not automatically execute inside ChatGPT.
