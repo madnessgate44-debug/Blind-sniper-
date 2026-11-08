@@ -531,6 +531,14 @@ def main(argv: list[str] | None = None) -> int:
             if args.to == state.get("status"):
                 updated = state  # Safe retry after ledger append but before checkpoint write.
             else:
+                if args.to == "EXECUTING":
+                    if args.github_ledger:
+                        raise RuntimeErrorBase("GitHub-backed task leases are not implemented; remote execution is blocked")
+                    if not args.lease_owner:
+                        raise RuntimeErrorBase("An active task lease and --lease-owner are required before EXECUTING")
+                    lease = ledger.lease_status(state["task_id"])
+                    if not lease or lease["owner_id"] != args.lease_owner:
+                        raise RuntimeErrorBase("No active task lease matches --lease-owner")
                 evidence = read_json(Path(args.evidence_file)) if args.evidence_file else {}
                 approval_records = read_json(Path(args.approval_record_file)).get("approvals", []) if args.approval_record_file else []
                 updated = transition_task(state, args.to, evidence, approval_records=approval_records)
