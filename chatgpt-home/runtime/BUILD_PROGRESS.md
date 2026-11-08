@@ -63,3 +63,11 @@
 6. Move routing ownership into registries and remove duplicated routing maps.
 7. Reduce boot payload and measure actual bytes/lines before optimizing.
 8. Reconcile branch graph and prepare a privacy-safe consolidated draft PR only after storage containment.
+
+
+## E2E lifecycle simulation added on remediation branch
+
+- The deterministic CI harness uses the actual runtime CLI and local ledger.
+- It exercises all eight lifecycle states, verifies a generated artifact, injects a stale checkpoint, recovers from the ledger, resumes and closes.
+- The workflow uploads the task envelope, command outputs, evidence, final state, ledger and artifact for 14 days.
+- The simulation is explicitly local-only: no agent is spawned and no external API is invoked. The GitHub CAS adapter remains mock-tested until a private repository and narrowly scoped write credential are explicitly provisioned.
