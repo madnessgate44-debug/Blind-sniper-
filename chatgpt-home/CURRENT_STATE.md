@@ -1,15 +1,15 @@
 # Blind Sniper — Current State
 
-**Snapshot:** 2026-11-08 15:55 Cairo time
+**Snapshot:** 2026-11-08 16:00 Cairo time
 **Architecture:** Native-first CONFIRMED by Ahmed; external workers are optional adapters.
 **Integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`
 **Runtime / lease test checkpoint:** `38f9e189305742cd872546546d8ff3ff26927335`
-**Latest boot/docs checkpoint before this snapshot:** `1543c58670abfa5dbd96bb678ed5a6aa0856c44d`
+**Latest handoff/docs checkpoint before this snapshot:** `c3e03fc60978e0537127b3fa58acc9a6c6d6f22b`
 
 ## Runtime / evidence
 - [Runtime CI](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078702) — PASS, 54 tests.
-- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486389678) — PASS on latest boot/docs checkpoint.
-- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486389574) — PASS on latest boot/docs checkpoint.
+- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486491495) — PASS on latest handoff checkpoint.
+- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486491553) — PASS on latest handoff checkpoint.
 - Plan/transition persist snapshots; `recover` reconstructs state and repairs stale checkpoints.
 - Workflow routing and agent assignments live in `workflows.json`; profile binding lives in `profiles.json`.
 - Local and GitHub-CAS ledgers support claim, renewal, expiry-based reclaim, owner-only release and lease status.
