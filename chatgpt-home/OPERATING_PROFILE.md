@@ -39,3 +39,8 @@ Follow the root `ENGINEERING_EXECUTION_OS.md`: OUTCOME → INSPECT → SPECIFY �
 
 ## Continuity duty
 At the start of each relevant session, read this home and the current project source of truth. At the end, record durable decisions, completed work, evidence, unresolved blockers, and next action in this home or the owning project's coordination record. Do not paste secrets or unredacted sensitive conversation content.
+
+
+## Blind Sniper operating system
+- Follow `chatgpt-home/BLIND_SNIPER_OS.md` as the portable conversation operating layer, beneath the root Engineering Execution OS.
+- Consult `chatgpt-home/openhands-library/` for task-triggered skill guidance and specialist role profiles. Treat copied hooks and sub-agent manifests as reference only; do not claim they run inside ChatGPT.
