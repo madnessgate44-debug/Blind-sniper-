@@ -9,20 +9,31 @@
       "approval": "on-request",
       "skills": [
         "owner-policy",
-        "owner-brief",
+        "agent-dispatch",
+        "blind-sniper-continuity",
+        "codex-environment-maintenance",
+        "memory-and-continuity",
         "multi-session-pr-coordination",
         "openhands-conversation-export",
         "zero-cost-gate"
       ],
       "agents": [
         "blind-sniper",
+        "planner",
+        "researcher",
+        "engineer",
+        "reviewer",
+        "qa-verifier",
+        "recovery",
+        "watcher",
+        "shadow-auditor",
+        "release-manager",
         "openhands",
         "forge",
-        "watcher",
-        "shadow",
         "ghost"
       ],
-      "workflow": "task-control-loop"
+      "workflow": "task-control-loop",
+      "config_template": "chatgpt-home/config/blind-sniper.config.toml.example"
     },
     {
       "id": "research",
@@ -30,16 +41,19 @@
       "sandbox": "read-only",
       "approval": "none-for-read-only",
       "skills": [
+        "web-research",
         "architecture-and-adr",
         "prd-authoring",
         "documentation-standards",
         "owner-brief"
       ],
       "agents": [
-        "research-analyst",
+        "researcher",
+        "planner",
         "architect"
       ],
-      "workflow": "research-and-synthesis"
+      "workflow": "research-and-synthesis",
+      "config_template": "chatgpt-home/config/research.config.toml.example"
     },
     {
       "id": "engineering",
@@ -47,6 +61,10 @@
       "sandbox": "scoped-workspace-write",
       "approval": "on-request",
       "skills": [
+        "github-workspace",
+        "workflow-authoring",
+        "test-and-evidence",
+        "security-and-permissions",
         "engineering-execution-os",
         "git-workflow",
         "testing-strategy",
@@ -55,12 +73,15 @@
         "zero-cost-gate"
       ],
       "agents": [
+        "planner",
+        "engineer",
+        "qa-verifier",
         "backend-engineer",
         "frontend-engineer",
-        "qa-engineer",
         "devops-engineer"
       ],
-      "workflow": "inspect-plan-implement-verify"
+      "workflow": "inspect-plan-implement-verify",
+      "config_template": "chatgpt-home/config/engineering.config.toml.example"
     },
     {
       "id": "review",
@@ -68,18 +89,24 @@
       "sandbox": "read-only",
       "approval": "none-for-read-only",
       "skills": [
+        "test-and-evidence",
+        "security-and-permissions",
         "code-review-rubric",
         "security-threat-model",
         "dependency-supply-chain",
         "docs-evidence-format"
       ],
       "agents": [
+        "reviewer",
+        "shadow-auditor",
+        "qa-verifier",
         "code-reviewer",
         "pr-auditor",
         "security-engineer",
         "evidence-verifier"
       ],
-      "workflow": "independent-review"
+      "workflow": "independent-review",
+      "config_template": "chatgpt-home/config/review.config.toml.example"
     },
     {
       "id": "recovery",
@@ -87,16 +114,20 @@
       "sandbox": "read-only-first",
       "approval": "on-request-for-recovery-write",
       "skills": [
+        "memory-and-continuity",
+        "blind-sniper-continuity",
         "incident-response",
         "sandbox-lifecycle",
         "multi-session-pr-coordination",
         "openhands-conversation-export"
       ],
       "agents": [
-        "sre-incident-responder",
-        "conversation-exporter"
+        "recovery",
+        "conversation-exporter",
+        "sre-incident-responder"
       ],
-      "workflow": "recovery-and-reconciliation"
+      "workflow": "recovery-and-reconciliation",
+      "config_template": "chatgpt-home/config/recovery.config.toml.example"
     },
     {
       "id": "release",
@@ -104,6 +135,8 @@
       "sandbox": "read-only-until-approved",
       "approval": "explicit-owner-approval-for-merge-deploy",
       "skills": [
+        "workflow-authoring",
+        "test-and-evidence",
         "release-management",
         "ci-cd-pipelines",
         "testing-strategy",
@@ -112,10 +145,11 @@
       ],
       "agents": [
         "release-manager",
-        "qa-engineer",
+        "qa-verifier",
         "sre-incident-responder"
       ],
-      "workflow": "release-gate"
+      "workflow": "release-gate",
+      "config_template": "chatgpt-home/config/base.config.toml.example"
     }
   ],
   "global_rules": [
