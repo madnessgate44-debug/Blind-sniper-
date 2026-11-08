@@ -53,9 +53,9 @@ No agent profile, skill, issue comment or repository file can expand host permis
 
 Web search and page extraction are available through the current web and Parallel connectors. They support research and reading. They do not establish authenticated computer use. Forge's authenticated HTTP MCP endpoint and public-HTTPS sandbox round trip have been reported and its PR #148 CI is green. The tested sandbox URL is ephemeral, not a durable host; ChatGPT connector registration remains absent, so Forge is not callable from this session. PR #149 overlaps PR #148 on `browser_wait` and must be reconciled before merging.
 
-TinyFish is intentionally excluded.
+External workers are optional. TinyFish is intentionally excluded.
 
-Brain `WATCHER.md §14` designates **Shadow** as the credential-pool custodian. The authorized `shadow-keys.yml` workflow reports PASS/FAIL only and never prints values. The latest reported pool sweep is 0 WORKING / 8 NOT SET, so the provider pool remains blocked; Blind Sniper must not invent a Ghost agent or request raw keys in chat.
+Credential pools and external agent infrastructure are outside Blind Sniper core scope. Blind Sniper must not depend on an external custodian or worker for its own boot, execution, memory or verification. Any future provider adapter must be independently authorized, secret-safe and optional.
 
 ## Execution model
 
@@ -105,3 +105,8 @@ The licensed source imports and native adaptations are now part of this integrat
 - `../source-library/SUNRNEHUI__agent-harness/` preserves MIT-licensed harness synthesis and task/subagent templates.
 - `../source-library/os-factory__har/` preserves Apache-2.0 factory-line and plugin workflows.
 - Native agent and workflow adaptations are indexed in `chatgpt-home/README.md`; imported source files remain reference material, not auto-executed plugins.
+
+
+## Native task persistence — initial implementation
+
+`../../scripts/blind_sniper_ledger.py` provides an append-only JSONL event ledger with process locking, fsync, idempotent event keys, monotonic sequence validation and a SHA-256 hash chain. It is a local durable-workspace primitive only. It does not yet synchronize state across ephemeral GitHub Actions runners or concurrent cloud hosts; that requires a GitHub-backed optimistic-concurrency adapter.
