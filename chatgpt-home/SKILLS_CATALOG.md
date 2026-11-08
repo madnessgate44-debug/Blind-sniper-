@@ -101,7 +101,7 @@ Session boot, task lifecycle, agent handoff, session close and release gate are 
 ## Unified runtime index — 2026-11-08
 - Runtime entrypoint: `chatgpt-home/runtime/README.md`.
 - Native + imported skill index: `chatgpt-home/runtime/skills.index.json` (10 native skills + 33 OpenHands skill/rule files).
-- Agent registry: `chatgpt-home/runtime/agents.json` (26 unique roles/contracts).
+- Agent registry: `chatgpt-home/runtime/agents.json` (25 unique roles/contracts).
 - Profiles and permission posture: `chatgpt-home/runtime/profiles.json`.
 - Tool/adapter truth: `chatgpt-home/runtime/capabilities.json`.
 - Workflow contracts: `chatgpt-home/runtime/workflows.json`.
