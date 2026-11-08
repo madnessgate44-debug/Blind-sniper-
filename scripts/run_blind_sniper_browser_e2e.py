@@ -52,7 +52,7 @@ def main() -> int:
         for step_id, action, args in steps:
             result = adapter.execute(action, step_id, *args)
             if result["receipt"]["exit_code"] != 0:
-                raise RuntimeError(f"{action} failed: {result['error']}")
+                raise RuntimeError(f"{action} failed: error={result['error']}; stdout={result['output'][:2000]}; stderr={result['error']}")
             results[step_id] = result
         if "Submitted: Ada" not in results["snapshot-after"]["output"]:
             raise AssertionError("The fixture did not reach the expected submitted state")
