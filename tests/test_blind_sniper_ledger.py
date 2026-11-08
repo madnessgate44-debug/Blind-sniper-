@@ -85,5 +85,9 @@ class TaskLedgerTests(unittest.TestCase):
         self.assertTrue(callable(GitHubContentsLedger.task_history))
 
 
+    def test_github_contents_adapter_requires_private_repository_guard(self):
+        self.assertTrue(callable(GitHubContentsLedger._assert_private_repository))
+
+
 if __name__ == "__main__":
     unittest.main()
