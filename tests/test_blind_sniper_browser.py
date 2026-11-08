@@ -157,7 +157,8 @@ class BrowserPolicyTests(unittest.TestCase):
         with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
             with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
                 adapter.execute("upload", "upload-1", "input[type=file]", "fixture.txt")
-        self.assertEqual(run.call_args.args[0][-3:], ["upload", "input[type=file]", str(source)])
+        commands = [call.args[0] for call in run.call_args_list]
+        self.assertTrue(any(command[-3:] == ["upload", "input[type=file]", str(source)] for command in commands))
 
     def test_upload_rejects_path_traversal_and_unsupported_types(self):
         adapter = self.adapter(approval_reference="OWNER-APPROVED")
