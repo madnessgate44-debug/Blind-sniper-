@@ -57,3 +57,16 @@
 - [LIMITATION] Mirrored OpenHands hooks, lifecycle triggers, SDK sub-agents and CI do not execute inside ChatGPT merely because they are copied. Specialist profiles and skills are reference material; Blind Sniper must read and apply relevant guidance using currently available tools.
 - [LIMITATION] ChatGPT's hidden system instructions cannot be modified by a GitHub repository. The portable operating layer is now version-controlled and can be explicitly retrieved and followed in this chat.
 - Next: use `chatgpt-home/BLIND_SNIPER_OS.md` as the operating contract and load relevant mirrored skills during tasks.
+
+
+## 2026-11-08 — Blind Sniper communication and operating-system audit
+- [VERIFIED] Re-read root `AGENTS.md`, `ENGINEERING_EXECUTION_OS.md`, all seven continuity files, `BLIND_SNIPER_OS.md`, folder `AGENTS.md`, the continuity skill, and task-relevant OpenHands skill/agent/hook/docs files.
+- [VERIFIED] The current folder supports durable memory and manual skill consultation, but it does not implement an in-session message envelope, correlated acknowledgements, a session checkpoint location, or a verified direct Brain/OpenHands MCP transport.
+- [VERIFIED] The continuity skill requires a checkpoint containing seven file SHAs and retrieval timestamp, but does not define a concrete checkpoint path; the README also asks for a session checkpoint without defining its storage.
+- [VERIFIED] The OpenHands mirror is a pinned snapshot from tree `ea9f6151e2d1524d8413b1b7994556a7f5495929`; no per-file source SHA manifest or drift-check workflow was added.
+- [VERIFIED] Imported OpenHands `docs/LOOP.md` contains an owner grant permitting auto-merge of LOW-risk PRs; OpenHands skills also say never push to main. These are source-specific rules and must remain inert reference material under Blind Sniper's root OS.
+- [VERIFIED] The imported `openhands-conversation-export` skill documents OpenHands Cloud API endpoints, not a ChatGPT account-history export API. It cannot be used to claim ChatGPT transcript access.
+- [VERIFIED] The current tool inventory exposes GitHub tools but no dedicated Brain or OpenHands tool namespace in this session; direct communication with those systems is therefore not proven here.
+- [INFERENCE] Highest-value improvements: (1) add a message/ack protocol and canonical relay location that points to Brain issue #292 rather than duplicating product task state; (2) define and persist session checkpoint schema/path; (3) add a capability/integration registry with evidence and expiry; (4) add a skill router with task triggers and applicability notes; (5) add source file SHA manifest and mirror drift detection; (6) reconcile phone-first communication with mandatory execution wrappers; (7) explicitly label imported owner grants, endpoints, secrets and hooks as source-specific/inert.
+- [BLOCKED] No repository changes were made as part of this read-only audit. User requested findings/recommendations; implementation awaits approval.
+- Next: Owner decides whether Blind Sniper should implement the communication protocol, checkpoint, capability registry and skill router as the next scoped change.
