@@ -87,3 +87,21 @@ snapshot = ledger.task_history("BS-20261108-001")
 ```
 
 **Persistence boundary:** this provides process-restart recovery only when the workspace and ledger file persist. GitHub-hosted ephemeral runners do not share this local file automatically. Cross-runner durability and multi-writer compare-and-swap synchronization are not implemented yet. Do not store secrets in event payloads.
+
+
+### Ledger CLI
+
+```bash
+python scripts/blind_sniper_ledger.py append \
+  --ledger .blind-sniper/state/events.jsonl \
+  --task-id BS-20261108-001 \
+  --event-type TASK_CREATED \
+  --idempotency-key BS-20261108-001:create \
+  --payload-file task-event.json
+
+python scripts/blind_sniper_ledger.py show \
+  --ledger .blind-sniper/state/events.jsonl \
+  --task-id BS-20261108-001
+```
+
+The `show` command validates the complete hash chain before returning task history. The CLI does not yet push events to GitHub or synchronize across runners.
