@@ -361,5 +361,52 @@ class OrchestrationEngineTests(unittest.TestCase):
         self.assertEqual(workflow, "research-and-synthesis")
 
 
+    def test_runtime_cli_requires_active_lease_before_execution_and_supports_release(self):
+        import json
+        import subprocess
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            task = Path(tmp) / "task.json"
+            state = Path(tmp) / "state.json"
+            ledger = Path(tmp) / "events.jsonl"
+            task.write_text(json.dumps({
+                "task_id": "BS-LEASE-CLI-001",
+                "objective": "Research and verify a technical question",
+            }), encoding="utf-8")
+            command = [sys.executable, str(ROOT / "scripts" / "blind_sniper_runtime.py")]
+            created = subprocess.run(command + [
+                "plan", "--task-file", str(task), "--output", str(state), "--ledger", str(ledger),
+            ], capture_output=True, text=True)
+            self.assertEqual(created.returncode, 0, created.stderr)
+            for target in ("INSPECTING", "SPECIFIED", "PLANNED"):
+                moved = subprocess.run(command + [
+                    "transition", "--state-file", str(state), "--to", target,
+                    "--output", str(state), "--ledger", str(ledger),
+                ], capture_output=True, text=True)
+                self.assertEqual(moved.returncode, 0, moved.stderr)
+            blocked = subprocess.run(command + [
+                "transition", "--state-file", str(state), "--to", "EXECUTING",
+                "--output", str(state), "--ledger", str(ledger),
+            ], capture_output=True, text=True)
+            self.assertEqual(blocked.returncode, 2)
+            self.assertIn("lease", blocked.stderr.lower())
+            claimed = subprocess.run(command + [
+                "claim", "--task-id", "BS-LEASE-CLI-001", "--owner-id", "runner-1",
+                "--lease-seconds", "60", "--idempotency-key", "runner-1:claim",
+                "--ledger", str(ledger),
+            ], capture_output=True, text=True)
+            self.assertEqual(claimed.returncode, 0, claimed.stderr)
+            moved = subprocess.run(command + [
+                "transition", "--state-file", str(state), "--to", "EXECUTING",
+                "--output", str(state), "--ledger", str(ledger), "--lease-owner", "runner-1",
+            ], capture_output=True, text=True)
+            self.assertEqual(moved.returncode, 0, moved.stderr)
+            released = subprocess.run(command + [
+                "release", "--task-id", "BS-LEASE-CLI-001", "--owner-id", "runner-1",
+                "--idempotency-key", "runner-1:release", "--ledger", str(ledger),
+            ], capture_output=True, text=True)
+            self.assertEqual(released.returncode, 0, released.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
