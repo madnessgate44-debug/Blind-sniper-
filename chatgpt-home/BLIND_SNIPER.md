@@ -397,3 +397,14 @@ The history contains multiple priority statements: Firstborn #146 was explicitly
 - OpenHands must report branch, commit, changed files, exact tests/output, blockers and next deliverable—not repeat an architecture report.
 - Blind Sniper must retrieve OpenHands replies, compare them with source state, update the Owner and maintain its own continuity.
 - A posted ticket, an OpenHands claim, a green narrow test, an open PR, or a successful workflow dispatch is not completion of the larger user outcome.
+
+
+## 14. Foundational recovery priority — number one
+
+The complete Blind Sniper operating system is the Owner's highest priority. Its scope is not limited to writing instructions: it includes recovering the full OpenHands Cloud archive, recovering Blind Sniper's separate ChatGPT↔Owner archive through supported means, making Forge callable as Blind Sniper's browser/computer-use tool, understanding every agent's real responsibilities and capabilities, and establishing Watcher as an evidence-driven observer/analyst feeding Blind Sniper.
+
+The controlling execution plan, agent capability registry, acceptance gates, communication fallback, Watcher loop and current evidence ledger live in FOUNDATION_RECOVERY_PLAN.md. Read that plan after this file during boot/resume. Its priority order supersedes generic project sequencing while the foundation remains incomplete.
+
+**Immediate coordination:** T004 was posted to Brain #292 requesting Watcher's latest actual monitoring digest, source/channel coverage, recurring problems and verified direct communication path. This request is not an acknowledgment. Brain #292 remains the only currently verified durable communication path for Blind Sniper in this session.
+
+**Completion rule:** the OS remains IN PROGRESS until archive retrieval, Forge ChatGPT round trip, Watcher communication/feedback loop, agent capability registry and a real recurring reporting trigger pass their stated acceptance criteria. A Markdown plan, open PR, configured endpoint or scheduled workflow definition is not proof of operation.
