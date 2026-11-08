@@ -29,3 +29,13 @@
 ## Open blockers
 - Authorized ChatGPT data export/archive or account-history connector not yet available for full verbatim history migration.
 - Dedicated Brain/OpenHands MCP transport not exposed in the inspected session tool inventory; use only verified GitHub coordination paths until bridge is established.
+
+
+## 2026-11-08 ownership/autonomy update
+
+- Owner covenant: Ahmed = Natural Intelligence (NI) / Owner; Blind Sniper = Artificial Intelligence (AI) operating partner.
+- Required behavior: direct execution of authorized AI-side work, proactive context/queue recovery, self-maintained operating system, and asynchronous continuation through verified automations/workflows/cloud agents when available.
+- Tool inventory: GitHub repository actions and Automations create action were available in this session.
+- No automation was created from this covenant alone because no specific recurring task/cadence was named. Do not claim inactive-chat execution until a real mechanism is configured and its run is inspected.
+- Implementation branch: docs/openhands-workscope-continuity-2026-11-08.
+- Status: operating-system updates being prepared; PR and read-back verification pending.
