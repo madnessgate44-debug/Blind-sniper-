@@ -8,7 +8,7 @@
     "declared_skill_files": 33,
     "activation": "Blind Sniper retrieves selected SKILL.md files and applies them; OpenHands keyword/path triggers do not execute natively in ChatGPT."
   },
-  "selection_policy": "Select skills by task intent and touched paths; load only relevant skill files. Owner-policy is always governing. Imported skills remain reference assets until adapted and tested for the active host.",
+  "selection_policy": "Prefer native Blind Sniper skills for this ChatGPT/GitHub host; supplement with the 33 source-preserving OpenHands skills when a specialist procedure is needed. Retrieve selected files explicitly. Imported OpenHands keyword/path triggers do not execute natively in ChatGPT.",
   "skills": [
     "accessibility-audit",
     "api-design",
@@ -49,5 +49,35 @@
     "content-vs-brand": "chatgpt-home/openhands-library/.agents/skills/content-vs-brand.md",
     "docs-evidence-format": "chatgpt-home/openhands-library/.agents/skills/docs-evidence-format.md",
     "no-schedule-claims": "chatgpt-home/openhands-library/.agents/skills/no-schedule-claims.md"
+  },
+  "native_source": {
+    "type": "host_adapted_native_skills",
+    "path": "chatgpt-home/skills",
+    "declared_skill_files": 10,
+    "activation": "Blind Sniper reads the selected native SKILL.md in the current session; no automatic hidden loader is claimed."
+  },
+  "native_skills": [
+    "agent-dispatch",
+    "blind-sniper-continuity",
+    "browser-operations",
+    "codex-environment-maintenance",
+    "github-workspace",
+    "memory-and-continuity",
+    "security-and-permissions",
+    "test-and-evidence",
+    "web-research",
+    "workflow-authoring"
+  ],
+  "native_skill_paths": {
+    "agent-dispatch": "chatgpt-home/skills/agent-dispatch/SKILL.md",
+    "blind-sniper-continuity": "chatgpt-home/skills/blind-sniper-continuity/SKILL.md",
+    "browser-operations": "chatgpt-home/skills/browser-operations/SKILL.md",
+    "codex-environment-maintenance": "chatgpt-home/skills/codex-environment-maintenance/SKILL.md",
+    "github-workspace": "chatgpt-home/skills/github-workspace/SKILL.md",
+    "memory-and-continuity": "chatgpt-home/skills/memory-and-continuity/SKILL.md",
+    "security-and-permissions": "chatgpt-home/skills/security-and-permissions/SKILL.md",
+    "test-and-evidence": "chatgpt-home/skills/test-and-evidence/SKILL.md",
+    "web-research": "chatgpt-home/skills/web-research/SKILL.md",
+    "workflow-authoring": "chatgpt-home/skills/workflow-authoring/SKILL.md"
   }
 }
