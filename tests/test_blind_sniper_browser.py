@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import json
+import io
 import os
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from subprocess import CompletedProcess
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.blind_sniper_browser import BrowserAdapter, BrowserAdapterError, BrowserPolicyError, validate_url
+from scripts.blind_sniper_browser import BrowserAdapter, BrowserAdapterError, BrowserPolicyError, validate_url, main, redact_url_for_receipt
 
 
 class BrowserPolicyTests(unittest.TestCase):
@@ -104,6 +106,31 @@ class BrowserPolicyTests(unittest.TestCase):
         adapter = self.adapter()
         with self.assertRaises(BrowserAdapterError):
             adapter._command("open", "http://127.0.0.1/")
+
+
+    def test_url_receipts_and_session_state_redact_path_query_and_fragment(self):
+        adapter = self.adapter()
+        url = "http://127.0.0.1/private/path?access_token=secret#fragment"
+        payload = json.dumps({"url": url})
+        completed = CompletedProcess([], 0, payload, "")
+        with patch("scripts.blind_sniper_browser.subprocess.run", side_effect=[completed, completed]):
+            result = adapter.execute("open", "open-redaction", url)
+        serialized = json.dumps(result["receipt"])
+        self.assertNotIn("secret", serialized)
+        self.assertNotIn("/private/path", serialized)
+        self.assertEqual(result["receipt"]["requested_url"], "http://127.0.0.1/[REDACTED]")
+        self.assertNotIn("secret", adapter.session_file.read_text(encoding="utf-8"))
+        self.assertEqual(
+            redact_url_for_receipt("https://example.test/a?token=x#fragment"),
+            "https://example.test/[REDACTED]",
+        )
+
+    def test_standalone_adapter_cli_is_blocked(self):
+        output = io.StringIO()
+        with redirect_stderr(output):
+            result = main([])
+        self.assertEqual(result, 2)
+        self.assertIn("blind_sniper_browser_dispatch.py", output.getvalue())
 
 
 if __name__ == "__main__":
