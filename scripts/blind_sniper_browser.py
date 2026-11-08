@@ -152,15 +152,19 @@ class BrowserAdapter:
         match = re.search(r"https?://[^\s\"']+", stdout)
         return match.group(0) if match else self.state.get("current_url")
 
+    def _ensure_step_unused(self, step_id: str) -> None:
+        if not self.receipt_file.exists():
+            return
+        for line in self.receipt_file.read_text(encoding="utf-8").splitlines():
+            try:
+                prior = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise BrowserAdapterError("Receipt ledger is corrupt; refusing to append") from exc
+            if prior.get("step_id") == step_id:
+                raise BrowserPolicyError("Duplicate step_id; refusing to replay an action")
+
     def _append_receipt(self, receipt: dict[str, Any]) -> None:
-        if self.receipt_file.exists():
-            for line in self.receipt_file.read_text(encoding="utf-8").splitlines():
-                try:
-                    prior = json.loads(line)
-                except json.JSONDecodeError as exc:
-                    raise BrowserAdapterError("Receipt ledger is corrupt; refusing to append") from exc
-                if prior.get("step_id") == receipt["step_id"]:
-                    raise BrowserPolicyError("Duplicate step_id; refusing to replay an action")
+        self._ensure_step_unused(receipt["step_id"])
         with self.receipt_file.open("a", encoding="utf-8") as stream:
             stream.write(json.dumps(receipt, sort_keys=True) + "\n")
 
@@ -168,6 +172,7 @@ class BrowserAdapter:
         if action not in ACTIONS:
             raise BrowserPolicyError(f"Unsupported browser action: {action}")
         _safe_id(step_id, "step_id")
+        self._ensure_step_unused(step_id)
         started = utc_now()
         requested_url = None
         artifact_paths: list[str] = []
@@ -177,6 +182,7 @@ class BrowserAdapter:
                 raise BrowserPolicyError("open requires exactly one URL")
             validate_url(args[0])
             requested_url = args[0]
+            self.state["current_url"] = requested_url
             cli_args = ["open", args[0]]
         elif action == "snapshot":
             if args:
@@ -221,15 +227,22 @@ class BrowserAdapter:
             requested_url = self.state.get("current_url")
         code, stdout, stderr, command = self._command(*cli_args)
         observed_url = requested_url
+        policy_error = None
         if action == "open":
-            observed_url = args[0]
             self.state["status"] = "OPEN"
-            self.state["current_url"] = observed_url
-        elif action in MUTATING_ACTIONS or action == "get-url":
+        if action == "open" or action in MUTATING_ACTIONS or action == "get-url":
             observed_url = self._current_url()
             if observed_url:
-                validate_url(observed_url)
-                self.state["current_url"] = observed_url
+                try:
+                    validate_url(observed_url)
+                    self.state["current_url"] = observed_url
+                except BrowserPolicyError as exc:
+                    policy_error = str(exc)
+                    self._command("close")
+                    self.state["status"] = "CLOSED"
+                    self.state["closed_at"] = utc_now()
+                    code = 2
+                    stderr = (stderr + "\n" + policy_error).strip()
         elif action == "close":
             self.state["status"] = "CLOSED"
             self.state["closed_at"] = utc_now()
@@ -248,6 +261,7 @@ class BrowserAdapter:
             "stderr_bytes": len(stderr.encode("utf-8")),
             "stderr_sha256": hashlib.sha256(stderr.encode("utf-8")).hexdigest(),
             "artifact_paths": artifact_paths,
+            "policy_error": policy_error,
         }
         self.state["last_step_id"] = step_id
         self.state["last_action"] = action
