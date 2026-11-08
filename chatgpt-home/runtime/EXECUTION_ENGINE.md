@@ -29,7 +29,7 @@ python scripts/blind_sniper_runtime.py transition --state-file task-state.json -
 Advance through the documented sequence:
 `REQUESTED → INSPECTING → SPECIFIED → PLANNED → EXECUTING → VERIFYING → REVIEWING → CLOSED`.
 
-For `VERIFYING → REVIEWING`, provide an evidence JSON file containing `{"verification_passed": true}`. For `REVIEWING → CLOSED`, provide `{"review_verdict": "PASS"}`. A transition into EXECUTING is rejected if a required adapter is BLOCKED/UNVERIFIED or an Owner approval is pending. The `--owner-approved` flag records an explicit approval supplied by the authorized caller; it does not grant approval by itself.
+For `VERIFYING → REVIEWING`, provide an evidence JSON file containing `{"verification_passed": true}`. For `REVIEWING → CLOSED`, provide `{"review_verdict": "PASS"}`. A transition into EXECUTING is rejected if a required adapter is BLOCKED/UNVERIFIED or an explicitly human-only action (production deployment, credential/permission mutation, paid provisioning, destructive production data change) is pending. Routine repository merges are AI-authorized when the task scope, branch policy, CI and review evidence permit them; no blanket Owner approval is requested for ordinary engineering integration. The `--owner-approved` flag records an explicit approval supplied by the authorized caller; it does not grant approval by itself.
 
 ## Routing policy
 
