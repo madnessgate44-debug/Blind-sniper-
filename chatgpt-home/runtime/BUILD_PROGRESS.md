@@ -21,8 +21,13 @@
 
 - Runtime implementation commit: `cdad18b952b58dd3404fa66cee368724f5902627`.
 - Host-forbidden policy commit: `d5e76f04533ce9ac9085cf471bf740966695fb3b`.
+- Registry-owned routing commit: `56cdf4f54ab360c85f8ff547d21c8590273346be`.
+- Runtime registry-driven selection commit: `a741f908f85184d4fe285205b61254aa95f91f58`.
+- Safe fallback profile/agents correction: `eec6f124cba2612473f700290ea3dc273bf6f313`.
 - Regression tests commit: `12a4a4149a163ed3c6870ba8ba543d06565cf1ae`.
 - Runtime CI run [42484343595](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343595): SUCCESS; **29 tests passed**, including ledger-backed plan, transition, replay, stale-checkpoint recovery and host-forbidden denial.
+- Latest runtime CI run [42484643917](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484643917): SUCCESS; **31 tests passed**, including registry-owned routing, profile/agent selection, and the unprofiled browser workflow safely falling back to the default native profile/agents.
+- Latest OS compliance run [42484643930](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484643930): SUCCESS.
 - Engineering Execution OS compliance run [42484343610](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343610): SUCCESS on test commit `12a4a41`.
 - Documentation was updated after that runtime pass; latest HEAD and exact CI checks are maintained in `CURRENT_STATE.md`.
 
