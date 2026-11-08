@@ -44,7 +44,7 @@ def _safe_id(value: str, label: str) -> str:
 
 
 def _domain_list(name: str) -> set[str]:
-    return {item.strip().lower().rstrip(".") for item in os.environ.get(name, "").split(",") if item.strip()}
+    return {item.strip().lower().removeprefix("*.").rstrip(".") for item in os.environ.get(name, "").split(",") if item.strip()}
 
 
 def _matches(host: str, rule: str) -> bool:
@@ -88,8 +88,13 @@ class BrowserAdapter:
         self.sessions_dir = self.state_dir / "sessions"
         self.receipts_dir = self.state_dir / "receipts"
         self.artifacts_dir = self.state_dir / "artifacts"
+        self.policy_file = self.state_dir / "action-policy.json"
         for directory in (self.sessions_dir, self.receipts_dir, self.artifacts_dir):
             directory.mkdir(parents=True, exist_ok=True)
+        self.policy_file.write_text(json.dumps({
+            "default": "deny",
+            "allow": ["navigate", "snapshot", "click", "fill", "scroll", "wait", "get", "interact", "read"],
+        }, indent=2) + "\\n", encoding="utf-8")
         self.session_file = self.sessions_dir / f"{session_id}.json"
         self.receipt_file = self.receipts_dir / f"{self.task_id}__{self.run_id}.jsonl"
         self.state = self._load_state()
@@ -118,7 +123,19 @@ class BrowserAdapter:
         os.replace(temp, self.session_file)
 
     def _command(self, *args: str) -> tuple[int, str, str, list[str]]:
-        command = [self.binary, "--session", self.session_id, "--json", *args]
+        allowed_domains = ",".join(
+            item.strip() for item in os.environ.get("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS", "").split(",")
+            if item.strip()
+        )
+        if not allowed_domains:
+            raise BrowserPolicyError("The host must provide BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS")
+        command = [
+            self.binary, "--session", self.session_id,
+            "--allowed-domains", allowed_domains,
+            "--action-policy", str(self.policy_file),
+            "--content-boundaries", "--max-output", "50000", "--json",
+            *args,
+        ]
         try:
             completed = subprocess.run(command, capture_output=True, text=True, timeout=self.timeout, check=False, shell=False)
         except FileNotFoundError as exc:
