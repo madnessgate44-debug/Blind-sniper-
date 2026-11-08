@@ -257,6 +257,8 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
     requested_actions = {str(x).strip().lower() for x in task.get("requested_actions", []) if str(x).strip()}
     # Anything not explicitly classified as routine is high-risk by default.
     approval_actions = sorted(requested_actions - ROUTINE_ACTIONS)
+    if workflow_id == "release-gate":
+        approval_actions = sorted(set(approval_actions) | {"merge_or_deploy"})
     # Task envelopes are untrusted input. They may request consequential actions,
     # but they cannot assert Owner consent. Approval is accepted only at the
     # guarded transition boundary from the authorized host caller.
@@ -409,7 +411,7 @@ def main(argv: list[str] | None = None) -> int:
     move_parser.add_argument("--to", required=True, choices=STATES)
     move_parser.add_argument("--output", required=True)
     move_parser.add_argument("--evidence-file")
-    move_parser.add_argument("--approve-action", action="append", default=[], help="Exact consequential action approved by the Owner; repeat for multiple actions")
+    move_parser.add_argument("--approval-record-file", help="Host-supplied JSON file containing action, verbatim_words, and timestamp approval records")
     args = parser.parse_args(argv)
     try:
         if args.command == "plan":
@@ -422,7 +424,8 @@ def main(argv: list[str] | None = None) -> int:
         else:
             state = read_json(Path(args.state_file))
             evidence = read_json(Path(args.evidence_file)) if args.evidence_file else {}
-            updated = transition_task(state, args.to, evidence, args.approve_action)
+            approval_records = read_json(Path(args.approval_record_file)).get("approvals", []) if args.approval_record_file else []
+            updated = transition_task(state, args.to, evidence, approval_records=approval_records)
             write_json(Path(args.output), updated)
             print(json.dumps({"task_id": updated["task_id"], "status": updated["status"]}, indent=2))
         return 0
