@@ -48,7 +48,7 @@ SKILL_KEYWORDS = {
     "scope-discipline": {"scope", "constraint", "non-goal", "boundary"},
 }
 HIGH_RISK_ACTIONS = {
-    "merge", "production_deploy", "deploy", "secret_mutation",
+    "production_deploy", "secret_mutation",
     "permission_change", "paid_provisioning", "production_data_mutation",
     "delete", "irreversible",
 }
@@ -294,7 +294,7 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
         "steps": steps,
         "constraints": {
             "forbidden_actions": task.get("forbidden_actions", [
-                "merge", "production_deploy", "secret_mutation",
+                "production_deploy", "secret_mutation",
                 "permission_change", "paid_provisioning", "production_data_mutation",
             ]),
             "external_execution_performed": False,
