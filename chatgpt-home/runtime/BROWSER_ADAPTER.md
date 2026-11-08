@@ -5,7 +5,7 @@
 **Pinned version:** 0.41.2
 **License:** Apache-2.0
 **Execution host:** GitHub Actions ubuntu-latest (ephemeral CI host)
-**Status:** PARTIAL — implementation added; real Chromium acceptance pending
+**Status:** PARTIAL — implementation and real Chromium CI acceptance passed; persistent host and advanced capabilities remain open
 
 ## Scope in the first implementation slice
 
