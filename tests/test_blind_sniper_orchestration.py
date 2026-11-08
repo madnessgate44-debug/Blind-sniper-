@@ -77,6 +77,22 @@ class OrchestrationEngineTests(unittest.TestCase):
         state = runtime.transition_task(state, "EXECUTING", approved_actions=["merge"])
         self.assertEqual(state["plan"]["approval"]["pending_actions"], [])
 
+    def test_task_envelope_cannot_self_approve_high_risk_action(self):
+        plan = runtime.build_plan({
+            "task_id": "BS-TEST-009",
+            "objective": "Owner-directed bounded task",
+            "workflow": "task-control-loop",
+            "requested_actions": ["merge"],
+            "owner_approval": {"approved_actions": ["merge"]},
+        })
+        self.assertEqual(plan["approval"]["approved_actions"], [])
+        self.assertEqual(plan["approval"]["pending_actions"], ["merge"])
+        state = runtime.create_task_state(plan)
+        for target in ("INSPECTING", "SPECIFIED", "PLANNED"):
+            state = runtime.transition_task(state, target)
+        with self.assertRaisesRegex(runtime.RuntimeErrorBase, "Owner approval is pending"):
+            runtime.transition_task(state, "EXECUTING")
+
     def test_release_gate_detects_missing_deploy_and_merge_capabilities(self):
         plan = runtime.build_plan({
             "task_id": "BS-TEST-008",
