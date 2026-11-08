@@ -69,3 +69,6 @@ ChatGPT is the interactive interface. This directory is the persistent Blind Sni
 - `scripts/check-blind-sniper-environment.mjs` — structural validation used by the new GitHub Actions workflow.
 
 Read `ENVIRONMENT_MANIFEST.md` as the top-level capability map. Read the relevant skill before task execution. Treat imported OpenHands files as source-preserving reference material and native skills/agents as the adapted Blind Sniper operating layer.
+
+- `hooks/HOOKS_AND_GUARDS.md` — lifecycle hook contracts and fail-closed guards.
+- `mcp/MCP_AND_BROWSER_INTEGRATIONS.md` — MCP server and browser activation requirements.
