@@ -243,3 +243,19 @@ Until these tests pass, the profile status remains **DESIGNED / PARTIALLY IMPLEM
 - HAR: https://github.com/os-factory/har
 - Agent Harness (SUNRNEHUI): https://github.com/SUNRNEHUI/agent-harness
 - Claude Code config showcase: https://github.com/mendelevium/claude-code-config
+
+
+## 11. Installed-in-repository environment assets
+The profile blueprint now has a corresponding repository asset library:
+
+- `ENVIRONMENT_MANIFEST.md` — top-level capability map and readiness checklist.
+- `skills/` — nine native skill contracts covering GitHub, research, browser operations, dispatch, workflows, testing, security, continuity and environment maintenance.
+- `agents/` — nine specialist contracts: researcher, planner, engineer, reviewer, QA verifier, recovery, watcher, shadow and release manager.
+- `tools/TOOL_REGISTRY.md` — exposed versus partial/unavailable connectors.
+- `workflows/` — boot, task lifecycle, handoff, closeout and release gate.
+- `templates/` — task envelope, run receipt, verification ledger and review report.
+- `runtime/ADAPTER_CONTRACT.md` — common provider contract for dispatch, status, artifacts, cancellation and callback.
+- `config/*.toml.example` — base, Blind Sniper, research, engineering, review and recovery host templates.
+- `scripts/check-blind-sniper-environment.mjs` plus `.github/workflows/blind-sniper-environment-validation.yml` — structural validation.
+
+These assets are versioned in GitHub. They are usable as instructions/reference by a session that retrieves them; they do not auto-install a Codex CLI host, grant browser access, or make external agents execute without a working adapter. Their structural validation is intentionally separate from end-to-end runtime acceptance.
