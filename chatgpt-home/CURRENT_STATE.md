@@ -1,19 +1,19 @@
 # Blind Sniper — Current State
 
-**Snapshot:** 2026-11-08 16:00 Cairo time
+**Snapshot:** 2026-11-08 16:05 Cairo time
 **Architecture:** Native-first CONFIRMED by Ahmed; external workers are optional adapters.
 **Integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`
 **Runtime / lease test checkpoint:** `38f9e189305742cd872546546d8ff3ff26927335`
-**Latest handoff/docs checkpoint before this snapshot:** `c3e03fc60978e0537127b3fa58acc9a6c6d6f22b`
+**Latest docs checkpoint before this snapshot:** `a50a9b2016c0b6f56f4415d00db9302ddc9534d8`
 
 ## Runtime / evidence
-- [Runtime CI](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078702) — PASS, 54 tests.
-- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486491495) — PASS on latest handoff checkpoint.
-- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486491553) — PASS on latest handoff checkpoint.
+- [Runtime CI](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486676603) — PASS, 55 tests.
+- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486743736) — PASS on latest docs checkpoint.
+- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486743751) — PASS on latest docs checkpoint.
 - Plan/transition persist snapshots; `recover` reconstructs state and repairs stale checkpoints.
 - Workflow routing and agent assignments live in `workflows.json`; profile binding lives in `profiles.json`.
 - Local and GitHub-CAS ledgers support claim, renewal, expiry-based reclaim, owner-only release and lease status.
-- CLI entry into EXECUTING requires a matching active lease. Lease check and transition append are atomic; `implementer_id` is the lease owner.
+- CLI entry into EXECUTING requires a matching active lease. Lease check and transition append are atomic; `implementer_id` is the lease owner. CLOSED/CANCELLED tasks cannot be claimed.
 - GitHub adapter refuses public repositories; mocked API tests pass. No live write performed.
 - Current Actions token remains `contents: read`; no workflow permission changed. Remote writes need a private repo and separately authorized Contents-write token.
 - Primary instructions are now native-first and resolve the active branch instead of assuming `main`; legacy external-agent recovery plan is marked SUPERSEDED.
