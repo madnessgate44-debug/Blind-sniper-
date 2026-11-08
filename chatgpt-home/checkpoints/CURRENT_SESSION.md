@@ -193,7 +193,7 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 ## Final re-verification — 2026-11-08T11:02 UTC
 
 - [VERIFIED] Final runtime implementation head before this checkpoint update: `5854e12e95742cea7c4fe4e4fd17edf72fd917dc`.
-- [VERIFIED] Runtime registry run `42473977913` / job `128711054365`: PASS. Registry output: 6 profiles, 26 agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 unit tests ran and returned OK.
+- [VERIFIED] Runtime registry run `42473977913` / job `128711054365`: PASS. Registry output: 6 profiles, 25 agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 unit tests ran and returned OK.
 - [VERIFIED] Native environment run `42473977906` / job `128711054231`: PASS. Output: 39 required assets, 9 skill contracts, 9 agent contracts, 5 workflows, 6 safe Codex config templates, credential-pattern scan clean.
 - [VERIFIED] Engineering Execution OS compliance run `42473977941` / job `128711054293`: PASS.
 - [VERIFIED] PR #6 is the canonical runtime review target. PRs #4 and #5 are closed as superseded. PR #6 remains OPEN / NOT MERGED.
@@ -203,7 +203,16 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 ## Final PR-head check reconciliation — 2026-11-08T11:03 UTC
 
 - [VERIFIED] PR #6 final head at the time of this check: `226a4abde3318213469e70523a06d343099dacc1`; mergeable and clean; OPEN / NOT MERGED.
-- [VERIFIED] Runtime registry run `42474052245` / job `128711281586`: PASS; 6 profiles, 26 agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 tests OK.
+- [VERIFIED] Runtime registry run `42474052245` / job `128711281586`: PASS; 6 profiles, 25 agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 tests OK.
 - [VERIFIED] Native environment run `42474052209` / job `128711281297`: PASS; 39 assets, 9 native skill contracts, 9 agent contracts, 5 workflows, 6 Codex config templates; credential scan clean.
 - [VERIFIED] OS compliance run `42474052186` / job `128711280938`: PASS.
 - The task ledger `tasks/BS-20261108-002.md` now records these exact final PR-head checks. The later task/checkpoint-only commits do not change runtime code; PR synchronize checks were green at this head.
+
+
+## Owner-role and Forge evidence correction — 2026-11-08
+
+- [VERIFIED] Brain `WATCHER.md §14` designates **Shadow** as the provider-key and connector replacement-pool custodian. There is no Ghost role; the erroneous Ghost entry was removed from Blind Sniper's agent registry and default profile.
+- [VERIFIED] Brain `shadow-keys.yml` is the approved secret-safe health sweep. Latest reported state is 0 WORKING / 8 NOT SET; the pool is blocked, and no secret values were read or exposed.
+- [VERIFIED] Firstborn PR #148 reports public HTTPS sandbox reachability and has CI run `42473077287` SUCCESS. The sandbox URL is ephemeral, not a durable deployment. PR #149 overlaps on `browser_wait`; reconcile before merge.
+- [BLOCKED] ChatGPT connector registration and durable Forge host remain Owner/platform gates. No live ChatGPT-to-Forge tool call is proven.
+- [VERIFIED] OpenHands session execution states and PR artifacts were returned in Brain #292 comments. Direct OpenHands Cloud API is not callable from this ChatGPT tool inventory; Blind Sniper still needs correlated task results and two consecutive full handoffs to claim E2E readiness.
