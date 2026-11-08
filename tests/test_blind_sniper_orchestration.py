@@ -401,6 +401,7 @@ class OrchestrationEngineTests(unittest.TestCase):
                 "--output", str(state), "--ledger", str(ledger), "--lease-owner", "runner-1",
             ], capture_output=True, text=True)
             self.assertEqual(moved.returncode, 0, moved.stderr)
+            self.assertEqual(json.loads(state.read_text(encoding="utf-8"))["implementer_id"], "runner-1")
             released = subprocess.run(command + [
                 "release", "--task-id", "BS-LEASE-CLI-001", "--owner-id", "runner-1",
                 "--idempotency-key", "runner-1:release", "--ledger", str(ledger),
