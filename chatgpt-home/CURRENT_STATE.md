@@ -1,21 +1,23 @@
 # Blind Sniper — Current State
 
-**Snapshot:** 2026-11-08 15:30 Cairo time
+**Snapshot:** 2026-11-08 15:40 Cairo time
 **Architecture:** Native-first CONFIRMED by Ahmed; external workers are optional adapters.
 **Integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`
-**Runtime + remote-ledger test checkpoint:** `165fdff5fde9c7e18fc3f30384ecfd44c2ef5705`
-**Documentation checkpoint before this snapshot:** `d94ef76e4b2a51653b0173f9ced3440f2a672188`
+**Runtime / lease test checkpoint:** `61f4faf21ffe875bdaa72bb11f9ec226c4c01a70`
+**Latest documentation checkpoint before this snapshot:** `3e6a451ca5e04a9b6a7837b3f37567a233cc2756`
 
 ## Runtime / evidence
-- [Runtime CI](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485134477) — PASS, 43 tests.
-- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485134395) — PASS.
-- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485083496) — PASS on prior documentation checkpoint.
-- Plan/transition automatically persist snapshots to the native ledger; `recover` rebuilds state and repairs stale checkpoints.
-- Workflow routing, priorities and agent assignments live in `workflows.json`; profile binding lives in `profiles.json`. Duplicate runtime maps removed.
-- Optional GitHub Contents API adapter supports CAS writes, bounded conflict retry and remote recovery reads; mock-tested. It refuses public repositories.
-- Remote adapter has NOT performed a live write. Current Actions token is `contents: read`; no workflow permission was changed. A private repo and separately authorized write-capable host token are required.
-- Approval/reviewer identities remain metadata, not cryptographic proof. Runtime does not spawn agent processes.
-- Implementation limits and next sequence: `chatgpt-home/runtime/BUILD_PROGRESS.md`.
+- [Runtime CI](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485946426) — PASS, 53 tests.
+- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485946332) — PASS.
+- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485946368) — PASS.
+- Plan/transition automatically persist snapshots; `recover` reconstructs state and repairs stale checkpoints.
+- Workflow routing and agent assignments live in `workflows.json`; profile binding lives in `profiles.json`.
+- Local and GitHub-CAS ledgers support claim, renewal, expiry-based reclaim, owner-only release and lease status.
+- CLI entry into EXECUTING requires a matching active lease. Lease ownership check and transition append are atomic under local lock or remote blob-SHA CAS.
+- GitHub adapter refuses public repositories; mocked API tests pass. No live write performed.
+- Current Actions token remains `contents: read`; no workflow permission changed. Remote writes need a private repository and separately authorized Contents-write token.
+- Approval/reviewer identity remains metadata, not cryptographic proof. Runtime does not spawn agent processes.
+- Detailed limits/next steps: `chatgpt-home/runtime/BUILD_PROGRESS.md`.
 
 ## Pull requests
 - [#3](https://github.com/madnessgate44-debug/Blind-sniper-/pull/3) — OPEN, NOT MERGED.
@@ -31,7 +33,7 @@
 ## Blockers / decisions
 - Repository is PUBLIC and contains personal, child-related and client-context information in memory/continuity files. Do not add raw transcripts or private memory here.
 - Private memory repository not created; connector cannot create repositories. Proposed name: `blind-sniper-private-memory`.
-- GitHub-backed persistence needs that private repo plus a host token with Contents write permission; current workflow remains read-only.
-- Leases, bounded executor, interruption E2E and boot-size measurement remain future work.
+- Remote lease adapter is mock-tested only; live write requires private repo plus host Contents-write token.
+- Lease heartbeat scheduler, cancellation, stale-worker supervisor, bounded executor, interruption E2E and boot-size measurement remain future work.
 - Native-first is confirmed. Closing PRs #3/#6/#7 has not been authorized.
 - No main merge, deploy, paid resource, secret/permission mutation, transcript import, browser/Forge or OpenHands execution performed.
