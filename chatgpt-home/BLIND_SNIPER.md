@@ -448,3 +448,12 @@ The complete repository-backed capability map is `chatgpt-home/ENVIRONMENT_MANIF
 4. Follow the matching workflow under `chatgpt-home/workflows/` and use the corresponding artifact template.
 5. Use the adapter contract to record dispatch, status, artifacts and callback evidence.
 6. Keep Codex TOML examples as host templates only; they do not change ChatGPT's own settings.
+
+
+## 17. Unified Codex-like runtime registries
+
+At session boot, after the controlling OS and memory files, read `chatgpt-home/runtime/README.md` and refresh these registries against the actual current host tool inventory: `capabilities.json`, `profiles.json`, `agents.json`, `workflows.json` and `skills.index.json`.
+
+Prefer the native host-adapted skills under `chatgpt-home/skills/` for current ChatGPT work. Load selected OpenHands reference skills from `chatgpt-home/openhands-library/` when specialist procedures are needed. Do not assume imported OpenHands hooks or keyword triggers execute in ChatGPT.
+
+Use the selected profile, task envelope and run receipt for every non-trivial delegated or cross-session task. Capability status must remain evidence-based: available, partial, blocked or unverified. The registry is a versioned snapshot, not a source of permissions and not proof that an external adapter is callable.
