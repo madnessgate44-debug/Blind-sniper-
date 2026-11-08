@@ -107,7 +107,8 @@
       "id": "release-manager",
       "source": "openhands-library",
       "role": "release planning and gates",
-      "status": "reference_profile_present"
+      "status": "reference_profile_present",
+      "native_contract_path": "chatgpt-home/agents/release-manager.md"
     },
     {
       "id": "research-analyst",
@@ -126,6 +127,62 @@
       "source": "openhands-library",
       "role": "incident response and runtime recovery",
       "status": "reference_profile_present"
+    },
+    {
+      "id": "researcher",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/researcher.md",
+      "role": "primary-source technical and product research",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "planner",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/planner.md",
+      "role": "requirements decomposition and dependency planning",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "engineer",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/engineer.md",
+      "role": "bounded implementation",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "reviewer",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/reviewer.md",
+      "role": "independent correctness and security review",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "qa-verifier",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/qa-verifier.md",
+      "role": "test design and runtime acceptance",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "recovery",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/recovery.md",
+      "role": "diagnose failed runs and restore safe state",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "watcher",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/watcher.md",
+      "role": "monitor explicit queues and report changes",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "shadow-auditor",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/shadow.md",
+      "role": "adversarial audit and policy review",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
     }
   ],
   "delegation_contract": {
