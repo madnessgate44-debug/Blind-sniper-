@@ -17,6 +17,8 @@
 | Workflows | `workflows/` | Deterministic lifecycle and automation contracts | Manual/current-session or actual CI/automation only |
 | Templates | `templates/` | Standard task, plan, review, run and closure artifacts | Copy into task records |
 | Runtime adapters | `runtime/` | Dispatch, execution, evidence and callback contracts | Adapter status is tracked per integration |
+| Lifecycle hooks | `hooks/` | Session, tool, permission and sub-agent guards | Contracts only unless a host executes them |
+| MCP/browser | `mcp/` | Server registry, browser boundary and activation gates | Forge connector remains blocked until verified deployment and registration |
 | Memory | `MEMORY.md`, `PROJECTS.md`, `CONVERSATION_CONTINUITY.md`, `checkpoints/` | Durable state and decisions | GitHub-backed; not a verbatim ChatGPT transcript archive |
 | Imported references | `openhands-library/` | Source-preserving OpenHands skill/agent/hook mirror | Reference only; no OpenHands loader runs inside ChatGPT |
 
