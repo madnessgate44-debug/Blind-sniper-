@@ -419,3 +419,18 @@ Read `CODEX_RUNTIME_ARCHITECTURE.md` as the system-level design and implementati
 **Do not confuse design with runtime:** a repository is not a running process, a comment POST is not agent receipt, a scheduled ChatGPT automation is not an OpenHands event receiver, and a documented MCP endpoint is not a ChatGPT-callable Forge tool. Only mark a capability operational after its actual trigger, permissions, execution, return path and evidence have been tested.
 
 The first acceptance milestone is a complete ChatGPT → Blind Sniper → GitHub workspace → verified execution/agent → tests and artifacts → Blind Sniper verification → persistent memory → ChatGPT report round trip.
+
+
+## 16. Codex runtime body, workspaces and task records
+
+The Owner has explicitly defined the operating model: ChatGPT is the conversation/command interface; this Blind Sniper home is the persistent body and control plane; GitHub repositories are workspaces; execution environments provide compute; Forge is the intended browser/computer-use adapter; OpenHands and other agents are workers that Blind Sniper develops, dispatches and supervises.
+
+Required supporting records:
+- `CODEX_RUNTIME_ARCHITECTURE.md` — system architecture, tool/agent adapters, delivery states and end-to-end acceptance.
+- `REPOSITORY_REGISTRY.md` — dated inventory of repositories visible to the connected GitHub account. Refresh before each substantive workspace operation; it is not permission to edit every repo.
+- `TASK_TEMPLATE.md` — reusable task envelope with correlation IDs, acceptance criteria, dispatch/receive/run IDs and verification ledger.
+- `tasks/` — active and completed task records; each non-trivial task must preserve its state and evidence here or in its owning project hub.
+
+**Communication rule:** Brain #292 is the current Owner-facing coordination hub. Brain #240 remains a legacy Watcher/OpenHands loop until OpenHands/Watcher explicitly reconciles its purpose. Do not retarget scripts or re-enable historical event automation blindly. A GitHub `@openhands` mention returned a bot response and session ID in comment 6720280271; this proves a receive path, not task completion. Require correlated task acknowledgment, artifacts and independent verification.
+
+**Execution rule:** Use direct GitHub tools for operations they expose. Use GitHub Actions or a verified cloud runner for code execution. Use Forge only when the actual browser tool is present in the ChatGPT tool inventory. If an interface is absent, report the exact blocker and continue through verified alternatives; never pretend a browser session or terminal exists.
