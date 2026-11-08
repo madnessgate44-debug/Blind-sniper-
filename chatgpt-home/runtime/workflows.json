@@ -329,12 +329,17 @@
         "verify resulting page state",
         "persist correlated receipts",
         "close browser session",
-        "upload short-retention evidence artifacts"
+        "upload short-retention evidence artifacts",
+        "run two consecutive real Chromium cycles through the native lease-gated dispatcher",
+        "simulate worker interruption after a read-only browser action and receipt persistence but before ledger completion",
+        "reject same-step retry before constructing a browser adapter",
+        "reconcile the persisted receipt and continue with a new close step",
+        "release the task lease and verify all correlated ledger events"
       ],
       "adapters": [
         "agent_browser_cli"
       ],
-      "status": "partial_atomic_lease_reservation_implemented_ci_reverification_pending_persistent_host_unverified",
+      "status": "partial_two_cycle_native_dispatch_e2e_passed_persistent_host_unverified",
       "required_capabilities": {
         "agent_browser_cli": [
           "allowlisted_http_navigation",
@@ -344,7 +349,9 @@
           "native_task_state_and_lease_gate",
           "pre_action_step_reservation",
           "canonical_ledger_browser_receipts",
-          "duplicate_and_interrupted_step_replay_block"
+          "duplicate_and_interrupted_step_replay_block",
+          "two_cycle_native_dispatch_e2e",
+          "started_only_interruption_reconciliation"
         ]
       }
     }
