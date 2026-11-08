@@ -20,6 +20,7 @@ Oracle lists Always Free Ampere A1 resources: 1,500 OCPU-hours and 9,000 GB-hour
 4. SSH to the VM and upload/run `bootstrap-self-hosted-runner.sh` as root.
 5. In GitHub, create a short-lived **repository runner registration token** for `madnessgate44-debug/Blind-sniper-` and enter it at the script prompt. The token is not written into this repository or a plaintext file.
 6. Confirm the runner appears with label `blind-sniper-browser` in repository Settings → Actions → Runners.
+7. Add repository variable `BLIND_SNIPER_SELF_HOSTED_ENABLED=true`, then manually run the **Blind Sniper Browser Adapter** workflow with `workflow_dispatch`. Its two optional self-hosted jobs open a browser in job 1 and verify the same live page in job 2. The variable defaults to absent/false, so no PR or push job waits for an unprovisioned runner.
 
 ## Runtime contract
 
@@ -33,7 +34,7 @@ The browser adapter and dispatcher must be invoked with the task ledger and acti
 
 ## What remains owner-dependent
 
-The script cannot create the Oracle tenancy, verify identity/card, create the VM, open SSH, or mint the GitHub runner token. These are account-level actions requiring the owner's participation. After runner registration, the repository workflow still needs an explicit `runs-on: [self-hosted, linux, ARM64, blind-sniper-browser]` deployment/acceptance job and a controlled two-job session-persistence test before the persistent-host capability can be marked VERIFIED.
+The script cannot create the Oracle tenancy, verify identity/card, create the VM, open SSH, or mint the GitHub runner token. These are account-level actions requiring the owner's participation. After runner registration, run the optional two-job self-hosted persistence acceptance. It is gated by the repository variable `BLIND_SNIPER_SELF_HOSTED_ENABLED=true` and manual `workflow_dispatch`; it verifies the same page remains in the same Chromium session across two separate GitHub Actions jobs. Do not mark the persistent-host capability VERIFIED until that test passes on the actual Oracle VM.
 
 ## Rollback
 
