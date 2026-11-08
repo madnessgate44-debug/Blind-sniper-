@@ -1,20 +1,20 @@
 # Blind Sniper — Current State
 
-**Snapshot:** 2026-11-08 15:45 Cairo time
+**Snapshot:** 2026-11-08 15:48 Cairo time
 **Architecture:** Native-first CONFIRMED by Ahmed; external workers are optional adapters.
 **Integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`
 **Runtime / lease test checkpoint:** `38f9e189305742cd872546546d8ff3ff26927335`
-**Latest documentation checkpoint before this snapshot:** `8d99db5944784cdb01202ec85557e5899e597a42`
+**Latest handoff/docs checkpoint before this snapshot:** `e703f080dd842928531bbfe6fa9c7d64f878907a`
 
 ## Runtime / evidence
 - [Runtime CI](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078702) — PASS, 54 tests.
-- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078662) — PASS.
-- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486047839) — PASS on the prior code/test checkpoint.
+- [OS compliance](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486181021) — PASS on latest handoff checkpoint.
+- [Environment validation](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486180907) — PASS on latest handoff checkpoint.
 - Plan/transition automatically persist snapshots; `recover` reconstructs state and repairs stale checkpoints.
 - Workflow routing and agent assignments live in `workflows.json`; profile binding lives in `profiles.json`.
 - Local and GitHub-CAS ledgers support claim, renewal, expiry-based reclaim, owner-only release and lease status.
 - CLI entry into EXECUTING requires a matching active lease. Lease ownership check and transition append are atomic; the persisted `implementer_id` is the lease owner.
-- Atomic EXECUTING receipts must match the event task ID and status. GitHub adapter refuses public repositories; mocked API tests pass. No live write performed.
+- Atomic EXECUTING receipts must match event task ID and status. GitHub adapter refuses public repositories; mocked API tests pass. No live write performed.
 - Current Actions token remains `contents: read`; no workflow permission changed. Remote writes need a private repo and separately authorized Contents-write token.
 - Approval/reviewer identity remains metadata, not cryptographic proof. Runtime does not spawn agent processes.
 - Detailed limits/next steps: `chatgpt-home/runtime/BUILD_PROGRESS.md`.
