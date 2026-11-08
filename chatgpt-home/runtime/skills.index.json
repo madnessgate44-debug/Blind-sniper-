@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0.0",
+  "source": {
+    "type": "vendored_reference_mirror",
+    "path": "chatgpt-home/openhands-library/.agents/skills",
+    "source_repo": "madnessgate44-debug/Openhands",
+    "source_commit": "ea9f6151e2d1524d8413b1b7994556a7f5495929",
+    "declared_skill_files": 33,
+    "activation": "Blind Sniper retrieves selected SKILL.md files and applies them; OpenHands keyword/path triggers do not execute natively in ChatGPT."
+  },
+  "selection_policy": "Select skills by task intent and touched paths; load only relevant skill files. Owner-policy is always governing. Imported skills remain reference assets until adapted and tested for the active host.",
+  "skills": [
+    "accessibility-audit",
+    "api-design",
+    "arabic-rtl-ui",
+    "architecture-and-adr",
+    "ci-cd-pipelines",
+    "code-review-rubric",
+    "content-vs-brand",
+    "data-privacy-compliance",
+    "database-migrations",
+    "dependency-supply-chain",
+    "docs-evidence-format",
+    "documentation-standards",
+    "early-checkpoint",
+    "engineering-execution-os",
+    "git-workflow",
+    "incident-response",
+    "model-string-hygiene",
+    "multi-session-pr-coordination",
+    "no-schedule-claims",
+    "observability",
+    "openhands-conversation-export",
+    "owner-brief",
+    "owner-policy",
+    "performance-engineering",
+    "prd-authoring",
+    "release-management",
+    "sandbox-lifecycle",
+    "scope-discipline",
+    "secret-redaction-scan",
+    "security-threat-model",
+    "self-driving-loop",
+    "testing-strategy",
+    "zero-cost-gate"
+  ],
+  "required_skill_file": "chatgpt-home/openhands-library/.agents/skills/<skill>/SKILL.md",
+  "path_rules": {
+    "content-vs-brand": "chatgpt-home/openhands-library/.agents/skills/content-vs-brand.md",
+    "docs-evidence-format": "chatgpt-home/openhands-library/.agents/skills/docs-evidence-format.md",
+    "no-schedule-claims": "chatgpt-home/openhands-library/.agents/skills/no-schedule-claims.md"
+  }
+}
