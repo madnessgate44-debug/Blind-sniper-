@@ -58,10 +58,31 @@ tar -xzf /tmp/actions-runner.tar.gz -C "$RUNNER_DIR"
 chown -R "$RUNNER_USER:$RUNNER_USER" "$RUNNER_DIR"
 rm -f /tmp/actions-runner.tar.gz
 
-# Install Chromium and its system libraries into the runner's home directory.
-# The installer runs as root for apt dependencies but downloads browser files into runner HOME.
-HOME="/home/$RUNNER_USER" AGENT_BROWSER_BIN="$(command -v agent-browser)" agent-browser install --with-deps
-chown -R "$RUNNER_USER:$RUNNER_USER" "/home/$RUNNER_USER/.cache" 2>/dev/null || true
+# agent-browser@0.41.2 has a native Linux ARM64 CLI but its bundled Chrome
+# installer rejects Linux aarch64. Install Chrome for Testing's published ARM64
+# build directly and pass its exact executable path to the CLI.
+apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libxkbcommon0 libcups2 \
+  libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 \
+  libpango-1.0-0 libcairo2 libatspi2.0-0 libgtk-3-0 libdrm2 libxshmfence1 \
+  fonts-liberation fonts-noto-color-emoji
+CFT_JSON="$(curl -fsSL https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json)"
+CFT_VERSION="$(printf '%s' "$CFT_JSON" | jq -r '.channels.Stable.version')"
+CFT_URL="$(printf '%s' "$CFT_JSON" | jq -r '.channels.Stable.downloads.chrome[] | select(.platform == "linux-arm64") | .url')"
+if [[ -z "$CFT_VERSION" || "$CFT_VERSION" == "null" || -z "$CFT_URL" || "$CFT_URL" == "null" ]]; then
+  echo "Chrome for Testing did not publish a Linux ARM64 stable build." >&2
+  exit 2
+fi
+CHROME_DIR="/opt/chrome-for-testing/$CFT_VERSION"
+install -d -m 0755 "$CHROME_DIR"
+curl -fsSL "$CFT_URL" -o /tmp/chrome-linux-arm64.zip
+unzip -q /tmp/chrome-linux-arm64.zip -d "$CHROME_DIR"
+rm -f /tmp/chrome-linux-arm64.zip
+CHROME_BIN="$CHROME_DIR/chrome-linux-arm64/chrome"
+if [[ ! -x "$CHROME_BIN" ]]; then
+  echo "Chrome ARM64 executable was not found at $CHROME_BIN" >&2
+  exit 2
+fi
+chmod 0755 "$CHROME_BIN"
 
 # The browser defaults to deny-all domains and deny writes. A workflow must set
 # its own allowlist and approval context explicitly for each authorized task.
@@ -72,6 +93,7 @@ BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS=
 BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS=
 BLIND_SNIPER_BROWSER_WRITE_APPROVED=0
 AGENT_BROWSER_BIN=$(command -v agent-browser)
+AGENT_BROWSER_EXECUTABLE_PATH=$CHROME_BIN
 EOF
 chmod 0640 "$ENV_DIR/browser.env"
 chown root:"$RUNNER_USER" "$ENV_DIR/browser.env"
