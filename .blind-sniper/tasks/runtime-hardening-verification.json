@@ -1,0 +1,9 @@
+{
+  "task_id": "BS-20261109-001",
+  "objective": "Implement and verify runtime hardening by running the repository unit tests and runtime validator on the named branch",
+  "branch": "feat/allowlisted-executor-2026-11-09",
+  "commands": [
+    "unit-tests",
+    "runtime-validator"
+  ]
+}
