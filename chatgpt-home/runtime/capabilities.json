@@ -1,0 +1,187 @@
+{
+  "schema_version": "1.0.0",
+  "runtime_name": "Blind Sniper",
+  "runtime_model": "ChatGPT host + GitHub-persisted control plane + external execution adapters",
+  "snapshot_date": "2026-11-08",
+  "evidence_policy": "A capability is operational only when its trigger, permission, execution, output and verification path are proven.",
+  "adapters": [
+    {
+      "id": "github",
+      "kind": "repository_and_control_plane",
+      "status": "available_in_current_session",
+      "tools": [
+        "mcp__GitHub__fetch",
+        "mcp__GitHub__fetch_file",
+        "mcp__GitHub__create_branch",
+        "mcp__GitHub__create_file",
+        "mcp__GitHub__update_file",
+        "mcp__GitHub__create_pull_request",
+        "mcp__GitHub__add_comment_to_issue",
+        "mcp__GitHub__fetch_commit_workflow_runs",
+        "mcp__GitHub__fetch_workflow_run_jobs",
+        "mcp__GitHub__fetch_workflow_job_logs"
+      ],
+      "capabilities": [
+        "repository_discovery",
+        "file_read_write",
+        "branches",
+        "issues_and_pull_requests",
+        "workflow_status_and_logs"
+      ],
+      "limitations": [
+        "No generic workflow_dispatch action was found in the active tool inventory.",
+        "GitHub connector access does not provide a persistent shell or interactive terminal."
+      ]
+    },
+    {
+      "id": "web",
+      "kind": "research_and_browsing",
+      "status": "available_in_current_session",
+      "tools": [
+        "web.run"
+      ],
+      "capabilities": [
+        "web_search",
+        "page_open",
+        "link_follow",
+        "page_find",
+        "image_search"
+      ],
+      "limitations": [
+        "Search and reading do not equal authenticated browser interaction or arbitrary website form automation."
+      ]
+    },
+    {
+      "id": "parallel",
+      "kind": "research_and_page_fetch",
+      "status": "available_in_current_session",
+      "tools": [
+        "mcp__Parallel__web_search",
+        "mcp__Parallel__web_fetch",
+        "mcp__Parallel__web_research"
+      ],
+      "capabilities": [
+        "multi_query_search",
+        "page_extraction",
+        "cited_research"
+      ],
+      "limitations": [
+        "Not a general-purpose authenticated computer-use runtime."
+      ]
+    },
+    {
+      "id": "files",
+      "kind": "conversation_and_library_files",
+      "status": "available_in_current_session",
+      "tools": [
+        "files__search",
+        "files__read",
+        "files__find",
+        "files__list",
+        "files__materialize"
+      ],
+      "capabilities": [
+        "semantic_file_search",
+        "read_uploaded_and_library_files",
+        "file_materialization"
+      ],
+      "limitations": [
+        "Does not grant access to all private account conversation history unless exported or otherwise exposed."
+      ]
+    },
+    {
+      "id": "automation",
+      "kind": "scheduled_work",
+      "status": "available_but_receiver_unverified",
+      "tools": [
+        "mcp__Automations__*"
+      ],
+      "capabilities": [
+        "create_and_manage_supported_automations"
+      ],
+      "limitations": [
+        "Existing scheduled checkpoints are not proof of OpenHands task delivery; task receiver and delivery route must be tested."
+      ]
+    },
+    {
+      "id": "plugins",
+      "kind": "external_integrations",
+      "status": "available_in_current_session",
+      "tools": [
+        "mcp__Plugin_Management__*"
+      ],
+      "capabilities": [
+        "discover_connect_and_manage_supported_plugins"
+      ],
+      "limitations": [
+        "Connection requires explicit user action; tool availability depends on installed and authorized plugins."
+      ]
+    },
+    {
+      "id": "vercel",
+      "kind": "deployment_and_runtime_observation",
+      "status": "available_in_current_session",
+      "tools": [
+        "mcp__Vercel__*"
+      ],
+      "capabilities": [
+        "inspect_projects_deployments_logs_and_supported_runtime_resources"
+      ],
+      "limitations": [
+        "No paid provisioning, deployment, or environment mutation without Owner approval."
+      ]
+    },
+    {
+      "id": "forge_browser_mcp",
+      "kind": "authenticated_browser_and_computer_use",
+      "status": "blocked_not_registered",
+      "tools": [],
+      "capabilities": [],
+      "limitations": [
+        "Firstborn PR #147 contains an HTTP MCP implementation proposal; public HTTPS, authentication, ChatGPT connector registration and a live round trip are not verified."
+      ]
+    },
+    {
+      "id": "openhands_dispatch",
+      "kind": "agent_execution",
+      "status": "partially_verified",
+      "tools": [
+        "GitHub @openhands issue-comment mention"
+      ],
+      "capabilities": [
+        "mention_can_create_session_receipt"
+      ],
+      "limitations": [
+        "Task-correlated completion, artifact retrieval and two consecutive end-to-end handoffs remain unverified."
+      ]
+    },
+    {
+      "id": "persistent_runner",
+      "kind": "isolated_code_execution",
+      "status": "partial",
+      "tools": [
+        "GitHub Actions on configured repository events"
+      ],
+      "capabilities": [
+        "repository_CI_on_configured_events"
+      ],
+      "limitations": [
+        "No generic task dispatch runner or persistent interactive workspace is verified."
+      ]
+    },
+    {
+      "id": "ghost_credential_broker",
+      "kind": "credential_health_and_distribution",
+      "status": "unverified",
+      "tools": [],
+      "capabilities": [],
+      "limitations": [
+        "Credential pool existence, health checks, secure lease and agent delivery must be evidenced before use. Never expose key material in GitHub."
+      ]
+    }
+  ],
+  "exclusions": [
+    "TinyFish is intentionally excluded by Owner preference.",
+    "No provider credentials or secret values are stored in this registry."
+  ]
+}
