@@ -58,3 +58,9 @@ Other longer-running context exists (including Hossam Copilot / Agent OS), but d
 - Blind Sniper must use connected tools directly before delegating. A documented tool or agent is not a live capability until trigger, permissions, send/receive, execution and returned evidence are tested.
 - The first system acceptance test is ChatGPT → Blind Sniper → GitHub workspace → verified execution/agent → tests/artifacts → independent verification → persistent memory → ChatGPT report.
 - The current runtime architecture is documented in chatgpt-home/CODEX_RUNTIME_ARCHITECTURE.md on the active PR #3 branch. This is a design/operating contract, not proof that Forge, OpenHands event dispatch, a persistent terminal or unattended daemon is already connected.
+
+
+## Communication capability update — 2026-11-08
+- [VERIFIED] A GitHub issue comment containing an @openhands mention on Brain #292 produced a reply from openhands-ai[bot] (comment 6720280271) with session ID 7543e363514b4435a71a60546c79501c. The mention-to-bot-response receive path works for one test.
+- [LIMITATION] The bot reply did not identify the task ID or return task execution evidence. Treat as RECEIVED, not task-specific ACKNOWLEDGED or VERIFIED. The linked All Hands session could not be opened through the current web tool; Forge is not exposed in the current ChatGPT tool inventory.
+- [BLOCKED] Historical event receiver remains disabled due unresolved spend; do not re-enable without explicit Owner spend approval.
