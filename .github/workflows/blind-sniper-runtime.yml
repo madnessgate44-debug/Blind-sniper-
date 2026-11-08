@@ -7,6 +7,8 @@ on:
       - "chatgpt-home/runtime/**"
       - "scripts/validate_blind_sniper_runtime.py"
       - "scripts/blind_sniper_runtime.py"
+      - "scripts/blind_sniper_ledger.py"
+      - "tests/test_blind_sniper_ledger.py"
       - "tests/test_blind_sniper_orchestration.py"
       - "tests/test_blind_sniper_runtime.py"
       - ".github/workflows/blind-sniper-runtime.yml"
