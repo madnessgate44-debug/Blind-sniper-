@@ -178,3 +178,13 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 - [VERIFIED] Commit 61388078e8f0a01def6e8a20b1a20c70586eb2ca: GitHub Actions run 42473419005 / validate-environment SUCCESS. Exact output: PASS: 39 required assets; 9 skill contracts; 9 agent contracts; 5 workflows; 6 safe Codex config templates; credential-pattern scan clean.
 - [VERIFIED] Same commit: run 42473419028 / policy-compliance SUCCESS.
 - [BLOCKED] Full external E2E still requires Forge connector, OpenHands result retrieval and isolated runner. No claim of complete runtime activation.
+
+
+## 2026-11-08 — Unified Codex-like runtime checkpoint
+
+- [VERIFIED] PR #6 `https://github.com/madnessgate44-debug/Blind-sniper-/pull/6` contains the runtime registry integrated on the current foundation branch. Head before this checkpoint update: `9126cada909f8adfbb960551089450daf5e6ad43`; task record `BS-20261108-002` created at commit `976b287c3371d7564239cc4f22dcb8f5ee441972`.
+- [VERIFIED] Runtime CI run `42473825954` / job `128710593528` passed: 6 profiles, 26 unique agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 unit tests passed.
+- [VERIFIED] Native environment validation run `42473825834` / job `128710592811` passed: 39 required assets, 9 skill contracts, 9 agent contracts, 5 workflows, 6 safe Codex config templates, credential-pattern scan clean.
+- [VERIFIED] Engineering Execution OS compliance run `42473825927` / job `128710593387` passed.
+- [VERIFIED] Older runtime PRs #4 and #5 were closed as superseded; PR #6 is the canonical review target.
+- [LIMITATION] The registry and static workflows are verified. Actual Codex CLI installation, Forge public HTTPS + ChatGPT connector round trip, OpenHands task-result retrieval, generic isolated runner and background autonomy remain unproven/blocked. No merge, deployment, paid provisioning or secret changes performed.
