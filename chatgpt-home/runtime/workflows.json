@@ -229,6 +229,38 @@
       }
     },
     {
+      "id": "persistent-browser-host-acceptance",
+      "trigger": "owner_provisioned_self_hosted_runner_and_manual_workflow_dispatch",
+      "steps": [
+        "provision_Oracle_Always_Free_ARM64_VM_within_free_quotas",
+        "install_pinned_agent_browser_and_Chrome_for_Testing_ARM64",
+        "register_repository_scoped_GitHub_runner",
+        "enable_BLIND_SNIPER_SELF_HOSTED_ENABLED_repository_variable",
+        "open_local_fixture_in_job_one_with_persistent_task_lease",
+        "end_job_one_without_closing_browser_session",
+        "recover_same_browser_session_and_page_in_job_two",
+        "verify_persistent_task_lease_and_canonical_receipts",
+        "close_browser_and_release_lease",
+        "record_host_and_cross_job_acceptance_evidence"
+      ],
+      "adapters": [
+        "agent_browser_cli",
+        "persistent_runner",
+        "github"
+      ],
+      "status": "prepared_owner_gated_not_provisioned",
+      "required_capabilities": {
+        "agent_browser_cli": [
+          "persistent_browser_daemon_across_jobs",
+          "session_recovery_after_runner_job_boundary"
+        ],
+        "persistent_runner": [
+          "self_hosted_arm64_runner",
+          "persistent_state_directory"
+        ]
+      }
+    },
+    {
       "id": "continuous-autonomy",
       "trigger": "scheduled_or_event_receiver",
       "steps": [
