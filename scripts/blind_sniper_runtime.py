@@ -60,8 +60,8 @@ ROUTINE_ACTIONS = {
     "open_pr", "run_tests", "format", "lint",
 }
 HOST_FORBIDDEN_ACTIONS = [
-    "production_deploy", "secret_mutation", "permission_change",
-    "paid_provisioning", "production_data_mutation",
+    "force_push", "delete_branch", "credential_export", "secret_export",
+    "disable_branch_protection", "unbounded_shell",
 ]
 STATES = (
     "REQUESTED", "INSPECTING", "SPECIFIED", "PLANNED", "EXECUTING",
@@ -359,6 +359,9 @@ def transition_task(
             raise RuntimeErrorBase("Owner approval record requires a pending action, verbatim words, and an offset-aware timestamp")
         approved.add(action)
     if target == "EXECUTING":
+        forbidden = set(plan.get("constraints", {}).get("forbidden_actions", HOST_FORBIDDEN_ACTIONS))
+        if pending & forbidden:
+            raise RuntimeErrorBase(f"Execution blocked: host policy forbids {sorted(pending & forbidden)}")
         if plan.get("execution_readiness") == "BLOCKED":
             raise RuntimeErrorBase("Execution blocked: a required adapter or capability is blocked or unverified")
         if pending - approved:
