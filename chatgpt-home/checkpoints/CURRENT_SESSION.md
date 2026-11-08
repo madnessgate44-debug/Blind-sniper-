@@ -170,3 +170,11 @@
 - [BLOCKED] Codex CLI host installation, Forge public HTTPS + connector registration, OpenHands task-result retrieval and persistent isolated execution adapter remain unproven/unavailable. No full agent/browser runtime round trip is claimed.
 
 Next: finish external runtime adapters and prove two consecutive correlated task round trips. Do not mark full Codex-like environment READY until these gates pass.
+
+
+## 2026-11-08 — Final environment validator hardening
+
+- [VERIFIED] Structural validator now checks required asset presence, nine skill metadata/section contracts, nine specialist-agent contract fields, five non-empty workflow docs, six safe Codex profile templates and credential-pattern hygiene.
+- [VERIFIED] Commit 61388078e8f0a01def6e8a20b1a20c70586eb2ca: GitHub Actions run 42473419005 / validate-environment SUCCESS. Exact output: PASS: 39 required assets; 9 skill contracts; 9 agent contracts; 5 workflows; 6 safe Codex config templates; credential-pattern scan clean.
+- [VERIFIED] Same commit: run 42473419028 / policy-compliance SUCCESS.
+- [BLOCKED] Full external E2E still requires Forge connector, OpenHands result retrieval and isolated runner. No claim of complete runtime activation.
