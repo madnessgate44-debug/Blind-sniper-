@@ -76,7 +76,11 @@ class OrchestrationEngineTests(unittest.TestCase):
             state = runtime.transition_task(state, target)
         with self.assertRaisesRegex(runtime.RuntimeErrorBase, "Owner approval is pending"):
             runtime.transition_task(state, "EXECUTING")
-        state = runtime.transition_task(state, "EXECUTING", approved_actions=["production_deploy"])
+        state = runtime.transition_task(state, "EXECUTING", approval_records=[{
+            "action": "production_deploy",
+            "verbatim_words": "Ahmed: I approve production_deploy for BS-TEST-005",
+            "timestamp": "2026-11-08T13:00:00Z",
+        }])
         self.assertEqual(state["plan"]["approval"]["pending_actions"], [])
 
     def test_task_envelope_cannot_self_approve_high_risk_action(self):
@@ -128,7 +132,13 @@ class OrchestrationEngineTests(unittest.TestCase):
         state = runtime.transition_task(state, "REVIEWING", {"verification_passed": True})
         with self.assertRaisesRegex(runtime.RuntimeErrorBase, "independent PASS"):
             runtime.transition_task(state, "CLOSED")
-        state = runtime.transition_task(state, "CLOSED", {"review_verdict": "PASS"})
+        state = runtime.transition_task(state, "CLOSED", {
+            "review_verdict": "PASS",
+            "reviewer_id": "independent-reviewer",
+            "task_id": "BS-TEST-006",
+            "commit_sha": "b" * 40,
+            "ci_run_id": "42481330782",
+        })
         self.assertEqual(state["status"], "CLOSED")
         self.assertEqual(state["events"][-1]["to"], "CLOSED")
 
