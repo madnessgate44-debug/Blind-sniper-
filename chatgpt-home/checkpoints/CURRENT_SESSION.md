@@ -24,7 +24,7 @@
 | `chatgpt-home/SYNC_PROTOCOL.md` | `1ed3ee1814dc3de5f628a1697f04eea215b57145` | PASS |
 
 ## Current task
-Implementing a canonical operating entrypoint that defines how Blind Sniper activates, recovers history, retrieves skills/tools, coordinates agents, executes work and synchronizes memory.
+[COMPLETED] Canonical entrypoint implemented and re-fetched. Commits: `0326a359`, `b258396f`, `6a30f195`, `61d30447`, `7541c489`, `3b1bf638`. Continuity closeout appended in commit `4777cf503ffc6d12778de866c4f175fdb526348f`.
 
 ## Open blockers
 - Authorized ChatGPT data export/archive or account-history connector not yet available for full verbatim history migration.
