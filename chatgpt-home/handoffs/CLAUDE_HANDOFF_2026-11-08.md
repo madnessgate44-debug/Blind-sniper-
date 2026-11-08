@@ -1,13 +1,13 @@
 # Blind Sniper — Claude Handoff & Independent Architecture Review
 
-# Current evidence anchor — 8 November 2026, 15:45 Cairo time
+# Current evidence anchor — 8 November 2026, 15:55 Cairo time
 
 This section is authoritative for current state. Everything after the divider is retained historical context; old SHAs, CI results, agent rosters and policy descriptions below must not be treated as current.
 
 ## Repository and architecture
 - Repository: `madnessgate44-debug/Blind-sniper-` (PUBLIC).
 - Integration branch: `feat/blind-sniper-orchestration-integration-2026-11-08`.
-- Latest branch HEAD before this handoff refresh: `f16d8995dabad9f860b8e2efc570842a4b4e6350`.
+- Latest branch HEAD before this handoff refresh: `beb60aac60d88434bb7becb5d236f058dd726093`.
 - Ahmed confirmed **native-first**: Blind Sniper's own runtime, policy, native workforce contracts, persistence and recovery are core. External workers are optional adapters.
 - Main is unchanged. PRs #3, #6 and #7 remain OPEN and NOT MERGED; no authorization to close them was given.
 - Issues: #1 OPEN; #2 CLOSED as duplicate of #1; #8 SUPERSEDED but OPEN.
@@ -15,39 +15,38 @@ This section is authoritative for current state. Everything after the divider is
 ## Current implementation
 - Eight native roles have checked-in contracts; external worker identities are not core agents.
 - Runtime plan/transition commands persist full task snapshots; `recover` reconstructs latest state and repairs stale checkpoints.
-- Workflow routing priorities, keywords and agent assignments live in `workflows.json`; profile binding comes from `profiles.json`. Duplicate runtime routing maps have been removed.
+- Workflow routing priorities, keywords and agent assignments live in `workflows.json`; profile binding comes from `profiles.json`.
 - Local and GitHub Contents CAS ledgers support task claim, same-owner renewal, expiry-based reclaim, owner-only release and lease status.
-- CLI entry into EXECUTING requires a matching active lease. Lease ownership check and EXECUTING transition append are atomic under the local file lock or GitHub blob-SHA compare-and-swap.
-- The atomic execution receipt is rejected unless its snapshot is for the same task and has status EXECUTING. Runtime records the lease owner as `implementer_id`, so closure's reviewer comparison uses the actual execution owner rather than a generic controller identity.
-- GitHub adapter checks repository metadata and refuses public repositories. It supports remote task snapshots, lease CAS and recovery reads.
-- Remote adapter is mock-tested; no live write has been performed. The checked-in Actions workflow declares `contents: read`; no workflow permission was changed. A private repo and separately authorized host token with Contents write are required.
-- Host-forbidden actions cannot be overridden. Other consequential/unclassified actions require action-specific approval.
-- Closure requires PASS, reviewer different from implementer, matching task ID, full commit SHA and CI run ID. Approval/reviewer identity remain metadata, not cryptographic proof.
-- Runtime is still a planner and guarded state machine; it does not spawn separate model processes or prove agent execution.
+- CLI entry into EXECUTING requires a matching active lease. Lease ownership check and EXECUTING transition append are atomic under local lock or GitHub blob-SHA compare-and-swap.
+- Atomic execution receipt must match task ID and EXECUTING status. Runtime records lease owner as `implementer_id`; closure reviewer comparison uses the execution owner.
+- GitHub adapter refuses public repositories. Mocked API tests pass; no live write has been performed. Actions workflow remains `contents: read`; no workflow permission changed.
+- Primary operating instructions were rewritten to native-first v3.0, resolve the active branch rather than assume `main`, and prohibit reading private memory/transcripts from the public repository. Operating profile was aligned; legacy external-agent recovery plan marked SUPERSEDED.
+- The repository is still a planner/guarded state machine; it does not spawn separate model processes or prove agent execution.
+- Approval/reviewer identities remain metadata, not cryptographic proof.
 
 ## Verified CI
-- Runtime [run 42486078702](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078702): SUCCESS; **54 tests passed** on code/test checkpoint `38f9e189305742cd872546546d8ff3ff26927335`.
-- OS compliance [run 42486078662](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078662): SUCCESS on the same checkpoint.
-- Environment validation [run 42486047839](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486047839): SUCCESS on the prior checkpoint.
-- Latest documentation commits have their own checks; do not conflate documentation validation with runtime test evidence.
+- Runtime [run 42486078702](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078702): SUCCESS; **54 tests passed** on runtime/test checkpoint `38f9e189305742cd872546546d8ff3ff26927335`.
+- OS compliance [run 42486389678](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486389678): SUCCESS on boot/docs checkpoint.
+- Environment validation [run 42486389574](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486389574): SUCCESS on boot/docs checkpoint.
 
 ## Privacy and integration blockers
-- Repository is PUBLIC and contains personal, child-related and client-context material in memory/continuity files. Do not copy, quote, archive or import raw conversation transcripts here.
+- Repository is PUBLIC and retains historical personal, child-related and client-context files in Git history. No history rewrite.
 - Private memory repository has not been created. Proposed name: `blind-sniper-private-memory`. The GitHub connector cannot create repositories; Ahmed must create it in GitHub UI.
+- The active boot contract refuses to read the public legacy memory/continuity files. Private-memory retrieval is BLOCKED until private storage exists.
 - No consolidated draft PR to main has been opened because privacy containment must precede it. No merge is authorized.
 - No paid resource, deployment, secret/permission change, transcript import, browser/Forge task or OpenHands execution was performed.
 
 ## Next engineering priorities
-1. Create private memory repository and move private continuity/state there through a reviewed migration; public history remains.
+1. Create private memory repository and migrate private continuity/state through a reviewed migration; public history remains.
 2. Validate GitHub-backed persistence/leases against that private repository using a separately authorized write-capable host/token; do not elevate workflow permissions implicitly.
 3. Add lease heartbeat, cancellation and stale-worker supervision.
 4. Implement a bounded native executor over actual host tools/CI runners, with receipts bound to task/step/commit/run/artifact.
 5. Exercise submit → execute → interrupt → recover → resume → verify → close E2E.
-6. Measure boot payload rather than relying on old estimates.
+6. Measure boot payload and remove remaining stale references without touching protected root policies/workflows.
 7. Reconcile branches and prepare a privacy-safe consolidated draft PR only after storage containment; leave #3/#6/#7 open until Ahmed decides.
 
 ## Review request to Claude
-Independently inspect current HEAD and challenge: local/remote lease semantics, CAS retry behavior, ledger growth, stale lease reclamation, crash consistency, replay invariants, task-state tampering, approval provenance, reviewer identity, and bounded-executor prerequisites. Report evidence by file/line and distinguish implemented behavior from metadata claims. Do not edit, merge, deploy, provision paid services, alter secrets/permissions, import transcripts or perform browser/OpenHands work.
+Independently inspect current HEAD and challenge: local/remote lease semantics, CAS retry behavior, ledger growth, stale lease reclamation, crash consistency, replay invariants, task-state tampering, approval provenance, reviewer identity, boot-source selection and bounded-executor prerequisites. Report evidence by file/line and distinguish implemented behavior from metadata claims. Do not edit, merge, deploy, provision paid services, alter secrets/permissions, import transcripts or perform browser/OpenHands work.
 
 
 ---
