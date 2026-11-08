@@ -24,3 +24,9 @@ Before ending every substantive conversation, Blind Sniper must execute the clos
 - GitHub repository state is authoritative for code, PRs, issues, commits, and recorded agent work. This home is authoritative only for ChatGPT's continuity notes.
 - Never store API keys, tokens, passwords, private credentials, or secret values here.
 - Update these files through reviewed commits. Do not silently overwrite history.
+
+
+## Operating system and OpenHands mirror
+- `chatgpt-home/BLIND_SNIPER_OS.md` is the adapted Blind Sniper operating system for use in ChatGPT conversations.
+- `chatgpt-home/openhands-library/` contains a source-preserving mirror of the OpenHands account library. See its `IMPORT_MANIFEST.md` for provenance and runtime limitations.
+- Read the adapted OS before applying mirrored skills. OpenHands hooks and sub-agents are not installed in ChatGPT.
