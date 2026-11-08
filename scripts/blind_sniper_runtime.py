@@ -479,18 +479,18 @@ def main(argv: list[str] | None = None) -> int:
     recover_parser.add_argument("--task-id", required=True)
     recover_parser.add_argument("--output", required=True)
     claim_parser = sub.add_parser("claim", help="claim or renew a task lease in the local ledger")
-    claim_parser.add_argument("--ledger", default=".blind-sniper/state/events.jsonl")
+    add_ledger_arguments(claim_parser)
     claim_parser.add_argument("--task-id", required=True)
     claim_parser.add_argument("--owner-id", required=True)
     claim_parser.add_argument("--lease-seconds", type=int, default=300)
     claim_parser.add_argument("--idempotency-key", required=True)
     release_parser = sub.add_parser("release", help="release a task lease owned by this runner")
-    release_parser.add_argument("--ledger", default=".blind-sniper/state/events.jsonl")
+    add_ledger_arguments(release_parser)
     release_parser.add_argument("--task-id", required=True)
     release_parser.add_argument("--owner-id", required=True)
     release_parser.add_argument("--idempotency-key", required=True)
     status_parser = sub.add_parser("lease-status", help="inspect the current task lease")
-    status_parser.add_argument("--ledger", default=".blind-sniper/state/events.jsonl")
+    add_ledger_arguments(status_parser)
     status_parser.add_argument("--task-id", required=True)
     args = parser.parse_args(argv)
     try:
@@ -532,8 +532,6 @@ def main(argv: list[str] | None = None) -> int:
                 updated = state  # Safe retry after ledger append but before checkpoint write.
             else:
                 if args.to == "EXECUTING":
-                    if args.github_ledger:
-                        raise RuntimeErrorBase("GitHub-backed task leases are not implemented; remote execution is blocked")
                     if not args.lease_owner:
                         raise RuntimeErrorBase("An active task lease and --lease-owner are required before EXECUTING")
                 evidence = read_json(Path(args.evidence_file)) if args.evidence_file else {}
@@ -564,7 +562,7 @@ def main(argv: list[str] | None = None) -> int:
                               "event_count": len(state.get("events", [])),
                               "ledger_commit": None}, indent=2))
         elif args.command == "claim":
-            ledger = TaskLedger(args.ledger)
+            ledger = configure_ledger(args)
             ledger.task_history(args.task_id)
             result = ledger.claim_task(
                 task_id=args.task_id, owner_id=args.owner_id,
@@ -576,7 +574,7 @@ def main(argv: list[str] | None = None) -> int:
                               "lease_expires_at": result["lease_expires_at"],
                               "event_created": result["event_created"]}, indent=2))
         elif args.command == "release":
-            ledger = TaskLedger(args.ledger)
+            ledger = configure_ledger(args)
             result = ledger.release_task(
                 task_id=args.task_id, owner_id=args.owner_id,
                 idempotency_key=args.idempotency_key,
@@ -586,7 +584,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"task_id": args.task_id, "released": True,
                               "event_created": result["event_created"]}, indent=2))
         else:
-            lease = TaskLedger(args.ledger).lease_status(args.task_id)
+            lease = configure_ledger(args).lease_status(args.task_id)
             print(json.dumps({"task_id": args.task_id, "lease": lease}, indent=2))
         return 0
     except (RuntimeErrorBase, LedgerError, OSError) as exc:
