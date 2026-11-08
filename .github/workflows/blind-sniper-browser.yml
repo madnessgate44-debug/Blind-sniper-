@@ -1,4 +1,5 @@
 name: Blind Sniper Browser Adapter
+# E2E runs two real Chromium cycles through the native lease dispatcher and reconciles a simulated interruption.
 # Includes atomic native task-lease reservation and replay-prevention tests.
 
 on:
