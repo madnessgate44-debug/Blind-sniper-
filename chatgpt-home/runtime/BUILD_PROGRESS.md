@@ -33,6 +33,7 @@
 - Local lease API and CLI checkpoints: `75f1ecc6cd94ca45f9581e867b9f9aa4583c622c`, `dba7c81f1e1bbc5b600d7a14cebc7f5f171d579e`.
 - Atomic local execution transition checkpoint: `91a1ec8e0199cb6b833d5427d3bc8d9eb3471ed2`.
 - Remote lease CAS and CLI integration checkpoint: `71c4aaaf7818c9327915d257f0ed126f3372d96c`, `61f4faf21ffe875bdaa72bb11f9ec226c4c01a70`.
+- Atomic lease/snapshot validation and implementer binding checkpoint: `e78a7cb5a175ff1180826eed6e8985157573b74a`, `38f9e189305742cd872546546d8ff3ff26927335`.
 - Regression tests commit: `12a4a4149a163ed3c6870ba8ba543d06565cf1ae`.
 - Runtime CI run [42484343595](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343595): SUCCESS; **29 tests passed**, including ledger-backed plan, transition, replay, stale-checkpoint recovery and host-forbidden denial.
 - Latest runtime CI run [42484643917](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484643917): SUCCESS; **31 tests passed**, including registry-owned routing, profile/agent selection, and the unprofiled browser workflow safely falling back to the default native profile/agents.
@@ -43,6 +44,8 @@
 - OS compliance [run 42485134395](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485134395): SUCCESS.
 - Runtime CI [run 42485831421](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485831421): SUCCESS; **53 tests passed**, including local lease exclusivity, expiry reclaim, concurrent claim winner, atomic execution transition, remote lease CAS conflict retry and remote owner binding.
 - OS compliance [run 42485831389](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485831389): SUCCESS.
+- Runtime CI [run 42486078702](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078702): SUCCESS; **54 tests passed**, including EXECUTING snapshot/task binding and implementer identity.
+- OS compliance [run 42486078662](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078662): SUCCESS.
 - Engineering Execution OS compliance run [42484343610](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343610): SUCCESS on test commit `12a4a41`.
 - Documentation was updated after that runtime pass; latest HEAD and exact CI checks are maintained in `CURRENT_STATE.md`.
 
