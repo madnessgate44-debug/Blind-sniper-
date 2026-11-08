@@ -1,13 +1,13 @@
 # Blind Sniper — Claude Handoff & Independent Architecture Review
 
-# Current evidence anchor — 8 November 2026, 15:40 Cairo time
+# Current evidence anchor — 8 November 2026, 15:45 Cairo time
 
 This section is authoritative for current state. Everything after the divider is retained historical context; old SHAs, CI results, agent rosters and policy descriptions below must not be treated as current.
 
 ## Repository and architecture
 - Repository: `madnessgate44-debug/Blind-sniper-` (PUBLIC).
 - Integration branch: `feat/blind-sniper-orchestration-integration-2026-11-08`.
-- Latest branch HEAD before this handoff refresh: `801fa5fde30cba0e6cbb5ff3e9b8f477250df8d7`.
+- Latest branch HEAD before this handoff refresh: `f16d8995dabad9f860b8e2efc570842a4b4e6350`.
 - Ahmed confirmed **native-first**: Blind Sniper's own runtime, policy, native workforce contracts, persistence and recovery are core. External workers are optional adapters.
 - Main is unchanged. PRs #3, #6 and #7 remain OPEN and NOT MERGED; no authorization to close them was given.
 - Issues: #1 OPEN; #2 CLOSED as duplicate of #1; #8 SUPERSEDED but OPEN.
@@ -17,18 +17,19 @@ This section is authoritative for current state. Everything after the divider is
 - Runtime plan/transition commands persist full task snapshots; `recover` reconstructs latest state and repairs stale checkpoints.
 - Workflow routing priorities, keywords and agent assignments live in `workflows.json`; profile binding comes from `profiles.json`. Duplicate runtime routing maps have been removed.
 - Local and GitHub Contents CAS ledgers support task claim, same-owner renewal, expiry-based reclaim, owner-only release and lease status.
-- CLI entry into EXECUTING requires a matching active lease. Lease ownership check and EXECUTING transition append are atomic under the local file lock or GitHub blob-SHA compare-and-swap. This closes the check-then-write race found while adding leases.
+- CLI entry into EXECUTING requires a matching active lease. Lease ownership check and EXECUTING transition append are atomic under the local file lock or GitHub blob-SHA compare-and-swap.
+- The atomic execution receipt is rejected unless its snapshot is for the same task and has status EXECUTING. Runtime records the lease owner as `implementer_id`, so closure's reviewer comparison uses the actual execution owner rather than a generic controller identity.
 - GitHub adapter checks repository metadata and refuses public repositories. It supports remote task snapshots, lease CAS and recovery reads.
-- Runtime CLI can select GitHub-backed storage, but no live write has been performed. The checked-in Actions workflow declares `contents: read`; no workflow permission was changed. A private repo and separately authorized host token with Contents write are required.
+- Remote adapter is mock-tested; no live write has been performed. The checked-in Actions workflow declares `contents: read`; no workflow permission was changed. A private repo and separately authorized host token with Contents write are required.
 - Host-forbidden actions cannot be overridden. Other consequential/unclassified actions require action-specific approval.
 - Closure requires PASS, reviewer different from implementer, matching task ID, full commit SHA and CI run ID. Approval/reviewer identity remain metadata, not cryptographic proof.
 - Runtime is still a planner and guarded state machine; it does not spawn separate model processes or prove agent execution.
 
 ## Verified CI
-- Runtime [run 42485946426](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485946426): SUCCESS; **53 tests passed** on runtime/test checkpoint `61f4faf21ffe875bdaa72bb11f9ec226c4c01a70`.
-- OS compliance [run 42485946332](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485946332): SUCCESS.
-- Environment validation [run 42485946368](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485946368): SUCCESS.
-- Later documentation commits have separate checks; do not conflate documentation validation with runtime test evidence.
+- Runtime [run 42486078702](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078702): SUCCESS; **54 tests passed** on code/test checkpoint `38f9e189305742cd872546546d8ff3ff26927335`.
+- OS compliance [run 42486078662](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078662): SUCCESS on the same checkpoint.
+- Environment validation [run 42486047839](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486047839): SUCCESS on the prior checkpoint.
+- Latest documentation commits have their own checks; do not conflate documentation validation with runtime test evidence.
 
 ## Privacy and integration blockers
 - Repository is PUBLIC and contains personal, child-related and client-context material in memory/continuity files. Do not copy, quote, archive or import raw conversation transcripts here.
