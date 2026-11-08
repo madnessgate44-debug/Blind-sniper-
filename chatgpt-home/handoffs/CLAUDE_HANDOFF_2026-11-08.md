@@ -1,34 +1,34 @@
 # Blind Sniper — Claude Handoff & Independent Architecture Review
 
-# Current evidence anchor — 8 November 2026, 15:30 Cairo time
+# Current evidence anchor — 8 November 2026, 15:40 Cairo time
 
 This section is authoritative for current state. Everything after the divider is retained historical context; old SHAs, CI results, agent rosters and policy descriptions below must not be treated as current.
 
 ## Repository and architecture
 - Repository: `madnessgate44-debug/Blind-sniper-` (PUBLIC).
 - Integration branch: `feat/blind-sniper-orchestration-integration-2026-11-08`.
-- Latest branch HEAD before this handoff refresh: `5892360d834f1d2c27c703e8856efd05defc27ed`.
+- Latest branch HEAD before this handoff refresh: `801fa5fde30cba0e6cbb5ff3e9b8f477250df8d7`.
 - Ahmed confirmed **native-first**: Blind Sniper's own runtime, policy, native workforce contracts, persistence and recovery are core. External workers are optional adapters.
 - Main is unchanged. PRs #3, #6 and #7 remain OPEN and NOT MERGED; no authorization to close them was given.
 - Issues: #1 OPEN; #2 CLOSED as duplicate of #1; #8 SUPERSEDED but OPEN.
 
 ## Current implementation
 - Eight native roles have checked-in contracts; external worker identities are not core agents.
-- Runtime plan/transition commands automatically persist full task snapshots to the append-only local JSONL ledger; `recover` reconstructs latest state and repairs stale checkpoints.
-- Optional `GitHubContentsLedger` supports remote read/write, SHA compare-and-swap, bounded conflict retries, idempotency and remote recovery reads.
-- The remote adapter checks GitHub repository metadata and refuses public repositories before accessing task state.
-- Runtime CLI exposes optional `--github-ledger` mode for plan, transition and recover. Token is read only from a named environment variable.
-- Remote adapter behavior is mocked/unit-tested; no live write has been performed. The existing Actions workflow declares `contents: read`, so its token cannot write. No workflow permission change was made. A private repository and a separately authorized host token with Contents write are required.
-- Workflow routing priorities, keywords and agent assignments live in `workflows.json`; profile binding comes from `profiles.json`. Duplicate runtime-to-profile/agent maps have been removed.
+- Runtime plan/transition commands persist full task snapshots; `recover` reconstructs latest state and repairs stale checkpoints.
+- Workflow routing priorities, keywords and agent assignments live in `workflows.json`; profile binding comes from `profiles.json`. Duplicate runtime routing maps have been removed.
+- Local and GitHub Contents CAS ledgers support task claim, same-owner renewal, expiry-based reclaim, owner-only release and lease status.
+- CLI entry into EXECUTING requires a matching active lease. Lease ownership check and EXECUTING transition append are atomic under the local file lock or GitHub blob-SHA compare-and-swap. This closes the check-then-write race found while adding leases.
+- GitHub adapter checks repository metadata and refuses public repositories. It supports remote task snapshots, lease CAS and recovery reads.
+- Runtime CLI can select GitHub-backed storage, but no live write has been performed. The checked-in Actions workflow declares `contents: read`; no workflow permission was changed. A private repo and separately authorized host token with Contents write are required.
 - Host-forbidden actions cannot be overridden. Other consequential/unclassified actions require action-specific approval.
-- Closure requires PASS, reviewer different from implementer, matching task ID, full commit SHA and CI run ID. Approval/reviewer identities are metadata, not cryptographic proof.
+- Closure requires PASS, reviewer different from implementer, matching task ID, full commit SHA and CI run ID. Approval/reviewer identity remain metadata, not cryptographic proof.
 - Runtime is still a planner and guarded state machine; it does not spawn separate model processes or prove agent execution.
 
 ## Verified CI
-- Runtime [run 42485134477](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485134477): SUCCESS; **43 tests passed** on code/test checkpoint `165fdff5fde9c7e18fc3f30384ecfd44c2ef5705`.
-- OS compliance [run 42485134395](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485134395): SUCCESS on the same checkpoint.
-- Environment validation [run 42485083496](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485083496): SUCCESS on prior docs checkpoint `b834ab6`.
-- Later documentation commits have their own checks; do not conflate documentation validation with runtime test evidence.
+- Runtime [run 42485946426](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485946426): SUCCESS; **53 tests passed** on runtime/test checkpoint `61f4faf21ffe875bdaa72bb11f9ec226c4c01a70`.
+- OS compliance [run 42485946332](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485946332): SUCCESS.
+- Environment validation [run 42485946368](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485946368): SUCCESS.
+- Later documentation commits have separate checks; do not conflate documentation validation with runtime test evidence.
 
 ## Privacy and integration blockers
 - Repository is PUBLIC and contains personal, child-related and client-context material in memory/continuity files. Do not copy, quote, archive or import raw conversation transcripts here.
@@ -38,15 +38,15 @@ This section is authoritative for current state. Everything after the divider is
 
 ## Next engineering priorities
 1. Create private memory repository and move private continuity/state there through a reviewed migration; public history remains.
-2. Validate the GitHub Contents adapter against that private repository using a separately authorized write-capable host/token; do not elevate workflow permissions implicitly.
-3. Add task claims/leases, expiry, cancellation and stale-lease recovery.
+2. Validate GitHub-backed persistence/leases against that private repository using a separately authorized write-capable host/token; do not elevate workflow permissions implicitly.
+3. Add lease heartbeat, cancellation and stale-worker supervision.
 4. Implement a bounded native executor over actual host tools/CI runners, with receipts bound to task/step/commit/run/artifact.
 5. Exercise submit → execute → interrupt → recover → resume → verify → close E2E.
 6. Measure boot payload rather than relying on old estimates.
 7. Reconcile branches and prepare a privacy-safe consolidated draft PR only after storage containment; leave #3/#6/#7 open until Ahmed decides.
 
 ## Review request to Claude
-Independently inspect current HEAD and challenge: remote adapter CAS correctness, rate-limit/error handling, ledger growth and truncation, concurrency semantics, replay invariants, task-state tampering, approval provenance, reviewer identity, and bounded-executor prerequisites. Report evidence by file/line and distinguish implemented behavior from metadata claims. Do not edit, merge, deploy, provision paid services, alter secrets/permissions, import transcripts or perform browser/OpenHands work.
+Independently inspect current HEAD and challenge: local/remote lease semantics, CAS retry behavior, ledger growth, stale lease reclamation, crash consistency, replay invariants, task-state tampering, approval provenance, reviewer identity, and bounded-executor prerequisites. Report evidence by file/line and distinguish implemented behavior from metadata claims. Do not edit, merge, deploy, provision paid services, alter secrets/permissions, import transcripts or perform browser/OpenHands work.
 
 
 ---
