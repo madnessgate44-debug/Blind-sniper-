@@ -142,5 +142,76 @@ class OrchestrationEngineTests(unittest.TestCase):
             runtime.transition_task(state, "CLOSED")
 
 
+    def test_unclassified_and_merge_actions_are_high_risk_and_task_cannot_override_host_policy(self):
+        plan = runtime.build_plan({
+            "task_id": "BS-SEC-001",
+            "objective": "Perform requested repository work",
+            "workflow": "task-control-loop",
+            "profile": "unrestricted",
+            "requested_actions": ["merge_to_main", "force_push", "unknown_action"],
+            "forbidden_actions": [],
+        })
+        self.assertEqual(plan["profile"], "blind-sniper")
+        self.assertEqual(plan["approval"]["pending_actions"], ["force_push", "merge_to_main", "unknown_action"])
+        self.assertTrue(plan["constraints"]["forbidden_actions"])
+
+    def test_owner_approval_requires_action_verbatim_words_and_timestamp(self):
+        plan = runtime.build_plan({
+            "task_id": "BS-SEC-002",
+            "objective": "Perform protected action",
+            "workflow": "task-control-loop",
+            "requested_actions": ["merge_to_main"],
+        })
+        state = runtime.create_task_state(plan)
+        for target in ("INSPECTING", "SPECIFIED", "PLANNED"):
+            state = runtime.transition_task(state, target)
+        with self.assertRaises(runtime.RuntimeErrorBase):
+            runtime.transition_task(state, "EXECUTING", approved_actions=["merge_to_main"])
+        record = {
+            "action": "merge_to_main",
+            "verbatim_words": "Ahmed: I approve merge_to_main for BS-SEC-002",
+            "timestamp": "2026-11-08T13:00:00Z",
+        }
+        state = runtime.transition_task(state, "EXECUTING", approval_records=[record])
+        self.assertEqual(state["plan"]["approval"]["pending_actions"], [])
+
+    def test_closure_requires_correlated_independent_reviewer_receipt(self):
+        plan = runtime.build_plan({
+            "task_id": "BS-SEC-003",
+            "objective": "Research and verify a technical question",
+            "workflow": "task-control-loop",
+        })
+        state = runtime.create_task_state(plan)
+        state["implementer_id"] = "engineer"
+        for target in ("INSPECTING", "SPECIFIED", "PLANNED", "EXECUTING", "VERIFYING", "REVIEWING"):
+            evidence = {"verification_passed": True} if target == "REVIEWING" else {}
+            state = runtime.transition_task(state, target, evidence)
+        with self.assertRaises(runtime.RuntimeErrorBase):
+            runtime.transition_task(state, "CLOSED", {"review_verdict": "PASS"})
+        receipt = {
+            "review_verdict": "PASS",
+            "task_id": "BS-SEC-003",
+            "reviewer_id": "independent-reviewer",
+            "commit_sha": "a" * 40,
+            "ci_run_id": "42481330782",
+        }
+        state = runtime.transition_task(state, "CLOSED", receipt)
+        self.assertEqual(state["status"], "CLOSED")
+
+    def test_routing_prioritizes_explicit_action_intent_over_generic_review_words(self):
+        plan = runtime.build_plan({
+            "task_id": "BS-ROUTE-001",
+            "objective": "Research merge strategies and compare primary sources",
+        })
+        self.assertEqual(plan["workflow"], "research-and-synthesis")
+
+    def test_bugfix_after_code_review_routes_to_engineering_not_review_only(self):
+        plan = runtime.build_plan({
+            "task_id": "BS-ROUTE-002",
+            "objective": "Fix the bug from code review",
+        })
+        self.assertEqual(plan["workflow"], "inspect-plan-implement-verify")
+
+
 if __name__ == "__main__":
     unittest.main()
