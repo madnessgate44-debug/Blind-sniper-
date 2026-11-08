@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -118,7 +119,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--step-id", required=True)
     parser.add_argument("--action", required=True, choices=sorted({"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "download", "pdf"}))
     parser.add_argument("--action-args-json", default="[]", help="JSON array of string arguments for the selected browser action")
-    parser.add_argument("--state-dir", default=".blind-sniper/browser")
+    parser.add_argument("--state-dir", default=os.environ.get("BLIND_SNIPER_BROWSER_STATE_DIR", ".blind-sniper/browser"))
     parser.add_argument("--timeout", type=int, default=45)
     parser.add_argument("--approval-reference")
     add_ledger_arguments(parser)
