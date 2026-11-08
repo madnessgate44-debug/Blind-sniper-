@@ -537,3 +537,13 @@ This addendum supersedes earlier role/authority descriptions where they conflict
 5. Bind verification receipts to task ID, exact commit SHA, workflow run ID and reviewer identity.
 6. Add a restart/recovery end-to-end test against the GitHub-backed ledger.
 7. Reconcile the full integration branch and open one consolidated PR to `main` after the runtime and privacy boundaries are sound.
+
+
+## Follow-up policy and registry correction — 8 November 2026
+
+- [VERIFIED] Native agent roster reduced to eight implemented internal roles: Blind Sniper, researcher, planner, engineer, reviewer, QA verifier, recovery and release manager. External OpenHands/Forge/Watcher/Shadow/Ghost identities are not in the native agent roster.
+- [VERIFIED] Operating profiles now select only these native roles with checked-in contracts. External OpenHands and Forge remain optional capability adapters; the external provider-pool adapter was removed from Blind Sniper core.
+- [VERIFIED] Runtime approval policy no longer treats routine merge as a human-only action. Production deployment, credential/permission changes, paid provisioning and destructive production changes remain guarded. Task envelopes still cannot self-approve.
+- [VERIFIED] A regression test now asserts routine merge has no pending Owner approval; production deployment remains approval-gated.
+- [FAILED → FIXED] CI initially exposed a test assumption: adapter registry is keyed by ID, not an array. Corrected the assertion to test key absence. The corrected CI run is pending at this addendum's creation.
+- [VERIFIED] Native ledger CLI now supports append/show; CLI integration test was added. Earlier run `42480970168` passed 19 tests before the latest registry/authority changes.
