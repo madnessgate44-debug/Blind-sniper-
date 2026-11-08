@@ -33,6 +33,20 @@ python scripts/blind_sniper_runtime.py recover \
   --task-id BS-20261108-001 \
   --output recovered-state.json \
   --ledger .blind-sniper/state/events.jsonl
+
+python scripts/blind_sniper_runtime.py claim \
+  --task-id BS-20261108-001 --owner-id runner-01 \
+  --lease-seconds 300 --idempotency-key BS-20261108-001:claim-01 \
+  --ledger .blind-sniper/state/events.jsonl
+
+python scripts/blind_sniper_runtime.py transition \
+  --state-file task-state.json --to EXECUTING --lease-owner runner-01 \
+  --output task-state.json --ledger .blind-sniper/state/events.jsonl
+
+python scripts/blind_sniper_runtime.py release \
+  --task-id BS-20261108-001 --owner-id runner-01 \
+  --idempotency-key BS-20261108-001:release-01 \
+  --ledger .blind-sniper/state/events.jsonl
 ```
 
 ## Commands — optional GitHub-backed ledger
@@ -68,6 +82,8 @@ The GitHub adapter first checks repository metadata and refuses any target where
 
 - Every accepted transition appends a full state snapshot to the ledger.
 - The ledger append happens before the JSON checkpoint write. If the process stops between those operations, the next transition reloads the ledger's latest state. Repeating the already-committed target repairs the checkpoint without a duplicate event.
+- The CLI exposes `claim`, `release` and `lease-status`. Lease duration is bounded to 1–3600 seconds. The same owner may renew with a new idempotency key; another owner is blocked until expiry or release.
+- CLI entry into EXECUTING requires an active lease and matching `--lease-owner`. The lease check and EXECUTING event append occur under one local file lock or one GitHub blob-SHA CAS operation, avoiding a check-then-write race.
 - Legacy task JSON without ledger history can be adopted once as `TASK_IMPORTED`; subsequent transitions use ledger state as authoritative.
 - Unknown/unclassified requested actions require explicit action-specific Owner approval.
 - Host-forbidden actions (force-push, branch deletion, credential/secret export, disabling branch protection and unbounded shell execution) cannot be overridden by task JSON or approval records.
@@ -81,7 +97,7 @@ The GitHub adapter first checks repository metadata and refuses any target where
 
 The local `TaskLedger` uses process locking, fsync, idempotency keys, monotonic sequence validation and a SHA-256 hash chain. The optional GitHub adapter adds blob-SHA compare-and-swap and immutable Git commit history for each accepted append.
 
-The hash chain detects edits but is not a signed tamper-proof audit log. GitHub Contents API file-level CAS is not a task lease service and does not implement multi-step ownership, cancellation or stale-worker recovery. The adapter deliberately cannot target this public repository; a private repository is required. Concurrent writes are retried a bounded number of times; sustained contention fails closed.
+The hash chain detects edits but is not a signed tamper-proof audit log. GitHub Contents API file-level CAS is not a full worker scheduler and does not implement cancellation or stale-worker recovery scheduling. It does provide atomic ledger-backed claim/renew/release and execution-transition commits. The adapter deliberately cannot target this public repository; a private repository is required. Concurrent writes are retried a bounded number of times; sustained contention fails closed.
 
 ## Capability boundaries
 
