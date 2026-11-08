@@ -96,6 +96,10 @@ def run_cycle(*, cycle: int, base_url: str, root_state_dir: Path, base_run_id: s
     if not lease["claimed"]:
         raise RuntimeError("E2E runner could not claim its native task lease")
 
+    uploads_dir = browser_dir / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    (uploads_dir / f"upload-{cycle}.txt").write_text(f"upload fixture {cycle}", encoding="utf-8")
+
     steps = [
         ("open", "open", (base_url,)),
         ("snapshot-before", "snapshot", ()),
@@ -103,6 +107,16 @@ def run_cycle(*, cycle: int, base_url: str, root_state_dir: Path, base_run_id: s
         ("fill-name", "fill", ("#name", f"Ada-{cycle}")),
         ("submit", "click", ("#submit",)),
         ("snapshot-after", "snapshot", ()),
+        ("tabs-list", "tabs", ()),
+        ("tab-new", "tab-new", (base_url,)),
+        ("tab-switch", "tab-switch", ("t1",)),
+        ("tab-close", "tab-close", ("t2",)),
+        ("frame-select", "frame", ("#fixture-frame",)),
+        ("frame-snapshot", "snapshot", ()),
+        ("frame-main", "frame", ("main",)),
+        ("upload", "upload", ("#file-upload", f"upload-{cycle}.txt")),
+        ("download", "download", ("#download", f"download-{cycle}.txt")),
+        ("pdf", "pdf", (f"page-{cycle}.pdf",)),
     ]
     results = {}
     for step_id, action, args in steps:
@@ -121,6 +135,12 @@ def run_cycle(*, cycle: int, base_url: str, root_state_dir: Path, base_run_id: s
     screenshot = browser_dir / "artifacts" / f"before-{cycle}.png"
     if not screenshot.is_file() or screenshot.stat().st_size == 0:
         raise AssertionError("The browser screenshot artifact is missing or empty")
+    downloaded = browser_dir / "artifacts" / f"download-{cycle}.txt"
+    pdf_file = browser_dir / "artifacts" / f"page-{cycle}.pdf"
+    if not downloaded.is_file() or downloaded.read_text(encoding="utf-8") != "Blind Sniper browser download fixture":
+        raise AssertionError("The bounded browser download artifact is missing or has unexpected content")
+    if not pdf_file.is_file() or pdf_file.stat().st_size == 0:
+        raise AssertionError("The PDF export artifact is missing or empty")
 
     # Simulate loss after the external browser action and local receipt, but before
     # BROWSER_ACTION_COMPLETED is appended to the authoritative task ledger.
@@ -198,15 +218,15 @@ def run_cycle(*, cycle: int, base_url: str, root_state_dir: Path, base_run_id: s
     started = [row for row in events if row["event_type"] == "BROWSER_ACTION_STARTED"]
     completed = [row for row in events if row["event_type"] == "BROWSER_ACTION_COMPLETED"]
     reconciled = [row for row in events if row["event_type"] == "BROWSER_ACTION_RECONCILED"]
-    if len(started) != 8 or len(completed) != 7 or len(reconciled) != 1:
+    if len(started) != 18 or len(completed) != 17 or len(reconciled) != 1:
         raise AssertionError(
             f"Unexpected native ledger counts: started={len(started)}, "
             f"completed={len(completed)}, reconciled={len(reconciled)}"
         )
     # Re-read after close so the final receipt is included.
     receipts = [json.loads(line) for line in receipts_file.read_text(encoding="utf-8").splitlines()]
-    if len(receipts) != 8:
-        raise AssertionError(f"Expected 8 browser receipts, got {len(receipts)}")
+    if len(receipts) != 18:
+        raise AssertionError(f"Expected 18 browser receipts, got {len(receipts)}")
 
     print(
         f"PASS: native browser cycle {cycle}; native_started={len(started)}; "
