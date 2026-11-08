@@ -55,3 +55,17 @@
 - [ ] Full Codex host installation performed on a host that can run Codex CLI.
 
 A checked item means only the evidence described in the linked files; this manifest is not a blanket runtime readiness claim.
+
+
+## 2026-11-08 implementation checkpoint
+
+- [x] Nine native skills created with metadata, trigger, permission, procedure, evidence and failure contracts.
+- [x] Nine specialist agent contracts created (researcher, planner, engineer, reviewer, QA verifier, recovery, watcher, shadow, release manager).
+- [x] Five workflow contracts created (session boot, task lifecycle, handoff, closeout, release gate).
+- [x] Four reusable templates created (agent task, verification ledger, review report, run receipt).
+- [x] Tool registry, lifecycle hook/guard contract, MCP/browser integration contract and common runtime adapter contract created.
+- [x] Six Codex host profile templates created (base, Blind Sniper, research, engineering, review, recovery).
+- [x] GitHub Actions structural validation executed successfully on branch head 1a70c10f3d49b67f51986ba383b2c7abbde1fba3: run 42473260867, job validate-environment, PASS: 39 required assets, 9 skill contracts, credential-pattern scan clean.
+- [x] Engineering Execution OS compliance also passed on the same commit: run 42473260744, job policy-compliance.
+
+**Boundary:** These checks validate repository assets and policy structure. They do not prove Codex CLI installation, ChatGPT hook execution, browser MCP connectivity, OpenHands result retrieval, isolated shell execution or full external-agent round trips. Those remain open readiness gates.
