@@ -220,7 +220,7 @@
     {
       "id": "agent_browser_cli",
       "kind": "ephemeral_browser_execution",
-      "status": "partial_atomic_lease_reservation_implemented_ci_reverification_pending_persistent_host_unverified",
+      "status": "partial_two_cycle_native_dispatch_e2e_passed_persistent_host_unverified",
       "tools": [
         "scripts/blind_sniper_browser.py",
         "scripts/blind_sniper_browser_dispatch.py",
@@ -237,10 +237,13 @@
         "native_task_state_and_lease_gate",
         "pre_action_step_reservation",
         "canonical_ledger_browser_receipts",
-        "duplicate_and_interrupted_step_replay_block"
+        "duplicate_and_interrupted_step_replay_block",
+        "two_cycle_native_dispatch_e2e",
+        "started_only_interruption_reconciliation",
+        "no_replay_before_adapter_construction"
       ],
       "limitations": [
-        "Lease-gated dispatch passed an initial CI run; a subsequent atomic local-lock/GitHub-CAS reservation hardening revision is implemented but its final CI rerun remains pending.",
+        "Atomic local-lock/GitHub-CAS reservation, concurrent duplicate exclusion, replay blocking and correlated receipts passed browser workflow run 42494894841; real Chromium completed two consecutive native-dispatch cycles with interruption reconciliation.",
         "GitHub Actions runners are ephemeral per job; this is not a persistent authenticated browser host or cross-job live-session service.",
         "Upload/download, tabs/frames, PDF, authenticated profiles, cookie transfer and persistent browser recovery are not implemented.",
         "The adapter is not directly callable as a ChatGPT tool in the current session; it runs only from an authorized shell/CI host.",
