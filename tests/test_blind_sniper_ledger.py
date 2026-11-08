@@ -3,10 +3,12 @@ from __future__ import annotations
 
 import json
 import subprocess
+import threading
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from datetime import datetime, timedelta, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -87,6 +89,79 @@ class TaskLedgerTests(unittest.TestCase):
 
     def test_github_contents_adapter_requires_private_repository_guard(self):
         self.assertTrue(callable(GitHubContentsLedger._assert_private_repository))
+
+
+    def test_task_lease_is_exclusive_until_expiry(self):
+        now = datetime(2026, 11, 8, 15, 0, tzinfo=timezone.utc)
+        first = self.ledger.claim_task(
+            task_id="BS-LEASE-001", owner_id="executor-a", lease_seconds=60,
+            idempotency_key="lease-a", now=now,
+        )
+        blocked = self.ledger.claim_task(
+            task_id="BS-LEASE-001", owner_id="executor-b", lease_seconds=60,
+            idempotency_key="lease-b", now=now + timedelta(seconds=30),
+        )
+        self.assertTrue(first["claimed"])
+        self.assertFalse(blocked["claimed"])
+        self.assertEqual(blocked["owner_id"], "executor-a")
+
+    def test_expired_task_lease_can_be_reclaimed(self):
+        now = datetime(2026, 11, 8, 15, 0, tzinfo=timezone.utc)
+        self.ledger.claim_task(
+            task_id="BS-LEASE-002", owner_id="executor-a", lease_seconds=60,
+            idempotency_key="lease-a", now=now,
+        )
+        reclaimed = self.ledger.claim_task(
+            task_id="BS-LEASE-002", owner_id="executor-b", lease_seconds=60,
+            idempotency_key="lease-b", now=now + timedelta(seconds=61),
+        )
+        self.assertTrue(reclaimed["claimed"])
+        self.assertEqual(reclaimed["owner_id"], "executor-b")
+
+    def test_task_lease_can_be_renewed_and_released_only_by_owner(self):
+        now = datetime(2026, 11, 8, 15, 0, tzinfo=timezone.utc)
+        self.ledger.claim_task(
+            task_id="BS-LEASE-003", owner_id="executor-a", lease_seconds=60,
+            idempotency_key="lease-a", now=now,
+        )
+        renewed = self.ledger.claim_task(
+            task_id="BS-LEASE-003", owner_id="executor-a", lease_seconds=120,
+            idempotency_key="renew-a", now=now + timedelta(seconds=30),
+        )
+        self.assertTrue(renewed["claimed"])
+        self.assertFalse(self.ledger.release_task(
+            task_id="BS-LEASE-003", owner_id="executor-b",
+            idempotency_key="wrong-release", now=now + timedelta(seconds=40),
+        )["released"])
+        self.assertTrue(self.ledger.release_task(
+            task_id="BS-LEASE-003", owner_id="executor-a",
+            idempotency_key="owner-release", now=now + timedelta(seconds=40),
+        )["released"])
+        self.assertIsNone(self.ledger.lease_status("BS-LEASE-003", now=now + timedelta(seconds=41)))
+
+    def test_concurrent_task_claims_have_exactly_one_winner(self):
+        now = datetime(2026, 11, 8, 15, 0, tzinfo=timezone.utc)
+        barrier = threading.Barrier(2)
+        results = []
+        def claim(owner):
+            barrier.wait()
+            results.append(self.ledger.claim_task(
+                task_id="BS-LEASE-004", owner_id=owner, lease_seconds=60,
+                idempotency_key=f"claim-{owner}", now=now,
+            ))
+        threads = [threading.Thread(target=claim, args=(owner,)) for owner in ("a", "b")]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        self.assertEqual(sum(1 for result in results if result["claimed"]), 1)
+
+    def test_invalid_lease_duration_is_rejected(self):
+        with self.assertRaises(LedgerError):
+            self.ledger.claim_task(
+                task_id="BS-LEASE-005", owner_id="executor-a", lease_seconds=0,
+                idempotency_key="bad-lease",
+            )
 
 
 if __name__ == "__main__":
