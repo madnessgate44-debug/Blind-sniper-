@@ -220,9 +220,10 @@
     {
       "id": "agent_browser_cli",
       "kind": "ephemeral_browser_execution",
-      "status": "partial_ci_acceptance_passed_persistent_host_unverified",
+      "status": "partial_native_lease_dispatch_implemented_ci_pending_persistent_host_unverified",
       "tools": [
         "scripts/blind_sniper_browser.py",
+        "scripts/blind_sniper_browser_dispatch.py",
         "agent-browser@0.41.2",
         "GitHub Actions: .github/workflows/blind-sniper-browser.yml"
       ],
@@ -232,15 +233,19 @@
         "click_fill_press_with_host_approval",
         "screenshot",
         "task_scoped_session_metadata",
-        "structured_action_receipts"
+        "structured_action_receipts",
+        "native_task_state_and_lease_gate",
+        "pre_action_step_reservation",
+        "canonical_ledger_browser_receipts",
+        "duplicate_and_interrupted_step_replay_block"
       ],
       "limitations": [
-        "Native adapter and controlled fixture are implemented; real browser acceptance passed CI run 42488696633 (7 policy tests and a 7-step Chromium round trip).",
+        "Native dispatch bridge is implemented; lease enforcement, duplicate prevention and canonical receipt persistence await CI verification.",
         "GitHub Actions runners are ephemeral per job; this is not a persistent authenticated browser host or cross-job live-session service.",
-        "Upload/download, tabs/frames, PDF, authenticated profiles, cookie transfer and persistent browser recovery are not implemented in this first slice.",
-        "The browser adapter is not directly callable as a ChatGPT tool in the current session; it runs only from an authorized shell/CI host.",
+        "Upload/download, tabs/frames, PDF, authenticated profiles, cookie transfer and persistent browser recovery are not implemented.",
+        "The adapter is not directly callable as a ChatGPT tool in the current session; it runs only from an authorized shell/CI host.",
         "Mutating actions require host-supplied write approval and an approval reference; this is an auditable host attestation, not cryptographic identity proof.",
-        "The built-in agent-browser domain allowlist blocks non-allowlisted navigation and subresource requests, with supported WebSocket/EventSource/WebRTC containment; it is browser-level containment, not an operating-system firewall. Use host/container egress controls for stronger isolation."
+        "The built-in agent-browser domain allowlist is browser-level containment, not an operating-system firewall. Use host/container egress controls for stronger isolation."
       ],
       "license": "Apache-2.0",
       "version": "0.41.2",
