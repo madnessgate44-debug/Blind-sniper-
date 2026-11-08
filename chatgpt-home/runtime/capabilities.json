@@ -220,7 +220,7 @@
     {
       "id": "agent_browser_cli",
       "kind": "ephemeral_browser_execution",
-      "status": "partial_native_lease_dispatch_implemented_ci_pending_persistent_host_unverified",
+      "status": "partial_native_lease_dispatch_ci_passed_persistent_host_unverified",
       "tools": [
         "scripts/blind_sniper_browser.py",
         "scripts/blind_sniper_browser_dispatch.py",
@@ -240,7 +240,7 @@
         "duplicate_and_interrupted_step_replay_block"
       ],
       "limitations": [
-        "Native dispatch bridge is implemented; lease enforcement, duplicate prevention and canonical receipt persistence await CI verification.",
+        "Native dispatch bridge, lease enforcement, duplicate prevention and canonical receipt persistence passed browser workflow run 42493872146.",
         "GitHub Actions runners are ephemeral per job; this is not a persistent authenticated browser host or cross-job live-session service.",
         "Upload/download, tabs/frames, PDF, authenticated profiles, cookie transfer and persistent browser recovery are not implemented.",
         "The adapter is not directly callable as a ChatGPT tool in the current session; it runs only from an authorized shell/CI host.",
