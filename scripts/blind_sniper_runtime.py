@@ -347,13 +347,14 @@ def transition_task(
     pending = set(plan.get("approval", {}).get("pending_actions", []))
     for record in approval_records or []:
         action = str(record.get("action", "")).strip().lower()
+        approver = str(record.get("approver", "")).strip()
         words = str(record.get("verbatim_words", "")).strip()
         timestamp = str(record.get("timestamp", "")).strip()
         try:
             parsed_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
         except ValueError:
             parsed_time = None
-        if action not in pending or not words or parsed_time is None or parsed_time.tzinfo is None:
+        if action not in pending or approver != "Ahmed" or not words or parsed_time is None or parsed_time.tzinfo is None:
             raise RuntimeErrorBase("Owner approval record requires a pending action, verbatim words, and an offset-aware timestamp")
         approved.add(action)
     if target == "EXECUTING":
