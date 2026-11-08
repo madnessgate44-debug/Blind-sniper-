@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from blind_sniper_ledger import LedgerError, TaskLedger  # noqa: E402
+from blind_sniper_ledger import GitHubContentsLedger, GitHubLedgerError, LedgerError, TaskLedger  # noqa: E402
 
 
 class TaskLedgerTests(unittest.TestCase):
@@ -70,6 +70,14 @@ class TaskLedgerTests(unittest.TestCase):
     def test_unknown_task_has_no_recovery_snapshot(self):
         with self.assertRaisesRegex(LedgerError, "Unknown task_id"):
             self.ledger.task_history("missing")
+
+
+    def test_github_contents_adapter_requires_explicit_credentials_and_branch(self):
+        with self.assertRaises(GitHubLedgerError):
+            GitHubContentsLedger(
+                owner="example", repo="repo", path="events.jsonl",
+                branch="main", token="",
+            )
 
 
 if __name__ == "__main__":
