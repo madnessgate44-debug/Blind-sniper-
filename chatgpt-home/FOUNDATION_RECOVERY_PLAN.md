@@ -176,7 +176,7 @@ Every report must distinguish:
 
 | Workstream | State | Evidence | Next gate |
 |---|---|---|---|
-| Blind Sniper OS v2.0 | STARTED; PR #3 open | Branch files read; PR #3 open/unmerged | Add this plan, reconcile files, verify all changed docs |
+| Blind Sniper OS v2.0 | UPDATED IN BRANCH; PR #3 open | Canonical OS, autonomy protocol and recovery plan updated and re-fetched; PR #3 head `038b80e` | Review/merge PR #3 under repo policy, then run full boot and closeout acceptance checks |
 | OpenHands archive | PARTIAL | docs/sessions/README.md: 19 days, 142 convos, 577 Owner msgs; raw gzip described as gitignored | Locate raw store/source and reconcile |
 | ChatGPT archive | BLOCKED/UNKNOWN | Firstborn #146 requirement; no supported live source adapter verified | Official export/access feasibility and authorized source inventory |
 | Forge integration | PARTIAL/BLOCKED | Firstborn #146, PR #147; HTTP MCP slice reported, ChatGPT access not proven | Deploy + register + real round trip |
