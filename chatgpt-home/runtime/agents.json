@@ -114,6 +114,18 @@
       "source": "native-runtime-contract",
       "role": "source-backed web and repository research",
       "status": "role_defined_tool_use_is_host_dependent"
+    },
+    {
+      "id": "conversation-exporter",
+      "source": "openhands-library",
+      "role": "export and reconcile authorized conversation artifacts",
+      "status": "reference_profile_present"
+    },
+    {
+      "id": "sre-incident-responder",
+      "source": "openhands-library",
+      "role": "incident response and runtime recovery",
+      "status": "reference_profile_present"
     }
   ],
   "delegation_contract": {
