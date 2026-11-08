@@ -119,3 +119,10 @@ Ahmed confirmed **native-first** as the single target architecture. The native r
 Workflow routing keywords, priorities and agent assignments now live in `workflows.json`; profile binding is resolved through `profiles.json`. The runtime no longer maintains duplicate workflow-to-profile or workflow-to-agent dictionaries. The registry validator checks workflow agent IDs, profile allowlists, routing rules and default agents.
 
 The runtime remains a planner and guarded state machine, not an autonomous executor. It now has local and remote-CAS task leases, but no heartbeat scheduler, cancellation supervisor or stale-worker sweeper. It does not spawn separate model processes or claim that role contracts have run. Current test and CI evidence is in `chatgpt-home/CURRENT_STATE.md`; implementation limits and next work are in `chatgpt-home/runtime/BUILD_PROGRESS.md`.
+
+
+## Native browser adapter — partial
+
+A first bounded adapter now exists at `../../scripts/blind_sniper_browser.py`, backed by `agent-browser@0.41.2`. Its contract and limitations are documented in `BROWSER_ADAPTER.md`. The dedicated `.github/workflows/blind-sniper-browser.yml` installs Node 22, the pinned CLI and Chromium on an ephemeral Ubuntu runner, then runs policy tests and a real local-fixture browser round trip.
+
+This is a CI-hosted browser execution slice, not a persistent browser service. The current implementation does not expose uploads/downloads, tabs/frames, PDF, cookies, authenticated profiles or cross-job live-session recovery. It is not directly callable as a ChatGPT browser tool. Keep the registry status PARTIAL until the corrected artifact-upload workflow passes and a supported dispatch/result path is proven.
