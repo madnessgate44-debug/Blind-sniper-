@@ -167,8 +167,9 @@
         "mention_can_create_session_receipt"
       ],
       "limitations": [
-        "GitHub @openhands mention creates session receipts. OpenHands has returned session state and PR artifacts in Brain #292 comments, but direct OpenHands Cloud API access is not exposed to Blind Sniper in this ChatGPT tool inventory.",
-        "A correlated Blind Sniper task still requires a returned task-specific receipt and independently verified artifacts; two consecutive round trips have not been demonstrated."
+        "GitHub @openhands mention creates a resolver session; T013 produced one task-correlated read-only report on Brain #292 (comment 6720817754, session e341bd8463694d68bd79dc609e408f33).",
+        "Direct OpenHands Cloud API access is not exposed as a callable tool to Blind Sniper in this ChatGPT session.",
+        "One read-only report round trip is proven; code-execution artifact return and two consecutive correlated round trips remain unproven."
       ]
     },
     {
