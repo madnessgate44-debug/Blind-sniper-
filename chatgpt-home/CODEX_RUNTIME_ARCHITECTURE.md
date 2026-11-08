@@ -225,3 +225,31 @@ Pass only when every hop has evidence. If the bridge is unavailable, mark BLOCKE
 **ChatGPT is the interface. Blind Sniper is the body and control plane. GitHub is its persistent workspace and memory. Execution environments supply compute. Forge supplies browser/computer interaction. OpenHands and the other agents are workers. Ahmed is the Owner.**
 
 Blind Sniper must make the system work together, prove each connection, preserve the results and avoid making the Owner serve as its messenger or operator.
+
+
+## 12. Brain hub split — current routing discrepancy
+
+The coordination system currently has two distinct issue references, and they must not be silently conflated:
+
+| Surface | Observed contract | Evidence |
+|---|---|---|
+| Brain #292 | Current ticketing protocol names this as the durable coordination hub | brain/docs/TICKETING_PROTOCOL.md, blob 99a9bdd1c8893754518a3bcd55a16126c3eaa15b |
+| Brain #240 | Older Watcher/OpenHands exchange loop and canonical ticket example | brain/docs/WORKFLOW.md, blob 254573e6b466cd282d4dfcb2b1fc2b47b7027db5 |
+| Watcher hub helper | Hardcodes HUB = 240 | brain/watcher/bridge/hub.py, blob b72d9590d30c7b5d966703944bdccc3ea82903c2 |
+| Watcher loop runner | Hardcodes ISSUE = 240 and reads/posts only on that issue | brain/watcher/bridge/loop.py, blob d6a3cdda3b872fae6ca0150aef613ee647cfb3d9 |
+| Watcher daily workflow | Its loop step says it reads the newest counterpart comment on hub #240 | brain/.github/workflows/watcher-daily.yml, blob de944dc710396046a7a995b0dd7f46ea9ff58ee1 |
+| Event receiver payload | Historical issue_comment receiver targets #240 and is marked disabled/deleted | brain/watcher/channel/receiver-payload.json, blob e5e7fa073eb8cb83cd6ac2c127856de8a66b488c |
+| Channel status | Historical event automation was disabled because spend was unverified; re-enable required Owner spend approval | brain/watcher/channel/status-2026-11-01.md, blob e77ea71e21212ea8d8a9d35cb4c5a17cd8d4b20e |
+
+**Interpretation:** #292 is the current Owner-facing coordination hub used by Blind Sniper. #240 remains a legacy Watcher/OpenHands loop until its owner confirms migration or continued separation. This is a routing discrepancy requiring explicit reconciliation, not permission to change either issue's history or retarget the loop blindly.
+
+**Current test:** Blind Sniper posted T006 with an @openhands mention to Brain #292 (comment 6720277355) to test the documented GitHub App fallback and request correlated receipt plus a current hub map. At the last readback, no OpenHands response was present. State remains POSTED / RECEIPT PENDING.
+
+**Do not reactivate** the historical event automation while its spend status remains unresolved. A safe delivery guarantee requires a verified zero-cost route or explicit Owner approval for any cost-bearing route, followed by two consecutive correlated send/receive tests.
+
+Acceptance for hub reconciliation:
+1. OpenHands/Watcher names the authoritative purpose of #240 and #292.
+2. Every active script/workflow has one explicit target and matching ticket protocol.
+3. The @openhands mention path is verified by a correlated session/run receipt and response.
+4. Any event receiver is proven disabled or active from live state; documentation alone is insufficient.
+5. No receiver is enabled if its cost/credit behavior is unknown without the Owner's explicit approval.
