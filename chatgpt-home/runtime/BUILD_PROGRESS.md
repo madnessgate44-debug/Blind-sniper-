@@ -34,6 +34,7 @@
 - Atomic local execution transition checkpoint: `91a1ec8e0199cb6b833d5427d3bc8d9eb3471ed2`.
 - Remote lease CAS and CLI integration checkpoint: `71c4aaaf7818c9327915d257f0ed126f3372d96c`, `61f4faf21ffe875bdaa72bb11f9ec226c4c01a70`.
 - Atomic lease/snapshot validation and implementer binding checkpoint: `e78a7cb5a175ff1180826eed6e8985157573b74a`, `38f9e189305742cd872546546d8ff3ff26927335`.
+- Terminal-task lease denial checkpoint: `f575191d22387c53935cd371da02689d486995c1`.
 - Native-first boot/profile and legacy-plan supersession checkpoints: `672e64c741ec8a0cd998273a0cc7a163bbd63daa`, `9fc2b42c80f89a75b8b734fc26f33164b35db120`, `584a0be123784efb3ab5b9ea5ec45da856ad8faa`.
 - Regression tests commit: `12a4a4149a163ed3c6870ba8ba543d06565cf1ae`.
 - Runtime CI run [42484343595](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343595): SUCCESS; **29 tests passed**, including ledger-backed plan, transition, replay, stale-checkpoint recovery and host-forbidden denial.
@@ -46,6 +47,7 @@
 - Runtime CI [run 42485831421](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485831421): SUCCESS; **53 tests passed**, including local lease exclusivity, expiry reclaim, concurrent claim winner, atomic execution transition, remote lease CAS conflict retry and remote owner binding.
 - OS compliance [run 42485831389](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485831389): SUCCESS.
 - Runtime CI [run 42486078702](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078702): SUCCESS; **54 tests passed**, including EXECUTING snapshot/task binding and implementer identity.
+- Runtime CI [run 42486676603](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486676603): SUCCESS; **55 tests passed**, adding terminal-task claim denial.
 - OS compliance [run 42486078662](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078662): SUCCESS.
 - Engineering Execution OS compliance run [42484343610](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343610): SUCCESS on test commit `12a4a41`.
 - Documentation was updated after that runtime pass; latest HEAD and exact CI checks are maintained in `CURRENT_STATE.md`.
