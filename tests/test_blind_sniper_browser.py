@@ -4,6 +4,7 @@ import json
 import os
 import tempfile
 import unittest
+from subprocess import CompletedProcess
 from pathlib import Path
 from unittest.mock import patch
 
@@ -86,6 +87,17 @@ class BrowserPolicyTests(unittest.TestCase):
         self.assertNotIn("eval", policy["allow"])
         self.assertNotIn("upload", policy["allow"])
         self.assertNotIn("download", policy["allow"])
+
+    def test_engine_command_enforces_domain_and_content_boundaries(self):
+        adapter = self.adapter()
+        with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
+            adapter._command("open", "http://127.0.0.1/")
+        command = run.call_args.args[0]
+        self.assertIn("--allowed-domains", command)
+        self.assertIn("--action-policy", command)
+        self.assertIn("--content-boundaries", command)
+        self.assertIn("127.0.0.1,example.test", command)
+        self.assertFalse(run.call_args.kwargs["shell"])
 
     def test_browser_command_never_uses_shell(self):
         adapter = self.adapter()
