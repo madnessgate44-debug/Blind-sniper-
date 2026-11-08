@@ -1,0 +1,25 @@
+name: Blind Sniper Environment Validation
+on:
+  push:
+    paths:
+      - "chatgpt-home/**"
+      - "scripts/check-blind-sniper-environment.mjs"
+      - ".github/workflows/blind-sniper-environment-validation.yml"
+  pull_request:
+    paths:
+      - "chatgpt-home/**"
+      - "scripts/check-blind-sniper-environment.mjs"
+      - ".github/workflows/blind-sniper-environment-validation.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate environment assets
+        run: node scripts/check-blind-sniper-environment.mjs
