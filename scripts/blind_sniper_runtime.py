@@ -536,17 +536,23 @@ def main(argv: list[str] | None = None) -> int:
                         raise RuntimeErrorBase("GitHub-backed task leases are not implemented; remote execution is blocked")
                     if not args.lease_owner:
                         raise RuntimeErrorBase("An active task lease and --lease-owner are required before EXECUTING")
-                    lease = ledger.lease_status(state["task_id"])
-                    if not lease or lease["owner_id"] != args.lease_owner:
-                        raise RuntimeErrorBase("No active task lease matches --lease-owner")
                 evidence = read_json(Path(args.evidence_file)) if args.evidence_file else {}
                 approval_records = read_json(Path(args.approval_record_file)).get("approvals", []) if args.approval_record_file else []
                 updated = transition_task(state, args.to, evidence, approval_records=approval_records)
                 transition_number = len(updated.get("events", [])) - 1
-                ledger_event = persist_task_state(
-                    ledger, updated, event_type="TASK_TRANSITIONED",
-                    idempotency_key=f"{updated['task_id']}:transition:{transition_number}:{args.to}",
-                )
+                transition_key = f"{updated['task_id']}:transition:{transition_number}:{args.to}"
+                if args.to == "EXECUTING":
+                    ledger_event = ledger.append_transition_if_lease(
+                        task_id=updated["task_id"],
+                        owner_id=args.lease_owner,
+                        payload={"state": updated},
+                        idempotency_key=transition_key,
+                    )
+                else:
+                    ledger_event = persist_task_state(
+                        ledger, updated, event_type="TASK_TRANSITIONED",
+                        idempotency_key=transition_key,
+                    )
             write_json(Path(args.output), updated)
             print(json.dumps({"task_id": updated["task_id"], "status": updated["status"],
                               "ledger_commit": (ledger_event.get("commit_sha") if "ledger_event" in locals() else None)}, indent=2))
