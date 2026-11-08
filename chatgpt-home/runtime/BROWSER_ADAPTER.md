@@ -5,7 +5,7 @@
 **Pinned version:** 0.41.2
 **License:** Apache-2.0
 **Execution host:** GitHub Actions ubuntu-latest (ephemeral CI host)
-**Status:** PARTIAL — atomic local-lock/GitHub-CAS reservation, URL redaction and dispatcher-only CLI passed CI; persistent host remains unverified
+**Status:** PARTIAL — two-cycle native-dispatch Chromium E2E, interruption reconciliation, atomic reservation and security hardening passed CI; persistent host remains unverified
 
 ## Scope
 
@@ -57,3 +57,16 @@ The GitHub Actions workflow installs Node.js 22, `agent-browser@0.41.2`, Chromiu
 
 
 Atomic reservation concurrency, URL redaction and dispatcher-only CLI checks passed on PR-head CI run 42494489650; the full runtime suite passed in run 42494489779. These results do not establish a persistent browser host or cross-job session recovery.
+
+
+## Native end-to-end acceptance — 2026-11-08
+
+Browser workflow run 42494894841 exercised the actual native dispatch bridge against real Chromium, not a direct adapter-only test.
+
+- Two consecutive cycles completed through EXECUTING task state, an active owner lease, atomic ledger reservation, browser action, and canonical completion receipt.
+- Each cycle recorded 8 BROWSER_ACTION_STARTED events, 7 BROWSER_ACTION_COMPLETED events, one BROWSER_ACTION_RECONCILED event and 8 adapter receipts.
+- Each cycle executed navigation, accessibility snapshots, screenshot, form fill, submit, post-submit verification and close.
+- A simulated interruption occurred after a read-only snapshot and its adapter receipt were persisted but before the ledger completion event.
+- Retrying the same run/session/step tuple was rejected before browser adapter construction. The existing receipt was checked, reconciled, and the session then closed using a new step.
+- Two cycles produced 16 browser receipts and 25,710 screenshot bytes total. Browser policy tests: 13 PASS; lease-dispatch tests: 8 PASS. The full runtime suite: 76 PASS.
+- This proves the bounded local-workspace interruption/reconciliation path. It does not prove a browser daemon or session can survive destruction of the GitHub Actions runner.
