@@ -61,10 +61,14 @@ rm -f /tmp/actions-runner.tar.gz
 # agent-browser@0.41.2 has a native Linux ARM64 CLI but its bundled Chrome
 # installer rejects Linux aarch64. Install Chrome for Testing's published ARM64
 # build directly and pass its exact executable path to the CLI.
-apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libxkbcommon0 libcups2 \
-  libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 \
-  libpango-1.0-0 libcairo2 libatspi2.0-0 libgtk-3-0 libdrm2 libxshmfence1 \
-  fonts-liberation fonts-noto-color-emoji
+CHROME_DEPS=(libnss3 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 \
+  libpango-1.0-0 libcairo2 libdrm2 libxshmfence1 fonts-liberation fonts-noto-color-emoji)
+if [[ "$VERSION_ID" == "24.04" ]]; then
+  CHROME_DEPS+=(libatk1.0-0t64 libatk-bridge2.0-0t64 libcups2t64 libasound2t64 libatspi2.0-0t64 libgtk-3-0t64)
+else
+  CHROME_DEPS+=(libatk1.0-0 libatk-bridge2.0-0 libcups2 libasound2 libatspi2.0-0 libgtk-3-0)
+fi
+apt-get install -y "${CHROME_DEPS[@]}"
 CFT_JSON="$(curl -fsSL https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json)"
 CFT_VERSION="$(printf '%s' "$CFT_JSON" | jq -r '.channels.Stable.version')"
 CFT_URL="$(printf '%s' "$CFT_JSON" | jq -r '.channels.Stable.downloads.chrome[] | select(.platform == "linux-arm64") | .url')"
