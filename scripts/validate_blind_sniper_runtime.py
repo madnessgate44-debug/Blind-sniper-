@@ -80,10 +80,29 @@ def main() -> int:
         if row.get("workflow") not in workflow_ids:
             fail(f"profile {row.get('id')}: unknown workflow {row.get('workflow')}")
 
+    profile_workflows = {}
+    for profile in profile_rows:
+        profile_workflows.setdefault(profile.get("workflow"), []).append(profile)
+
     for row in workflow_rows:
         unknown_adapters = set(row.get("adapters", [])) - adapter_ids
         if unknown_adapters:
             fail(f"workflow {row.get('id')}: unknown adapters {sorted(unknown_adapters)}")
+        unknown_agents = set(row.get("agents", [])) - agent_ids
+        if unknown_agents:
+            fail(f"workflow {row.get('id')}: unknown agents {sorted(unknown_agents)}")
+        if row.get("agents"):
+            matches = profile_workflows.get(row.get("id"), [])
+            if len(matches) != 1:
+                fail(f"workflow {row.get('id')}: expected exactly one profile binding, found {len(matches)}")
+            elif not set(row.get("agents", [])).issubset(set(matches[0].get("agents", []))):
+                fail(f"workflow {row.get('id')}: workflow agents exceed profile agent allowlist")
+        routing = row.get("routing")
+        if routing is not None:
+            if not isinstance(routing.get("priority"), int) or not routing.get("keywords"):
+                fail(f"workflow {row.get('id')}: routing requires integer priority and non-empty keywords")
+            if len(routing.get("keywords", [])) != len(set(routing.get("keywords", []))):
+                fail(f"workflow {row.get('id')}: duplicate routing keywords")
 
     mirror = HOME / "openhands-library" / ".agents"
     for skill in skill_names:
