@@ -123,3 +123,15 @@
 - **IN PROGRESS:** OpenHands task-specific response; hub reconciliation; reusable execution adapter; Forge ChatGPT connector.
 - **NOT AUTHORIZED / NOT DONE:** no merge, deployment, secret/permission changes, paid automation activation or production action.
 - **Next:** retrieve OpenHands session output through a verified channel, inspect current Firstborn PR #147/Forge status, then prove one complete correlated execution round trip.
+
+
+## 2026-11-08T12:23:12+02:00 — Final branch checkpoint
+
+- **Latest branch commit before this checkpoint write:** 1b23e0338f6f1877b6ff352f469836509f705698.
+- **Task record read-back:** chatgpt-home/tasks/BS-20261108-001.md blob 52ba78d2475209ca6d432cbe018c97427a443382; non-empty.
+- **PR changed files:** GitHub returned 15 paths for PR #3, including CODEX_RUNTIME_ARCHITECTURE.md, REPOSITORY_REGISTRY.md, TASK_TEMPLATE.md, and tasks/BS-20261108-001.md.
+- **Latest completed compliance evidence:** run 42471167167 (run #99), completed success; policy-compliance job and node scripts/check-engineering-execution-os.mjs step succeeded. This run is associated with the preceding checkpoint commit, not the task-record commit.
+- **Latest task-record commit CI:** no workflow run was returned for commit 1b23e0338f6f1877b6ff352f469836509f705698 at this check; do not infer a pass from run #99.
+- **PR state:** #3 remains OPEN / NOT MERGED.
+- **OpenHands receipt:** bot response 6720280271 / session 7543e363514b4435a71a60546c79501c. No task-specific result or further response observed.
+- **Next action:** retrieve the OpenHands session result through a verified tool; if unavailable, wait for its correlated Brain #292 response. Do not create duplicate sessions or enable the cost-uncertain event receiver.
