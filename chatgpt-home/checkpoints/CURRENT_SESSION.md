@@ -322,3 +322,16 @@ Continue BS-20261108-004 only after preserving the current PR boundary. Next eng
 - [BLOCKED] Direct ChatGPT custom MCP connector registration is unavailable on the current Free plan; ChatGPT custom MCP connections are web-only. The browser adapter is not callable from the current ChatGPT tool surface.
 - [PENDING] Independent Claude full-diff review requested in PR #11 comment 6723622077; no review response received yet.
 - [NOT DONE] PR #11 remains OPEN / DRAFT / NOT MERGED. No production deployment target exists in Vercel for this repository. No merge or deployment performed.
+
+
+## Final verification checkpoint — 2026-11-08
+
+- [VERIFIED] PR #11 head `dbbe2ee39931d03c10dd237ac8a673d1f729bc48`; base integration branch `feat/blind-sniper-orchestration-integration-2026-11-08`; PR remains OPEN / DRAFT / NOT MERGED.
+- [VERIFIED] Browser run 42497643588: extended policy/dispatcher tests and two real Chromium cycles passed; each cycle 18 started, 17 completed, one interrupted/reconciled, 18 receipts; total 36 receipts and 38,746 screenshot bytes.
+- [VERIFIED] Artifact 13624331916; SHA-256 35e6d3626e82712cc63a7bef49202521c719fae13835f19d709fa62eab3858c9.
+- [VERIFIED] Runtime registry 42497643648, environment validation 42497643660, OS compliance 42497643517 all SUCCESS on the same head.
+- [VERIFIED] Tabs, frames, approved upload, bounded download and PDF are now implemented and covered by real Chromium E2E.
+- [PARTIAL] Oracle Always Free host bootstrap and optional two-job persistence test are versioned; no Oracle account/VM or runner exists. Persistent cross-job session recovery not verified.
+- [BLOCKED] ChatGPT custom MCP connector unavailable on current Free plan; custom MCP apps are web-only. Authenticated profiles/cookies remain unsupported.
+- [PENDING] Independent Claude full-diff review handoff created; formal reviewer request failed because `claude` is not a repository collaborator. Owner may relay `chatgpt-home/handoffs/BS-20261108-004-CLAUDE-REVIEW.md`.
+- [NOT DONE] No merge or deployment; Vercel reports no project linked to this repository.
