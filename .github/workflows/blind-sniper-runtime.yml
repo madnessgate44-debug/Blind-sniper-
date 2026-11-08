@@ -1,0 +1,38 @@
+name: Blind Sniper Runtime Registry
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "chatgpt-home/runtime/**"
+      - "scripts/validate_blind_sniper_runtime.py"
+      - "tests/test_blind_sniper_runtime.py"
+      - ".github/workflows/blind-sniper-runtime.yml"
+  push:
+    branches:
+      - main
+      - "feat/**"
+    paths:
+      - "chatgpt-home/runtime/**"
+      - "scripts/validate_blind_sniper_runtime.py"
+      - "tests/test_blind_sniper_runtime.py"
+      - ".github/workflows/blind-sniper-runtime.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate runtime registries
+        run: python scripts/validate_blind_sniper_runtime.py
+      - name: Run runtime unit tests
+        run: python -m unittest discover -s tests -p 'test_blind_sniper_runtime.py' -v
