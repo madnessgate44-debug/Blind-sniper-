@@ -51,3 +51,5 @@ Host policy is supplied outside task content:
 **Recovery boundary:** local session metadata and action receipts survive process restarts while the workspace survives. The browser daemon itself is not proven recoverable after a GitHub Actions job/runner is destroyed. Never describe this as persistent cross-job browser continuity.
 
 **Execution boundary:** GitHub Actions provides an ephemeral Linux host for controlled acceptance tests. It is not a durable authenticated browser service, and the adapter is not directly callable from the current ChatGPT session. Real browser capability remains PARTIAL until the browser workflow passes and a supported dispatch/result path is proven.
+
+- The first-slice domain allowlist checks top-level navigation and post-action URL state only; it is not a request-level egress firewall for subresources or cross-origin form targets. Use only controlled fixtures until network interception is added.
