@@ -6,7 +6,6 @@ variables. This module never invokes a shell and never persists page contents.
 """
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import os
@@ -49,6 +48,22 @@ def _domain_list(name: str) -> set[str]:
 
 def _matches(host: str, rule: str) -> bool:
     return host == rule or host.endswith("." + rule)
+
+
+def redact_url_for_receipt(url: str | None) -> str | None:
+    """Keep the origin for diagnostics while excluding path, query and fragment data."""
+    if not url:
+        return None
+    try:
+        parsed = urlsplit(url)
+        host = parsed.hostname
+        if parsed.scheme not in {"http", "https"} or not host:
+            return "[REDACTED_URL]"
+        host = f"[{host}]" if ":" in host else host
+        port = f":{parsed.port}" if parsed.port is not None else ""
+        return f"{parsed.scheme}://{host}{port}/[REDACTED]"
+    except ValueError:
+        return "[REDACTED_URL]"
 
 
 def validate_url(url: str) -> str:
@@ -254,7 +269,7 @@ class BrowserAdapter:
             if observed_url:
                 try:
                     validate_url(observed_url)
-                    self.state["current_url"] = observed_url
+                    self.state["current_url"] = redact_url_for_receipt(observed_url)
                 except BrowserPolicyError as exc:
                     policy_error = str(exc)
                     self._command("close")
@@ -271,9 +286,15 @@ class BrowserAdapter:
             "run_id": self.run_id, "session_id": self.session_id,
             "step_id": step_id, "action": action,
             "approval_reference": self.approval_reference if action in MUTATING_ACTIONS else None,
-            "requested_url": requested_url, "observed_url": observed_url,
+            "requested_url": redact_url_for_receipt(requested_url),
+            "observed_url": redact_url_for_receipt(observed_url),
             "started_at": started, "completed_at": utc_now(),
-            "command": [("[REDACTED]" if action == "fill" and i == len(command) - 1 else value) for i, value in enumerate(command)],
+            "command": [
+                "[REDACTED]" if action == "fill" and i == len(command) - 1
+                else redact_url_for_receipt(value) if value.startswith(("http://", "https://"))
+                else value
+                for i, value in enumerate(command)
+            ],
             "exit_code": code,
             "stdout_bytes": len(stdout.encode("utf-8")),
             "stdout_sha256": hashlib.sha256(stdout.encode("utf-8")).hexdigest(),
@@ -293,53 +314,13 @@ class BrowserAdapter:
         return result
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--task-id", required=True)
-    parser.add_argument("--run-id", required=True)
-    parser.add_argument("--session-id", required=True)
-    parser.add_argument("--step-id", required=True)
-    parser.add_argument("--state-dir", default=".blind-sniper/browser")
-    parser.add_argument("--timeout", type=int, default=45)
-    parser.add_argument("--approval-reference")
-    sub = parser.add_subparsers(dest="action", required=True)
-    sub.add_parser("open").add_argument("url")
-    for name in ("snapshot", "get-url", "close"):
-        sub.add_parser(name)
-    sub.add_parser("click").add_argument("selector")
-    fill = sub.add_parser("fill")
-    fill.add_argument("selector")
-    fill.add_argument("value")
-    sub.add_parser("press").add_argument("key")
-    sub.add_parser("screenshot").add_argument("filename")
-    return parser
-
-
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    adapter = BrowserAdapter(
-        task_id=args.task_id, run_id=args.run_id, session_id=args.session_id,
-        state_dir=args.state_dir, approval_reference=args.approval_reference,
-        timeout=args.timeout,
+    """Prevent bypassing the native task/lease dispatcher via the adapter CLI."""
+    print(
+        "BLOCKED: invoke browser actions through scripts/blind_sniper_browser_dispatch.py",
+        file=sys.stderr,
     )
-    action_args: tuple[str, ...] = ()
-    if args.action == "open":
-        action_args = (args.url,)
-    elif args.action == "click":
-        action_args = (args.selector,)
-    elif args.action == "fill":
-        action_args = (args.selector, args.value)
-    elif args.action == "press":
-        action_args = (args.key,)
-    elif args.action == "screenshot":
-        action_args = (args.filename,)
-    try:
-        result = adapter.execute(args.action, args.step_id, *action_args)
-    except (BrowserPolicyError, BrowserAdapterError) as exc:
-        print(json.dumps({"error": str(exc), "action": args.action, "step_id": args.step_id}))
-        return 2
-    print(json.dumps(result, sort_keys=True))
-    return int(result["receipt"]["exit_code"])
+    return 2
 
 
 if __name__ == "__main__":
