@@ -422,6 +422,146 @@ class GitHubContentsLedger:
             "events": rows,
         }
 
+    def _write_remote_content(
+        self,
+        *,
+        content: bytes,
+        remote_sha: str | None,
+        task_id: str,
+        event_type: str,
+    ) -> str | None:
+        put_payload = {
+            "message": f"blind-sniper: append task event {task_id}/{event_type}",
+            "content": base64.b64encode(content).decode("ascii"),
+            "branch": self.branch,
+        }
+        if remote_sha:
+            put_payload["sha"] = remote_sha
+        status, raw = self._request(
+            "PUT", self.api_url,
+            json.dumps(put_payload, separators=(",", ":")).encode("utf-8"),
+        )
+        if status in (409, 422):
+            return None
+        if status not in (200, 201):
+            raise GitHubLedgerError(f"GitHub ledger write failed with HTTP {status}")
+        try:
+            response = json.loads(raw.decode("utf-8"))
+            return response["commit"]["sha"]
+        except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
+            raise GitHubLedgerError("GitHub ledger write receipt is malformed") from exc
+
+    def claim_task(
+        self,
+        *,
+        task_id: str,
+        owner_id: str,
+        lease_seconds: int,
+        idempotency_key: str,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        for _ in range(self.max_retries):
+            remote_content, remote_sha = self._read_remote()
+            with tempfile.TemporaryDirectory() as tmp:
+                local_path = Path(tmp) / "events.jsonl"
+                local_path.write_bytes(remote_content)
+                local = TaskLedger(local_path)
+                try:
+                    result = local.claim_task(
+                        task_id=task_id, owner_id=owner_id, lease_seconds=lease_seconds,
+                        idempotency_key=idempotency_key, now=now,
+                    )
+                except LedgerError as exc:
+                    raise GitHubLedgerError(str(exc)) from exc
+                if not result["claimed"] or not result["event_created"]:
+                    return result
+                updated_content = local_path.read_bytes()
+            commit_sha = self._write_remote_content(
+                content=updated_content, remote_sha=remote_sha,
+                task_id=task_id, event_type=result["event"]["event_type"],
+            )
+            if commit_sha is None:
+                continue
+            result["event"] = {**result["event"], "commit_sha": commit_sha}
+            return result
+        raise GitHubLedgerError(f"GitHub lease claim CAS failed after {self.max_retries} attempts")
+
+    def release_task(
+        self,
+        *,
+        task_id: str,
+        owner_id: str,
+        idempotency_key: str,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        for _ in range(self.max_retries):
+            remote_content, remote_sha = self._read_remote()
+            with tempfile.TemporaryDirectory() as tmp:
+                local_path = Path(tmp) / "events.jsonl"
+                local_path.write_bytes(remote_content)
+                local = TaskLedger(local_path)
+                try:
+                    result = local.release_task(
+                        task_id=task_id, owner_id=owner_id,
+                        idempotency_key=idempotency_key, now=now,
+                    )
+                except LedgerError as exc:
+                    raise GitHubLedgerError(str(exc)) from exc
+                if not result["released"] or not result["event_created"]:
+                    return result
+                updated_content = local_path.read_bytes()
+            commit_sha = self._write_remote_content(
+                content=updated_content, remote_sha=remote_sha,
+                task_id=task_id, event_type="TASK_LEASE_RELEASED",
+            )
+            if commit_sha is None:
+                continue
+            result["event"] = {**result["event"], "commit_sha": commit_sha}
+            return result
+        raise GitHubLedgerError(f"GitHub lease release CAS failed after {self.max_retries} attempts")
+
+    def lease_status(self, task_id: str, now: datetime | None = None):
+        remote_content, _ = self._read_remote()
+        with tempfile.TemporaryDirectory() as tmp:
+            local_path = Path(tmp) / "events.jsonl"
+            local_path.write_bytes(remote_content)
+            try:
+                return TaskLedger(local_path).lease_status(task_id, now)
+            except LedgerError as exc:
+                raise GitHubLedgerError(f"Remote lease history is invalid: {exc}") from exc
+
+    def append_transition_if_lease(
+        self,
+        *,
+        task_id: str,
+        owner_id: str,
+        payload: dict[str, Any],
+        idempotency_key: str,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        for _ in range(self.max_retries):
+            remote_content, remote_sha = self._read_remote()
+            with tempfile.TemporaryDirectory() as tmp:
+                local_path = Path(tmp) / "events.jsonl"
+                local_path.write_bytes(remote_content)
+                local = TaskLedger(local_path)
+                try:
+                    event = local.append_transition_if_lease(
+                        task_id=task_id, owner_id=owner_id, payload=payload,
+                        idempotency_key=idempotency_key, now=now,
+                    )
+                except LedgerError as exc:
+                    raise GitHubLedgerError(str(exc)) from exc
+                updated_content = local_path.read_bytes()
+            commit_sha = self._write_remote_content(
+                content=updated_content, remote_sha=remote_sha,
+                task_id=task_id, event_type="TASK_TRANSITIONED",
+            )
+            if commit_sha is None:
+                continue
+            return {**event, "commit_sha": commit_sha}
+        raise GitHubLedgerError(f"GitHub execution-transition CAS failed after {self.max_retries} attempts")
+
     def append(
         self,
         *,
