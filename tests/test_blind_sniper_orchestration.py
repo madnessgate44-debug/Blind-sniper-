@@ -64,18 +64,29 @@ class OrchestrationEngineTests(unittest.TestCase):
     def test_high_risk_action_requires_owner_approval(self):
         plan = runtime.build_plan({
             "task_id": "BS-TEST-005",
-            "objective": "Release candidate",
-            "workflow": "release-gate",
+            "objective": "Owner-directed bounded task",
+            "workflow": "task-control-loop",
             "requested_actions": ["merge"],
         })
-        self.assertEqual(plan["approval"]["pending_actions"], ["merge", "merge_or_deploy"])
+        self.assertEqual(plan["approval"]["pending_actions"], ["merge"])
         state = runtime.create_task_state(plan)
         for target in ("INSPECTING", "SPECIFIED", "PLANNED"):
             state = runtime.transition_task(state, target)
         with self.assertRaisesRegex(runtime.RuntimeErrorBase, "Owner approval is pending"):
             runtime.transition_task(state, "EXECUTING")
-        state = runtime.transition_task(state, "EXECUTING", owner_approved=True)
+        state = runtime.transition_task(state, "EXECUTING", approved_actions=["merge"])
         self.assertEqual(state["plan"]["approval"]["pending_actions"], [])
+
+    def test_release_gate_detects_missing_deploy_and_merge_capabilities(self):
+        plan = runtime.build_plan({
+            "task_id": "BS-TEST-008",
+            "objective": "Prepare a release",
+            "workflow": "release-gate",
+        })
+        self.assertEqual(plan["execution_readiness"], "BLOCKED")
+        missing = {item["id"]: item["missing_capabilities"] for item in plan["required_adapters"]}
+        self.assertIn("merge", missing["github"])
+        self.assertIn("deploy", missing["vercel"])
 
     def test_lifecycle_requires_verification_and_review_before_close(self):
         plan = runtime.build_plan({
