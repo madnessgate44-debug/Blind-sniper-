@@ -175,7 +175,7 @@
     {
       "id": "persistent_runner",
       "kind": "isolated_code_execution",
-      "status": "host_bootstrap_versioned_not_provisioned",
+      "status": "partial_host_bootstrap_versioned_not_provisioned",
       "tools": [
         "GitHub Actions on configured repository events"
       ],
@@ -224,7 +224,7 @@
     {
       "id": "agent_browser_cli",
       "kind": "ephemeral_browser_execution",
-      "status": "extended_native_actions_e2e_passed_persistent_host_not_provisioned",
+      "status": "partial_extended_native_actions_e2e_passed_persistent_host_not_provisioned",
       "tools": [
         "scripts/blind_sniper_browser.py",
         "scripts/blind_sniper_browser_dispatch.py",
