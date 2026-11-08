@@ -9,12 +9,13 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import re
 import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from blind_sniper_ledger import LedgerError, TaskLedger
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / "chatgpt-home" / "runtime"
@@ -392,6 +393,39 @@ def transition_task(
     return updated
 
 
+def recover_task_state(ledger_path: str | Path, task_id: str) -> dict[str, Any]:
+    """Reconstruct the latest committed task snapshot from the verified ledger."""
+    ledger = TaskLedger(ledger_path)
+    try:
+        history = ledger.task_history(task_id)
+    except LedgerError:
+        raise
+    latest = None
+    for event in history["events"]:
+        snapshot = event.get("payload", {}).get("state")
+        if isinstance(snapshot, dict):
+            latest = snapshot
+    if latest is None:
+        raise RuntimeErrorBase(f"Ledger has no recoverable state snapshot for task {task_id}")
+    return latest
+
+
+def persist_task_state(
+    ledger: TaskLedger,
+    state: dict[str, Any],
+    *,
+    event_type: str,
+    idempotency_key: str,
+) -> dict[str, Any]:
+    """Commit a complete state snapshot before writing the convenience checkpoint."""
+    return ledger.append(
+        task_id=state["task_id"],
+        event_type=event_type,
+        payload={"state": state},
+        idempotency_key=idempotency_key,
+    )
+
+
 def write_json(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
@@ -407,30 +441,76 @@ def main(argv: list[str] | None = None) -> int:
     plan_parser = sub.add_parser("plan", help="route a task through the registries")
     plan_parser.add_argument("--task-file", required=True)
     plan_parser.add_argument("--output", required=True)
+    plan_parser.add_argument("--ledger", default=".blind-sniper/state/events.jsonl")
     move_parser = sub.add_parser("transition", help="advance a guarded task lifecycle state")
     move_parser.add_argument("--state-file", required=True)
     move_parser.add_argument("--to", required=True, choices=STATES)
     move_parser.add_argument("--output", required=True)
     move_parser.add_argument("--evidence-file")
-    move_parser.add_argument("--approval-record-file", help="Host-supplied JSON file containing action, verbatim_words, and timestamp approval records")
+    move_parser.add_argument("--approval-record-file", help="Host-supplied JSON file containing action, approver, verbatim_words, and timestamp approval records")
+    move_parser.add_argument("--ledger", default=".blind-sniper/state/events.jsonl")
+    recover_parser = sub.add_parser("recover", help="rebuild the latest task checkpoint from the verified native ledger")
+    recover_parser.add_argument("--ledger", default=".blind-sniper/state/events.jsonl")
+    recover_parser.add_argument("--task-id", required=True)
+    recover_parser.add_argument("--output", required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "plan":
             task = read_json(Path(args.task_file))
             plan = build_plan(task)
-            write_json(Path(args.output), create_task_state(plan))
+            state = create_task_state(plan)
+            ledger = TaskLedger(args.ledger)
+            try:
+                ledger.task_history(state["task_id"])
+            except LedgerError as exc:
+                if not str(exc).startswith("Unknown task_id:"):
+                    raise
+            else:
+                raise RuntimeErrorBase(f"Task {state['task_id']} already exists in the ledger; use recover")
+            persist_task_state(
+                ledger, state, event_type="TASK_CREATED",
+                idempotency_key=f"{state['task_id']}:created",
+            )
+            write_json(Path(args.output), state)
             print(json.dumps({"task_id": plan["task_id"], "workflow": plan["workflow"],
                               "profile": plan["profile"], "readiness": plan["execution_readiness"],
-                              "next_action": plan["next_action"]}, indent=2))
-        else:
-            state = read_json(Path(args.state_file))
-            evidence = read_json(Path(args.evidence_file)) if args.evidence_file else {}
-            approval_records = read_json(Path(args.approval_record_file)).get("approvals", []) if args.approval_record_file else []
-            updated = transition_task(state, args.to, evidence, approval_records=approval_records)
+                              "next_action": plan["next_action"], "ledger": args.ledger}, indent=2))
+        elif args.command == "transition":
+            checkpoint = read_json(Path(args.state_file))
+            ledger = TaskLedger(args.ledger)
+            try:
+                state = recover_task_state(args.ledger, checkpoint["task_id"])
+            except LedgerError as exc:
+                if not str(exc).startswith("Unknown task_id:"):
+                    raise
+                # One-time adoption path for task files created before ledger integration.
+                state = checkpoint
+                persist_task_state(
+                    ledger, state, event_type="TASK_IMPORTED",
+                    idempotency_key=f"{state['task_id']}:imported",
+                )
+            if args.to == state.get("status"):
+                updated = state  # Safe retry after ledger append but before checkpoint write.
+            else:
+                evidence = read_json(Path(args.evidence_file)) if args.evidence_file else {}
+                approval_records = read_json(Path(args.approval_record_file)).get("approvals", []) if args.approval_record_file else []
+                updated = transition_task(state, args.to, evidence, approval_records=approval_records)
+                transition_number = len(updated.get("events", [])) - 1
+                persist_task_state(
+                    ledger, updated, event_type="TASK_TRANSITIONED",
+                    idempotency_key=f"{updated['task_id']}:transition:{transition_number}:{args.to}",
+                )
             write_json(Path(args.output), updated)
-            print(json.dumps({"task_id": updated["task_id"], "status": updated["status"]}, indent=2))
+            print(json.dumps({"task_id": updated["task_id"], "status": updated["status"],
+                              "ledger": args.ledger}, indent=2))
+        else:
+            state = recover_task_state(args.ledger, args.task_id)
+            write_json(Path(args.output), state)
+            print(json.dumps({"task_id": state["task_id"], "status": state["status"],
+                              "event_count": len(state.get("events", [])),
+                              "ledger": args.ledger}, indent=2))
         return 0
-    except (RuntimeErrorBase, OSError) as exc:
+    except (RuntimeErrorBase, LedgerError, OSError) as exc:
         print(f"BLOCKED: {exc}", file=sys.stderr)
         return 2
 
