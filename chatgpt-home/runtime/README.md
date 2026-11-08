@@ -109,7 +109,7 @@ The licensed source imports and native adaptations are now part of this integrat
 
 ## Native task persistence and recovery
 
-`../../scripts/blind_sniper_ledger.py` provides an append-only JSONL event ledger with process locking, fsync, idempotency, sequence validation and a SHA-256 hash chain. The runtime automatically persists TASK_CREATED/TASK_TRANSITIONED snapshots and recovers from the ledger. An optional GitHub Contents API adapter adds file-SHA compare-and-swap, bounded conflict retries and remote recovery reads. Its behavior is unit-tested with a mocked API; no live write has been performed. The current Actions workflow has `contents: read`, so remote writes require a separately authorized host token with Contents write permission. This is not yet an active cross-runner service.
+`../../scripts/blind_sniper_ledger.py` provides an append-only JSONL event ledger with process locking, fsync, idempotency, sequence validation and a SHA-256 hash chain. The runtime automatically persists TASK_CREATED/TASK_TRANSITIONED snapshots and recovers from the ledger. An optional GitHub Contents API adapter adds file-SHA compare-and-swap, bounded conflict retries, remote recovery reads and lease claim/renew/release. EXECUTING receipts atomically check lease ownership while appending the state transition. Its behavior is unit-tested with a mocked API; no live write has been performed. The current Actions workflow has `contents: read`, so remote writes require a separately authorized host token with Contents write permission. This is not yet an active cross-runner service.
 
 
 ## Native core status — 8 November 2026
@@ -118,4 +118,4 @@ Ahmed confirmed **native-first** as the single target architecture. The native r
 
 Workflow routing keywords, priorities and agent assignments now live in `workflows.json`; profile binding is resolved through `profiles.json`. The runtime no longer maintains duplicate workflow-to-profile or workflow-to-agent dictionaries. The registry validator checks workflow agent IDs, profile allowlists, routing rules and default agents.
 
-The runtime remains a planner and guarded state machine, not an autonomous executor. It does not spawn separate model processes or claim that role contracts have run. Current test and CI evidence is in `chatgpt-home/CURRENT_STATE.md`; implementation limits and next work are in `chatgpt-home/runtime/BUILD_PROGRESS.md`.
+The runtime remains a planner and guarded state machine, not an autonomous executor. It now has local and remote-CAS task leases, but no heartbeat scheduler, cancellation supervisor or stale-worker sweeper. It does not spawn separate model processes or claim that role contracts have run. Current test and CI evidence is in `chatgpt-home/CURRENT_STATE.md`; implementation limits and next work are in `chatgpt-home/runtime/BUILD_PROGRESS.md`.
