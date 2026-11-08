@@ -250,3 +250,13 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 - [NOT PASSED] Two consecutive correlated handoffs, direct OpenHands Cloud API invocation by Blind Sniper, code-execution artifact return and ChatGPT→Forge invocation.
 - [VERIFIED] OpenHands independently noted PR #6's moving head and prior transient CI failure. Blind Sniper independently rechecked its later head `5da3417b1a9da65a00cec76afd7ac35c2da3d418`: runtime, environment and OS compliance checks all passed (runs `42475183464`, `42475183449`, `42475183411`).
 - [VERIFIED] Firstborn PR #148 and #149 overlap on `browser_wait`; neither has been merged. Durable host + ChatGPT connector remain Owner/platform gates. Shadow pool remains 0 WORKING / 8 NOT SET.
+
+
+## Final T013 + runtime receipt — 2026-11-08T11:21 UTC
+
+- [VERIFIED] Final PR #6 head at the latest check: `8d4feced61aed232852abda6e69d32a1d87993c3`, OPEN / NOT MERGED, mergeable true, base is the Blind Sniper foundation branch (not main).
+- [VERIFIED] Runtime run `42475329887` / job `128715259859` PASS: 6 profiles, 25 agents, 13 adapters, 11 workflows, 10 native skills, 33 OpenHands skills; 3 tests OK.
+- [VERIFIED] Native environment run `42475329847` / job `128715259998` PASS: 39 required assets, 9 skill contracts, 9 agent contracts, 5 workflows, 6 safe config templates, credential scan clean.
+- [VERIFIED] OS compliance run `42475329895` / job `128715259743` PASS.
+- [PASS] One correlated read-only OpenHands report handoff completed: T013 request `6720767727` → session `e341bd8463694d68bd79dc609e408f33` → result `6720817754` / final report `6720827623`.
+- [NOT PASSED] Two consecutive handoffs, direct OpenHands Cloud API from ChatGPT, code-execution artifact return and ChatGPT→Forge tool invocation.
