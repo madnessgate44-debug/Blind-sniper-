@@ -26,7 +26,7 @@
       "source": "Firstborn repository",
       "role": "browser/computer-use and tool adapter",
       "authority": "no deployment or connector registration without approval",
-      "status": "implementation_pr_open_connector_not_registered"
+      "status": "remote_https_smoke_reported_ephemeral_host_chatgpt_connector_not_registered"
     },
     {
       "id": "watcher",
