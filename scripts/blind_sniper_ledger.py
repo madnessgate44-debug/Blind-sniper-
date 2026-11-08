@@ -190,6 +190,13 @@ class TaskLedger:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
             try:
                 rows = self._read_unlocked()
+                snapshots = [
+                    row.get("payload", {}).get("state")
+                    for row in rows
+                    if row.get("task_id") == task_id and isinstance(row.get("payload", {}).get("state"), dict)
+                ]
+                if snapshots and snapshots[-1].get("status") in ("CLOSED", "CANCELLED"):
+                    raise LedgerError("A terminal task cannot be claimed")
                 existing = next((row for row in rows if row["idempotency_key"] == idempotency_key), None)
                 if existing:
                     if existing["task_id"] != task_id or existing["event_type"] not in ("TASK_LEASE_CLAIMED", "TASK_LEASE_RENEWED") or existing["payload"].get("owner_id") != owner_id:
