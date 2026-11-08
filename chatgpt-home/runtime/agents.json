@@ -33,7 +33,8 @@
       "source": "Brain repository",
       "role": "task relay, status collection and health observation",
       "authority": "reporting and bounded routing only",
-      "status": "runtime_end_to_end_unverified"
+      "status": "runtime_end_to_end_unverified",
+      "native_contract_path": "chatgpt-home/agents/watcher.md"
     },
     {
       "id": "shadow",
@@ -168,13 +169,6 @@
       "source": "native-blind-sniper-contract",
       "path": "chatgpt-home/agents/recovery.md",
       "role": "diagnose failed runs and restore safe state",
-      "status": "native_contract_present_execution_depends_on_host_or_worker"
-    },
-    {
-      "id": "watcher",
-      "source": "native-blind-sniper-contract",
-      "path": "chatgpt-home/agents/watcher.md",
-      "role": "monitor explicit queues and report changes",
       "status": "native_contract_present_execution_depends_on_host_or_worker"
     },
     {
