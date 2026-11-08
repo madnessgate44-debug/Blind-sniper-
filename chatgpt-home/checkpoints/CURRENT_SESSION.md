@@ -240,3 +240,13 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 - [VERIFIED] Counts on implementation head `964f305793bc962f15e49cf46325723c43ef8fa4`: 6 profiles, 25 agents, 13 adapters, 11 workflows, 10 native skills, 33 OpenHands skills.
 - [VERIFIED] Runtime run `42475103888` / job `128714562891` PASS; environment run `42475103885` / job `128714562694` PASS; OS compliance run `42475103913` / job `128714562852` PASS.
 - [LIMITATION] This is still a host-aware operating/control plane, not an installed Codex CLI or a persistent shell. Forge connector, durable host, Shadow provider pool and automatic ChatGPT transcript export remain blocked/unavailable.
+
+
+## T013 — correlated OpenHands handoff accepted (read-only) — 2026-11-08
+
+- [VERIFIED] Blind Sniper posted T013 correlation `BS-E2E-20261108-T013` to Brain #292 (request comment `6720767727`).
+- [VERIFIED] OpenHands session `e341bd8463694d68bd79dc609e408f33` returned the requested task-specific read-only report on the same issue (comment `6720817754`); OpenHands final report confirms completion (comment `6720827623`).
+- [PASS] One correlated handoff: issue-comment request → resolver session → task-specific report comment, with exact correlation ID and evidence.
+- [NOT PASSED] Two consecutive correlated handoffs, direct OpenHands Cloud API invocation by Blind Sniper, code-execution artifact return and ChatGPT→Forge invocation.
+- [VERIFIED] OpenHands independently noted PR #6's moving head and prior transient CI failure. Blind Sniper independently rechecked its later head `5da3417b1a9da65a00cec76afd7ac35c2da3d418`: runtime, environment and OS compliance checks all passed (runs `42475183464`, `42475183449`, `42475183411`).
+- [VERIFIED] Firstborn PR #148 and #149 overlap on `browser_wait`; neither has been merged. Durable host + ChatGPT connector remain Owner/platform gates. Shadow pool remains 0 WORKING / 8 NOT SET.
