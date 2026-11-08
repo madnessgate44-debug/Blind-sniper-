@@ -204,5 +204,18 @@ class TaskLedgerTests(unittest.TestCase):
             )
 
 
+    def test_terminal_task_cannot_be_claimed_or_reclaimed(self):
+        self.ledger.append(
+            task_id="BS-LEASE-008", event_type="TASK_CREATED",
+            payload={"state": {"task_id": "BS-LEASE-008", "status": "CLOSED"}},
+            idempotency_key="closed:create",
+        )
+        with self.assertRaisesRegex(LedgerError, "terminal task"):
+            self.ledger.claim_task(
+                task_id="BS-LEASE-008", owner_id="runner-a", lease_seconds=60,
+                idempotency_key="closed:claim",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
