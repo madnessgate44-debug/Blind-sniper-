@@ -59,6 +59,8 @@ Brain `WATCHER.md §14` designates **Shadow** as the credential-pool custodian. 
 
 ## Execution model
 
+Python and temporary shell execution are available in the current ChatGPT session, but they are ephemeral and are not a persistent runner. Complete ChatGPT conversation archive export is not exposed as a native action here; continuity Markdown and Memory summaries must not be described as full transcript export.
+
 GitHub file/branch/PR operations are available. Configured GitHub Actions can run CI on their declared events. There is no verified generic workflow-dispatch action or persistent shell in this ChatGPT session. OpenHands mention-to-session creation has been observed, but correlated task completion and artifact retrieval are not yet proven.
 
 ## License and provenance
