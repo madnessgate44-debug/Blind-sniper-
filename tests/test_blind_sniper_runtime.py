@@ -36,7 +36,7 @@ class RuntimeRegistryTests(unittest.TestCase):
         self.assertEqual(len(skills["skills"]), 33)
         agents = json.loads((ROOT / "chatgpt-home/runtime/agents.json").read_text())
         self.assertFalse(any(a["id"] in {"shadow", "watcher", "ghost", "openhands", "forge", "shadow-auditor"} for a in agents["agents"]))
-        self.assertFalse(any(a["id"] == "shadow_provider_pool" for a in adapters))
+        self.assertNotIn("shadow_provider_pool", adapters)
         self.assertEqual(
             {a["id"] for a in agents["agents"]},
             {"blind-sniper", "researcher", "planner", "engineer", "reviewer", "qa-verifier", "recovery", "release-manager"},
