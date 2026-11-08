@@ -1,0 +1,158 @@
+{
+  "schema_version": "1.0.0",
+  "workflows": [
+    {
+      "id": "session-boot",
+      "trigger": "new_or_resumed_conversation",
+      "steps": [
+        "read_root_AGENTS_and_execution_OS",
+        "read_Blind_Sniper_entrypoint",
+        "load_memory_project_map_continuity_skills_catalog",
+        "inspect_current_GitHub_state",
+        "write_session_checkpoint"
+      ],
+      "execution": "conversation_procedure",
+      "status": "documented"
+    },
+    {
+      "id": "research-and-synthesis",
+      "trigger": "research_request",
+      "steps": [
+        "define_question_and_scope",
+        "search_web_and_GitHub",
+        "fetch_primary_sources",
+        "compare_evidence",
+        "write_cited_brief_and_memory_update"
+      ],
+      "adapters": [
+        "web",
+        "parallel",
+        "github"
+      ],
+      "status": "available_in_current_session"
+    },
+    {
+      "id": "task-control-loop",
+      "trigger": "owner_task",
+      "steps": [
+        "create_task_id",
+        "inspect_workspace",
+        "specify_acceptance_criteria",
+        "select_profile_skills_agents",
+        "check_authority_and_cost",
+        "dispatch_or_execute",
+        "capture_artifacts",
+        "verify_against_commit",
+        "sync_memory_and_report"
+      ],
+      "adapters": [
+        "github",
+        "openhands_dispatch",
+        "persistent_runner"
+      ],
+      "status": "partially_operational"
+    },
+    {
+      "id": "inspect-plan-implement-verify",
+      "trigger": "engineering_task",
+      "steps": [
+        "inspect_files_and_baseline",
+        "map_requirements_to_files",
+        "create_isolated_branch",
+        "implement_minimum_change",
+        "run_relevant_tests",
+        "inspect_diff",
+        "open_PR",
+        "record_evidence"
+      ],
+      "adapters": [
+        "github",
+        "persistent_runner"
+      ],
+      "status": "repository_changes_and_PR_available_ci_trigger_dependent"
+    },
+    {
+      "id": "independent-review",
+      "trigger": "PR_or_release_candidate",
+      "steps": [
+        "read_requirements",
+        "inspect_diff",
+        "run_or_inspect_tests",
+        "audit_security_scope_and_regressions",
+        "publish_findings"
+      ],
+      "adapters": [
+        "github"
+      ],
+      "status": "read_only_review_available"
+    },
+    {
+      "id": "release-gate",
+      "trigger": "release_request",
+      "steps": [
+        "inspect_release_candidate",
+        "verify_all_acceptance_criteria",
+        "check_rollback_and_observability",
+        "obtain_owner_approval",
+        "deploy_or_merge",
+        "post_release_smoke",
+        "record_receipt"
+      ],
+      "adapters": [
+        "github",
+        "vercel"
+      ],
+      "status": "approval_gated"
+    },
+    {
+      "id": "openhands-two-way-handoff",
+      "trigger": "GitHub_issue_comment_mention",
+      "steps": [
+        "post_correlated_task_envelope",
+        "capture_bot_session_receipt",
+        "retrieve_session_result",
+        "verify_artifacts",
+        "post_correlated_ack"
+      ],
+      "adapters": [
+        "github",
+        "openhands_dispatch"
+      ],
+      "status": "blocked_until_result_retrieval_is_proven"
+    },
+    {
+      "id": "forge-browser-roundtrip",
+      "trigger": "ChatGPT_browser_task",
+      "steps": [
+        "authenticate_MCP_endpoint",
+        "register_connector",
+        "discover_tool_allowlist",
+        "execute_read_only_browser_task",
+        "capture_audit_log",
+        "verify_result"
+      ],
+      "adapters": [
+        "forge_browser_mcp"
+      ],
+      "status": "blocked_not_registered"
+    },
+    {
+      "id": "continuous-autonomy",
+      "trigger": "scheduled_or_event_receiver",
+      "steps": [
+        "receive_task_event",
+        "deduplicate",
+        "dispatch",
+        "retry_with_loop_breaker",
+        "persist_state",
+        "deliver_report"
+      ],
+      "adapters": [
+        "automation",
+        "openhands_dispatch",
+        "persistent_runner"
+      ],
+      "status": "not_verified_do_not_claim_background_execution"
+    }
+  ]
+}
