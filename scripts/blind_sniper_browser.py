@@ -18,7 +18,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 SCHEMA_VERSION = "1.0.0"
-ACTIONS = {"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "pdf"}
+ACTIONS = {"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "download", "pdf"}
 MUTATING_ACTIONS = {"click", "fill", "press", "upload"}
 SAFE_KEY_NAMES = {"ENTER", "TAB", "ESCAPE", "ARROWDOWN", "ARROWUP", "ARROWLEFT", "ARROWRIGHT"}
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
@@ -110,7 +110,7 @@ class BrowserAdapter:
             directory.mkdir(parents=True, exist_ok=True)
         self.policy_file.write_text(json.dumps({
             "default": "deny",
-            "allow": ["launch", "close", "navigate", "snapshot", "screenshot", "click", "fill", "upload", "tab", "frame", "pdf", "scroll", "wait", "get", "interact", "read"],
+            "allow": ["launch", "close", "navigate", "snapshot", "screenshot", "click", "fill", "upload", "download", "tab", "frame", "pdf", "scroll", "wait", "get", "interact", "read"],
         }, indent=2) + "\n", encoding="utf-8")
         self.session_file = self.sessions_dir / f"{session_id}.json"
         self.receipt_file = self.receipts_dir / f"{self.task_id}__{self.run_id}.jsonl"
@@ -305,6 +305,13 @@ class BrowserAdapter:
             if source.suffix.lower() not in {".pdf", ".png", ".jpg", ".jpeg", ".txt", ".csv", ".docx", ".xlsx"}:
                 raise BrowserPolicyError("Upload file type is not permitted")
             cli_args = ["upload", args[0], str(source)]
+        elif action == "download":
+            validate_url(self.state.get("current_url") or "")
+            if len(args) != 2 or not args[0] or len(args[0]) > 256 or Path(args[1]).name != args[1]:
+                raise BrowserPolicyError("download requires a selector and a simple output filename")
+            target = self._contained_file(self.artifacts_dir, args[1], must_exist=False, max_bytes=25 * 1024 * 1024)
+            cli_args = ["download", args[0], str(target)]
+            artifact_paths.append(str(target))
         elif action == "pdf":
             validate_url(self.state.get("current_url") or "")
             if len(args) != 1 or Path(args[0]).name != args[0] or not args[0].lower().endswith(".pdf"):
@@ -320,6 +327,15 @@ class BrowserAdapter:
         if action not in {"open", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame"}:
             requested_url = self.state.get("current_url")
         code, stdout, stderr, command = self._command(*cli_args)
+        if action == "download" and code == 0:
+            downloaded = Path(artifact_paths[0])
+            if not downloaded.is_file():
+                code = 2
+                stderr = (stderr + "\nDownload command completed without the expected file").strip()
+            elif downloaded.stat().st_size > 25 * 1024 * 1024:
+                downloaded.unlink(missing_ok=True)
+                code = 2
+                stderr = (stderr + "\nDownloaded file exceeded the 25 MiB limit and was removed").strip()
         observed_url = requested_url
         policy_error = None
         if action in {"open", "tab-new"}:
