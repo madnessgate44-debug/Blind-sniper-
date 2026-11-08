@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Blind Sniper Browser Fixture</title></head>
+<body>
+  <main>
+    <h1>Blind Sniper browser fixture</h1>
+    <p id="status">Ready</p>
+    <form id="fixture-form">
+      <label for="name">Name</label>
+      <input id="name" name="name" type="text" autocomplete="off">
+      <button id="submit" type="submit">Submit fixture</button>
+    </form>
+  </main>
+  <script>
+    document.getElementById("fixture-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      document.getElementById("status").textContent =
+        "Submitted: " + document.getElementById("name").value;
+    });
+  </script>
+</body>
+</html>
