@@ -107,7 +107,15 @@
         "vercel"
       ],
       "status": "approval_gated",
-      "native_contract_path": "chatgpt-home/workflows/release-gate.md"
+      "native_contract_path": "chatgpt-home/workflows/release-gate.md",
+      "required_capabilities": {
+        "github": [
+          "merge"
+        ],
+        "vercel": [
+          "deploy"
+        ]
+      }
     },
     {
       "id": "openhands-two-way-handoff",
@@ -124,7 +132,12 @@
         "openhands_dispatch"
       ],
       "status": "partially_verified_session_results_returned_in_brain_comments_direct_chatgpt_api_not_exposed",
-      "native_contract_path": "chatgpt-home/workflows/agent-handoff.md"
+      "native_contract_path": "chatgpt-home/workflows/agent-handoff.md",
+      "required_capabilities": {
+        "openhands_dispatch": [
+          "session_result_retrieval"
+        ]
+      }
     },
     {
       "id": "forge-browser-roundtrip",
@@ -140,7 +153,12 @@
       "adapters": [
         "forge_browser_mcp"
       ],
-      "status": "blocked_durable_host_and_chatgpt_connector_registration"
+      "status": "blocked_durable_host_and_chatgpt_connector_registration",
+      "required_capabilities": {
+        "forge_browser_mcp": [
+          "authenticated_browser_interaction"
+        ]
+      }
     },
     {
       "id": "continuous-autonomy",
@@ -158,7 +176,15 @@
         "openhands_dispatch",
         "persistent_runner"
       ],
-      "status": "not_verified_do_not_claim_background_execution"
+      "status": "not_verified_do_not_claim_background_execution",
+      "required_capabilities": {
+        "automation": [
+          "background_execution_receiver"
+        ],
+        "persistent_runner": [
+          "persistent_runner"
+        ]
+      }
     },
     {
       "id": "recovery-and-reconciliation",
@@ -197,7 +223,12 @@
         "chatgpt_history_export",
         "github"
       ],
-      "status": "blocked_no_native_chat_history_export_action"
+      "status": "blocked_no_native_chat_history_export_action",
+      "required_capabilities": {
+        "chatgpt_history_export": [
+          "export_conversations"
+        ]
+      }
     }
   ],
   "native_workflow_library": "chatgpt-home/workflows/",
