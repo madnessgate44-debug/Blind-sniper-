@@ -5,7 +5,7 @@
 **Pinned version:** 0.41.2
 **License:** Apache-2.0
 **Execution host:** GitHub Actions ubuntu-latest (ephemeral CI host)
-**Status:** PARTIAL — native lease-gated dispatch and real Chromium CI acceptance passed; persistent host remains unverified
+**Status:** PARTIAL — initial lease-dispatch CI passed; atomic local-lock/GitHub-CAS reservation hardening is implemented and awaiting final CI re-verification; persistent host remains unverified
 
 ## Scope
 
