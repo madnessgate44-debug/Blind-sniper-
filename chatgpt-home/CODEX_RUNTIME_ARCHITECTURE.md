@@ -177,7 +177,7 @@ Ahmed remains Owner and final authority over direction, priorities and approvals
 | GitHub file read/write | Fetch/create/update tools exposed; branch-specific reads succeeded | Available in this session |
 | GitHub issue communication | Brain #292 T006 mention POST returned 6720277355; OpenHands bot replied with session ID 7543e363514b4435a71a60546c79501c in comment 6720280271 | Mention path RECEIVED; task-specific result pending |
 | GitHub workflow execution | Workflow evidence retrieval tools exist; no generic GitHub workflow-dispatch action found in current tool inventory | Partial |
-| Persistent shell/cloud workspace | No persistent Blind Sniper workspace established by this document | Not established |
+| Persistent shell/cloud workspace | Vercel projects amina and brain are visible; list_sessions and list_named_sandboxes for brain returned empty | Not established |
 | Forge browser/computer use | Firstborn PR #147 reports HTTP MCP vertical slice; ChatGPT tool registration and real round trip unproven | Partial / blocked |
 | Direct OpenHands API | Durable Brain/Firstborn issue surfaces available; direct session API not exposed in current tool inventory | Not established |
 | ChatGPT Automations | Three active coordination checkpoints found; all team-owned | Configured; OpenHands delivery unproven |
