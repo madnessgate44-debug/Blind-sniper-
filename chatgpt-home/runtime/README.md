@@ -110,3 +110,12 @@ The licensed source imports and native adaptations are now part of this integrat
 ## Native task persistence — initial implementation
 
 `../../scripts/blind_sniper_ledger.py` provides an append-only JSONL event ledger with process locking, fsync, idempotent event keys, monotonic sequence validation and a SHA-256 hash chain. It is a local durable-workspace primitive only. It does not yet synchronize state across ephemeral GitHub Actions runners or concurrent cloud hosts; that requires a GitHub-backed optimistic-concurrency adapter.
+
+
+## Native core status — 8 November 2026
+
+The native runtime roster has been narrowed to **8 implemented internal roles**: Blind Sniper, researcher, planner, engineer, reviewer, QA verifier, recovery and release manager. Operating profiles select only these roles. OpenHands and Forge remain optional capability adapters, not native agents or required execution dependencies. No Watcher, Shadow or Ghost role is part of the native core; the provider-pool adapter has been removed.
+
+The native task ledger is `../../scripts/blind_sniper_ledger.py`. It supports append/show, hash-chain validation, process locking, idempotency and local workspace replay. It is not yet a GitHub-backed shared store and is not automatically wired into every planner transition.
+
+Latest verified runtime checkpoint: **20 Python tests passed** on runtime code/test SHA `92abb690fa3e3026ef68c2073e0c79d5801037fc` (Actions run `42481163242`). Environment validation and OS compliance passed on final documentation HEAD `21950fbc85e73176edf642476f960e72dc1edbba`.
