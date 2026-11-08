@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.blind_sniper_browser import BrowserAdapter, BrowserPolicyError, validate_url
+from scripts.blind_sniper_browser import BrowserAdapter, BrowserAdapterError, BrowserPolicyError, validate_url
 
 
 class BrowserPolicyTests(unittest.TestCase):
@@ -72,7 +72,7 @@ class BrowserPolicyTests(unittest.TestCase):
 
     def test_browser_command_never_uses_shell(self):
         adapter = self.adapter()
-        with self.assertRaises(Exception):
+        with self.assertRaises(BrowserAdapterError):
             adapter._command("open", "http://127.0.0.1/")
 
 
