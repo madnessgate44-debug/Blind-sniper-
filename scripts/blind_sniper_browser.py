@@ -93,7 +93,7 @@ class BrowserAdapter:
             directory.mkdir(parents=True, exist_ok=True)
         self.policy_file.write_text(json.dumps({
             "default": "deny",
-            "allow": ["navigate", "snapshot", "click", "fill", "scroll", "wait", "get", "interact", "read"],
+            "allow": ["launch", "navigate", "snapshot", "click", "fill", "scroll", "wait", "get", "interact", "read"],
         }, indent=2) + "\n", encoding="utf-8")
         self.session_file = self.sessions_dir / f"{session_id}.json"
         self.receipt_file = self.receipts_dir / f"{self.task_id}__{self.run_id}.jsonl"
