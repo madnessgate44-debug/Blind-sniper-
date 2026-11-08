@@ -35,10 +35,12 @@ class RuntimeRegistryTests(unittest.TestCase):
         self.assertEqual(len(skills["native_skills"]), 10)
         self.assertEqual(len(skills["skills"]), 33)
         agents = json.loads((ROOT / "chatgpt-home/runtime/agents.json").read_text())
-        self.assertTrue(any(a["id"] == "shadow-auditor" for a in agents["agents"]))
-        self.assertTrue(any(a["id"] == "shadow" for a in agents["agents"]))
-        self.assertFalse(any(a["id"] == "ghost" for a in agents["agents"]))
-        self.assertEqual(adapters["shadow_provider_pool"]["status"], "blocked_pool_not_loaded")
+        self.assertFalse(any(a["id"] in {"shadow", "watcher", "ghost", "openhands", "forge", "shadow-auditor"} for a in agents["agents"]))
+        self.assertFalse(any(a["id"] == "shadow_provider_pool" for a in adapters))
+        self.assertEqual(
+            {a["id"] for a in agents["agents"]},
+            {"blind-sniper", "researcher", "planner", "engineer", "reviewer", "qa-verifier", "recovery", "release-manager"},
+        )
 
     def test_profiles_do_not_enable_unrestricted_sandbox(self):
         import json
