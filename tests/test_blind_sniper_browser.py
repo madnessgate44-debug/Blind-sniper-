@@ -180,7 +180,7 @@ class BrowserPolicyTests(unittest.TestCase):
         target = adapter.artifacts_dir / "report.pdf"
         self.assertTrue(target.is_file())
         self.assertEqual(target.read_bytes(), b"downloaded")
-        self.assertEqual(run.call_args.args[0][-2], "download")
+        self.assertEqual(run.call_args.args[0][-3], "download")
         self.assertEqual(result["receipt"]["artifact_paths"], [str(target)])
 
     def test_download_rejects_path_traversal(self):
