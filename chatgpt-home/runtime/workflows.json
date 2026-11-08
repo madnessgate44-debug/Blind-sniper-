@@ -153,6 +153,25 @@
         "persistent_runner"
       ],
       "status": "not_verified_do_not_claim_background_execution"
+    },
+    {
+      "id": "recovery-and-reconciliation",
+      "trigger": "delivery_or_continuity_failure",
+      "steps": [
+        "freeze_writes",
+        "inspect_last_verified_checkpoint",
+        "recover_source_artifacts",
+        "reconcile_task_and_session_ids",
+        "verify_integrity",
+        "restore_safe_state",
+        "record_recovery_receipt"
+      ],
+      "adapters": [
+        "github",
+        "files",
+        "openhands_dispatch"
+      ],
+      "status": "available_read_only_recovery_write_gated"
     }
   ]
 }
