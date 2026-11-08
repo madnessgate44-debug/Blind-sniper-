@@ -72,3 +72,7 @@ Read `ENVIRONMENT_MANIFEST.md` as the top-level capability map. Read the relevan
 
 - `hooks/HOOKS_AND_GUARDS.md` — lifecycle hook contracts and fail-closed guards.
 - `mcp/MCP_AND_BROWSER_INTEGRATIONS.md` — MCP server and browser activation requirements.
+
+
+## Codex-like runtime integration
+The executable capability registries and CI validation live in `chatgpt-home/runtime/`. Start with its `README.md`, then inspect `capabilities.json`, `profiles.json`, `agents.json`, `workflows.json` and `skills.index.json`. This is a host-aware control-plane registry and workflow contract; it does not install Codex CLI or make unregistered MCP endpoints callable.
