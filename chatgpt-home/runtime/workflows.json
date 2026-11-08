@@ -123,7 +123,7 @@
         "github",
         "openhands_dispatch"
       ],
-      "status": "blocked_until_result_retrieval_is_proven",
+      "status": "partially_verified_session_results_returned_in_brain_comments_direct_chatgpt_api_not_exposed",
       "native_contract_path": "chatgpt-home/workflows/agent-handoff.md"
     },
     {
@@ -140,7 +140,7 @@
       "adapters": [
         "forge_browser_mcp"
       ],
-      "status": "blocked_not_registered"
+      "status": "blocked_durable_host_and_chatgpt_connector_registration"
     },
     {
       "id": "continuous-autonomy",
