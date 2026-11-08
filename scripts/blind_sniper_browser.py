@@ -159,6 +159,9 @@ class BrowserAdapter:
             "--content-boundaries", "--max-output", "50000", "--json",
             *args,
         ]
+        executable_path = os.environ.get("AGENT_BROWSER_EXECUTABLE_PATH", "").strip()
+        if executable_path:
+            command[1:1] = ["--executable-path", executable_path]
         try:
             completed = subprocess.run(command, capture_output=True, text=True, timeout=self.timeout, check=False, shell=False)
         except FileNotFoundError as exc:
