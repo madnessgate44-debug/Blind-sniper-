@@ -30,7 +30,7 @@
         "release-manager",
         "openhands",
         "forge",
-        "ghost"
+        "shadow"
       ],
       "workflow": "task-control-loop",
       "config_template": "chatgpt-home/config/blind-sniper.config.toml.example"
