@@ -49,6 +49,8 @@ def main() -> int:
     agent_rows = agents.get("agents", [])
     workflow_rows = workflows.get("workflows", [])
     skill_names = skills.get("skills", [])
+    native_skill_names = skills.get("native_skills", [])
+    all_skill_names = set(skill_names) | set(native_skill_names)
 
     check_unique(adapters, "id", "adapters")
     check_unique(profile_rows, "id", "profiles")
@@ -69,7 +71,7 @@ def main() -> int:
         fail("agents.json: controller does not exist")
 
     for row in profile_rows:
-        unknown = set(row.get("skills", [])) - skill_set
+        unknown = set(row.get("skills", [])) - all_skill_names
         if unknown:
             fail(f"profile {row.get('id')}: unknown skills {sorted(unknown)}")
         unknown_agents = set(row.get("agents", [])) - agent_ids
@@ -92,9 +94,27 @@ def main() -> int:
         if not path.is_file():
             fail(f"missing mirrored skill: {path.relative_to(ROOT)}")
 
+    for skill, path_text in skills.get("native_skill_paths", {}).items():
+        path = ROOT / path_text
+        if skill not in native_skill_names or not path.is_file():
+            fail(f"missing native skill path or index mismatch: {path_text}")
+
+    for row in profile_rows:
+        template = row.get("config_template")
+        if template and not (ROOT / template).is_file():
+            fail(f"profile {row.get('id')}: missing config template {template}")
+
+    for row in workflow_rows:
+        contract = row.get("native_contract_path")
+        if contract and not (ROOT / contract).is_file():
+            fail(f"workflow {row.get('id')}: missing native contract {contract}")
+
     expected_skill_count = skills.get("source", {}).get("declared_skill_files")
     if expected_skill_count != len(skill_names):
-        fail(f"skills.index.json: declared count {expected_skill_count} != indexed {len(skill_names)}")
+        fail(f"skills.index.json: declared OpenHands count {expected_skill_count} != indexed {len(skill_names)}")
+    native_expected = skills.get("native_source", {}).get("declared_skill_files")
+    if native_expected != len(native_skill_names):
+        fail(f"skills.index.json: declared native count {native_expected} != indexed {len(native_skill_names)}")
 
     for required in ("task_id", "objective", "repository", "acceptance_criteria", "verification_commands"):
         if required not in task:
@@ -117,7 +137,7 @@ def main() -> int:
         return 1
 
     print("PASS: runtime registries parse and cross-reference cleanly")
-    print(f"profiles={len(profile_rows)} agents={len(agent_rows)} adapters={len(adapters)} workflows={len(workflow_rows)} skills={len(skill_names)}")
+    print(f"profiles={len(profile_rows)} agents={len(agent_rows)} adapters={len(adapters)} workflows={len(workflow_rows)} native_skills={len(native_skill_names)} openhands_skills={len(skill_names)}")
     print("PASS: all mirrored skill paths exist")
     print("PASS: safety invariants hold")
     return 0
