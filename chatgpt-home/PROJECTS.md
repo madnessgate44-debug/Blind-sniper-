@@ -40,3 +40,9 @@ Before changing any product, inspect its own root instructions, issue/PR state, 
 7. Proactive queue review at session boot/closeout; do not create uncontrolled scope or claim background execution without a configured mechanism.
 
 **Current limitation:** GitHub is persistent storage and can run configured workflows, but a Markdown file alone does not run an agent. The current session's tool inventory exposes GitHub and Automations creation; actual automation creation/run and any cloud environment must be verified separately. No automation was created solely from the ownership covenant.
+
+
+## Workspace registry and runtime
+- Complete dated inventory of repositories visible to the connected GitHub account: `chatgpt-home/REPOSITORY_REGISTRY.md`.
+- The registry is a discovery snapshot, not a permission grant. Recheck permissions, default branch and governing instructions before every substantive operation.
+- The Codex-like operating architecture and task protocol live in `CODEX_RUNTIME_ARCHITECTURE.md` and `TASK_TEMPLATE.md`; active work records live under `tasks/`.
