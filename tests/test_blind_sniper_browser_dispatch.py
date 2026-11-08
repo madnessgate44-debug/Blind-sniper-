@@ -100,7 +100,7 @@ class BrowserDispatchLeaseTests(unittest.TestCase):
         self.assertEqual(FakeAdapter.calls, [])
 
     def test_expired_or_short_lease_blocks(self):
-        with patch("blind_sniper_browser_dispatch.datetime") as clock:
+        with patch("blind_sniper_ledger.datetime") as clock:
             clock.now.return_value = datetime.now(timezone.utc) + timedelta(seconds=290)
             clock.fromisoformat = datetime.fromisoformat
             with self.assertRaises(BrowserDispatchError):
@@ -113,6 +113,35 @@ class BrowserDispatchLeaseTests(unittest.TestCase):
             self.dispatch()
         self.assertEqual(len(FakeAdapter.calls), 1)
 
+    def test_concurrent_reservations_are_atomic(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Barrier
+
+        barrier = Barrier(2)
+        payload = {
+            "owner_id": self.owner_id, "run_id": "run-race",
+            "session_id": "session-race", "step_id": "step-race", "action": "snapshot",
+        }
+
+        def reserve():
+            barrier.wait()
+            return self.ledger.reserve_browser_action_if_lease(
+                task_id=self.task_id, owner_id=self.owner_id, payload=payload,
+                idempotency_key="browser:run-race:session-race:step-race:started",
+                min_remaining_seconds=30,
+            )
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(reserve) for _ in range(2)]
+            results = []
+            for future in futures:
+                try:
+                    results.append(future.result())
+                except ValueError as exc:
+                    results.append(exc)
+        self.assertEqual(sum(isinstance(item, dict) for item in results), 1)
+        self.assertEqual(sum(isinstance(item, ValueError) for item in results), 1)
+
     def test_interrupted_started_only_step_requires_reconciliation(self):
         self.ledger.append(
             task_id=self.task_id, event_type="BROWSER_ACTION_STARTED",
@@ -122,7 +151,7 @@ class BrowserDispatchLeaseTests(unittest.TestCase):
             },
             idempotency_key="browser:run-1:session-1:step-1:started",
         )
-        with self.assertRaisesRegex(BrowserDispatchError, "reconcile"):
+        with self.assertRaisesRegex(BrowserDispatchError, "duplicate or interrupted replay"):
             self.dispatch()
         self.assertEqual(FakeAdapter.calls, [])
 
