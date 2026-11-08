@@ -99,7 +99,7 @@ The GitHub adapter first checks repository metadata and refuses any target where
 
 - Every accepted transition appends a full state snapshot to the ledger.
 - The ledger append happens before the JSON checkpoint write. If the process stops between those operations, the next transition reloads the ledger's latest state. Repeating the already-committed target repairs the checkpoint without a duplicate event.
-- The CLI exposes `claim`, `release` and `lease-status`. Lease duration is bounded to 1–3600 seconds. The same owner may renew with a new idempotency key; another owner is blocked until expiry or release.
+- The CLI exposes `claim`, `release` and `lease-status`. Lease duration is bounded to 1–3600 seconds. The same owner may renew with a new idempotency key; another owner is blocked until expiry or release. Tasks with a latest state of CLOSED or CANCELLED cannot be claimed.
 - CLI entry into EXECUTING requires an active lease and matching `--lease-owner`. The lease check and EXECUTING event append occur under one local file lock or one GitHub blob-SHA CAS operation, avoiding a check-then-write race. The committed snapshot records that lease owner as `implementer_id`, so closure review cannot compare against a generic controller identity.
 - The atomic ledger method rejects any receipt whose snapshot is not `EXECUTING` or whose embedded task ID differs from the event task ID.
 - Legacy task JSON without ledger history can be adopted once as `TASK_IMPORTED`; subsequent transitions use ledger state as authoritative.
