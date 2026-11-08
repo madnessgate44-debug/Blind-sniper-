@@ -338,5 +338,28 @@ class OrchestrationEngineTests(unittest.TestCase):
             runtime.transition_task(state, "EXECUTING", approval_records=[approval])
 
 
+    def test_workflow_registry_owns_routing_rules_and_agent_selection(self):
+        registries = runtime.load_registries(ROOT)
+        workflows = {row["id"]: row for row in registries["workflows"]["workflows"]}
+        engineering = workflows["inspect-plan-implement-verify"]
+        self.assertTrue(engineering.get("routing", {}).get("keywords"))
+        self.assertEqual(engineering.get("agents"), ["planner", "engineer", "qa-verifier", "reviewer"])
+        plan = runtime.build_plan({
+            "task_id": "BS-REGISTRY-001",
+            "objective": "Fix the bug from code review",
+        })
+        self.assertEqual(plan["workflow"], "inspect-plan-implement-verify")
+        self.assertEqual([row["id"] for row in plan["selected_agents"]],
+                         engineering["agents"])
+
+    def test_research_phrase_does_not_route_to_release_for_merge_strategy_question(self):
+        registries = runtime.load_registries(ROOT)
+        workflow = runtime.choose_workflow(
+            {"objective": "Research merge strategies and compare primary sources"},
+            registries["workflows"]["workflows"],
+        )
+        self.assertEqual(workflow, "research-and-synthesis")
+
+
 if __name__ == "__main__":
     unittest.main()
