@@ -62,6 +62,28 @@ for (const rel of skillFiles) {
     if (!content.includes(heading)) errors.push(`MISSING_SECTION ${heading} in ${rel}`);
   }
 }
+const agentFiles = required.filter(p => p.startsWith("chatgpt-home/agents/") && p.endsWith(".md") && !p.endsWith("README.md"));
+for (const rel of agentFiles) {
+  if (!fs.existsSync(path.join(root, rel))) continue;
+  const content = fs.readFileSync(path.join(root, rel), "utf8");
+  for (const marker of ["Mission:", "Inputs:", "Tools:", "Output:", "Authority:", "Prohibited:", "Acceptance:"]) {
+    if (!content.includes(marker)) errors.push("MISSING_AGENT_CONTRACT " + marker + " in " + rel);
+  }
+}
+const workflowFiles = required.filter(p => p.startsWith("chatgpt-home/workflows/") && p.endsWith(".md"));
+for (const rel of workflowFiles) {
+  if (!fs.existsSync(path.join(root, rel))) continue;
+  const content = fs.readFileSync(path.join(root, rel), "utf8");
+  if (content.trim().length < 200) errors.push("WORKFLOW_TOO_SHORT: " + rel);
+}
+const configFiles = required.filter(p => p.startsWith("chatgpt-home/config/") && p.endsWith(".toml.example"));
+for (const rel of configFiles) {
+  if (!fs.existsSync(path.join(root, rel))) continue;
+  const content = fs.readFileSync(path.join(root, rel), "utf8");
+  if (!content.includes('approval_policy = "on-request"')) errors.push("UNSAFE_OR_MISSING_APPROVAL_DEFAULT: " + rel);
+  if (!/sandbox_mode = "(read-only|workspace-write)"/.test(content)) errors.push("UNSAFE_OR_MISSING_SANDBOX_DEFAULT: " + rel);
+  if (/danger-full-access|dangerously-bypass-approvals-and-sandbox/.test(content)) errors.push("DANGEROUS_SANDBOX_SETTING: " + rel);
+}
 const manifests = [
   "chatgpt-home/ENVIRONMENT_MANIFEST.md",
   "chatgpt-home/tools/TOOL_REGISTRY.md",
@@ -78,4 +100,4 @@ if (errors.length) {
   console.error(errors.join("\n"));
   process.exit(1);
 }
-console.log(`PASS: ${required.length} required environment assets exist; ${skillFiles.length} skills satisfy metadata and section contract; credential-pattern scan clean.`);
+console.log("PASS: " + required.length + " required assets; " + skillFiles.length + " skill contracts; " + agentFiles.length + " agent contracts; " + workflowFiles.length + " workflows; " + configFiles.length + " safe Codex config templates; credential-pattern scan clean.");
