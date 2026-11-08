@@ -1,13 +1,13 @@
 # Blind Sniper — Claude Handoff & Independent Architecture Review
 
-# Current evidence anchor — 8 November 2026, 15:55 Cairo time
+# Current evidence anchor — 8 November 2026, 16:05 Cairo time
 
 This section is authoritative for current state. Everything after the divider is retained historical context; old SHAs, CI results, agent rosters and policy descriptions below must not be treated as current.
 
 ## Repository and architecture
 - Repository: `madnessgate44-debug/Blind-sniper-` (PUBLIC).
 - Integration branch: `feat/blind-sniper-orchestration-integration-2026-11-08`.
-- Latest branch HEAD before this handoff refresh: `beb60aac60d88434bb7becb5d236f058dd726093`.
+- Latest branch HEAD before this handoff refresh: `7988deaafdd7a50614af372acb7c99e11dff8064`.
 - Ahmed confirmed **native-first**: Blind Sniper's own runtime, policy, native workforce contracts, persistence and recovery are core. External workers are optional adapters.
 - Main is unchanged. PRs #3, #6 and #7 remain OPEN and NOT MERGED; no authorization to close them was given.
 - Issues: #1 OPEN; #2 CLOSED as duplicate of #1; #8 SUPERSEDED but OPEN.
@@ -16,7 +16,7 @@ This section is authoritative for current state. Everything after the divider is
 - Eight native roles have checked-in contracts; external worker identities are not core agents.
 - Runtime plan/transition commands persist full task snapshots; `recover` reconstructs latest state and repairs stale checkpoints.
 - Workflow routing priorities, keywords and agent assignments live in `workflows.json`; profile binding comes from `profiles.json`.
-- Local and GitHub Contents CAS ledgers support task claim, same-owner renewal, expiry-based reclaim, owner-only release and lease status.
+- Local and GitHub Contents CAS ledgers support task claim, same-owner renewal, expiry-based reclaim, owner-only release and lease status. CLOSED/CANCELLED tasks cannot be claimed.
 - CLI entry into EXECUTING requires a matching active lease. Lease ownership check and EXECUTING transition append are atomic under local lock or GitHub blob-SHA compare-and-swap.
 - Atomic execution receipt must match task ID and EXECUTING status. Runtime records lease owner as `implementer_id`; closure reviewer comparison uses the execution owner.
 - GitHub adapter refuses public repositories. Mocked API tests pass; no live write has been performed. Actions workflow remains `contents: read`; no workflow permission changed.
@@ -25,7 +25,7 @@ This section is authoritative for current state. Everything after the divider is
 - Approval/reviewer identities remain metadata, not cryptographic proof.
 
 ## Verified CI
-- Runtime [run 42486078702](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078702): SUCCESS; **54 tests passed** on runtime/test checkpoint `38f9e189305742cd872546546d8ff3ff26927335`.
+- Runtime [run 42486676603](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486078702): SUCCESS; **55 tests passed** on runtime/test checkpoint `f575191d22387c53935cd371da02689d486995c1`.
 - OS compliance [run 42486389678](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486389678): SUCCESS on boot/docs checkpoint.
 - Environment validation [run 42486389574](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42486389574): SUCCESS on boot/docs checkpoint.
 
