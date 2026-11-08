@@ -22,6 +22,8 @@ class OrchestrationEngineTests(unittest.TestCase):
         self.assertEqual(plan["execution_readiness"], "PARTIAL")
         self.assertEqual(plan["next_action"], "HOST_ASSISTED_EXECUTION")
         self.assertTrue(plan["selected_agents"])
+        self.assertTrue(all(agent["contract_path"] for agent in plan["selected_agents"]))
+        self.assertTrue(all((ROOT / agent["contract_path"]).is_file() for agent in plan["selected_agents"]))
         self.assertTrue(plan["selected_skills"])
         self.assertTrue(all((ROOT / skill["path"]).is_file() for skill in plan["selected_skills"]))
         self.assertFalse(plan["constraints"]["external_execution_performed"])
