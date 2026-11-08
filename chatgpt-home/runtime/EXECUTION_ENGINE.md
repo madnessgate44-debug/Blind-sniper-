@@ -70,9 +70,26 @@ python scripts/blind_sniper_runtime.py recover \
   --task-id BS-20261108-001 --output recovered-state.json \
   --github-ledger --github-owner OWNER --github-repo REPOSITORY \
   --github-branch integration
+
+python scripts/blind_sniper_runtime.py claim \
+  --task-id BS-20261108-001 --owner-id runner-01 \
+  --lease-seconds 300 --idempotency-key BS-20261108-001:claim-01 \
+  --github-ledger --github-owner OWNER --github-repo REPOSITORY \
+  --github-branch integration
+
+python scripts/blind_sniper_runtime.py transition \
+  --state-file task-state.json --to EXECUTING --lease-owner runner-01 \
+  --output task-state.json --github-ledger --github-owner OWNER \
+  --github-repo REPOSITORY --github-branch integration
+
+python scripts/blind_sniper_runtime.py release \
+  --task-id BS-20261108-001 --owner-id runner-01 \
+  --idempotency-key BS-20261108-001:release-01 \
+  --github-ledger --github-owner OWNER --github-repo REPOSITORY \
+  --github-branch integration
 ```
 
-The GitHub adapter first checks repository metadata and refuses any target where GitHub does not report `private: true`. It then reads the current file SHA, validates the complete event chain, appends locally, and writes the new JSONL content using the prior SHA as a compare-and-swap precondition. HTTP 409/422 conflicts trigger bounded reload-and-retry (three attempts by default). Repeated idempotency keys do not create extra commits. Each successful append creates a Git commit; this is intended for small control-plane event files, not transcripts or large artifacts.
+The GitHub adapter first checks repository metadata and refuses any target where GitHub does not report `private: true`. It then reads the current file SHA, validates the complete event chain, applies the append or lease mutation locally, and writes the new JSONL content using the prior SHA as a compare-and-swap precondition. HTTP 409/422 conflicts trigger bounded reload-and-retry (three attempts by default). Competing claims are re-evaluated against the latest ledger before one can win. Repeated idempotency keys do not create extra commits. Each successful append creates a Git commit; this is intended for small control-plane event files, not transcripts or large artifacts.
 
 **Operational limitation:** GitHub-backed adapter behavior is unit-tested with a mocked Contents API. No live write was performed. The checked-in Actions workflow currently declares `contents: read`, so its token cannot use this write adapter. Enabling write access in workflows was not part of this change and remains an explicit future permission decision. A host must provide a token with Contents write permission and an authorized target branch.
 
