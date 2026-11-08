@@ -5,63 +5,45 @@
 **Pinned version:** 0.41.2
 **License:** Apache-2.0
 **Execution host:** GitHub Actions ubuntu-latest (ephemeral CI host)
-**Status:** PARTIAL — implementation and real Chromium CI acceptance passed; persistent host and advanced capabilities remain open
+**Status:** PARTIAL — initial Chromium adapter passed CI; native lease-gated dispatch is implemented and awaiting CI verification
 
-## Scope in the first implementation slice
+## Scope
 
-The adapter in `scripts/blind_sniper_browser.py` invokes the CLI with a fixed argument vector and `shell=False`. It exposes:
+The adapter in `scripts/blind_sniper_browser.py` invokes the CLI with a fixed argument vector and `shell=False`. It exposes `open`, `snapshot`, `click`, `fill`, `press`, `screenshot`, `get-url`, and `close`.
 
-- `open`: navigate to an allowlisted HTTP(S) URL.
-- `snapshot`: retrieve the accessibility/page snapshot.
-- `click`, `fill`, `press`: mutating actions requiring host write approval.
-- `screenshot`: capture an image inside the adapter artifact directory.
-- `get-url`: inspect the current URL.
-- `close`: close the task-scoped browser session.
+The native dispatch bridge is `scripts/blind_sniper_browser_dispatch.py`. It is the only supported route from Blind Sniper's native task runtime to browser actions:
 
-The initial slice intentionally does not expose uploads/downloads, tabs/frames, PDF, cookies, authentication state, arbitrary JavaScript, remote browser providers or personal browser profiles. It also passes a deny-by-default action policy to agent-browser; only browser launch/close, navigation, snapshots/screenshots, clicks, fills, scrolling, waits, reads and URL queries are allowed by the engine policy. The wrapper adds a separate host approval gate for click/fill/press. The adapter passes agent-browser's built-in --allowed-domains to Chromium, which blocks non-allowlisted navigations and subresource requests and applies supported WebSocket/EventSource/WebRTC containment. This is browser-level containment, not an operating-system firewall; use host/container egress controls for stronger isolation.
+```bash
+python scripts/blind_sniper_browser_dispatch.py \
+  --task-id BS-... --owner-id blind-sniper --run-id run-... \
+  --session-id session-... --step-id step-... --action snapshot \
+  --action-args-json '[]' --ledger .blind-sniper/state/events.jsonl
+```
 
-## Host configuration
+The bridge:
+1. Recovers the authoritative task snapshot from the native append-only ledger.
+2. Requires task status `EXECUTING` and an `implementer_id` matching the supplied host owner identity.
+3. Requires a current lease owned by that identity with remaining time greater than the browser command timeout plus a 10-second safety margin.
+4. Reserves each run/session/step tuple in the canonical ledger before invoking the browser. A previously reserved but incomplete step is blocked for reconciliation; completed steps cannot be replayed.
+5. Persists the correlated browser receipt as `BROWSER_ACTION_COMPLETED` after execution. If the lease expires during the bounded action, the receipt is still recorded with `lease_valid_after_action=false`.
 
-Required host environment:
-- `BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS`: comma-separated allowlist. Empty means deny all.
-- `BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS`: comma-separated denylist. Deny takes precedence.
-- `BLIND_SNIPER_BROWSER_WRITE_APPROVED=1` and a non-empty approval reference for click/fill/press.
+The bridge supports both the local `TaskLedger` and the GitHub Contents compare-and-swap ledger configured through the runtime's existing ledger arguments. The owner ID and ledger location are host-supplied; task content cannot grant itself a lease.
 
-The CI workflow permits writes only against a local fixture served on loopback. A production host must source approvals from its trusted owner/approval mechanism; an environment variable is only a host attestation and does not cryptographically authenticate the approver.
+## Security and capability limits
 
-## Correlation and evidence
+- `BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS`: comma-separated allowlist; empty means deny all.
+- `BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS`: comma-separated denylist; deny takes precedence.
+- `BLIND_SNIPER_BROWSER_WRITE_APPROVED=1` and a non-empty approval reference are required for click/fill/press.
+- Browser engine action policy is deny-by-default. No arbitrary JavaScript, uploads, downloads, cookies, credentials, personal profiles or authentication-state transfer.
+- Page content is untrusted data, never instructions to the operating system or Blind Sniper.
+- Agent-browser's domain allowlist is browser-level containment, not an OS firewall. Host/container egress controls remain recommended.
 
-Every action requires `task_id`, `run_id`, `session_id`, and unique `step_id`. The adapter writes:
-- task-scoped session metadata under `.blind-sniper/browser/sessions/`;
-- JSONL action receipts under `.blind-sniper/browser/receipts/`;
-- screenshots under `.blind-sniper/browser/artifacts/`.
+## Correlation, replay and recovery
 
-Receipts contain timestamps, requested/observed URL, action, sanitized command metadata, exit status, output hashes and artifact paths. Page content is returned to the caller but is not stored in receipts.
+Each action requires `task_id`, `run_id`, `session_id`, and unique `step_id`. The adapter writes task-scoped session metadata, JSONL receipts and screenshots. The dispatch bridge writes `BROWSER_ACTION_STARTED` before the external action and `BROWSER_ACTION_COMPLETED` with the receipt after it. A started-without-completed record is deliberately not replayed automatically.
 
-The adapter refuses duplicate step IDs before issuing the command and rejects session reuse across different task/run identities. A redirected or mutated page URL is checked against host policy; an out-of-policy destination causes session closure and a failed receipt.
+The browser daemon itself is not proven recoverable after a GitHub Actions job/runner is destroyed. Local metadata and receipts survive only while the workspace survives. Cross-job live-session recovery remains unimplemented.
 
-## Recovery and persistence
+## CI boundary
 
-Session metadata and receipts survive process restarts only while the same workspace remains available. GitHub Actions destroys its runner after the job. The actual browser daemon and live page state are therefore not proven recoverable across job interruption. Cross-job authenticated continuity is explicitly out of scope.
-
-## Reproducible CI host
-
-`.github/workflows/blind-sniper-browser.yml`:
-1. provisions `ubuntu-latest`;
-2. installs Python 3.12 and Node.js 22;
-3. installs `agent-browser@0.41.2`;
-4. installs Chrome for Testing and Linux dependencies with `agent-browser install --with-deps`;
-5. runs policy unit tests;
-6. runs a real Chromium round trip against a local fixture;
-7. uploads short-retention receipts and screenshots.
-
-This proves only the CI-hosted fixture path if and when the workflow passes. It does not prove direct ChatGPT browser invocation, persistent hosting, authenticated browsing, or general-purpose unattended automation.
-
-## Security boundaries
-
-- Web page content is untrusted data, never instructions to the operating system or Blind Sniper.
-- No credentials, cookies, private profiles or auth-state files are imported or persisted.
-- HTTP(S) only; host allowlist required; denylist wins.
-- Mutating browser actions are blocked unless host approval is supplied.
-- No purchases, payments, external messages, account changes, destructive operations or credential entry.
-- No paid browser provider is required.
+The GitHub Actions workflow installs Node.js 22, `agent-browser@0.41.2`, Chromium and Linux dependencies; it runs browser policy tests, lease-dispatch tests and a real Chromium round trip against a local fixture. CI acceptance proves only this ephemeral controlled-fixture path. It does not prove a persistent browser host, authenticated browsing, direct ChatGPT tool invocation or unattended autonomy.
