@@ -53,3 +53,9 @@ Its `AGENTS.md` documents an auto-loaded personal marketplace rooted at `.agents
 
 ## Synchronization rule
 When OpenHands skills or agents change, update this catalog from the live `Openhands` repository and record the source commit or retrieval date.
+
+
+## Blind Sniper continuity skill — added 2026-11-08
+- Path: `chatgpt-home/skills/blind-sniper-continuity/SKILL.md`
+- Covers mandatory complete retrieval of all seven continuity files, evidence-tagged incremental GitHub synchronization, and complete historical ChatGPT transcript migration from an authorized account export.
+- Includes explicit honesty gates: summaries are not transcripts; no claim of automatic history access or completed migration without source access and reconciliation.
