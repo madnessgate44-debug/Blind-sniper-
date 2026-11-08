@@ -41,7 +41,10 @@ class FakeContentsAPI:
                 self.conflict_once = False
                 # Simulate a competing writer committing a valid first event.
                 with tempfile.TemporaryDirectory() as tmp:
-                    ledger = TaskLedger(Path(tmp) / "events.jsonl")
+                    local_path = Path(tmp) / "events.jsonl"
+                    if self.content is not None:
+                        local_path.write_bytes(self.content)
+                    ledger = TaskLedger(local_path)
                     ledger.append(task_id="BS-GH-OTHER", event_type="TASK_CREATED",
                                   payload={"source": "competing-writer"},
                                   idempotency_key="other:create")
@@ -171,6 +174,62 @@ class GitHubContentsLedgerTests(unittest.TestCase):
                 payload={"must_not_leak": True}, idempotency_key="eight:create",
             )
         self.assertEqual(self.api.put_count, 0)
+
+
+    def test_remote_lease_claim_release_and_status_use_private_cas_store(self):
+        self.ledger.append(task_id="BS-GH-009", event_type="TASK_CREATED",
+                           payload={"state": {"task_id": "BS-GH-009", "status": "REQUESTED"}},
+                           idempotency_key="nine:create")
+        claimed = self.ledger.claim_task(
+            task_id="BS-GH-009", owner_id="remote-runner-a", lease_seconds=60,
+            idempotency_key="nine:claim",
+        )
+        self.assertTrue(claimed["claimed"])
+        self.assertEqual(claimed["event"]["commit_sha"], "c" * 40)
+        self.assertEqual(self.ledger.lease_status("BS-GH-009")["owner_id"], "remote-runner-a")
+        released = self.ledger.release_task(
+            task_id="BS-GH-009", owner_id="remote-runner-a",
+            idempotency_key="nine:release",
+        )
+        self.assertTrue(released["released"])
+        self.assertIsNone(self.ledger.lease_status("BS-GH-009"))
+
+    def test_remote_lease_claim_retries_cas_conflict_without_losing_events(self):
+        self.ledger.append(task_id="BS-GH-010", event_type="TASK_CREATED",
+                           payload={"state": {"task_id": "BS-GH-010", "status": "REQUESTED"}},
+                           idempotency_key="ten:create")
+        self.api.conflict_once = True
+        claimed = self.ledger.claim_task(
+            task_id="BS-GH-010", owner_id="remote-runner-a", lease_seconds=60,
+            idempotency_key="ten:claim",
+        )
+        self.assertTrue(claimed["claimed"])
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "events.jsonl"
+            path.write_bytes(self.api.content)
+            rows = TaskLedger(path).events()
+        self.assertEqual([row["task_id"] for row in rows], ["BS-GH-010", "BS-GH-OTHER", "BS-GH-010"])
+
+    def test_remote_execution_transition_is_atomically_bound_to_lease_owner(self):
+        self.ledger.append(task_id="BS-GH-011", event_type="TASK_CREATED",
+                           payload={"state": {"task_id": "BS-GH-011", "status": "PLANNED"}},
+                           idempotency_key="eleven:create")
+        self.ledger.claim_task(
+            task_id="BS-GH-011", owner_id="remote-runner-a", lease_seconds=60,
+            idempotency_key="eleven:claim",
+        )
+        payload = {"state": {"task_id": "BS-GH-011", "status": "EXECUTING"}}
+        with self.assertRaises(GitHubLedgerError):
+            self.ledger.append_transition_if_lease(
+                task_id="BS-GH-011", owner_id="remote-runner-b", payload=payload,
+                idempotency_key="eleven:wrong-owner",
+            )
+        event = self.ledger.append_transition_if_lease(
+            task_id="BS-GH-011", owner_id="remote-runner-a", payload=payload,
+            idempotency_key="eleven:execute",
+        )
+        self.assertEqual(event["event_type"], "TASK_TRANSITIONED")
+        self.assertEqual(event["commit_sha"], "c" * 40)
 
 
 if __name__ == "__main__":
