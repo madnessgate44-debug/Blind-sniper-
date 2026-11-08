@@ -80,5 +80,10 @@ class TaskLedgerTests(unittest.TestCase):
             )
 
 
+    def test_github_contents_ledger_exposes_recovery_read_interface(self):
+        self.assertTrue(callable(GitHubContentsLedger.events))
+        self.assertTrue(callable(GitHubContentsLedger.task_history))
+
+
 if __name__ == "__main__":
     unittest.main()
