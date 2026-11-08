@@ -198,3 +198,12 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 - [VERIFIED] Engineering Execution OS compliance run `42473977941` / job `128711054293`: PASS.
 - [VERIFIED] PR #6 is the canonical runtime review target. PRs #4 and #5 are closed as superseded. PR #6 remains OPEN / NOT MERGED.
 - [LIMITATION] These checks validate the repository environment and registries. They do not establish a callable Forge browser MCP connector, complete OpenHands task-result round trip, generic isolated runner, or continuous background dispatcher.
+
+
+## Final PR-head check reconciliation — 2026-11-08T11:03 UTC
+
+- [VERIFIED] PR #6 final head at the time of this check: `226a4abde3318213469e70523a06d343099dacc1`; mergeable and clean; OPEN / NOT MERGED.
+- [VERIFIED] Runtime registry run `42474052245` / job `128711281586`: PASS; 6 profiles, 26 agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 tests OK.
+- [VERIFIED] Native environment run `42474052209` / job `128711281297`: PASS; 39 assets, 9 native skill contracts, 9 agent contracts, 5 workflows, 6 Codex config templates; credential scan clean.
+- [VERIFIED] OS compliance run `42474052186` / job `128711280938`: PASS.
+- The task ledger `tasks/BS-20261108-002.md` now records these exact final PR-head checks. The later task/checkpoint-only commits do not change runtime code; PR synchronize checks were green at this head.
