@@ -1,0 +1,15 @@
+{
+  "name": "openhands-account",
+  "owner": {
+    "name": "madnessgate44-debug"
+  },
+  "description": "Account-level skills, sub-agents, hooks and path rules.",
+  "plugins": [
+    {
+      "name": "account-library",
+      "source": ".",
+      "description": "Account-level skills, sub-agents, hooks and path rules."
+    }
+  ],
+  "skills": []
+}
