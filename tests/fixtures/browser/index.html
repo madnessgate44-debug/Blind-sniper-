@@ -10,6 +10,10 @@
       <input id="name" name="name" type="text" autocomplete="off">
       <button id="submit" type="submit">Submit fixture</button>
     </form>
+    <label for="file-upload">Upload fixture</label>
+    <input id="file-upload" name="file-upload" type="file">
+    <a id="download" href="/download.txt" download>Download fixture</a>
+    <iframe id="fixture-frame" title="Embedded fixture" srcdoc="<p id='frame-message'>Frame loaded</p>"></iframe>
   </main>
   <script>
     document.getElementById("fixture-form").addEventListener("submit", (event) => {
