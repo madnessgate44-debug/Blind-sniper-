@@ -99,14 +99,14 @@ class OrchestrationEngineTests(unittest.TestCase):
         with self.assertRaisesRegex(runtime.RuntimeErrorBase, "Owner approval is pending"):
             runtime.transition_task(state, "EXECUTING")
 
-    def test_merge_is_a_routine_ai_engineering_action(self):
+    def test_merge_requires_explicit_owner_approval(self):
         plan = runtime.build_plan({
             "task_id": "BS-TEST-010",
             "objective": "Integrate verified repository changes",
             "workflow": "task-control-loop",
             "requested_actions": ["merge"],
         })
-        self.assertEqual(plan["approval"]["pending_actions"], [])
+        self.assertEqual(plan["approval"]["pending_actions"], ["merge"])
 
     def test_release_gate_detects_missing_deploy_and_merge_capabilities(self):
         plan = runtime.build_plan({
@@ -130,7 +130,7 @@ class OrchestrationEngineTests(unittest.TestCase):
         with self.assertRaisesRegex(runtime.RuntimeErrorBase, "verification_passed"):
             runtime.transition_task(state, "REVIEWING")
         state = runtime.transition_task(state, "REVIEWING", {"verification_passed": True})
-        with self.assertRaisesRegex(runtime.RuntimeErrorBase, "independent PASS"):
+        with self.assertRaisesRegex(runtime.RuntimeErrorBase, "reviewer distinct"):
             runtime.transition_task(state, "CLOSED")
         state = runtime.transition_task(state, "CLOSED", {
             "review_verdict": "PASS",
