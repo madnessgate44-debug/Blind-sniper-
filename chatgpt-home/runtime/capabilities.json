@@ -220,7 +220,7 @@
     {
       "id": "agent_browser_cli",
       "kind": "ephemeral_browser_execution",
-      "status": "partial_ci_adapter_implemented_runtime_acceptance_pending",
+      "status": "partial_ci_acceptance_passed_persistent_host_unverified",
       "tools": [
         "scripts/blind_sniper_browser.py",
         "agent-browser@0.41.2",
@@ -235,7 +235,7 @@
         "structured_action_receipts"
       ],
       "limitations": [
-        "Native adapter and controlled fixture have been added on the browser feature branch; real browser acceptance has not yet passed CI.",
+        "Native adapter and controlled fixture are implemented; real browser acceptance passed CI run 42488696633 (7 policy tests and a 7-step Chromium round trip).",
         "GitHub Actions runners are ephemeral per job; this is not a persistent authenticated browser host or cross-job live-session service.",
         "Upload/download, tabs/frames, PDF, authenticated profiles, cookie transfer and persistent browser recovery are not implemented in this first slice.",
         "The browser adapter is not directly callable as a ChatGPT tool in the current session; it runs only from an authorized shell/CI host.",
