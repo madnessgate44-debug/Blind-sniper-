@@ -12,6 +12,7 @@ import fcntl
 import hashlib
 import json
 import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -220,7 +221,10 @@ class GitHubContentsLedger:
                 local_path = Path(tmp) / "events.jsonl"
                 local_path.write_bytes(remote_content)
                 local = TaskLedger(local_path)
-                rows = local.events()  # validates the entire remote hash chain
+                try:
+                    rows = local.events()  # validates the entire remote hash chain
+                except LedgerError as exc:
+                    raise GitHubLedgerError(f"Remote ledger integrity check failed: {exc}") from exc
                 existing = next((row for row in rows if row.get("idempotency_key") == idempotency_key), None)
                 try:
                     event = local.append(
