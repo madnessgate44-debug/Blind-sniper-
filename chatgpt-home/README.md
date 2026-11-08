@@ -55,3 +55,7 @@ Blind Sniper should progress authorized work directly and use supported automati
 - `FOUNDATION_RECOVERY_PLAN.md` — P0 integration and archive recovery plan.
 
 ChatGPT is the interactive interface. This directory is the persistent Blind Sniper body/control plane. GitHub Actions or an authorized cloud runner provides compute; repositories are workspaces; Forge/OpenHands are workers only through verified adapters. Read the runtime architecture before dispatching work.
+
+
+## Codex-like runtime integration
+The executable capability registries and CI validation live in `chatgpt-home/runtime/`. Start with its `README.md`, then inspect `capabilities.json`, `profiles.json`, `agents.json`, `workflows.json` and `skills.index.json`. This is a host-aware control-plane registry and workflow contract; it does not install Codex CLI or make unregistered MCP endpoints callable.
