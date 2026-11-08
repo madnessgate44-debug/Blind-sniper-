@@ -78,6 +78,7 @@ class OrchestrationEngineTests(unittest.TestCase):
             runtime.transition_task(state, "EXECUTING")
         state = runtime.transition_task(state, "EXECUTING", approval_records=[{
             "action": "production_deploy",
+            "approver": "Ahmed",
             "verbatim_words": "Ahmed: I approve production_deploy for BS-TEST-005",
             "timestamp": "2026-11-08T13:00:00Z",
         }])
@@ -179,6 +180,7 @@ class OrchestrationEngineTests(unittest.TestCase):
             runtime.transition_task(state, "EXECUTING", approved_actions=["merge_to_main"])
         record = {
             "action": "merge_to_main",
+            "approver": "Ahmed",
             "verbatim_words": "Ahmed: I approve merge_to_main for BS-SEC-002",
             "timestamp": "2026-11-08T13:00:00Z",
         }
