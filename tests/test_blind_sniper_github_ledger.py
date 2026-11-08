@@ -57,7 +57,7 @@ class FakeContentsAPI:
 
     @staticmethod
     def _blob_sha(content):
-        header = f"blob {len(content)}\\0".encode()
+        header = f"blob {len(content)}\0".encode()
         return hashlib.sha1(header + content).hexdigest()
 
 
@@ -117,7 +117,7 @@ class GitHubContentsLedgerTests(unittest.TestCase):
                                payload={}, idempotency_key="five:key")
 
     def test_corrupt_remote_hash_chain_fails_closed(self):
-        self.api.content = b'{"seq":1,"task_id":"broken"}\\n'
+        self.api.content = b'{"seq":1,"task_id":"broken"}\n'
         self.api.sha = self.api._blob_sha(self.api.content)
         with self.assertRaises(GitHubLedgerError):
             self.ledger.append(task_id="BS-GH-006", event_type="CREATED",
