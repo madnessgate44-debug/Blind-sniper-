@@ -58,7 +58,7 @@ python scripts/blind_sniper_runtime.py recover \
   --github-branch integration
 ```
 
-The GitHub adapter reads the current file SHA, validates the complete event chain, appends locally, then writes the new JSONL content using the prior SHA as a compare-and-swap precondition. HTTP 409/422 conflicts trigger bounded reload-and-retry (three attempts by default). Repeated idempotency keys do not create extra commits. Each successful append creates a Git commit; this is intended for small control-plane event files, not transcripts or large artifacts.
+The GitHub adapter first checks repository metadata and refuses any target where GitHub does not report `private: true`. It then reads the current file SHA, validates the complete event chain, appends locally, and writes the new JSONL content using the prior SHA as a compare-and-swap precondition. HTTP 409/422 conflicts trigger bounded reload-and-retry (three attempts by default). Repeated idempotency keys do not create extra commits. Each successful append creates a Git commit; this is intended for small control-plane event files, not transcripts or large artifacts.
 
 **Operational limitation:** GitHub-backed adapter behavior is unit-tested with a mocked Contents API. No live write was performed. The checked-in Actions workflow currently declares `contents: read`, so its token cannot use this write adapter. Enabling write access in workflows was not part of this change and remains an explicit future permission decision. A host must provide a token with Contents write permission and an authorized target branch.
 
@@ -81,7 +81,7 @@ The GitHub adapter reads the current file SHA, validates the complete event chai
 
 The local `TaskLedger` uses process locking, fsync, idempotency keys, monotonic sequence validation and a SHA-256 hash chain. The optional GitHub adapter adds blob-SHA compare-and-swap and immutable Git commit history for each accepted append.
 
-The hash chain detects edits but is not a signed tamper-proof audit log. GitHub Contents API file-level CAS is not a task lease service and does not implement multi-step ownership, cancellation or stale-worker recovery. Concurrent writes are retried a bounded number of times; sustained contention fails closed.
+The hash chain detects edits but is not a signed tamper-proof audit log. GitHub Contents API file-level CAS is not a task lease service and does not implement multi-step ownership, cancellation or stale-worker recovery. The adapter deliberately cannot target this public repository; a private repository is required. Concurrent writes are retried a bounded number of times; sustained contention fails closed.
 
 ## Capability boundaries
 
