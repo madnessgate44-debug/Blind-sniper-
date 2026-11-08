@@ -76,3 +76,14 @@ Read `ENVIRONMENT_MANIFEST.md` as the top-level capability map. Read the relevan
 
 ## Codex-like runtime integration
 The executable capability registries and CI validation live in `chatgpt-home/runtime/`. Start with its `README.md`, then inspect `capabilities.json`, `profiles.json`, `agents.json`, `workflows.json` and `skills.index.json`. This is a host-aware control-plane registry and workflow contract; it does not install Codex CLI or make unregistered MCP endpoints callable.
+
+
+## External harness imports — 2026-11-08
+- `source-library/README.md` — source provenance and license/activation policy for imported public harness assets.
+- `source-library/0xenzyme__agent-harness/` — MIT source-preserving skills, worker contract, Codex adapter reference and agent descriptors.
+- `source-library/SUNRNEHUI__agent-harness/` — MIT source-preserving harness skill, agent metadata and task/subagent templates.
+- `source-library/os-factory__har/` — Apache-2.0 source-preserving factory-line and plugin skills.
+- `agents/` — Blind Sniper-native controller, worker, reviewer and factory-orchestrator contracts adapted from the licensed sources.
+- `workflows/idea-to-contract.md`, `isolated-execution-line.md`, `verification-and-handoff.md`, `plugin-and-tool-onboarding.md` — native workflow adaptations.
+- `skills/README.md` — catalog and loading rules. Imported assets are reference material until host compatibility is verified.
+- `mendelevium/claude-code-config` was inspected but not copied verbatim because no license is declared by GitHub; compatible patterns are independently authored and attributed.
