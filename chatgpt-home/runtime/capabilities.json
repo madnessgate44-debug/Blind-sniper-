@@ -187,23 +187,6 @@
       ]
     },
     {
-      "id": "shadow_provider_pool",
-      "kind": "provider_credential_custody",
-      "status": "blocked_pool_not_loaded",
-      "tools": [],
-      "capabilities": [
-        "credential_pool_ownership",
-        "scheduled_key_and_model_health_sweep",
-        "replacement_and_distribution_via_repository_actions_secrets"
-      ],
-      "limitations": [
-        "Brain WATCHER.md §14 designates Shadow as custodian, not Ghost.",
-        "The authorized Brain shadow-keys.yml sweep is designed to report PASS/FAIL only and never print values.",
-        "Latest reported sweep: 0 WORKING, 8 NOT SET; no Gemini provider route is currently available to agents.",
-        "No key values may be copied into chat, repository files, issues or logs."
-      ]
-    },
-    {
       "id": "ephemeral_execution",
       "kind": "session_scoped_code_execution",
       "status": "available_in_current_session",
