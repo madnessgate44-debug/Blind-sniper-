@@ -537,6 +537,8 @@ def main(argv: list[str] | None = None) -> int:
                 evidence = read_json(Path(args.evidence_file)) if args.evidence_file else {}
                 approval_records = read_json(Path(args.approval_record_file)).get("approvals", []) if args.approval_record_file else []
                 updated = transition_task(state, args.to, evidence, approval_records=approval_records)
+                if args.to == "EXECUTING":
+                    updated["implementer_id"] = args.lease_owner
                 transition_number = len(updated.get("events", [])) - 1
                 transition_key = f"{updated['task_id']}:transition:{transition_number}:{args.to}"
                 if args.to == "EXECUTING":
