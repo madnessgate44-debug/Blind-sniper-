@@ -134,7 +134,7 @@
     {
       "id": "forge_browser_mcp",
       "kind": "authenticated_browser_and_computer_use",
-      "status": "endpoint_remote_smoke_verified_connector_not_registered",
+      "status": "endpoint_remote_smoke_reported_connector_not_registered",
       "tools": [],
       "capabilities": [
         "authenticated_Streamable_HTTP_MCP_endpoint",
@@ -153,7 +153,7 @@
         "pr148": "https://github.com/madnessgate44-debug/Firstborn/pull/148",
         "pr149": "https://github.com/madnessgate44-debug/Firstborn/pull/149",
         "ci_run": 42473077287,
-        "remote_smoke": "reported PASS by OpenHands in Firstborn issue #146 comment 6720609474"
+        "remote_smoke": "reported PASS by OpenHands in Firstborn issue #146 comment 6720609474; not independently invoked from ChatGPT"
       }
     },
     {
