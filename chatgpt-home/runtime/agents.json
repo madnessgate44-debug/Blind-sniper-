@@ -1,0 +1,140 @@
+{
+  "schema_version": "1.0.0",
+  "controller": "blind-sniper",
+  "concurrency": {
+    "max_parallel_writers": 1,
+    "read_only_reviewers_may_run_concurrently": true,
+    "isolated_branch_required_for_each_writer": true
+  },
+  "agents": [
+    {
+      "id": "blind-sniper",
+      "source": "native-operating-contract",
+      "role": "AI operating lead and dispatcher",
+      "authority": "coordinates; does not override Owner gates",
+      "status": "active_in_chat_session"
+    },
+    {
+      "id": "openhands",
+      "source": "external-github-app",
+      "role": "implementation executor",
+      "authority": "bounded branch/PR work only",
+      "status": "mention_session_creation_verified_completion_unverified"
+    },
+    {
+      "id": "forge",
+      "source": "Firstborn repository",
+      "role": "browser/computer-use and tool adapter",
+      "authority": "no deployment or connector registration without approval",
+      "status": "implementation_pr_open_connector_not_registered"
+    },
+    {
+      "id": "watcher",
+      "source": "Brain repository",
+      "role": "task relay, status collection and health observation",
+      "authority": "reporting and bounded routing only",
+      "status": "runtime_end_to_end_unverified"
+    },
+    {
+      "id": "shadow",
+      "source": "Brain repository",
+      "role": "independent audit and evidence review",
+      "authority": "review only; no merge authority",
+      "status": "audit_workflow_exists_live_coverage_unverified"
+    },
+    {
+      "id": "ghost",
+      "source": "Owner-reported credential service",
+      "role": "credential health and secure provider allocation",
+      "authority": "never reveal credentials; no unverified key use",
+      "status": "unverified"
+    },
+    {
+      "id": "architect",
+      "source": "openhands-library",
+      "role": "architecture and ADR specialist",
+      "status": "reference_profile_present"
+    },
+    {
+      "id": "backend-engineer",
+      "source": "openhands-library",
+      "role": "backend implementation",
+      "status": "reference_profile_present"
+    },
+    {
+      "id": "frontend-engineer",
+      "source": "openhands-library",
+      "role": "frontend implementation",
+      "status": "reference_profile_present"
+    },
+    {
+      "id": "qa-engineer",
+      "source": "openhands-library",
+      "role": "test strategy and execution",
+      "status": "reference_profile_present"
+    },
+    {
+      "id": "code-reviewer",
+      "source": "openhands-library",
+      "role": "read-only code review",
+      "status": "reference_profile_present"
+    },
+    {
+      "id": "security-engineer",
+      "source": "openhands-library",
+      "role": "threat modeling and security review",
+      "status": "reference_profile_present"
+    },
+    {
+      "id": "devops-engineer",
+      "source": "openhands-library",
+      "role": "CI/CD and runtime operations",
+      "status": "reference_profile_present"
+    },
+    {
+      "id": "evidence-verifier",
+      "source": "openhands-library",
+      "role": "verify claims against artifacts",
+      "status": "reference_profile_present"
+    },
+    {
+      "id": "pr-auditor",
+      "source": "openhands-library",
+      "role": "PR acceptance and scope audit",
+      "status": "reference_profile_present"
+    },
+    {
+      "id": "release-manager",
+      "source": "openhands-library",
+      "role": "release planning and gates",
+      "status": "reference_profile_present"
+    }
+  ],
+  "delegation_contract": {
+    "required_fields": [
+      "task_id",
+      "objective",
+      "repository",
+      "base_commit",
+      "allowed_paths",
+      "forbidden_actions",
+      "acceptance_criteria",
+      "verification_commands",
+      "required_artifacts",
+      "report_destination"
+    ],
+    "return_fields": [
+      "task_id",
+      "status",
+      "session_or_run_id",
+      "branch",
+      "commit_sha",
+      "changed_files",
+      "test_commands",
+      "exit_codes",
+      "raw_output",
+      "artifact_links",
+      "blockers"
+    ]
+  }
+}
