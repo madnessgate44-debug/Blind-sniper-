@@ -46,3 +46,14 @@
 - [BLOCKED] Recurring ChatGPT automation creation was rejected because the account has reached its scheduled-task limit (3 of 3). No background sync task was created.
 - [BLOCKED] Full historical transcript migration cannot start until an authorized ChatGPT data export archive is supplied or a supported account-history connector is available. Existing recovered conversation notes remain reconstructed summaries, not raw transcripts.
 - Next: free one scheduled-task slot or use an approved external scheduler for recurring checks; provide the ChatGPT export archive for full transcript migration.
+
+
+## 2026-11-08 — OpenHands library imported into Blind Sniper OS
+- [VERIFIED] Retrieved the OpenHands account-library repository tree from `madnessgate44-debug/Openhands` main; source tree SHA `ea9f6151e2d1524d8413b1b7994556a7f5495929`.
+- [VERIFIED] Mirrored all 68 selected source files into `chatgpt-home/openhands-library/`: 33 skills/rules, 19 specialist profiles, plugin manifests, hook definitions/scripts, docs, validation scripts, tests, workflow, README and AGENTS guidance.
+- [VERIFIED] Added `chatgpt-home/BLIND_SNIPER_OS.md`, an adapted conversation operating system that maps applicable OpenHands practices to tools available in ChatGPT.
+- [VERIFIED] Updated README and SKILLS_CATALOG and re-fetched them; the library mirror contains 69 files including its import manifest.
+- [VERIFIED] Created commits for the six mirror batches and OS/catalog documentation; the final documentation commits are `dca4895747eaab0c6a81b824321bf6055fb79bc2` and `8af1a617a262fa623863942ffaa42794e12891b5`.
+- [LIMITATION] Mirrored OpenHands hooks, lifecycle triggers, SDK sub-agents and CI do not execute inside ChatGPT merely because they are copied. Specialist profiles and skills are reference material; Blind Sniper must read and apply relevant guidance using currently available tools.
+- [LIMITATION] ChatGPT's hidden system instructions cannot be modified by a GitHub repository. The portable operating layer is now version-controlled and can be explicitly retrieved and followed in this chat.
+- Next: use `chatgpt-home/BLIND_SNIPER_OS.md` as the operating contract and load relevant mirrored skills during tasks.
