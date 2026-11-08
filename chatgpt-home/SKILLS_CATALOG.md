@@ -91,3 +91,8 @@ Session boot, task lifecycle, agent handoff, session close and release gate are 
 
 ### Validation
 `scripts/check-blind-sniper-environment.mjs` validates required files, skill metadata/sections and basic credential-pattern hygiene. GitHub Actions workflow: `.github/workflows/blind-sniper-environment-validation.yml`. A passing structural check does not prove that external adapters or host-level Codex features are live.
+
+
+### Lifecycle hooks and MCP/browser contracts
+- `hooks/HOOKS_AND_GUARDS.md` defines session, tool, permission, sub-agent and closeout lifecycle behavior; not automatically installed in ChatGPT.
+- `mcp/MCP_AND_BROWSER_INTEGRATIONS.md` records the live state and acceptance gates for GitHub, OpenHands, Brain, Forge and Codex MCP/browser integrations.
