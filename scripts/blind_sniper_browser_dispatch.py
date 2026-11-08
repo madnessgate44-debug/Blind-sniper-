@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
 from blind_sniper_ledger import GitHubLedgerError, LedgerError
 from blind_sniper_runtime import add_ledger_arguments, configure_ledger
-from blind_sniper_browser import BrowserAdapter, BrowserAdapterError, BrowserPolicyError
+from blind_sniper_browser import ACTIONS, BrowserAdapter, BrowserAdapterError, BrowserPolicyError
 
 
 class BrowserDispatchError(RuntimeError):
@@ -33,6 +35,20 @@ def dispatch_browser_action(
     adapter_factory: Callable[..., Any] = BrowserAdapter,
 ) -> dict[str, Any]:
     """Verify task state and lease, reserve the step, execute once, and ledger the receipt."""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", task_id):
+        raise BrowserDispatchError("Invalid task_id")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", owner_id):
+        raise BrowserDispatchError("Invalid owner_id")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", run_id):
+        raise BrowserDispatchError("Invalid run_id")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", session_id):
+        raise BrowserDispatchError("Invalid session_id")
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}", step_id):
+        raise BrowserDispatchError("Invalid step_id")
+    if action not in ACTIONS:
+        raise BrowserDispatchError(f"Unsupported browser action: {action}")
+    if not 1 <= timeout <= 120:
+        raise BrowserDispatchError("timeout must be between 1 and 120 seconds")
     if not all(isinstance(value, str) and value for value in action_args):
         raise BrowserDispatchError("Browser action arguments must be non-empty strings")
     prefix = f"browser:{run_id}:{session_id}:{step_id}"
@@ -51,6 +67,18 @@ def dispatch_browser_action(
         )
     except LedgerError as exc:
         raise BrowserDispatchError(str(exc)) from exc
+
+    # Recheck after the local lock / remote CAS round trip and immediately before
+    # constructing the adapter. A lost lease leaves a reserved, non-replayable step.
+    lease = ledger.lease_status(task_id)
+    if not lease or lease.get("owner_id") != owner_id:
+        raise BrowserDispatchError("Task lease was lost after reservation and before browser invocation")
+    try:
+        expires = datetime.fromisoformat(str(lease["lease_expires_at"]).replace("Z", "+00:00"))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise BrowserDispatchError("Task lease expiry is missing or malformed") from exc
+    if expires.tzinfo is None or (expires - datetime.now(timezone.utc)).total_seconds() <= timeout + 10:
+        raise BrowserDispatchError("Task lease no longer has enough time before browser invocation")
 
     adapter = adapter_factory(
         task_id=task_id, run_id=run_id, session_id=session_id,
