@@ -287,6 +287,8 @@ class BrowserAdapter:
             cli_args = ["tab", "new"]
             if args:
                 validate_url(args[0])
+                requested_url = args[0]
+                self.state["current_url"] = args[0]
                 cli_args.append(args[0])
         elif action == "tab-switch":
             if len(args) != 1 or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{0,31}|t[1-9][0-9]*", args[0]):
@@ -346,7 +348,7 @@ class BrowserAdapter:
         policy_error = None
         if action in {"open", "tab-new"}:
             self.state["status"] = "OPEN"
-        if action == "open" or action in MUTATING_ACTIONS or action == "get-url":
+        if action == "open" or action in MUTATING_ACTIONS or action == "get-url" or action in {"tab-switch", "tab-close"}:
             observed_url = self._current_url()
             if observed_url:
                 try:
