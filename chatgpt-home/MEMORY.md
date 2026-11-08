@@ -1,5 +1,7 @@
 # Durable Memory
 
+**Operating identity:** Blind Sniper (effective 2026-11-08).
+
 **Last initialized:** 2026-11-08  
 **Provenance:** Mixed. Repository facts below were retrieved directly from GitHub. Conversation facts are [RECONSTRUCTED] summaries from retrievable prior-chat context, not verbatim transcripts.
 
