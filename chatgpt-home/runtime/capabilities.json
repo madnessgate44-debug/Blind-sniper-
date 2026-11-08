@@ -175,15 +175,19 @@
     {
       "id": "persistent_runner",
       "kind": "isolated_code_execution",
-      "status": "partial",
+      "status": "host_bootstrap_versioned_not_provisioned",
       "tools": [
         "GitHub Actions on configured repository events"
       ],
       "capabilities": [
-        "repository_CI_on_configured_events"
+        "repository_CI_on_configured_events",
+        "self_hosted_arm64_runner_bootstrap",
+        "persistent_state_directory_configuration",
+        "optional_two_job_browser_persistence_acceptance"
       ],
       "limitations": [
-        "No generic task dispatch runner or persistent interactive workspace is verified."
+        "No generic task dispatch runner or persistent interactive workspace is verified.",
+        "No OCI VM or self-hosted runner has been provisioned; cross-job session persistence remains unverified."
       ]
     },
     {
@@ -245,7 +249,9 @@
         "iframe_frame_switching",
         "workspace_contained_file_upload_with_approval",
         "workspace_contained_file_download",
-        "pdf_export"
+        "pdf_export",
+        "persistent_browser_daemon_across_jobs_pending_host_test",
+        "session_recovery_after_runner_job_boundary_pending_host_test"
       ],
       "limitations": [
         "Atomic local-lock/GitHub-CAS reservation, concurrent duplicate exclusion, replay blocking and correlated receipts passed browser workflow run 42494894841; real Chromium completed two consecutive native-dispatch cycles with interruption reconciliation.",
