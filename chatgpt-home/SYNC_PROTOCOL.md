@@ -1,6 +1,7 @@
-# Continuity and Synchronization Protocol
+# Blind Sniper Continuity and Synchronization Protocol
 
 ## Purpose
+Blind Sniper must retrieve all seven complete continuity files at every available session start, compare fetched blob SHAs against the previous checkpoint, and refresh the continuity record after material decisions or completed work.
 Keep ChatGPT's project context recoverable across conversations without pretending that this repository can automatically read every ChatGPT chat.
 
 ## Session start
@@ -41,3 +42,15 @@ Never store raw credentials, tokens, personal secrets, or unnecessary sensitive 
 - For updates, inspect existing content and preserve history.
 - Do not alter the Miss Noor app, its deployment, or root policy as part of memory maintenance.
 - Do not change secrets, workflows, protected paths, merge state or deployment state without the root OS authorization.
+
+
+## Three mandatory capabilities
+1. **Seven-file retrieval:** Fetch the complete current contents of README, OPERATING_PROFILE, MEMORY, PROJECTS, CONVERSATION_CONTINUITY, SKILLS_CATALOG, and SYNC_PROTOCOL from the default branch. Verify all seven; partial retrieval is a failed checkpoint.
+2. **Incremental synchronization:** After material work, append a dated, provenance-tagged update to the relevant continuity file; preserve prior facts, distinguish VERIFIED / RECONSTRUCTED / UNVERIFIED, and commit through GitHub. Never overwrite raw transcripts with summaries.
+3. **Historical transcript migration:** Import the user's complete ChatGPT data export when supplied or when an authorized export source becomes available. Inventory every conversation, preserve original message order, timestamps, roles, attachments/metadata where available, deduplicate by stable conversation/message IDs, and store raw exports separately from searchable indexes and summaries. Produce counts, gaps, checksums, and a migration manifest. Do not claim complete migration until counts reconcile against the export manifest.
+
+## Hard limitations and honesty gates
+- A GitHub connector does not itself grant access to the user's complete ChatGPT account history.
+- A reconstructed memory summary is not a transcript. Never label it complete, verbatim, or migrated.
+- Scheduled synchronization can only use sources and connectors actually available to that run. If GitHub or transcript export access is absent, report BLOCKED with the missing permission/input; do not fabricate a successful sync.
+- Never store secrets, access tokens, passwords, or sensitive personal data in the repository.
