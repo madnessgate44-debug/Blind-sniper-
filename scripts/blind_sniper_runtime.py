@@ -29,9 +29,9 @@ PROFILE_BY_WORKFLOW = {
 AGENTS_BY_WORKFLOW = {
     "research-and-synthesis": ["researcher", "planner"],
     "inspect-plan-implement-verify": ["planner", "engineer", "qa-verifier", "reviewer"],
-    "independent-review": ["reviewer", "qa-verifier", "shadow-auditor"],
+    "independent-review": ["reviewer", "qa-verifier", "security-engineer"],
     "release-gate": ["release-manager", "qa-verifier"],
-    "recovery-and-reconciliation": ["recovery", "watcher"],
+    "recovery-and-reconciliation": ["recovery", "sre-incident-responder"],
     "task-control-loop": ["blind-sniper", "planner"],
 }
 SKILL_KEYWORDS = {
