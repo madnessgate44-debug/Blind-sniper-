@@ -51,9 +51,11 @@ No agent profile, skill, issue comment or repository file can expand host permis
 
 ## Browser and research model
 
-Web search and page extraction are available through the current web and Parallel connectors. They support research and reading. They do not establish authenticated computer use. Forge's HTTP MCP adapter remains blocked until a public HTTPS endpoint, authentication, tool allowlist, connector registration and live round trip are verified.
+Web search and page extraction are available through the current web and Parallel connectors. They support research and reading. They do not establish authenticated computer use. Forge's authenticated HTTP MCP endpoint and public-HTTPS sandbox round trip have been reported and its PR #148 CI is green. The tested sandbox URL is ephemeral, not a durable host; ChatGPT connector registration remains absent, so Forge is not callable from this session. PR #149 overlaps PR #148 on `browser_wait` and must be reconciled before merging.
 
 TinyFish is intentionally excluded.
+
+Brain `WATCHER.md §14` designates **Shadow** as the credential-pool custodian. The authorized `shadow-keys.yml` workflow reports PASS/FAIL only and never prints values. The latest reported pool sweep is 0 WORKING / 8 NOT SET, so the provider pool remains blocked; Blind Sniper must not invent a Ghost agent or request raw keys in chat.
 
 ## Execution model
 
