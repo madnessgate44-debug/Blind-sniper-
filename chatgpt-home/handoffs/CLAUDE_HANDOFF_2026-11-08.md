@@ -558,7 +558,7 @@ The implementation checkpoint is recorded in `chatgpt-home/runtime/BUILD_PROGRES
 - Final branch HEAD: `d171c83ba3223553bb672f0c67a688c8e5e9c586`.
 - Runtime CI: run `42481250763`, SUCCESS on `46fc7dfb3479f95f43fef8b70decbc4108174e9d`; 20 tests ran, all passed. The exact 20-test log is also present in run `42481163242` on `92abb690fa3e3026ef68c2073e0c79d5801037fc`. Subsequent commits through final HEAD changed documentation only.
 - Environment Validation: run `42481253355`, SUCCESS on final HEAD.
-- Engineering Execution OS Compliance: run `42481168139`, SUCCESS on the immediately preceding architecture/handoff state; final HEAD compliance is run `42481168139` only if SHA matches the final HEAD.
+- Engineering Execution OS Compliance: run `42481253345`, SUCCESS on final HEAD `d171c83ba3223553bb672f0c67a688c8e5e9c586`.
 - Native agent roster: 8 internal roles with checked-in contracts. External worker identities are no longer in the core roster.
 - Routine merge is AI-authorized under branch policy + green CI + review evidence. Production-impacting actions and other human-only boundaries remain gated.
 - The task ledger has a CLI and six tests, but remains local-workspace persistence. It is not yet wired automatically into the planner lifecycle or synchronized across ephemeral runners.
