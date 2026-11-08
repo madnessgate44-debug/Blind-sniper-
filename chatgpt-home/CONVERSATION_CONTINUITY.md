@@ -102,3 +102,16 @@
 - [BLOCKED] Full enumeration of all OpenHands Cloud conversation history remains incomplete. The Brain session archive index lists 142 conversations / 577 Owner messages across 19 days, but the daily manifests/counts require reconciliation.
 - [BLOCKED] ChatGPT personal web/mobile conversation export remains distinct from OpenHands Cloud export and is not verified as automatically available.
 - [DECISION] Maintain five-product scope only; track Amina delivery and Forge #146 separately, reconcile priority from latest Owner checkpoint; continue direct AI-side work and use real automation triggers for inactive-chat execution.
+
+
+## 2026-11-08 — Owner defines Blind Sniper as a Codex-like environment
+- [VERIFIED] Owner clarified the intended architecture: ChatGPT is the conversation/command interface; the Blind Sniper repository home is the persistent body/control plane; other repositories such as OpenHands and Forge are agent/capability workspaces Blind Sniper develops and uses.
+- [VERIFIED] Owner directed Blind Sniper to use its available GitHub, code-execution, browser and Brain communication tools directly, and to develop the Codex-like environment rather than only describe it.
+- [VERIFIED] Inspected 22 repositories visible to the connected GitHub account. The Blind-sniper- repository has admin permissions reported by the connector; its root README confirms the root is the Miss Noor static preview, so the operating system remains inside chatgpt-home/.
+- [VERIFIED] Posted Brain #292 T005 (comment 6720244514) and Firstborn #146 progress request (comment 6720244793), asking OpenHands for current branch/commit/diff/tests, Forge connector status and the actual automated Brain-comment dispatch/receipt mechanism.
+- [VERIFIED] Created chatgpt-home/CODEX_RUNTIME_ARCHITECTURE.md on branch docs/openhands-workscope-continuity-2026-11-08; linked it from BLIND_SNIPER.md and README.md. Commits: e2ddfac377e53578a22d7ecaf26d6fa5e92a0631 (architecture), 8a4d719a7c523bf4ada594faea17cb9f162e3c10 (OS pointer), 7164d40e074dba27f5e466679e809140e5918deb (README navigation).
+- [VERIFIED] Read-back succeeded: architecture blob e70bfbbddedbe31fb706c39978f5649262081361; BLIND_SNIPER.md blob 5b8842799ce6e27d1022f144cddb950d6c4dd9ad; README blob 129624119c61f5c466d8d572b4d0d3304974d93f.
+- [VERIFIED] GitHub Actions compliance workflow for commit 7164d40e074dba27f5e466679e809140e5918deb completed successfully: run 42470823728, workflow “Engineering Execution OS Compliance”. This is documentation compliance evidence, not a runtime integration test.
+- [UNKNOWN] No Watcher response to T004/T005 or OpenHands response to the new Firstborn #146 checkpoint was present in the comments inspected at this checkpoint. A GitHub comment POST proves POSTED, not RECEIVED/ACKNOWLEDGED.
+- [BLOCKED] Current ChatGPT tool inventory does not expose a direct Forge browser MCP tool or direct OpenHands session API. No automatic Brain-comment → OpenHands dispatch/ack bridge has been proven. Three active ChatGPT coordination automations are team-owned; their existence does not guarantee OpenHands delivery.
+- Next: verify the Brain/Firstborn event trigger and automation wiring, obtain correlated agent receipts, and prove one harmless end-to-end execution round trip.
