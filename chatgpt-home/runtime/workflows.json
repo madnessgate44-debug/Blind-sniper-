@@ -320,5 +320,9 @@
     "contract": "chatgpt-home/runtime/EXECUTION_ENGINE.md",
     "mode": "registry_driven_planning_and_guarded_state_machine",
     "external_execution": "host_adapter_only"
-  }
+  },
+  "default_agent_selection": [
+    "blind-sniper",
+    "planner"
+  ]
 }
