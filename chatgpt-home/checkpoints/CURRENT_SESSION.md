@@ -62,3 +62,14 @@
   - chatgpt-home/checkpoints/CURRENT_SESSION.md: b14a3b120e93f1f691a301b0990e159472fec092
 - [NOT RUN] Runtime tests; documentation-only change. No automation was created or activated; no workflow was enabled; no merge/deployment performed.
 - [BLOCKED] Full OpenHands Cloud archive reconciliation and ChatGPT personal transcript export remain separate follow-up workstreams.
+
+
+## T004 — foundational recovery and Watcher coordination (2026-11-08)
+- [VERIFIED] Posted T004 to Brain #292 (comment 6720117018) requesting Watcher's actual monitoring digest, sources/channels read, recurring root causes and verified direct communication path.
+- [VERIFIED] Updated chatgpt-home/BLIND_SNIPER.md with the P0 foundation mandate; updated AUTONOMY_PROTOCOL.md with daily foundation monitoring requirements; added FOUNDATION_RECOVERY_PLAN.md with phased acceptance gates, agent capability registry, Watcher loop, communication fallback and evidence ledger.
+- [VERIFIED] Re-fetched the updated OS, autonomy protocol and recovery plan from branch docs/openhands-workscope-continuity-2026-11-08; non-empty content and new blob SHAs confirmed.
+- [VERIFIED] PR #3 remains OPEN / NOT MERGED; current head SHA 038b80ea0ae36ea15a147661a68bcffcc6b58749; 11 changed files.
+- [VERIFIED] Automations dashboard reports 15 tasks total and three enabled daily coordination checkpoints at 09:00, 14:00 and 20:00 Africa/Cairo. All three report is_self_owned_automation=false. The 14:00 task could not be modified through the exposed update action (HTTP 404 Action not found).
+- [BLOCKED] A new self-owned daily foundation automation was rejected by the platform: active scheduled-task limit 3/3. No duplicate task created.
+- [UNKNOWN] Watcher has not yet replied to T004; no direct Watcher channel is verified in this session.
+- [BLOCKED] Forge still needs deployment, connector registration and an actual ChatGPT→Forge round trip. OpenHands raw archive access and ChatGPT personal archive access remain separate unverified workstreams.
