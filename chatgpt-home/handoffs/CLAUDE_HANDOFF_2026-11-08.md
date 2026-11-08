@@ -547,3 +547,21 @@ This addendum supersedes earlier role/authority descriptions where they conflict
 - [VERIFIED] A regression test now asserts routine merge has no pending Owner approval; production deployment remains approval-gated.
 - [FAILED → FIXED] CI initially exposed a test assumption: adapter registry is keyed by ID, not an array. Corrected the assertion to test key absence. The corrected CI run is pending at this addendum's creation.
 - [VERIFIED] Native ledger CLI now supports append/show; CLI integration test was added. Earlier run `42480970168` passed 19 tests before the latest registry/authority changes.
+
+
+---
+
+# Final 10-minute execution checkpoint — 8 November 2026
+
+The implementation checkpoint is recorded in `chatgpt-home/runtime/BUILD_PROGRESS.md`.
+
+- Final branch HEAD: `21950fbc85e73176edf642476f960e72dc1edbba`.
+- Runtime CI: run `42481163242`, SUCCESS on `92abb690fa3e3026ef68c2073e0c79d5801037fc`; 20 tests ran, all passed. Subsequent commits through final HEAD changed documentation only.
+- Environment Validation: run `42481168238`, SUCCESS on final HEAD.
+- Engineering Execution OS Compliance: run `42481168139`, SUCCESS on final HEAD.
+- Native agent roster: 8 internal roles with checked-in contracts. External worker identities are no longer in the core roster.
+- Routine merge is AI-authorized under branch policy + green CI + review evidence. Production-impacting actions and other human-only boundaries remain gated.
+- The task ledger has a CLI and six tests, but remains local-workspace persistence. It is not yet wired automatically into the planner lifecycle or synchronized across ephemeral runners.
+- Two transient CI failures during implementation were diagnosed from logs and corrected; the final runtime test run is green.
+
+Claude review should now target final HEAD and the explicit remaining gaps. External systems are optional adapters, not architectural dependencies.
