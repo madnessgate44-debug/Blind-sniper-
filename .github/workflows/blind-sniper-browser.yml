@@ -50,7 +50,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: blind-sniper-browser-\${{ github.run_id }}
+          name: blind-sniper-browser-${{ github.run_id }}
           path: .blind-sniper/browser/
           if-no-files-found: warn
           retention-days: 3
