@@ -1,4 +1,6 @@
-# Blind Sniper Operating System (BS-OS)
+# Blind Sniper Operating System (BS-OS) — Architecture Overview
+
+> The canonical instruction file to execute when the Owner invokes Blind Sniper is `BLIND_SNIPER.md`. This document is the supporting architecture overview; it does not replace the primary entrypoint.
 
 **Version:** 1.0  
 **Effective:** 2026-11-08  
