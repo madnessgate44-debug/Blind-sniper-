@@ -29,18 +29,21 @@
 - Safe fallback profile/agents correction: `eec6f124cba2612473f700290ea3dc273bf6f313`.
 - GitHub Contents CAS adapter and runtime option: `156f6ba51a135986dfaf8f867391ac8b52e83b95`, `dcf38a1837be0cb620768f3bb0543e01d9f92218`, `f3527e88f174882db16d7d47aa491c92510f7449`.
 - Remote adapter/recovery test checkpoint: `8a28e5076fd219f083a06ac04a3ece856aee6cac`.
+- Private-repository gate + regression suite checkpoint: `165fdff5fde9c7e18fc3f30384ecfd44c2ef5705`.
 - Regression tests commit: `12a4a4149a163ed3c6870ba8ba543d06565cf1ae`.
 - Runtime CI run [42484343595](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343595): SUCCESS; **29 tests passed**, including ledger-backed plan, transition, replay, stale-checkpoint recovery and host-forbidden denial.
 - Latest runtime CI run [42484643917](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484643917): SUCCESS; **31 tests passed**, including registry-owned routing, profile/agent selection, and the unprofiled browser workflow safely falling back to the default native profile/agents.
 - Latest OS compliance run [42484643930](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484643930): SUCCESS.
 - Runtime CI run [42485004894](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485004894): SUCCESS; **41 tests passed**, including six mocked GitHub Contents adapter tests, remote task-history recovery, CAS conflict retry and integrity failure.
 - OS compliance run [42485004801](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485004801): SUCCESS on the same test checkpoint.
+- Runtime CI [run 42485134477](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485134477): SUCCESS; **43 tests passed**, including refusal to access a public repository and remote task-history recovery.
+- OS compliance [run 42485134395](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42485134395): SUCCESS.
 - Engineering Execution OS compliance run [42484343610](https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42484343610): SUCCESS on test commit `12a4a41`.
 - Documentation was updated after that runtime pass; latest HEAD and exact CI checks are maintained in `CURRENT_STATE.md`.
 
 ## Explicit limits
 
-- The local ledger is workspace durable. An optional GitHub Contents API adapter is implemented and mock-tested, but no live write has been performed.
+- The local ledger is workspace durable. An optional GitHub Contents API adapter is implemented and mock-tested, but no live write has been performed. It refuses public repositories by design.
 - The checked-in GitHub Actions workflow has `contents: read`; it cannot write through the GitHub ledger adapter. No workflow permission was changed. A host must explicitly supply a token with Contents write permission and an authorized target branch.
 - The hash chain detects edits but is not a signed or tamper-proof audit log.
 - Approval records are host-supplied attestations; the runtime cannot cryptographically prove who supplied the record.
@@ -60,3 +63,11 @@
 6. Move routing ownership into registries and remove duplicated routing maps.
 7. Reduce boot payload and measure actual bytes/lines before optimizing.
 8. Reconcile branch graph and prepare a privacy-safe consolidated draft PR only after storage containment.
+
+
+## E2E lifecycle simulation added
+
+- The remediation branch adds a deterministic GitHub Actions simulation using the actual runtime CLI and local ledger.
+- The scenario executes all eight lifecycle states, verifies a local artifact, injects a stale checkpoint, recovers from the ledger, resumes and closes.
+- The simulation receipt, final state, task envelope, evidence, command output and ledger are uploaded as a 14-day Actions artifact.
+- The simulation is explicitly local-only; it does not spawn an agent or invoke external APIs. The GitHub CAS adapter remains fake-transport tested until a private repository and narrowly scoped write credential are explicitly provisioned.
