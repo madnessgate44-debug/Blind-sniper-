@@ -6,6 +6,8 @@ on:
     paths:
       - "chatgpt-home/runtime/**"
       - "scripts/validate_blind_sniper_runtime.py"
+      - "scripts/blind_sniper_runtime.py"
+      - "tests/test_blind_sniper_orchestration.py"
       - "tests/test_blind_sniper_runtime.py"
       - ".github/workflows/blind-sniper-runtime.yml"
   push:
@@ -35,4 +37,4 @@ jobs:
       - name: Validate runtime registries
         run: python scripts/validate_blind_sniper_runtime.py
       - name: Run runtime unit tests
-        run: python -m unittest discover -s tests -p 'test_blind_sniper_runtime.py' -v
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
