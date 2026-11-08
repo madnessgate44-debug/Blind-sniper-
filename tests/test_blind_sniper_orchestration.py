@@ -58,7 +58,7 @@ class OrchestrationEngineTests(unittest.TestCase):
         state = runtime.create_task_state(plan)
         for target in ("INSPECTING", "SPECIFIED", "PLANNED"):
             state = runtime.transition_task(state, target)
-        with self.assertRaisesRegex(runtime.RuntimeErrorBase, "adapter is blocked"):
+        with self.assertRaisesRegex(runtime.RuntimeErrorBase, "blocked or unverified"):
             runtime.transition_task(state, "EXECUTING")
 
     def test_high_risk_action_requires_owner_approval(self):
