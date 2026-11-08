@@ -284,6 +284,9 @@ class TaskLedger:
             raise LedgerError("task_id, owner_id and idempotency_key are required")
         if not isinstance(payload, dict):
             raise LedgerError("payload must be an object")
+        snapshot = payload.get("state")
+        if not isinstance(snapshot, dict) or snapshot.get("task_id") != task_id or snapshot.get("status") != "EXECUTING":
+            raise LedgerError("Lease-gated transition requires a matching EXECUTING snapshot")
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a+", encoding="utf-8") as handle:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
