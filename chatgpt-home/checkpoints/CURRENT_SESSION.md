@@ -157,3 +157,16 @@
 - Step: node scripts/check-engineering-execution-os.mjs — completed success.
 - This verifies the repository's Engineering Execution OS compliance check for that commit. It does not verify Forge, OpenHands task completion, application behavior, or a general-purpose execution adapter.
 - [UNKNOWN] No newer OpenHands response was present after bot response comment 6720280271 at the last Brain #292 read.
+
+
+## 2026-11-08 — Blind Sniper agent environment build and validation
+
+- [VERIFIED] User clarified target: replicate the useful Codex/Claude Code/Agent Harness/HAR patterns as a complete Blind Sniper environment—skills, browsing/tool registry, settings, agents, workflows and templates.
+- [VERIFIED] Implemented in madnessgate44-debug/Blind-sniper- under chatgpt-home/: environment manifest; 9 native skills; 9 specialist agent contracts; 5 workflow contracts; 4 templates; tool registry; lifecycle hooks/guards; MCP/browser integration contract; runtime adapter contract; six Codex host TOML examples.
+- [VERIFIED] Added automated structural validation and GitHub Actions workflow. On branch head 1a70c10f3d49b67f51986ba383b2c7abbde1fba3, run 42473260867 / job validate-environment passed. Log output: PASS: 39 required environment assets exist; 9 skills satisfy metadata and section contract; credential-pattern scan clean.
+- [VERIFIED] Same head commit: Engineering Execution OS compliance run 42473260744 / job policy-compliance passed.
+- [VERIFIED] Existing OpenHands reference mirror remains available (68 imported source files, source tree SHA recorded in IMPORT_MANIFEST); native Blind Sniper assets are separately authored/adapted.
+- [VERIFIED] PR #3 is still OPEN / NOT MERGED. No merge/deployment or paid provisioning was performed.
+- [BLOCKED] Codex CLI host installation, Forge public HTTPS + connector registration, OpenHands task-result retrieval and persistent isolated execution adapter remain unproven/unavailable. No full agent/browser runtime round trip is claimed.
+
+Next: finish external runtime adapters and prove two consecutive correlated task round trips. Do not mark full Codex-like environment READY until these gates pass.
