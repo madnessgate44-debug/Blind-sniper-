@@ -30,7 +30,22 @@
         "parallel",
         "github"
       ],
-      "status": "available_in_current_session"
+      "status": "available_in_current_session",
+      "agents": [
+        "researcher",
+        "planner"
+      ],
+      "routing": {
+        "priority": 60,
+        "keywords": [
+          "research",
+          "investigate",
+          "compare",
+          "look up",
+          "primary source",
+          "sources"
+        ]
+      }
     },
     {
       "id": "task-control-loop",
@@ -52,7 +67,11 @@
         "persistent_runner"
       ],
       "status": "partially_operational",
-      "native_contract_path": "chatgpt-home/workflows/task-lifecycle.md"
+      "native_contract_path": "chatgpt-home/workflows/task-lifecycle.md",
+      "agents": [
+        "blind-sniper",
+        "planner"
+      ]
     },
     {
       "id": "inspect-plan-implement-verify",
@@ -72,7 +91,26 @@
         "persistent_runner"
       ],
       "status": "repository_changes_and_PR_available_ci_trigger_dependent",
-      "native_contract_path": "chatgpt-home/workflows/task-lifecycle.md"
+      "native_contract_path": "chatgpt-home/workflows/task-lifecycle.md",
+      "agents": [
+        "planner",
+        "engineer",
+        "qa-verifier",
+        "reviewer"
+      ],
+      "routing": {
+        "priority": 100,
+        "keywords": [
+          "fix",
+          "implement",
+          "build",
+          "patch",
+          "refactor",
+          "bug",
+          "write code",
+          "test"
+        ]
+      }
     },
     {
       "id": "independent-review",
@@ -88,7 +126,21 @@
         "github"
       ],
       "status": "read_only_review_available",
-      "native_contract_path": "chatgpt-home/templates/REVIEW_REPORT.md"
+      "native_contract_path": "chatgpt-home/templates/REVIEW_REPORT.md",
+      "agents": [
+        "reviewer",
+        "qa-verifier"
+      ],
+      "routing": {
+        "priority": 80,
+        "keywords": [
+          "security review",
+          "independent review",
+          "audit diff",
+          "review this diff",
+          "review pull request"
+        ]
+      }
     },
     {
       "id": "release-gate",
@@ -114,6 +166,21 @@
         ],
         "vercel": [
           "deploy"
+        ]
+      },
+      "agents": [
+        "release-manager",
+        "qa-verifier"
+      ],
+      "routing": {
+        "priority": 120,
+        "keywords": [
+          "deploy",
+          "release",
+          "merge to main",
+          "merge pull request",
+          "default branch push",
+          "ci/cd edit"
         ]
       }
     },
@@ -204,7 +271,21 @@
         "openhands_dispatch"
       ],
       "status": "available_read_only_recovery_write_gated",
-      "native_contract_path": "chatgpt-home/workflows/session-close.md"
+      "native_contract_path": "chatgpt-home/workflows/session-close.md",
+      "agents": [
+        "recovery",
+        "planner"
+      ],
+      "routing": {
+        "priority": 70,
+        "keywords": [
+          "recover",
+          "restore",
+          "reconcile",
+          "continuity failure",
+          "resume interrupted task"
+        ]
+      }
     },
     {
       "id": "conversation-archive-export",
