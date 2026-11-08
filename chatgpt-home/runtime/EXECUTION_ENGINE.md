@@ -1,107 +1,82 @@
 # Blind Sniper Execution Engine
 
 **Entrypoint:** `scripts/blind_sniper_runtime.py`  
-**Registry source:** `chatgpt-home/runtime/*.json`  
-**Status:** Executable planning and guarded lifecycle state machine, with a native append-only task ledger. It is not yet a distributed runner or cross-runner task store.
+**Ledger:** `scripts/blind_sniper_ledger.py`  
+**Status:** Native planner, guarded lifecycle, automatic local ledger persistence and replay. Not a distributed runner.
 
-## What is executable now
+## Runtime contract
 
-The engine reads the current registries and:
-1. Routes a task to a registered workflow, unless the caller names one explicitly.
-2. Selects the matching operating profile.
-3. Resolves eligible agent roles from that profile.
-4. Selects skills from the profile using deterministic task-keyword matching, or validates caller-specified skills.
-5. Resolves selected skill paths and fails if a selected contract is missing.
-6. Resolves every workflow adapter and normalizes its evidence status to AVAILABLE, PARTIAL, BLOCKED or UNVERIFIED.
-7. Calculates readiness and the next safe action.
-8. Enforces task-state transitions, explicit Owner approval, verification and independent-review gates.
-9. Persists task state as JSON with an append-only transition event list.\n10. Provides a separate native JSONL task ledger with process locking, idempotency keys, sequence checks and a SHA-256 hash chain.
+The engine:
+1. Routes a task through the checked-in workflow registry.
+2. Selects its profile from host policy; task JSON cannot choose its own profile.
+3. Resolves native agent contracts and skill paths.
+4. Checks required adapter capability status and computes readiness.
+5. Creates a task-state snapshot and commits it to the native ledger.
+6. Persists every accepted lifecycle transition to the ledger before updating the convenience state file.
+7. Reconstructs the latest committed state from the verified ledger after interruption.
+8. Enforces approval, host-forbidden-action, verification and independent-review gates.
+
+Planning and state persistence do not mean an agent was spawned or work was executed. Native agent contracts remain role specifications; the engine does not currently run separate model processes.
 
 ## Commands
 
-Create a task JSON file from `templates/TASK_ENVELOPE.json`, ensuring that `task_id` is a stable correlation ID and `objective` is non-empty.
+Use a stable task ID and a non-empty objective in the task JSON.
 
 ```bash
-python scripts/blind_sniper_runtime.py plan --task-file task.json --output task-state.json
-python scripts/blind_sniper_runtime.py transition --state-file task-state.json --to INSPECTING --output task-state.json
+python scripts/blind_sniper_runtime.py plan \
+  --task-file task.json --output task-state.json \
+  --ledger .blind-sniper/state/events.jsonl
+
+python scripts/blind_sniper_runtime.py transition \
+  --state-file task-state.json --to INSPECTING \
+  --output task-state.json --ledger .blind-sniper/state/events.jsonl
+
+python scripts/blind_sniper_runtime.py recover \
+  --task-id BS-20261108-001 \
+  --output recovered-state.json \
+  --ledger .blind-sniper/state/events.jsonl
 ```
 
-Advance through the documented sequence:
-`REQUESTED → INSPECTING → SPECIFIED → PLANNED → EXECUTING → VERIFYING → REVIEWING → CLOSED`.
+The ledger defaults to `.blind-sniper/state/events.jsonl` if `--ledger` is omitted. Keep this file in a persistent workspace; ephemeral CI runners do not share it.
 
-For `VERIFYING → REVIEWING`, provide an evidence JSON file containing `{"verification_passed": true}`. For `REVIEWING → CLOSED`, provide a review receipt containing `review_verdict`, `reviewer_id`, matching `task_id`, full `commit_sha`, and `ci_run_id`; the reviewer must differ from the recorded implementer. A transition into EXECUTING is rejected if a required adapter is BLOCKED/UNVERIFIED or any requested action is not explicitly classified as routine. Unknown actions, merges, default-branch pushes, force-pushes, branch deletion, deployment, CI/CD edits, credential/permission mutation, paid provisioning, and destructive production data changes require explicit Owner approval. Approval must be supplied by the host through `--approval-record-file` and include the exact action, Ahmed’s verbatim approval words, and an offset-aware timestamp. Task JSON cannot set its own profile, forbidden-action policy, or approval.
+## Lifecycle and policy
 
-## Routing policy
+`REQUESTED → INSPECTING → SPECIFIED → PLANNED → EXECUTING → VERIFYING → REVIEWING → CLOSED`
 
-| Task intent | Workflow | Profile |
-|---|---|---|
-| Research / investigate / compare | `research-and-synthesis` | `research` |
-| Implement / build / fix / test | `inspect-plan-implement-verify` | `engineering` |
-| Review / audit | `independent-review` | `review` |
-| Release / merge / deploy | `release-gate` | `release` |
-| Recover / restore / reconcile | `recovery-and-reconciliation` | `recovery` |
-| Other owner task | `task-control-loop` | `blind-sniper` |
+- Every accepted transition appends a full state snapshot to the hash-chained ledger.
+- The ledger append happens before the JSON checkpoint write. If the process stops between those operations, the next transition reloads the ledger's latest state. Repeating the already-committed target is idempotent and only repairs the checkpoint.
+- Legacy task JSON without ledger history is adopted once as `TASK_IMPORTED`; subsequent transitions use ledger state as authoritative.
+- Unknown/unclassified requested actions require explicit action-specific Owner approval.
+- Host-forbidden actions (including force-push, branch deletion, credential/secret export, disabling branch protection and unbounded shell execution) cannot be overridden by task JSON or an approval record.
+- Other consequential actions, including merges, default-branch pushes, deployments, CI/CD edits, secret/permission changes, paid provisioning and destructive production-data changes, remain approval-gated.
+- The task envelope cannot select its own profile or forbidden-action policy.
+- The transition CLI accepts host-supplied approval records with action, approver, verbatim words and an offset-aware timestamp. These are auditable assertions, not cryptographic proof of the identity of the person who supplied the file.
+- `VERIFYING → REVIEWING` requires `verification_passed=true`.
+- `REVIEWING → CLOSED` requires PASS, a reviewer distinct from the implementer, matching task ID, full commit SHA and CI run ID. Metadata checks do not cryptographically authenticate the reviewer.
 
-Explicit `workflow`, `profile` and `skills` values are validated against the registries; unknown values fail closed.
+## Recovery and persistence boundary
 
-## Important boundaries
+`TaskLedger` validates the global sequence and SHA-256 hash chain before returning history. It uses process locking, fsync and idempotency keys. Runtime snapshots are stored as `TASK_CREATED`, `TASK_IMPORTED` and `TASK_TRANSITIONED` events. The `recover` command restores the latest snapshot for a task.
 
-- Planning is not dispatch. The engine never claims that an agent ran or that an adapter was invoked.
-- An AVAILABLE adapter means the current host inventory declared it callable at registry refresh; the host must still recheck it at use time.
-- PARTIAL means host-assisted execution only. BLOCKED or UNVERIFIED prevents transition into EXECUTING.
+This is local-workspace persistence only. It does not yet provide cross-runner durability, GitHub-backed compare-and-swap, multi-host leases or distributed concurrency control. The hash chain detects accidental or unsophisticated edits; it is not a signed tamper-proof audit log.
+
+## Capability boundaries
+
+- BLOCKED or UNVERIFIED required adapters prevent entry into EXECUTING.
+- PARTIAL means host-assisted execution only.
+- An AVAILABLE adapter must still be rechecked by the host immediately before invocation.
 - Agent contracts are selected and referenced; this engine does not spawn agents.
-- Skills are selected and referenced; the host must retrieve and read each selected contract before applying it.
-- Hook contracts remain manual host-boundary procedures in ChatGPT; this engine does not install Claude/Codex/OpenHands hooks.
-- No merge, deployment, secret mutation, permission change, paid provisioning or destructive action is performed.
-- The browser workflow remains blocked until a durable supported host and authenticated connector are actually registered.
+- Skills are selected and referenced; the host must read the selected contract before applying it.
+- Browser, persistent background execution and generic shell execution remain unavailable unless a real host adapter is registered and verified.
+- No merge, deployment, secret mutation, permission change, paid provisioning or destructive action is performed by this runtime.
 
 ## Verification
 
-The GitHub Actions runtime workflow runs:
+Runtime CI runs:
+
 ```bash
 python scripts/validate_blind_sniper_runtime.py
 python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-Tests cover workflow/profile routing, skill and agent selection, capability readiness, unknown workflow rejection, blocked browser adapter rejection, Owner approval, lifecycle sequencing, verification, review and closure guards.
-
-
-## Native task ledger (new)
-
-**Module:** `scripts/blind_sniper_ledger.py`
-
-The ledger stores append-only JSONL events. Each event carries a global sequence number, task ID, event type, idempotency key, timestamp, payload, previous-event hash and its own SHA-256 hash. Reads validate the full chain and fail closed on malformed or tampered records. Appends use an exclusive OS file lock, flush and fsync; repeated identical idempotency keys return the original event, while key reuse with different content is rejected.
-
-Example:
-```python
-from scripts.blind_sniper_ledger import TaskLedger
-
-ledger = TaskLedger(".blind-sniper/state/events.jsonl")
-ledger.append(
-    task_id="BS-20261108-001",
-    event_type="TASK_CREATED",
-    payload={"objective": "Example"},
-    idempotency_key="BS-20261108-001:create",
-)
-snapshot = ledger.task_history("BS-20261108-001")
-```
-
-**Persistence boundary:** this provides process-restart recovery only when the workspace and ledger file persist. GitHub-hosted ephemeral runners do not share this local file automatically. Cross-runner durability and multi-writer compare-and-swap synchronization are not implemented yet. Do not store secrets in event payloads.
-
-
-### Ledger CLI
-
-```bash
-python scripts/blind_sniper_ledger.py append \
-  --ledger .blind-sniper/state/events.jsonl \
-  --task-id BS-20261108-001 \
-  --event-type TASK_CREATED \
-  --idempotency-key BS-20261108-001:create \
-  --payload-file task-event.json
-
-python scripts/blind_sniper_ledger.py show \
-  --ledger .blind-sniper/state/events.jsonl \
-  --task-id BS-20261108-001
-```
-
-The `show` command validates the complete hash chain before returning task history. The CLI does not yet push events to GitHub or synchronize across runners.
+Tests cover registry resolution, routing, task-envelope authority boundaries, Owner approval records, host-forbidden actions, correlated review receipts, ledger persistence, stale-checkpoint recovery and replay.
