@@ -18,7 +18,7 @@ The adapter in `scripts/blind_sniper_browser.py` invokes the CLI with a fixed ar
 - `get-url`: inspect the current URL.
 - `close`: close the task-scoped browser session.
 
-The initial slice intentionally does not expose uploads/downloads, tabs/frames, PDF, cookies, authentication state, arbitrary JavaScript, remote browser providers or personal browser profiles.
+The initial slice intentionally does not expose uploads/downloads, tabs/frames, PDF, cookies, authentication state, arbitrary JavaScript, remote browser providers or personal browser profiles. The host allowlist currently validates top-level navigation and post-action URL state; it is not yet a request-level egress firewall for subresources or cross-origin form targets. Keep this version limited to controlled fixtures until request interception is added.
 
 ## Host configuration
 
