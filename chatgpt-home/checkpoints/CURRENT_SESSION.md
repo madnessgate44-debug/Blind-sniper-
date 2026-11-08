@@ -232,3 +232,11 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 - [CORRECTION] Forge's remote HTTPS smoke is reported by OpenHands and supported by its CI; the URL is ephemeral. The registry now labels this as REMOTE-SMOKE-REPORTED, not independently invoked by ChatGPT. ChatGPT connector remains absent.
 - [CORRECTION] Shadow, not Ghost, is the designated credential-pool custodian per Brain WATCHER.md §14. The latest reported pool state is 0 WORKING / 8 NOT SET.
 - [VERIFIED] PR #6 remains the canonical runtime PR. No merge, durable deployment, connector registration, secret mutation or paid provisioning occurred.
+
+
+## Expanded adapter and archive-export gate — 2026-11-08T11:15 UTC
+
+- [VERIFIED] Runtime now explicitly records ephemeral Python/shell execution as session-scoped and ChatGPT transcript export as blocked (no native export action exposed). A conversation-archive workflow is defined but cannot execute until an authorized export source exists.
+- [VERIFIED] Counts on implementation head `964f305793bc962f15e49cf46325723c43ef8fa4`: 6 profiles, 25 agents, 13 adapters, 11 workflows, 10 native skills, 33 OpenHands skills.
+- [VERIFIED] Runtime run `42475103888` / job `128714562891` PASS; environment run `42475103885` / job `128714562694` PASS; OS compliance run `42475103913` / job `128714562852` PASS.
+- [LIMITATION] This is still a host-aware operating/control plane, not an installed Codex CLI or a persistent shell. Forge connector, durable host, Shadow provider pool and automatic ChatGPT transcript export remain blocked/unavailable.
