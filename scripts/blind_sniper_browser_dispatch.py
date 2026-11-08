@@ -116,7 +116,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--session-id", required=True)
     parser.add_argument("--step-id", required=True)
-    parser.add_argument("--action", required=True, choices=sorted({"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "pdf"}))
+    parser.add_argument("--action", required=True, choices=sorted({"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "download", "pdf"}))
     parser.add_argument("--action-args-json", default="[]", help="JSON array of string arguments for the selected browser action")
     parser.add_argument("--state-dir", default=".blind-sniper/browser")
     parser.add_argument("--timeout", type=int, default=45)
