@@ -1,8 +1,8 @@
 # Blind Sniper Execution Engine
 
 **Entrypoint:** `scripts/blind_sniper_runtime.py`  
-**Ledger:** `scripts/blind_sniper_ledger.py`  
-**Status:** Native planner, guarded lifecycle, automatic local ledger persistence and replay. Not a distributed runner.
+**Ledger implementation:** `scripts/blind_sniper_ledger.py`  
+**Status:** Native planner, guarded lifecycle, automatic local persistence/replay and optional GitHub Contents API persistence. Not a distributed agent executor.
 
 ## Runtime contract
 
@@ -11,16 +11,14 @@ The engine:
 2. Selects its profile from host policy; task JSON cannot choose its own profile.
 3. Resolves native agent contracts and skill paths.
 4. Checks required adapter capability status and computes readiness.
-5. Creates a task-state snapshot and commits it to the native ledger.
-6. Persists every accepted lifecycle transition to the ledger before updating the convenience state file.
+5. Persists a task-created snapshot to the selected ledger.
+6. Persists every accepted lifecycle transition before updating the convenience JSON checkpoint.
 7. Reconstructs the latest committed state from the verified ledger after interruption.
 8. Enforces approval, host-forbidden-action, verification and independent-review gates.
 
 Planning and state persistence do not mean an agent was spawned or work was executed. Native agent contracts remain role specifications; the engine does not currently run separate model processes.
 
-## Commands
-
-Use a stable task ID and a non-empty objective in the task JSON.
+## Commands — local ledger (default)
 
 ```bash
 python scripts/blind_sniper_runtime.py plan \
@@ -37,28 +35,53 @@ python scripts/blind_sniper_runtime.py recover \
   --ledger .blind-sniper/state/events.jsonl
 ```
 
-The ledger defaults to `.blind-sniper/state/events.jsonl` if `--ledger` is omitted. Keep this file in a persistent workspace; ephemeral CI runners do not share it.
+## Commands — optional GitHub-backed ledger
+
+Supply a token through an environment variable; never place it in task JSON, command-line arguments, logs or repository files.
+
+```bash
+export GITHUB_TOKEN="<host-provided token with Contents write access>"
+
+python scripts/blind_sniper_runtime.py plan \
+  --task-file task.json --output task-state.json \
+  --github-ledger --github-owner OWNER --github-repo REPOSITORY \
+  --github-branch integration --github-path .blind-sniper/state/events.jsonl
+
+python scripts/blind_sniper_runtime.py transition \
+  --state-file task-state.json --to INSPECTING --output task-state.json \
+  --github-ledger --github-owner OWNER --github-repo REPOSITORY \
+  --github-branch integration
+
+python scripts/blind_sniper_runtime.py recover \
+  --task-id BS-20261108-001 --output recovered-state.json \
+  --github-ledger --github-owner OWNER --github-repo REPOSITORY \
+  --github-branch integration
+```
+
+The GitHub adapter reads the current file SHA, validates the complete event chain, appends locally, then writes the new JSONL content using the prior SHA as a compare-and-swap precondition. HTTP 409/422 conflicts trigger bounded reload-and-retry (three attempts by default). Repeated idempotency keys do not create extra commits. Each successful append creates a Git commit; this is intended for small control-plane event files, not transcripts or large artifacts.
+
+**Operational limitation:** GitHub-backed adapter behavior is unit-tested with a mocked Contents API. No live write was performed. The checked-in Actions workflow currently declares `contents: read`, so its token cannot use this write adapter. Enabling write access in workflows was not part of this change and remains an explicit future permission decision. A host must provide a token with Contents write permission and an authorized target branch.
 
 ## Lifecycle and policy
 
 `REQUESTED → INSPECTING → SPECIFIED → PLANNED → EXECUTING → VERIFYING → REVIEWING → CLOSED`
 
-- Every accepted transition appends a full state snapshot to the hash-chained ledger.
-- The ledger append happens before the JSON checkpoint write. If the process stops between those operations, the next transition reloads the ledger's latest state. Repeating the already-committed target is idempotent and only repairs the checkpoint.
-- Legacy task JSON without ledger history is adopted once as `TASK_IMPORTED`; subsequent transitions use ledger state as authoritative.
+- Every accepted transition appends a full state snapshot to the ledger.
+- The ledger append happens before the JSON checkpoint write. If the process stops between those operations, the next transition reloads the ledger's latest state. Repeating the already-committed target repairs the checkpoint without a duplicate event.
+- Legacy task JSON without ledger history can be adopted once as `TASK_IMPORTED`; subsequent transitions use ledger state as authoritative.
 - Unknown/unclassified requested actions require explicit action-specific Owner approval.
-- Host-forbidden actions (including force-push, branch deletion, credential/secret export, disabling branch protection and unbounded shell execution) cannot be overridden by task JSON or an approval record.
+- Host-forbidden actions (force-push, branch deletion, credential/secret export, disabling branch protection and unbounded shell execution) cannot be overridden by task JSON or approval records.
 - Other consequential actions, including merges, default-branch pushes, deployments, CI/CD edits, secret/permission changes, paid provisioning and destructive production-data changes, remain approval-gated.
 - The task envelope cannot select its own profile or forbidden-action policy.
-- The transition CLI accepts host-supplied approval records with action, approver, verbatim words and an offset-aware timestamp. These are auditable assertions, not cryptographic proof of the identity of the person who supplied the file.
+- Approval records are host-supplied assertions containing action, approver, verbatim words and an offset-aware timestamp. They are auditable metadata, not cryptographic proof of the approver's identity.
 - `VERIFYING → REVIEWING` requires `verification_passed=true`.
 - `REVIEWING → CLOSED` requires PASS, a reviewer distinct from the implementer, matching task ID, full commit SHA and CI run ID. Metadata checks do not cryptographically authenticate the reviewer.
 
-## Recovery and persistence boundary
+## Persistence and integrity boundaries
 
-`TaskLedger` validates the global sequence and SHA-256 hash chain before returning history. It uses process locking, fsync and idempotency keys. Runtime snapshots are stored as `TASK_CREATED`, `TASK_IMPORTED` and `TASK_TRANSITIONED` events. The `recover` command restores the latest snapshot for a task.
+The local `TaskLedger` uses process locking, fsync, idempotency keys, monotonic sequence validation and a SHA-256 hash chain. The optional GitHub adapter adds blob-SHA compare-and-swap and immutable Git commit history for each accepted append.
 
-This is local-workspace persistence only. It does not yet provide cross-runner durability, GitHub-backed compare-and-swap, multi-host leases or distributed concurrency control. The hash chain detects accidental or unsophisticated edits; it is not a signed tamper-proof audit log.
+The hash chain detects edits but is not a signed tamper-proof audit log. GitHub Contents API file-level CAS is not a task lease service and does not implement multi-step ownership, cancellation or stale-worker recovery. Concurrent writes are retried a bounded number of times; sustained contention fails closed.
 
 ## Capability boundaries
 
@@ -79,4 +102,4 @@ python scripts/validate_blind_sniper_runtime.py
 python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-Tests cover registry resolution, routing, task-envelope authority boundaries, Owner approval records, host-forbidden actions, correlated review receipts, ledger persistence, stale-checkpoint recovery and replay.
+Tests cover registry resolution, routing, task-envelope authority boundaries, Owner approval records, host-forbidden actions, correlated review receipts, local ledger persistence, GitHub CAS retries, remote hash-chain validation and recovery reads.
