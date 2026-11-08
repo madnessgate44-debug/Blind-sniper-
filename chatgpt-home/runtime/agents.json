@@ -108,6 +108,12 @@
       "source": "openhands-library",
       "role": "release planning and gates",
       "status": "reference_profile_present"
+    },
+    {
+      "id": "research-analyst",
+      "source": "native-runtime-contract",
+      "role": "source-backed web and repository research",
+      "status": "role_defined_tool_use_is_host_dependent"
     }
   ],
   "delegation_contract": {
