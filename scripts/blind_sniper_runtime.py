@@ -386,20 +386,20 @@ def transition_task(
     plan = state.get("plan", {})
     approved = set()
     pending = set(plan.get("approval", {}).get("pending_actions", []))
-    for record in approval_records or []:
-        validated = validate_owner_approval(record, str(state.get("task_id", "")), now)
-        action = validated["action"]
-        if action not in pending:
-            raise RuntimeErrorBase(f"Owner approval does not match a pending action: {action}")
-        approved.add(action)
     if target == "EXECUTING":
         forbidden = set(plan.get("constraints", {}).get("forbidden_actions", HOST_FORBIDDEN_ACTIONS))
         if pending & forbidden:
             raise RuntimeErrorBase(f"Execution blocked: host policy forbids {sorted(pending & forbidden)}")
         if plan.get("execution_readiness") == "BLOCKED":
             raise RuntimeErrorBase("Execution blocked: a required adapter or capability is blocked or unverified")
-        if pending - approved:
-            raise RuntimeErrorBase(f"Execution blocked: explicit Owner approval is pending for {sorted(pending - approved)}")
+    for record in approval_records or []:
+        validated = validate_owner_approval(record, str(state.get("task_id", "")), now)
+        action = validated["action"]
+        if action not in pending:
+            raise RuntimeErrorBase(f"Owner approval does not match a pending action: {action}")
+        approved.add(action)
+    if target == "EXECUTING" and pending - approved:
+        raise RuntimeErrorBase(f"Execution blocked: explicit Owner approval is pending for {sorted(pending - approved)}")
     if target == "REVIEWING" and evidence.get("verification_passed") is not True:
         raise RuntimeErrorBase("Cannot enter REVIEWING without verification_passed=true")
     if target == "CLOSED":
