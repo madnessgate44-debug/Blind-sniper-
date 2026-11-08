@@ -201,6 +201,37 @@
         "Latest reported sweep: 0 WORKING, 8 NOT SET; no Gemini provider route is currently available to agents.",
         "No key values may be copied into chat, repository files, issues or logs."
       ]
+    },
+    {
+      "id": "ephemeral_execution",
+      "kind": "session_scoped_code_execution",
+      "status": "available_in_current_session",
+      "tools": [
+        "python.exec",
+        "container.exec",
+        "container.open_image"
+      ],
+      "capabilities": [
+        "ephemeral_python_execution",
+        "temporary_shell_commands",
+        "local_artifact_inspection"
+      ],
+      "limitations": [
+        "Execution environments are session-scoped and are not the persistent Blind Sniper runner.",
+        "Repository files must be fetched or mounted explicitly; no general always-on shell is available."
+      ]
+    },
+    {
+      "id": "chatgpt_history_export",
+      "kind": "conversation_archive_export",
+      "status": "blocked_no_native_export_action",
+      "tools": [],
+      "capabilities": [],
+      "limitations": [
+        "This session exposes no action to enumerate and export all ChatGPT conversation transcripts to GitHub.",
+        "GitHub continuity files and Memory summary are not a substitute for complete conversation archives.",
+        "Resume only when an authorized export API or user-supplied archive is available."
+      ]
     }
   ],
   "exclusions": [
