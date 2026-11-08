@@ -40,6 +40,10 @@ class BrowserPolicyTests(unittest.TestCase):
         with self.assertRaises(BrowserPolicyError):
             validate_url("file:///etc/passwd")
 
+    def test_embedded_url_credentials_are_rejected(self):
+        with self.assertRaises(BrowserPolicyError):
+            validate_url("https://user:secret@example.test/")
+
     def test_mutating_action_requires_host_approval(self):
         adapter = self.adapter()
         adapter.state["current_url"] = "http://127.0.0.1/"
