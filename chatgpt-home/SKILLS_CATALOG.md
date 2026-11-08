@@ -67,3 +67,27 @@ When OpenHands skills or agents change, update this catalog from the live `Openh
 - Imported 68 source files: 33 skill/rule files, 19 specialist profiles, plugin manifests, hook definitions/scripts, loop/status/backlog docs, validation scripts, tests, workflow, README and AGENTS guidance.
 - Blind Sniper's adapted runtime contract: `chatgpt-home/BLIND_SNIPER_OS.md`.
 - The mirror is reference material. OpenHands SDK agents/hooks do not automatically execute inside ChatGPT.
+
+
+## Blind Sniper native capability pack — 2026-11-08
+The native, runtime-neutral capability layer is indexed in `chatgpt-home/ENVIRONMENT_MANIFEST.md`.
+
+### Native skills
+- `skills/github-workspace/SKILL.md`
+- `skills/web-research/SKILL.md`
+- `skills/browser-operations/SKILL.md`
+- `skills/agent-dispatch/SKILL.md`
+- `skills/workflow-authoring/SKILL.md`
+- `skills/test-and-evidence/SKILL.md`
+- `skills/security-and-permissions/SKILL.md`
+- `skills/memory-and-continuity/SKILL.md`
+- `skills/codex-environment-maintenance/SKILL.md`
+
+### Specialist agent contracts
+Researcher, Planner, Engineer, Reviewer, QA Verifier, Recovery, Watcher, Shadow Auditor and Release Manager. See `agents/README.md`.
+
+### Workflows and artifacts
+Session boot, task lifecycle, agent handoff, session close and release gate are in `workflows/`. Reusable task, verification, review and run receipt templates are in `templates/`.
+
+### Validation
+`scripts/check-blind-sniper-environment.mjs` validates required files, skill metadata/sections and basic credential-pattern hygiene. GitHub Actions workflow: `.github/workflows/blind-sniper-environment-validation.yml`. A passing structural check does not prove that external adapters or host-level Codex features are live.
