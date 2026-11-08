@@ -147,18 +147,26 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
         raise RuntimeErrorBase("Task must include a non-empty objective")
     registries = load_registries(root)
     caps = registries["capabilities"]
-    profiles = registries["profiles"].get("profiles", [])
+    profiles_registry = registries["profiles"]
+    profiles = profiles_registry.get("profiles", [])
     agents = registries["agents"].get("agents", [])
-    workflows = registries["workflows"].get("workflows", [])
+    workflow_registry = registries["workflows"]
+    workflows = workflow_registry.get("workflows", [])
     skill_index = registries["skills.index"]
 
     workflow_id = choose_workflow(task, workflows)
     workflow = next(row for row in workflows if row["id"] == workflow_id)
     # The profile bound to the selected workflow is host policy; task JSON cannot select it.
     matching_profiles = [row for row in profiles if row.get("workflow") == workflow_id]
-    if len(matching_profiles) != 1:
-        raise RuntimeErrorBase(f"Workflow {workflow_id} must map to exactly one operating profile")
-    profile = matching_profiles[0]
+    if len(matching_profiles) > 1:
+        raise RuntimeErrorBase(f"Workflow {workflow_id} maps to multiple operating profiles")
+    if matching_profiles:
+        profile = matching_profiles[0]
+    else:
+        default_profile_id = profiles_registry.get("default_profile")
+        profile = next((row for row in profiles if row.get("id") == default_profile_id), None)
+    if profile is None:
+        raise RuntimeErrorBase("Runtime default operating profile is missing")
     profile_id = profile["id"]
 
     adapters = {row.get("id"): row for row in caps.get("adapters", [])}
@@ -188,7 +196,7 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
     )
 
     agent_index = {row.get("id"): row for row in agents}
-    preferred_agents = workflow.get("agents", [])
+    preferred_agents = workflow.get("agents") or workflow_registry.get("default_agent_selection", [])
     selected_agents = []
     for agent_id in preferred_agents:
         if agent_id not in profile.get("agents", []):
