@@ -4,8 +4,10 @@ on:
   pull_request:
     paths:
       - "scripts/blind_sniper_browser.py"
+      - "scripts/blind_sniper_browser_dispatch.py"
       - "scripts/run_blind_sniper_browser_e2e.py"
       - "tests/test_blind_sniper_browser.py"
+      - "tests/test_blind_sniper_browser_dispatch.py"
       - "tests/fixtures/browser/**"
       - ".github/workflows/blind-sniper-browser.yml"
   push:
@@ -13,8 +15,10 @@ on:
       - "feat/blind-sniper-browser-adapter-2026-11-08"
     paths:
       - "scripts/blind_sniper_browser.py"
+      - "scripts/blind_sniper_browser_dispatch.py"
       - "scripts/run_blind_sniper_browser_e2e.py"
       - "tests/test_blind_sniper_browser.py"
+      - "tests/test_blind_sniper_browser_dispatch.py"
       - "tests/fixtures/browser/**"
       - ".github/workflows/blind-sniper-browser.yml"
   workflow_dispatch:
@@ -42,8 +46,10 @@ jobs:
           npm install --global agent-browser@0.41.2
           agent-browser install --with-deps
           agent-browser --version
-      - name: Run browser policy unit tests
-        run: python -m unittest discover -s tests -p 'test_blind_sniper_browser.py' -v
+      - name: Run browser adapter and native lease-dispatch tests
+        run: |
+          python -m unittest discover -s tests -p 'test_blind_sniper_browser.py' -v
+          python -m unittest discover -s tests -p 'test_blind_sniper_browser_dispatch.py' -v
       - name: Run real Chromium local-fixture acceptance
         run: python scripts/run_blind_sniper_browser_e2e.py
       - name: Upload browser evidence
