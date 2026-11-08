@@ -125,7 +125,7 @@ def run_cycle(*, cycle: int, base_url: str, root_state_dir: Path, base_run_id: s
             step_id=step_id, action=action, args=args, state_dir=browser_dir,
         )
         if result["receipt"]["exit_code"] != 0:
-            raise RuntimeError(f"{action} failed: {result['error'][:2000]}")
+            raise RuntimeError(f"{action} failed: error={result['error'][:1000]} output={result['output'][:1000]}")
         results[step_id] = result
 
     expected_text = f"Submitted: Ada-{cycle}"
