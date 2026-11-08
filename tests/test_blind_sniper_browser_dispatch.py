@@ -113,6 +113,19 @@ class BrowserDispatchLeaseTests(unittest.TestCase):
             self.dispatch()
         self.assertEqual(len(FakeAdapter.calls), 1)
 
+    def test_interrupted_started_only_step_requires_reconciliation(self):
+        self.ledger.append(
+            task_id=self.task_id, event_type="BROWSER_ACTION_STARTED",
+            payload={
+                "owner_id": self.owner_id, "run_id": "run-1",
+                "session_id": "session-1", "step_id": "step-1", "action": "snapshot",
+            },
+            idempotency_key="browser:run-1:session-1:step-1:started",
+        )
+        with self.assertRaisesRegex(BrowserDispatchError, "reconcile"):
+            self.dispatch()
+        self.assertEqual(FakeAdapter.calls, [])
+
 
 if __name__ == "__main__":
     unittest.main()
