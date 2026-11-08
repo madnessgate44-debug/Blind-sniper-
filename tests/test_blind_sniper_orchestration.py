@@ -316,5 +316,27 @@ class OrchestrationEngineTests(unittest.TestCase):
             self.assertEqual(runtime.TaskLedger(ledger).task_history("BS-LIFECYCLE-003")["event_count"], 4)
 
 
+    def test_host_forbidden_action_cannot_be_overridden_by_owner_approval_record(self):
+        plan = runtime.build_plan({
+            "task_id": "BS-SEC-004",
+            "objective": "Attempt a prohibited repository operation",
+            "workflow": "task-control-loop",
+            "requested_actions": ["force_push"],
+            "forbidden_actions": [],
+        })
+        self.assertIn("force_push", plan["constraints"]["forbidden_actions"])
+        state = runtime.create_task_state(plan)
+        for target in ("INSPECTING", "SPECIFIED", "PLANNED"):
+            state = runtime.transition_task(state, target)
+        approval = {
+            "action": "force_push",
+            "approver": "Ahmed",
+            "verbatim_words": "Ahmed: I approve force_push for BS-SEC-004",
+            "timestamp": "2026-11-08T15:00:00+02:00",
+        }
+        with self.assertRaisesRegex(runtime.RuntimeErrorBase, "host policy forbids"):
+            runtime.transition_task(state, "EXECUTING", approval_records=[approval])
+
+
 if __name__ == "__main__":
     unittest.main()
