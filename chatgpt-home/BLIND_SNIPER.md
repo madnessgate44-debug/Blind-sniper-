@@ -438,3 +438,13 @@ Required supporting records:
 **Communication rule:** Brain #292 is the current Owner-facing coordination hub. Brain #240 remains a legacy Watcher/OpenHands loop until OpenHands/Watcher explicitly reconciles its purpose. Do not retarget scripts or re-enable historical event automation blindly. A GitHub `@openhands` mention returned a bot response and session ID in comment 6720280271; this proves a receive path, not task completion. Require correlated task acknowledgment, artifacts and independent verification.
 
 **Execution rule:** Use direct GitHub tools for operations they expose. Use GitHub Actions or a verified cloud runner for code execution. Use Forge only when the actual browser tool is present in the ChatGPT tool inventory. If an interface is absent, report the exact blocker and continue through verified alternatives; never pretend a browser session or terminal exists.
+
+
+## 1B. Complete agent environment
+The complete repository-backed capability map is `chatgpt-home/ENVIRONMENT_MANIFEST.md`. For any non-trivial task:
+1. Select and read the relevant `chatgpt-home/skills/*/SKILL.md` before execution.
+2. Select a specialist contract from `chatgpt-home/agents/` when delegation or a distinct review role is useful.
+3. Check `chatgpt-home/tools/TOOL_REGISTRY.md` against the active session's actual tool inventory; do not assume a documented connector is callable.
+4. Follow the matching workflow under `chatgpt-home/workflows/` and use the corresponding artifact template.
+5. Use the adapter contract to record dispatch, status, artifacts and callback evidence.
+6. Keep Codex TOML examples as host templates only; they do not change ChatGPT's own settings.
