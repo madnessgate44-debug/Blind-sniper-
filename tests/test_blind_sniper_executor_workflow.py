@@ -58,9 +58,13 @@ class ExecutorWorkflowContractTests(unittest.TestCase):
         self.assertIn("actions/download-artifact@v4", self.text)
         self.assertIn("ops/receipts/", self.text)
 
-    def test_checkout_is_read_only_and_sparse(self):
+    def test_checkout_is_read_only(self):
+        # Read-only is enforced by the job's contents:read permission plus
+        # persist-credentials:false, not by sparse-checkout. Sparse checkout was
+        # removed because the test suite reads .github/workflows and .blind-sniper.
         self.assertIn("persist-credentials: false", self.text)
-        self.assertIn("sparse-checkout:", self.text)
+        self.assertIn("contents: read", self.text)
+        self.assertNotIn("sparse-checkout:", self.text)
 
     def test_publish_handles_stripped_artifact_path(self):
         # upload-artifact@v4 strips the common parent, so publish must find the

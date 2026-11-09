@@ -43,17 +43,12 @@ jobs:
             exit 64
           fi
 
-      - name: Checkout named branch (read-only, sparse)
+      - name: Checkout branch (read-only)
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 1
           persist-credentials: false
-          sparse-checkout: |
-            scripts/
-            tests/
-            chatgpt-home/
-          sparse-checkout-cone-mode: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
