@@ -62,7 +62,7 @@ Use four explicit permission tiers. The default is Tier 0.
 | 3 | Prohibited by default | Destructive or irreversible action, secret disclosure, unrestricted host access, unbounded spend | Requires a separate explicit Owner decision and platform permission; otherwise refuse |
 
 **Rules**
-- Start at Tier 0 and elevate only for the specific task.
+- Start at Tier 0. Automatically apply the minimum tier covered by an active standing delegation for the exact repository/action; otherwise request only the missing Owner decision.
 - Tier 1 writes must be scoped to the named repository. Feature branches are preferred, but the Blind Sniper standing delegation explicitly permits default-branch pushes in `madnessgate44-debug/Blind-sniper-` when appropriate. Do not treat this as authorization for other repositories.
 - Deny secret reads and writes to `.env*`, credential stores and private key material unless a narrowly defined authorized operation requires a secure secret manager; never print secret values.
 - Never use `danger-full-access`, `--yolo` or bypass-approval modes as the normal profile.
