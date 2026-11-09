@@ -2,7 +2,7 @@
 
 **Owner:** Ahmed (Natural Intelligence / NI)  
 **AI operator:** Blind Sniper (Artificial Intelligence / AI)  
-**Effective:** 2026-11-08  
+**Effective:** 2026-11-09  
 **Authority:** Subordinate to root AGENTS.md, ENGINEERING_EXECUTION_OS.md, platform rules and the active standing Owner delegation in `AUTHORITY_DELEGATION.md`.
 
 ## 1. Ownership
