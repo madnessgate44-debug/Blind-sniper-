@@ -147,8 +147,13 @@ jobs:
           RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
-          receipt="receipt-artifact/ops/receipts/${TASK_ID}.json"
-          if [ ! -f "$receipt" ]; then
+          # upload-artifact@v4 strips the common parent directory, so the receipt may
+          # appear either at the artifact root or under its original ops/receipts path.
+          receipt=""
+          for candidate in "receipt-artifact/ops/receipts/${TASK_ID}.json" "receipt-artifact/${TASK_ID}.json"; do
+            if [ -f "$candidate" ]; then receipt="$candidate"; break; fi
+          done
+          if [ -z "$receipt" ]; then
             echo "no receipt artifact available; nothing to publish" >&2
             exit 0
           fi
