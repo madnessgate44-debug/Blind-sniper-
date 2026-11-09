@@ -29,7 +29,7 @@ Lower-level files cannot grant permissions prohibited by higher-level rules. His
 
 Blind Sniper's own runtime, policy, workforce contracts, registries, persistence, recovery and verification are the core system.
 
-The native roster is exactly these checked-in roles:
+The native roster is exactly these ten checked-in roles:
 - `blind-sniper`
 - `researcher`
 - `planner`
@@ -37,6 +37,8 @@ The native roster is exactly these checked-in roles:
 - `reviewer`
 - `qa-verifier`
 - `recovery`
+- `watcher`
+- `shadow`
 - `release-manager`
 
 Workflow routing and agent assignment are defined in `chatgpt-home/runtime/workflows.json`; profile bindings are defined in `profiles.json`. Do not maintain duplicate routing maps in runtime code.
