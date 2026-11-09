@@ -35,13 +35,14 @@ Prevent duplicate framework implementation and identify the smallest viable path
 ### 3.1 Current repository facts
 
 - PR #16 is open and draft.
-- Head: `feat/allowlisted-executor-2026-11-09` at `025091cff34829d0a641d626357853d40c5dee7f`.
+- Head: `feat/allowlisted-executor-2026-11-09` at `7c3965bbfd3e2ccff44c59fc74ee7cd87f5b04ff` (updated 2026-11-09; was `025091c...`).
 - Base: `fix/ledger-compact-bounds-2026-11-09` at `86c9b6277a00093b3d94a8baf065eacfd1a66a08`.
-- It contains four changed files and seven commits.
-- Its exact-head GitHub Actions runs concluded successfully:
-  - Runtime Registry: `42530706483`
-  - Engineering Execution OS Compliance: `42530706493`
-  - Environment Validation: `42530706497`
+- It contains six changed files and twenty-two commits (updated 2026-11-09; was four files / seven commits).
+- Its exact-head GitHub Actions runs concluded successfully (head `7c3965b`, re-verified 2026-11-09):
+  - Runtime Registry: `42557468228`
+  - Environment Validation: `42557468268`
+  - Engineering Execution OS Compliance: `42557468229`
+  - Allowlisted Executor: `42557462728` (artifact `13647678570`)
 - The workflow job summaries report successful steps. They do not, by themselves, establish executor lifecycle correctness or independent review.
 - GitHub reports `mergeable=true` / `mergeable_state=clean`; this is a Git mergeability signal, not acceptance.
 - Formal review submissions: none.
@@ -82,7 +83,7 @@ Current observed chain:
 
 - PR #14 merged into `feat/blind-sniper-orchestration-integration-2026-11-08` at `431ff42040f7aa8f0bb21ea1515cf2bb20d34d0c`.
 - PR #15 targets the PR #14 head branch and has head `86c9b6277a00093b3d94a8baf065eacfd1a66a08`.
-- PR #16 targets PR #15's head branch and has head `025091cff34829d0a641d626357853d40c5dee7f`.
+- PR #16 targets PR #15's head branch and has head `7c3965bbfd3e2ccff44c59fc74ee7cd87f5b04ff` (updated 2026-11-09; was `025091c...`).
 - PR #13 is a separate draft design PR targeting the orchestration integration branch; it is not in PR #15/#16's direct head-base chain.
 - PR #9 is another draft E2E simulation branch; it reports a dirty merge state and is not a prerequisite for adopting the bounded executor.
 - The architecture documentation branch in this repository is separate from that executor stack. Do not retarget or merge these branches merely to make the graph look linear.
