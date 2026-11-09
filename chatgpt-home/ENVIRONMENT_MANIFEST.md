@@ -31,15 +31,15 @@
 5. Every workflow has entry conditions, states, idempotency, retries, timeout, evidence and stop conditions.
 6. Every run is correlated to a task ID, repository, base SHA, worker/session ID and resulting SHA.
 7. Isolate concurrent writes by branch/worktree. Never have two agents mutate one working tree concurrently.
-8. Default to read-only and least privilege. Workspace writes require scoped authorization. Consequential operations require Owner approval.
-9. No paid resource, credential rotation, secret mutation, merge, production deployment or permission expansion without explicit Owner approval.
+8. Default to read-only outside an active delegation. Within madnessgate44-debug/Blind-sniper-, the standing Owner delegation authorizes scoped repository writes, pushes, PR merges, CI/CD edits and eligible deployments without repeat approval; retain least privilege.
+9. No paid resource, credential rotation, secret mutation/disclosure or permission expansion. Merges and production deployments are permitted only within the active repository delegation and after the release gate passes.
 10. Do not claim background execution unless a real trigger, runner, delivery route and successful run are verified.
 
 ## Execution modes
 
 - **Native:** Blind Sniper executes in the current ChatGPT session using exposed tools.
 - **Portable:** Task envelope and artifacts are persisted for another session or external worker.
-- **Audited:** Isolated branch/worktree, independent review, test evidence and explicit approval gates for high-risk changes.
+- **Audited:** Isolated branch/worktree, independent review, test evidence and either active standing delegation or explicit Owner approval for high-risk changes.
 
 ## Readiness gates
 
