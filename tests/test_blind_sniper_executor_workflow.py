@@ -62,6 +62,13 @@ class ExecutorWorkflowContractTests(unittest.TestCase):
         self.assertIn("persist-credentials: false", self.text)
         self.assertIn("sparse-checkout:", self.text)
 
+    def test_publish_handles_stripped_artifact_path(self):
+        # upload-artifact@v4 strips the common parent, so publish must find the
+        # receipt at the artifact root as well as under its original path.
+        publish = self.text.split("publish-receipt:", 1)[1]
+        self.assertIn("receipt-artifact/ops/receipts/${TASK_ID}.json", publish)
+        self.assertIn("receipt-artifact/${TASK_ID}.json", publish)
+
     def test_unknown_command_is_refused(self):
         self.assertIn("not in the allowlist", self.text)
 
