@@ -62,6 +62,20 @@
       "path": "chatgpt-home/agents/recovery.md",
       "role": "diagnose failed runs and restore safe state",
       "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "watcher",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/watcher.md",
+      "role": "Task progress observation, queue monitoring and correlated status reporting",
+      "status": "native_contract_present_runtime_trigger_not_verified"
+    },
+    {
+      "id": "shadow",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/shadow.md",
+      "role": "Independent adversarial audit of implementation, evidence, security and closure",
+      "status": "native_contract_present_independent_execution_identity_not_verified"
     }
   ],
   "delegation_contract": {
