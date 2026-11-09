@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0.0",
+  "controller": "blind-sniper",
+  "concurrency": {
+    "max_parallel_writers": 1,
+    "read_only_reviewers_may_run_concurrently": true,
+    "isolated_branch_required_for_each_writer": true
+  },
+  "agents": [
+    {
+      "id": "blind-sniper",
+      "source": "native-operating-contract",
+      "role": "AI operating lead and dispatcher",
+      "authority": "coordinates; does not override Owner gates",
+      "status": "active_in_chat_session"
+    },
+    {
+      "id": "release-manager",
+      "source": "openhands-library",
+      "role": "release planning and gates",
+      "status": "reference_profile_present",
+      "native_contract_path": "chatgpt-home/agents/release-manager.md"
+    },
+    {
+      "id": "researcher",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/researcher.md",
+      "role": "primary-source technical and product research",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "planner",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/planner.md",
+      "role": "requirements decomposition and dependency planning",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "engineer",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/engineer.md",
+      "role": "bounded implementation",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "reviewer",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/reviewer.md",
+      "role": "independent correctness and security review",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "qa-verifier",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/qa-verifier.md",
+      "role": "test design and runtime acceptance",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "recovery",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/recovery.md",
+      "role": "diagnose failed runs and restore safe state",
+      "status": "native_contract_present_execution_depends_on_host_or_worker"
+    },
+    {
+      "id": "watcher",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/watcher.md",
+      "role": "Task progress observation, queue monitoring and correlated status reporting",
+      "status": "native_contract_present_runtime_trigger_not_verified"
+    },
+    {
+      "id": "shadow",
+      "source": "native-blind-sniper-contract",
+      "path": "chatgpt-home/agents/shadow.md",
+      "role": "Independent adversarial audit of implementation, evidence, security and closure",
+      "status": "native_contract_present_independent_execution_identity_not_verified"
+    }
+  ],
+  "delegation_contract": {
+    "required_fields": [
+      "task_id",
+      "objective",
+      "repository",
+      "base_commit",
+      "allowed_paths",
+      "forbidden_actions",
+      "acceptance_criteria",
+      "verification_commands",
+      "required_artifacts",
+      "report_destination"
+    ],
+    "return_fields": [
+      "task_id",
+      "status",
+      "session_or_run_id",
+      "branch",
+      "commit_sha",
+      "changed_files",
+      "test_commands",
+      "exit_codes",
+      "raw_output",
+      "artifact_links",
+      "blockers"
+    ]
+  }
+}

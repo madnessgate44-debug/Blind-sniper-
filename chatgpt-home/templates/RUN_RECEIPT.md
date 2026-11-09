@@ -1,0 +1,21 @@
+# Run Receipt
+
+- Task ID:
+- Correlation ID:
+- Adapter:
+- Trigger:
+- Worker:
+- Session/run ID:
+- Repository:
+- Branch:
+- Base SHA:
+- Head SHA:
+- Start/end timestamps:
+- Status:
+- Commands:
+- Exit codes:
+- Logs/artifacts:
+- Test summary:
+- Failures/skips:
+- Independent verification:
+- Next action:

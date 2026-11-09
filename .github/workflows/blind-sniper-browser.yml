@@ -1,0 +1,112 @@
+name: Blind Sniper Browser Adapter
+# E2E runs two native Chromium cycles, reconciles an interruption, and shares dispatcher/ledger module identities.
+# Includes atomic native task-lease reservation and replay-prevention tests.
+
+on:
+  pull_request:
+    paths:
+      - "scripts/blind_sniper_browser.py"
+      - "scripts/blind_sniper_ledger.py"
+      - "scripts/blind_sniper_browser_dispatch.py"
+      - "scripts/run_blind_sniper_browser_e2e.py"
+      - "scripts/run_blind_sniper_browser_persistence_probe.py"
+      - "tests/test_blind_sniper_browser.py"
+      - "tests/test_blind_sniper_browser_dispatch.py"
+      - "tests/fixtures/browser/**"
+      - "ops/oracle-free/**"
+      - ".github/workflows/blind-sniper-browser.yml"
+  push:
+    branches:
+      - "feat/blind-sniper-browser-adapter-2026-11-08"
+    paths:
+      - "scripts/blind_sniper_browser.py"
+      - "scripts/blind_sniper_browser_dispatch.py"
+      - "scripts/run_blind_sniper_browser_e2e.py"
+      - "tests/test_blind_sniper_browser.py"
+      - "tests/test_blind_sniper_browser_dispatch.py"
+      - "tests/fixtures/browser/**"
+      - "ops/oracle-free/**"
+      - ".github/workflows/blind-sniper-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned agent-browser
+        run: |
+          npm install --global agent-browser@0.41.2
+          agent-browser install --with-deps
+          agent-browser --version
+      - name: Validate Oracle host bootstrap and persistence probe syntax
+        run: |
+          bash -n ops/oracle-free/bootstrap-self-hosted-runner.sh
+          python -m py_compile scripts/run_blind_sniper_browser_persistence_probe.py
+      - name: Run browser adapter and native lease-dispatch tests
+        run: |
+          python -m unittest discover -s tests -p 'test_blind_sniper_browser.py' -v
+          python -m unittest discover -s tests -p 'test_blind_sniper_browser_dispatch.py' -v
+      - name: Run real Chromium local-fixture acceptance
+        run: python scripts/run_blind_sniper_browser_e2e.py
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blind-sniper-browser-${{ github.run_id }}
+          path: .blind-sniper/browser/
+          if-no-files-found: warn
+          retention-days: 3
+  persistent-host-open:
+    if: github.event_name == 'workflow_dispatch' && vars.BLIND_SNIPER_SELF_HOSTED_ENABLED == 'true'
+    runs-on: [self-hosted, linux, ARM64, blind-sniper-browser]
+    timeout-minutes: 10
+    env:
+      BLIND_SNIPER_BROWSER_STATE_DIR: /var/lib/blind-sniper/browser
+      BLIND_SNIPER_BROWSER_IDLE_TIMEOUT: "0"
+      BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS: 127.0.0.1,localhost
+      BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS: ""
+      BLIND_SNIPER_BROWSER_WRITE_APPROVED: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Start fixture, open session and persist task lease
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory tests/fixtures/browser >/tmp/blind-sniper-fixture.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8765/ >/dev/null; then break; fi
+            sleep 1
+          done
+          python3 scripts/run_blind_sniper_browser_persistence_probe.py --phase open
+
+  persistent-host-verify:
+    if: github.event_name == 'workflow_dispatch' && vars.BLIND_SNIPER_SELF_HOSTED_ENABLED == 'true'
+    needs: persistent-host-open
+    runs-on: [self-hosted, linux, ARM64, blind-sniper-browser]
+    timeout-minutes: 10
+    env:
+      BLIND_SNIPER_BROWSER_STATE_DIR: /var/lib/blind-sniper/browser
+      BLIND_SNIPER_BROWSER_IDLE_TIMEOUT: "0"
+      BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS: 127.0.0.1,localhost
+      BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS: ""
+      BLIND_SNIPER_BROWSER_WRITE_APPROVED: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify the same live Chromium page survived the job boundary
+        run: python3 scripts/run_blind_sniper_browser_persistence_probe.py --phase verify

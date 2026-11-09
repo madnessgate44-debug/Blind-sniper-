@@ -1,0 +1,33 @@
+{
+  "task_id": "",
+  "run_id": "",
+  "executor": "",
+  "trigger": "",
+  "repository": "",
+  "branch": "",
+  "base_commit": "",
+  "result_commit": "",
+  "changed_files": [],
+  "commands": [
+    {
+      "command": "",
+      "exit_code": null,
+      "raw_output_excerpt": "",
+      "result": "NOT_RUN",
+      "timestamp": ""
+    }
+  ],
+  "artifacts": [],
+  "verification": {
+    "reviewer": "blind-sniper",
+    "status": "NOT_VERIFIED",
+    "criteria": []
+  },
+  "blockers": [],
+  "cost": {
+    "currency": "USD",
+    "amount": null,
+    "source": "unverified"
+  },
+  "completed_at": ""
+}

@@ -1,0 +1,413 @@
+{
+  "schema_version": "1.0.0",
+  "workflows": [
+    {
+      "id": "session-boot",
+      "trigger": "new_or_resumed_conversation",
+      "steps": [
+        "read_root_AGENTS_and_execution_OS",
+        "read_Blind_Sniper_entrypoint",
+        "load_memory_project_map_continuity_skills_catalog",
+        "inspect_current_GitHub_state",
+        "write_session_checkpoint"
+      ],
+      "execution": "conversation_procedure",
+      "status": "documented",
+      "native_contract_path": "chatgpt-home/workflows/session-boot.md"
+    },
+    {
+      "id": "research-and-synthesis",
+      "trigger": "research_request",
+      "steps": [
+        "define_question_and_scope",
+        "search_web_and_GitHub",
+        "fetch_primary_sources",
+        "compare_evidence",
+        "write_cited_brief_and_memory_update"
+      ],
+      "adapters": [
+        "web",
+        "parallel",
+        "github"
+      ],
+      "status": "available_in_current_session",
+      "agents": [
+        "researcher",
+        "planner"
+      ],
+      "routing": {
+        "priority": 60,
+        "keywords": [
+          "research",
+          "investigate",
+          "compare",
+          "look up",
+          "primary source",
+          "sources"
+        ]
+      }
+    },
+    {
+      "id": "task-control-loop",
+      "trigger": "owner_task",
+      "steps": [
+        "create_task_id",
+        "inspect_workspace",
+        "specify_acceptance_criteria",
+        "select_profile_skills_agents",
+        "check_authority_and_cost",
+        "dispatch_or_execute",
+        "capture_artifacts",
+        "verify_against_commit",
+        "sync_memory_and_report"
+      ],
+      "adapters": [
+        "github",
+        "openhands_dispatch",
+        "persistent_runner"
+      ],
+      "status": "partially_operational",
+      "native_contract_path": "chatgpt-home/workflows/task-lifecycle.md",
+      "agents": [
+        "blind-sniper",
+        "planner"
+      ]
+    },
+    {
+      "id": "inspect-plan-implement-verify",
+      "trigger": "engineering_task",
+      "steps": [
+        "inspect_files_and_baseline",
+        "map_requirements_to_files",
+        "create_isolated_branch",
+        "implement_minimum_change",
+        "run_relevant_tests",
+        "inspect_diff",
+        "open_PR",
+        "record_evidence"
+      ],
+      "adapters": [
+        "github",
+        "persistent_runner"
+      ],
+      "status": "repository_changes_and_PR_available_ci_trigger_dependent",
+      "native_contract_path": "chatgpt-home/workflows/task-lifecycle.md",
+      "agents": [
+        "planner",
+        "engineer",
+        "qa-verifier",
+        "reviewer"
+      ],
+      "routing": {
+        "priority": 100,
+        "keywords": [
+          "fix",
+          "implement",
+          "build",
+          "patch",
+          "refactor",
+          "bug",
+          "write code",
+          "test"
+        ]
+      }
+    },
+    {
+      "id": "independent-review",
+      "trigger": "PR_or_release_candidate",
+      "steps": [
+        "read_requirements",
+        "inspect_diff",
+        "run_or_inspect_tests",
+        "audit_security_scope_and_regressions",
+        "publish_findings"
+      ],
+      "adapters": [
+        "github"
+      ],
+      "status": "read_only_review_available",
+      "native_contract_path": "chatgpt-home/templates/REVIEW_REPORT.md",
+      "agents": [
+        "reviewer",
+        "qa-verifier",
+        "shadow"
+      ],
+      "routing": {
+        "priority": 80,
+        "keywords": [
+          "security review",
+          "independent review",
+          "audit diff",
+          "review this diff",
+          "review pull request",
+          "review"
+        ]
+      }
+    },
+    {
+      "id": "release-gate",
+      "trigger": "release_request",
+      "steps": [
+        "inspect_release_candidate",
+        "verify_all_acceptance_criteria",
+        "check_rollback_and_observability",
+        "obtain_owner_approval",
+        "deploy_or_merge",
+        "post_release_smoke",
+        "record_receipt"
+      ],
+      "adapters": [
+        "github",
+        "vercel"
+      ],
+      "status": "approval_gated",
+      "native_contract_path": "chatgpt-home/workflows/release-gate.md",
+      "required_capabilities": {
+        "github": [
+          "merge"
+        ],
+        "vercel": [
+          "deploy"
+        ]
+      },
+      "agents": [
+        "release-manager",
+        "qa-verifier"
+      ],
+      "routing": {
+        "priority": 120,
+        "keywords": [
+          "deploy",
+          "release",
+          "merge to main",
+          "merge pull request",
+          "default branch push",
+          "ci/cd edit"
+        ]
+      }
+    },
+    {
+      "id": "openhands-two-way-handoff",
+      "trigger": "GitHub_issue_comment_mention",
+      "steps": [
+        "post_correlated_task_envelope",
+        "capture_bot_session_receipt",
+        "retrieve_session_result",
+        "verify_artifacts",
+        "post_correlated_ack"
+      ],
+      "adapters": [
+        "github",
+        "openhands_dispatch"
+      ],
+      "status": "partially_verified_session_results_returned_in_brain_comments_direct_chatgpt_api_not_exposed",
+      "native_contract_path": "chatgpt-home/workflows/agent-handoff.md",
+      "required_capabilities": {
+        "openhands_dispatch": [
+          "session_result_retrieval"
+        ]
+      }
+    },
+    {
+      "id": "forge-browser-roundtrip",
+      "trigger": "ChatGPT_browser_task",
+      "steps": [
+        "authenticate_MCP_endpoint",
+        "register_connector",
+        "discover_tool_allowlist",
+        "execute_read_only_browser_task",
+        "capture_audit_log",
+        "verify_result"
+      ],
+      "adapters": [
+        "forge_browser_mcp"
+      ],
+      "status": "blocked_durable_host_and_chatgpt_connector_registration",
+      "required_capabilities": {
+        "forge_browser_mcp": [
+          "authenticated_browser_interaction"
+        ]
+      }
+    },
+    {
+      "id": "persistent-browser-host-acceptance",
+      "trigger": "owner_provisioned_self_hosted_runner_and_manual_workflow_dispatch",
+      "steps": [
+        "provision_Oracle_Always_Free_ARM64_VM_within_free_quotas",
+        "install_pinned_agent_browser_and_Chrome_for_Testing_ARM64",
+        "register_repository_scoped_GitHub_runner",
+        "enable_BLIND_SNIPER_SELF_HOSTED_ENABLED_repository_variable",
+        "open_local_fixture_in_job_one_with_persistent_task_lease",
+        "end_job_one_without_closing_browser_session",
+        "recover_same_browser_session_and_page_in_job_two",
+        "verify_persistent_task_lease_and_canonical_receipts",
+        "close_browser_and_release_lease",
+        "record_host_and_cross_job_acceptance_evidence"
+      ],
+      "adapters": [
+        "agent_browser_cli",
+        "persistent_runner",
+        "github"
+      ],
+      "status": "prepared_owner_gated_not_provisioned",
+      "required_capabilities": {
+        "agent_browser_cli": [
+          "persistent_browser_daemon_across_jobs",
+          "session_recovery_after_runner_job_boundary"
+        ],
+        "persistent_runner": [
+          "self_hosted_arm64_runner",
+          "persistent_state_directory"
+        ]
+      }
+    },
+    {
+      "id": "continuous-autonomy",
+      "trigger": "scheduled_or_event_receiver",
+      "steps": [
+        "receive_task_event",
+        "deduplicate",
+        "dispatch",
+        "retry_with_loop_breaker",
+        "persist_state",
+        "deliver_report"
+      ],
+      "adapters": [
+        "automation",
+        "openhands_dispatch",
+        "persistent_runner"
+      ],
+      "status": "not_verified_do_not_claim_background_execution",
+      "required_capabilities": {
+        "automation": [
+          "background_execution_receiver"
+        ],
+        "persistent_runner": [
+          "persistent_runner"
+        ]
+      }
+    },
+    {
+      "id": "recovery-and-reconciliation",
+      "trigger": "delivery_or_continuity_failure",
+      "steps": [
+        "freeze_writes",
+        "inspect_last_verified_checkpoint",
+        "recover_source_artifacts",
+        "reconcile_task_and_session_ids",
+        "verify_integrity",
+        "restore_safe_state",
+        "record_recovery_receipt"
+      ],
+      "adapters": [
+        "github",
+        "files",
+        "openhands_dispatch"
+      ],
+      "status": "available_read_only_recovery_write_gated",
+      "native_contract_path": "chatgpt-home/workflows/session-close.md",
+      "agents": [
+        "recovery",
+        "planner",
+        "watcher"
+      ],
+      "routing": {
+        "priority": 70,
+        "keywords": [
+          "recover",
+          "restore",
+          "reconcile",
+          "continuity failure",
+          "resume interrupted task"
+        ]
+      }
+    },
+    {
+      "id": "conversation-archive-export",
+      "trigger": "owner_requests_chat_history_archive",
+      "steps": [
+        "obtain_authorized_conversation_export",
+        "verify_scope_and_source",
+        "redact_secrets_and_sensitive_data",
+        "normalize_transcript_metadata",
+        "store_in_private_or_owner-approved_repository_path",
+        "index_for_search",
+        "verify_export_completeness",
+        "record_archive_receipt"
+      ],
+      "adapters": [
+        "chatgpt_history_export",
+        "github"
+      ],
+      "status": "blocked_no_native_chat_history_export_action",
+      "required_capabilities": {
+        "chatgpt_history_export": [
+          "export_conversations"
+        ]
+      }
+    },
+    {
+      "id": "native-browser-acceptance",
+      "trigger": "GitHub Actions push, pull_request or workflow_dispatch",
+      "steps": [
+        "install pinned agent-browser CLI",
+        "install Chromium and Linux dependencies",
+        "verify task EXECUTING state and active owner lease before every browser action",
+        "reserve run/session/step idempotency key in canonical task ledger",
+        "persist browser action receipt to canonical task ledger",
+        "run browser adapter policy unit tests",
+        "start local controlled fixture",
+        "exercise tabs list/create/switch/close and iframe frame switching",
+        "exercise approved workspace-contained upload and bounded download",
+        "export the current page to PDF inside the artifact workspace",
+        "navigate and capture accessibility snapshot",
+        "capture screenshot",
+        "fill fixture form with CI-only approval",
+        "verify resulting page state",
+        "persist correlated receipts",
+        "close browser session",
+        "upload short-retention evidence artifacts",
+        "run two consecutive real Chromium cycles through the native lease-gated dispatcher",
+        "simulate worker interruption after a read-only browser action and receipt persistence but before ledger completion",
+        "reject same-step retry before constructing a browser adapter",
+        "reconcile the persisted receipt and continue with a new close step",
+        "release the task lease and verify all correlated ledger events"
+      ],
+      "adapters": [
+        "agent_browser_cli"
+      ],
+      "status": "extended_native_actions_e2e_passed_persistent_host_not_provisioned",
+      "required_capabilities": {
+        "agent_browser_cli": [
+          "allowlisted_http_navigation",
+          "accessibility_snapshot",
+          "screenshot",
+          "structured_action_receipts",
+          "native_task_state_and_lease_gate",
+          "pre_action_step_reservation",
+          "canonical_ledger_browser_receipts",
+          "duplicate_and_interrupted_step_replay_block",
+          "two_cycle_native_dispatch_e2e",
+          "started_only_interruption_reconciliation",
+          "tabs_list_create_switch_close",
+          "iframe_frame_switching",
+          "workspace_contained_file_upload_with_approval",
+          "workspace_contained_file_download",
+          "pdf_export"
+        ]
+      }
+    }
+  ],
+  "native_workflow_library": "chatgpt-home/workflows/",
+  "native_template_library": "chatgpt-home/templates/",
+  "execution_engine": {
+    "path": "scripts/blind_sniper_runtime.py",
+    "contract": "chatgpt-home/runtime/EXECUTION_ENGINE.md",
+    "mode": "registry_driven_planning_and_guarded_state_machine",
+    "external_execution": "host_adapter_only"
+  },
+  "default_agent_selection": [
+    "blind-sniper",
+    "planner"
+  ]
+}

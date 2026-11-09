@@ -1,0 +1,31 @@
+{
+  "task_id": "BS-YYYYMMDD-NNN",
+  "objective": "",
+  "profile": "blind-sniper",
+  "repository": "",
+  "base_commit": "",
+  "allowed_paths": [],
+  "forbidden_actions": [
+    "merge",
+    "production_deploy",
+    "secret_mutation",
+    "permission_change",
+    "paid_provisioning",
+    "production_data_mutation"
+  ],
+  "skills": [],
+  "agents": [],
+  "acceptance_criteria": [],
+  "verification_commands": [],
+  "required_artifacts": [
+    "diff",
+    "test_output",
+    "commit_sha",
+    "verification_receipt"
+  ],
+  "report_destination": "",
+  "owner_approval": {
+    "required_for": [],
+    "status": "not_requested"
+  }
+}

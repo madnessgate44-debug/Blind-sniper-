@@ -1,0 +1,23 @@
+# Agent Task Envelope
+
+- Task ID:
+- Correlation ID:
+- Owner:
+- Controller:
+- Recipient:
+- Repository:
+- Base branch / SHA:
+- Allowed paths:
+- Outcome:
+- Requirements:
+- Acceptance tests:
+- Prohibited actions:
+- Permission tier:
+- Cost ceiling:
+- Timeout / retry:
+- Dispatch ID:
+- Receive ID:
+- Worker/session/run ID:
+- Required return artifacts:
+- Status:
+- Blockers:
