@@ -1,87 +1,94 @@
 ---
 name: blind-sniper-continuity
-description: Retrieve Blind Sniper's seven-file GitHub memory, synchronize verified continuity updates, and migrate complete historical ChatGPT transcripts without confusing summaries with raw history.
+description: Recover Blind Sniper's public technical state, maintain verified technical checkpoints, and handle authorized private-memory or transcript migration without exposing personal data.
+triggers: new or resumed session, status recovery, material technical change, authorized transcript migration
+risk: high
+required_tools: GitHub read access; scoped GitHub branch writes for public technical state; authorized private storage for private data
 ---
 
 # Blind Sniper Continuity Skill
 
-## Trigger
-Use whenever the Owner says "Blind Sniper", "Be Blind Sniper", "load OS" or "resume". The first action is to retrieve and follow `chatgpt-home/BLIND_SNIPER.md` as the canonical operating entrypoint. Also use whenever a session starts, the Owner says "resume", asks what was done before, asks to synchronize memory, asks to export/archive conversations, or material project decisions/work are completed.
+## Purpose
 
-## Source of truth
-Repository: `madnessgate44-debug/Blind-sniper-`
-Branch: `main`
-Directory: `chatgpt-home/`
+Maintain continuity for Blind Sniper without treating public repository files as private memory or confusing summaries with raw conversation history.
 
-## Capability A — retrieve all seven complete files
-1. Fetch the full current contents (no line-range truncation) of:
-   - `README.md`
-   - `OPERATING_PROFILE.md`
-   - `MEMORY.md`
-   - `PROJECTS.md`
-   - `CONVERSATION_CONTINUITY.md`
-   - `SKILLS_CATALOG.md`
-   - `SYNC_PROTOCOL.md`
-2. Verify each fetch returned non-empty content and a blob SHA.
-3. Read all content before acting on remembered context.
-4. Record retrieval time, branch, each path, SHA, and pass/fail in a checkpoint.
-5. If any file fails, mark the checkpoint PARTIAL/BLOCKED and do not claim a complete retrieval.
+## Prerequisites
 
-## Capability B — automatic incremental synchronization
-1. After material decisions, completed tasks, verified repository changes, or explicit "sync" requests, update the appropriate continuity file(s).
-2. Use evidence labels:
-   - `[VERIFIED]`: directly confirmed by a tool/source in this run.
-   - `[RECONSTRUCTED]`: summarized from prior context, not raw.
-   - `[UNVERIFIED]`: not confirmed.
-   - `[BLOCKED]`: could not be performed due to missing access/input.
-3. Preserve history. Append dated checkpoints; do not silently erase or rewrite prior decisions.
-4. Use GitHub's fetch-before-update SHA workflow. Never perform concurrent writes to the same path.
-5. Re-fetch changed files and verify their resulting content and SHAs.
-6. Synchronize only what the current execution environment can actually access. A schedule is not proof that connectors, permissions, or raw chat history are available.
-7. If the connector cannot write, produce a ready-to-apply patch and state BLOCKED; do not claim success.
+- Read repository-root `AGENTS.md` and `ENGINEERING_EXECUTION_OS.md`.
+- Read `chatgpt-home/BLIND_SNIPER.md` and obey its current privacy boundary.
+- Resolve the current repository branch, commit and technical state before making changes.
+- Before any private-memory or transcript operation, verify the destination repository is private and explicitly authorized.
 
-## Capability C — full historical transcript migration
-**Goal:** migrate the complete user-provided ChatGPT data export, not a memory summary.
+## Permissions
 
-1. Obtain an authorized ChatGPT data export (typically the account export archive) from the user or a supported connected source. Do not claim the assistant can silently retrieve account-wide private history without such access.
-2. Inventory the archive before transformation. Preserve original files unchanged.
-3. Parse every conversation record, retaining stable conversation IDs, message IDs when present, timestamps, role/speaker, message order, content, tool events, and attachment references/metadata available in the export.
-4. Store:
-   - immutable raw export/archive;
-   - normalized per-conversation transcripts;
-   - searchable index/manifest;
-   - separate reconstructed summaries and project memory.
-5. Deduplicate only by stable IDs or exact cryptographic hashes; never merge merely similar conversations.
-6. Generate a migration manifest containing archive filename/hash, conversation count, message count, attachment count, parse failures, duplicates, and per-conversation status.
-7. Reconcile parsed counts against the export's own inventory where available. Preserve unsupported records and log them as unparsed; do not discard silently.
-8. Verify representative transcripts against original raw records and verify all output files/checksums.
-9. Declare `MIGRATION COMPLETE` only when all archive entries are accounted for and all discrepancies are explained. Otherwise report `PARTIAL` with exact gaps.
-10. Never invent missing timestamps, messages, IDs, or attachment contents. Never represent summaries as verbatim transcripts.
+- Public technical state may be updated only for material technical changes, using an isolated branch and fetch-before-update SHA checks.
+- Never read, quote, copy, index or migrate the public copies of `MEMORY.md`, `PROJECTS.md`, `CONVERSATION_CONTINUITY.md` or raw archives as personal context.
+- Never write private memory, personal/client details, credentials, raw transcripts or private attachments into the public Blind Sniper repository.
+- Private-memory and transcript operations remain BLOCKED until `blind-sniper-private-memory` exists and its private visibility is verified.
+- No history rewrite, default-branch push, merge, deployment or permission change without the required current-session authorization.
 
-## Checkpoint format
-Every run writes a dated checkpoint with:
-- identity: Blind Sniper;
-- task and run timestamp;
-- seven-file retrieval: PASS/PARTIAL plus all seven SHAs;
-- sync actions: paths, commit SHAs, verification;
-- transcript migration: NOT STARTED / BLOCKED / PARTIAL / COMPLETE with counts and evidence;
-- blockers, next action, and responsible actor.
+## Procedure
 
-## Safety and scope
-- Never commit secrets, credentials, tokens, passwords, or sensitive personal data.
-- Do not alter the Miss Noor application or unrelated product files while performing continuity maintenance.
-- Respect repository root `AGENTS.md` and `ENGINEERING_EXECUTION_OS.md`.
-- Do not claim automatic startup, background execution, transcript access, or successful sync unless verified in the current environment.
+### A. Technical state recovery
 
+1. Fetch the current branch and HEAD from GitHub; do not assume `main` is active.
+2. Read complete technical files from the active branch:
+   - `AGENTS.md`
+   - `ENGINEERING_EXECUTION_OS.md`
+   - `chatgpt-home/BLIND_SNIPER.md`
+   - `chatgpt-home/CURRENT_STATE.md`
+   - `chatgpt-home/runtime/README.md`
+   - `chatgpt-home/runtime/EXECUTION_ENGINE.md`
+   - `chatgpt-home/runtime/BUILD_PROGRESS.md`
+   - `chatgpt-home/runtime/workflows.json`
+   - `chatgpt-home/runtime/profiles.json`
+   - `chatgpt-home/runtime/agents.json`
+   - `chatgpt-home/runtime/capabilities.json`
+3. Verify each fetch is non-empty and record its branch/ref and blob SHA.
+4. Reconcile the current-state anchor against actual branches, PRs, commits and workflow runs.
+5. If a controlling or required technical file is missing, report PARTIAL/BLOCKED and do not claim complete boot.
 
-## Conversation-close synchronization (primary trigger)
-Run this workflow at the end of every substantive conversation, immediately before sending the closing response, whenever the assistant determines the current exchange is complete or the Owner says to stop/end/close it. This replaces a daily timer as the primary sync trigger.
+### B. Public technical checkpoint
 
-1. Review the current conversation for new decisions, instructions, completed work, verified findings, blockers, and next actions.
-2. Fetch the latest versions of the relevant continuity files from GitHub before editing. Do not rely on earlier copies or SHAs.
-3. Append a dated closeout entry to the appropriate file(s), with provenance labels and a concise summary. Preserve existing history. Include the conversation-close checkpoint and next-session pickup point.
-4. If there are no durable changes, do not create empty commits; still perform the seven-file retrieval check and record a no-change checkpoint only if a meaningful checkpoint file/location is designated.
-5. Verify each write by fetching the resulting file and checking its content and SHA. Report exact commits and any failures in the closing response.
-6. If GitHub connector access is unavailable, state that closeout sync is BLOCKED; provide the exact pending update in the response. Never claim it ran later in the background.
+1. After a material technical change, update only the public technical `chatgpt-home/CURRENT_STATE.md` and relevant technical progress records.
+2. Record repository, branch, baseline SHA, changed technical paths, verified checks, unverified checks, blockers and next technical action.
+3. Do not include personal context, private decisions, client information, raw chat text or private attachments.
+4. Fetch-before-update; write one file at a time; re-fetch and verify the resulting content and SHA.
+5. Preserve historical evidence and label old CI runs as historical when they do not cover the current commit.
+6. Do not create empty commits or claim scheduled/background synchronization.
 
-**Inactivity limitation:** The assistant cannot independently detect that a chat has become inactive, wake itself after the user leaves, or execute a deferred action after the conversation has ended unless a supported external event trigger is actually configured. Therefore, execute closeout synchronously while composing the final response, not after an assumed inactivity timeout. If a session is abandoned without a closing assistant turn, no closeout can be guaranteed.
+### C. Authorized private-memory and transcript migration
+
+1. First verify that `blind-sniper-private-memory` exists and is private; until then this capability is BLOCKED.
+2. Obtain an authorized ChatGPT data export from the user or a supported connected source.
+3. Preserve the original export unchanged in the verified private destination.
+4. Normalize conversation records while retaining stable IDs, timestamps, speaker/role, message order, content, tool events and attachment references available in the export.
+5. Keep immutable raw export, normalized transcripts, searchable index/manifest and reconstructed summaries separate.
+6. Deduplicate only by stable IDs or exact cryptographic hashes.
+7. Reconcile parsed conversation/message/attachment counts against the source inventory; log unparsed records and discrepancies.
+8. Verify representative transcripts against original records and verify output checksums.
+9. Never claim complete migration when any source records remain unaccounted for.
+10. Never put raw transcripts or private attachments in the public Blind Sniper repository.
+
+### D. Session close
+
+1. Review the current session for durable technical decisions, verified repository changes, blockers and next technical action.
+2. If there is a material public technical change, update the public technical state anchor only.
+3. If there is no material technical change, do not create an empty commit.
+4. If private storage is unavailable, do not create a public substitute; report private closeout as BLOCKED.
+5. Report exact branch, commit, changed paths, verification results and remaining blockers.
+
+## Evidence
+
+For each technical retrieval/write, record the exact path, branch/ref, blob SHA, action, resulting commit SHA and verification outcome. For transcript migration, record source archive hash, parsed counts, discrepancy counts, output hashes and destination privacy evidence. A summary is not a transcript.
+
+## Failure handling
+
+- Missing GitHub access, missing files or stale branch state: stop and report the exact missing evidence.
+- Public or unverified private destination: do not read/write private material; mark BLOCKED.
+- Partial export, parse failures or mismatched counts: mark PARTIAL and preserve source data.
+- Connector write failure: provide a scoped patch only if safe; do not claim synchronization.
+
+## Completion criteria
+
+Technical continuity is complete only when required technical files are retrieved from one corroborated branch and the checkpoint matches actual repository state. Private-memory or transcript migration is complete only when private destination visibility is verified and every source record is accounted for. These are separate completion states.
