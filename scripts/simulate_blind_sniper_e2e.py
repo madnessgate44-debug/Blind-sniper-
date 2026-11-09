@@ -247,7 +247,23 @@ def main() -> int:
             event for event in history["events"]
             if event["event_type"] in ("TASK_CREATED", "TASK_TRANSITIONED")
         ]
-        actual_states = [event["payload"]["state"]["status"] for event in state_events]
+        # The runtime stores compact state deltas (state_snapshot/state_delta) after the
+        # first event and legacy full snapshots ("state") only for imported tasks.
+        actual_states: list[str | None] = []
+        running_status: str | None = None
+        for event in state_events:
+            payload = event.get("payload", {})
+            legacy = payload.get("state")
+            if isinstance(legacy, dict):
+                running_status = legacy.get("status", running_status)
+            else:
+                snapshot = payload.get("state_snapshot")
+                if isinstance(snapshot, dict):
+                    running_status = snapshot.get("status", running_status)
+                delta = payload.get("state_delta")
+                if isinstance(delta, dict) and "status" in delta.get("set", {}):
+                    running_status = delta["set"]["status"]
+            actual_states.append(running_status)
         expected_states = [
             "REQUESTED", "INSPECTING", "SPECIFIED", "PLANNED",
             "EXECUTING", "VERIFYING", "REVIEWING", "CLOSED",
