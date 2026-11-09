@@ -43,7 +43,25 @@ def main() -> int:
     skills = load_json(RUNTIME / "skills.index.json")
     task = load_json(RUNTIME / "templates" / "TASK_ENVELOPE.json")
     receipt = load_json(RUNTIME / "templates" / "RUN_RECEIPT.json")
+    authority = load_json(RUNTIME / "authority.json")
 
+    delegations = authority.get("delegations", [])
+    check_unique(delegations, "id", "authority delegations")
+    active_delegations = [row for row in delegations if row.get("status") == "active"]
+    if len(active_delegations) != 1:
+        fail("authority.json: expected exactly one active standing delegation")
+    elif active_delegations[0].get("repository") != "madnessgate44-debug/Blind-sniper-":
+        fail("authority.json: active delegation repository scope is incorrect")
+    else:
+        actions = set(active_delegations[0].get("actions", []))
+        forbidden = set(active_delegations[0].get("forbidden_actions", []))
+        required_actions = {"merge", "merge_to_main", "default_branch_push", "ci_cd_edit", "workflow_edit", "deploy", "production_deploy", "release", "delete"}
+        if not required_actions.issubset(actions):
+            fail(f"authority.json: missing delegated actions {sorted(required_actions - actions)}")
+        if actions & (forbidden | {"force_push", "delete_branch", "credential_export", "secret_export", "disable_branch_protection", "unbounded_shell"}):
+            fail("authority.json: delegated actions overlap forbidden host actions")
+        if not {"secret_mutation", "permission_change", "paid_provisioning", "production_data_mutation"}.issubset(forbidden):
+            fail("authority.json: required exclusions are missing")
     adapters = caps.get("adapters", [])
     profile_rows = profiles.get("profiles", [])
     agent_rows = agents.get("agents", [])
