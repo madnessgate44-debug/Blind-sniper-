@@ -1,3 +1,41 @@
+# Blind Sniper build progress — current status
+
+**Snapshot:** 2026-11-10  
+**Default branch:** `main`  
+**Current main:** `9be328f9ffe5bf062fe6afce120e62396569cccc` (PR #34 merge)  
+**Open PRs:** 0 (live GitHub search)  
+**Architecture:** Native-first; runtime is a planner and guarded task state machine, not a system that spawns separate model processes.
+
+## Current verified system inventory
+
+- Profiles: 6; native agent roles: 10; capability adapters: 13; workflows: 18.
+- Native skills: 14; mirrored OpenHands skills/rules: 33.
+- Latest full runtime-registry + Python test checkpoint: `3290b60e1de0594b648c02763f986564be3da7b4` — 128 tests OK; runtime registry, skill discovery and Codex config validation passed.
+- PR #34 is documentation-only and merged at `9be328f9ffe5bf062fe6afce120e62396569cccc`. Exact-main OS Compliance run `42715516140` PASS; Environment Validation run `42715516348` PASS; Pages deployment run `42715514977` SUCCESS.
+- PR #34 completed BS-OS-004 D6 and D8: task record corrected with preserved historical status; legacy Codex architecture document marked HISTORICAL / SUPERSEDED; register addendum records both.
+- PR #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34 are merged. PR #9/#15/#16 are closed as superseded. PR #13 remains a design-only artifact.
+
+## Continuity and privacy status
+
+- Private continuity scaffold: `madnessgate44-debug/G/blind-sniper-continuity/` in owner-owned private repository `madnessgate44-debug/G`; repository visibility verified private.
+- Five non-empty files are present: README, MEMORY, PROJECTS, CONVERSATION_CONTINUITY and TRANSCRIPT_INDEX.
+- The scaffold is not a transcript archive. No transcripts are imported. Historical notes are summaries/reconstructions, not verbatim source records.
+- Recurring conversation synchronization and full transcript migration remain BLOCKED: no authorized ChatGPT export/source is available, and scheduled-task creation was blocked by the account's active-task limit. Do not misrepresent a repository integrity check as conversation synchronization.
+
+## Current limitations and remaining work
+
+1. **BS-RELEASE-001:** complete release acceptance before making any production-readiness claim. GitHub Pages deployment is a documentation/site publication, not proof of a production application release.
+2. **Branch protection:** `main` currently reports `protected=false`; no branch-protection write action is exposed in the connected GitHub toolset.
+3. **Executor durability:** bounded per-run execution (Option B) is implemented; durable cross-run queue/worker, heartbeat, cancellation and stale-worker supervision are not established. The Owner's product decision on whether to pursue durable execution remains open.
+4. **External execution:** direct OpenHands Cloud API dispatch/result retrieval and Forge browser MCP invocation are not callable/verified from this ChatGPT session. OpenHands PR activity is verified through GitHub artifacts, not a persistent direct API session.
+5. **Transcript source:** obtain a supported, authorized export or account-history connector before attempting migration; preserve source order, timestamps and identifiers.
+
+---
+
+# Historical implementation log — pre-2026-11-10 (preserved, not current status)
+
+The material below is the earlier 2026-11-08 build log. It is retained for provenance only. Any old branch, PR, test count, limitation or next-step statement below is superseded by the current status above and the live GitHub state.
+
 # Blind Sniper build progress — 8 November 2026
 
 **Architecture:** Native-first. Blind Sniper's own runtime, policy, workforce contracts, ledger and recovery are core. External agents are optional adapters.
