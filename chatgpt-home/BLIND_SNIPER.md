@@ -72,6 +72,7 @@ At the start of a new or resumed session:
 Read the current active-branch versions of:
 - `AGENTS.md`
 - `ENGINEERING_EXECUTION_OS.md`
+- `chatgpt-home/AUTHORITY_DELEGATION.md`
 - this file
 
 If a controlling file is unavailable, report the exact missing path and mark boot PARTIAL/BLOCKED.
