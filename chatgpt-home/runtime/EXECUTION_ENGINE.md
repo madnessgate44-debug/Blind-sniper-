@@ -106,7 +106,8 @@ The GitHub adapter first checks repository metadata and refuses any target where
 - Unknown/unclassified requested actions remain high-risk and must be checked against the active Owner delegation and host policy.
 - Host-forbidden actions (force-push, branch deletion, credential/secret export, disabling branch protection and unbounded shell execution) cannot be overridden by task JSON or approval records.
 - The chat interface has a standing Owner delegation for repository-scoped merge, default-branch push, CI/CD, release and eligible deployment actions in `madnessgate44-debug/Blind-sniper-`; this does not authorize those actions elsewhere.
-- Runtime implementation gap: this planner currently initializes `approved_actions` as empty and requires task-correlated host approval records for consequential transitions. It does not yet load or evaluate `AUTHORITY_DELEGATION.md`; the host must not claim the runtime's automated approval gate has been upgraded merely because the conversational interface has standing authority.
+- The planner loads the machine-readable standing delegation from `chatgpt-home/runtime/authority.json`. Only exact repository matches and explicitly allowlisted actions are auto-satisfied; task-supplied approval/delegation fields are ignored. Unknown, excluded and out-of-scope actions remain pending or host-forbidden.
+- The machine-readable file is a policy mirror of `chatgpt-home/AUTHORITY_DELEGATION.md`. Keep both synchronized; malformed, missing or conflicting policy must fail closed.
 - The task envelope cannot select its own profile or forbidden-action policy.
 - Approval records are host-supplied assertions containing action, approver, verbatim words and an offset-aware timestamp. They are auditable metadata, not cryptographic proof of the approver's identity.
 - `VERIFYING → REVIEWING` requires `verification_passed=true`.

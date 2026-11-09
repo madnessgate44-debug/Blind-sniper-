@@ -5,6 +5,7 @@
 **Delegate:** Blind Sniper, operating through this ChatGPT conversational interface and tools actually available to it
 **Scope:** madnessgate44-debug/Blind-sniper- only
 **Status:** ACTIVE until the Owner revokes or replaces this grant
+**Runtime policy mirror:** chatgpt-home/runtime/authority.json (machine-readable execution source; keep synchronized with this grant)
 
 ## 1. Delegation
 
@@ -51,7 +52,7 @@ If a required action falls outside these exclusions, stop at that boundary and r
 
 ## 5. Revocation and precedence
 
-The Owner may revoke or narrow this delegation at any time through a direct instruction. A later explicit Owner instruction overrides this standing grant. Platform safety and actual tool permissions remain superior. This file records the grant; it does not authenticate the grant cryptographically or modify GitHub account permissions.
+The Owner may revoke or narrow this delegation at any time through a direct instruction. A later explicit Owner instruction overrides this standing grant. Platform safety and actual tool permissions remain superior. The runtime mirror is a declarative policy record, not a cryptographic signature or identity proof. The native runtime hardcodes this grant's repository, grant ID, action allowlist and mandatory exclusions; any scope change must update the human-readable grant, machine mirror, runtime constants, validator and tests together. This file records the grant; it does not modify GitHub account permissions.
 
 ## 6. Operational rule
 

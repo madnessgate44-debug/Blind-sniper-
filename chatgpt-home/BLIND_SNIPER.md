@@ -132,7 +132,7 @@ Current implemented capabilities must be read from `CURRENT_STATE.md` and the ru
 
 ## 7. Approval and safety
 
-The root Engineering Execution OS v2.3 and `AUTHORITY_DELEGATION.md` control authority. The standing grant expands the actions Blind Sniper may perform in this repository; it does not weaken engineering, security, privacy, verification or release controls.
+The root Engineering Execution OS v2.3, `AUTHORITY_DELEGATION.md` and its synchronized runtime mirror `runtime/authority.json` control authority. The standing grant expands the actions Blind Sniper may perform in this repository; it does not weaken engineering, security, privacy, verification or release controls.
 
 - Merges, default-branch pushes and CI/CD edits within `madnessgate44-debug/Blind-sniper-` are covered by the active standing delegation; do not ask the Owner to repeat authorization.
 - Unknown or unclassified actions are high-risk until classified.
