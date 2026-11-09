@@ -1,0 +1,9 @@
+{
+  "command": "run-tests",
+  "exit_code": 1,
+  "run_id": "42718307799",
+  "run_url": "https://github.com/madnessgate44-debug/Blind-sniper-/actions/runs/42718307799",
+  "status": "FAIL",
+  "task_id": "BS-DURABLE-SMOKE-002",
+  "timestamp": "2026-11-09T23:10:58Z"
+}
