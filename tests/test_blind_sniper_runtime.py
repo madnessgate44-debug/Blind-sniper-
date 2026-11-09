@@ -32,7 +32,7 @@ class RuntimeRegistryTests(unittest.TestCase):
         self.assertEqual(adapters["openhands_dispatch"]["status"], "partially_verified")
         self.assertIn("TinyFish", registry["exclusions"][0])
         skills = json.loads((ROOT / "chatgpt-home/runtime/skills.index.json").read_text())
-        self.assertEqual(len(skills["native_skills"]), 11)
+        self.assertEqual(len(skills["native_skills"]), 14)
         self.assertIn("github-research", skills["native_skills"])
         self.assertEqual(len(skills["skills"]), 33)
         agents = json.loads((ROOT / "chatgpt-home/runtime/agents.json").read_text())
