@@ -155,9 +155,16 @@ Blind Sniper has task envelopes, workflow plans, guarded lifecycle transitions, 
 
 **Do not copy `ralph.sh` unchanged.** It calls Amp with `--dangerously-allow-all` and Claude with `--dangerously-skip-permissions`. Those defaults conflict with Blind Sniper's least-privilege and explicit approval model. Reuse the PRD/story sizing and progress-memory concepts only behind the native task ledger, scoped execution adapter, verification and approval gates.
 
-### 5.3 Mattzcarey source identity
+### 5.3 Mattzcarey source identity — resolved as unavailable
 
-The requested `mattzcarey/claude-code-agent-framework` could not be retrieved. `mattzcarey/shippie` is a separate public repository, but its description identifies it as an extendable code-review and QA agent, not the requested framework. It is not substituted in this audit. Confirm the intended repository before evaluating it.
+The requested `mattzcarey/claude-code-agent-framework` returns GitHub 404. Repository search scoped to `mattzcarey` did not find that exact repository. The missing identity is resolved as an invalid/unavailable source reference; no assets were imported.
+
+Nearby repositories were checked but are not equivalent replacements:
+- `mattzcarey/crossroads`: Cloudflare Durable Objects agent orchestration; MPL-2.0. It is a Cloudflare-specific runtime project, not the named Claude Code framework.
+- `mattzcarey/shippie`: extendable code-review and QA agent; not a general agent framework.
+- `mattzcarey/claude-code-action`: Claude Code GitHub action for PRs/issues; not the requested framework.
+
+No candidate is silently substituted. If one was intended, the Owner must explicitly select it before adoption.
 
 ## 6. Additional imported harness sources
 
@@ -266,3 +273,16 @@ This report is a static source and provenance audit. It does not certify runtime
 - Requested Mattzcarey path: https://github.com/mattzcarey/claude-code-agent-framework
 - Separate Mattzcarey repository (not substituted): https://github.com/mattzcarey/shippie
 - Additional sources: https://github.com/0xenzyme/agent-harness, https://github.com/SUNRNEHUI/agent-harness, https://github.com/os-factory/har
+
+
+## 14. BS-OS-001A registry reconciliation addendum — 2026-11-09
+
+The follow-on reconciliation is implemented on branch `feat/bs-os-001a-registry-reconciliation-2026-11-09`; main remains unchanged.
+
+- Four additional agent markdown profiles are preserved and explicitly classified in `runtime/agents.json:reference_profiles` as reference-only. The canonical `agents[]` roster remains exactly ten. The release-manager entry now identifies its native adapted contract and path.
+- `github-research` is added to the native skills index. Native skill count is now 11, and the native skills README and catalog were aligned.
+- The four orphaned workflow documents are connected to four new workflow registry entries: `idea-to-contract`, `isolated-execution-line`, `plugin-and-tool-onboarding`, and `verification-and-handoff`.
+- All 17 workflow registry entries now have an explicit `contract_mode`. Eleven entries reference nine markdown contracts; six are intentionally registry-only with reasons.
+- `agents/README.md`, `workflows/README.md`, `SKILLS_CATALOG.md`, `source-library/README.md` and `CURRENT_STATE.md` were reconciled.
+- The requested Mattzcarey repository identity is closed as unavailable (GitHub 404); nearby repositories were documented as non-equivalent candidates and not substituted.
+- Runtime registry validation, environment validation, CI and tests have not yet been run on this branch. These remain required before PR review.
