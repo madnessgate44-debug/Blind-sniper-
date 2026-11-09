@@ -77,10 +77,13 @@ class OrchestrationEngineTests(unittest.TestCase):
         with self.assertRaisesRegex(runtime.RuntimeErrorBase, "Owner approval is pending"):
             runtime.transition_task(state, "EXECUTING")
         state = runtime.transition_task(state, "EXECUTING", approval_records=[{
+            "approval_id": "approval-BS-TEST-005",
+            "task_id": "BS-TEST-005",
             "action": "production_deploy",
-            "approver": "Ahmed",
+            "approver": "OWNER",
             "verbatim_words": "Ahmed: I approve production_deploy for BS-TEST-005",
             "timestamp": "2026-11-08T13:00:00Z",
+            "expires_at": "2026-11-09T13:00:00Z",
         }])
         self.assertEqual(state["plan"]["approval"]["pending_actions"], [])
 
@@ -179,10 +182,13 @@ class OrchestrationEngineTests(unittest.TestCase):
         with self.assertRaises(runtime.RuntimeErrorBase):
             runtime.transition_task(state, "EXECUTING", approved_actions=["merge_to_main"])
         record = {
+            "approval_id": "approval-BS-SEC-002",
+            "task_id": "BS-SEC-002",
             "action": "merge_to_main",
-            "approver": "Ahmed",
+            "approver": "OWNER",
             "verbatim_words": "Ahmed: I approve merge_to_main for BS-SEC-002",
             "timestamp": "2026-11-08T13:00:00Z",
+            "expires_at": "2026-11-09T13:00:00Z",
         }
         state = runtime.transition_task(state, "EXECUTING", approval_records=[record])
         self.assertEqual(state["plan"]["approval"]["pending_actions"], [])
@@ -330,7 +336,7 @@ class OrchestrationEngineTests(unittest.TestCase):
             state = runtime.transition_task(state, target)
         approval = {
             "action": "force_push",
-            "approver": "Ahmed",
+            "approver": "OWNER",
             "verbatim_words": "Ahmed: I approve force_push for BS-SEC-004",
             "timestamp": "2026-11-08T15:00:00+02:00",
         }

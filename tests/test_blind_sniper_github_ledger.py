@@ -218,7 +218,7 @@ class GitHubContentsLedgerTests(unittest.TestCase):
             task_id="BS-GH-011", owner_id="remote-runner-a", lease_seconds=60,
             idempotency_key="eleven:claim",
         )
-        payload = {"state": {"task_id": "BS-GH-011", "status": "EXECUTING"}}
+        payload = {"state": {"task_id": "BS-GH-011", "status": "EXECUTING", "implementer_id": "remote-runner-a"}}
         with self.assertRaises(GitHubLedgerError):
             self.ledger.append_transition_if_lease(
                 task_id="BS-GH-011", owner_id="remote-runner-b", payload=payload,

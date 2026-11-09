@@ -322,12 +322,59 @@ def create_task_state(plan: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def validate_owner_approval(record: dict[str, Any], task_id: str, now: datetime | None = None) -> dict[str, str]:
+    if not isinstance(record, dict):
+        raise RuntimeErrorBase("Owner approval record must be an object")
+    approval_id = str(record.get("approval_id", "")).strip()
+    record_task = str(record.get("task_id", "")).strip()
+    action = str(record.get("action", "")).strip().lower()
+    approver = str(record.get("approver", "")).strip()
+    words = str(record.get("verbatim_words", "")).strip()
+    timestamp = str(record.get("timestamp", "")).strip()
+    expires_at = str(record.get("expires_at", "")).strip()
+    if not approval_id or record_task != task_id:
+        raise RuntimeErrorBase("Owner approval must have a unique approval_id bound to this task")
+    if not action or approver != "OWNER" or not words or task_id not in words or action not in words.lower():
+        raise RuntimeErrorBase("Owner approval must identify Ahmed, the exact action, and task ID in verbatim words")
+    try:
+        issued = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        expiry = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise RuntimeErrorBase("Owner approval requires valid timestamp and expires_at values") from exc
+    if issued.tzinfo is None or expiry.tzinfo is None or expiry <= issued:
+        raise RuntimeErrorBase("Owner approval timestamps must be offset-aware and expiry must follow issuance")
+    instant = now or datetime.now(timezone.utc)
+    if instant.tzinfo is None:
+        raise RuntimeErrorBase("Approval validation time must include a timezone")
+    if issued > instant or expiry <= instant:
+        raise RuntimeErrorBase("Owner approval is expired or not yet valid")
+    return {"approval_id": approval_id, "task_id": task_id, "action": action}
+
+
+def ensure_approvals_unused(ledger, records: list[dict[str, Any]]) -> None:
+    requested = {str(record.get("approval_id", "")).strip() for record in records}
+    if not requested or "" in requested:
+        raise RuntimeErrorBase("Every Owner approval requires an approval_id")
+    used = set()
+    for event in ledger.events():
+        payload = event.get("payload", {})
+        for record in payload.get("approval_records", []):
+            used.add(str(record.get("approval_id", "")))
+        imported = payload.get("import_approval")
+        if isinstance(imported, dict):
+            used.add(str(imported.get("approval_id", "")))
+    replayed = requested & used
+    if replayed:
+        raise RuntimeErrorBase(f"Owner approval already consumed: {sorted(replayed)}")
+
+
 def transition_task(
     state: dict[str, Any],
     target: str,
     evidence: dict[str, Any] | None = None,
     approved_actions: list[str] | None = None,
     approval_records: list[dict[str, Any]] | None = None,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     evidence = evidence or {}
     current = state.get("status")
@@ -339,26 +386,20 @@ def transition_task(
     plan = state.get("plan", {})
     approved = set()
     pending = set(plan.get("approval", {}).get("pending_actions", []))
-    for record in approval_records or []:
-        action = str(record.get("action", "")).strip().lower()
-        approver = str(record.get("approver", "")).strip()
-        words = str(record.get("verbatim_words", "")).strip()
-        timestamp = str(record.get("timestamp", "")).strip()
-        try:
-            parsed_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        except ValueError:
-            parsed_time = None
-        if action not in pending or approver != "Ahmed" or not words or parsed_time is None or parsed_time.tzinfo is None:
-            raise RuntimeErrorBase("Owner approval record requires a pending action, verbatim words, and an offset-aware timestamp")
-        approved.add(action)
     if target == "EXECUTING":
         forbidden = set(plan.get("constraints", {}).get("forbidden_actions", HOST_FORBIDDEN_ACTIONS))
         if pending & forbidden:
             raise RuntimeErrorBase(f"Execution blocked: host policy forbids {sorted(pending & forbidden)}")
         if plan.get("execution_readiness") == "BLOCKED":
             raise RuntimeErrorBase("Execution blocked: a required adapter or capability is blocked or unverified")
-        if pending - approved:
-            raise RuntimeErrorBase(f"Execution blocked: explicit Owner approval is pending for {sorted(pending - approved)}")
+    for record in approval_records or []:
+        validated = validate_owner_approval(record, str(state.get("task_id", "")), now)
+        action = validated["action"]
+        if action not in pending:
+            raise RuntimeErrorBase(f"Owner approval does not match a pending action: {action}")
+        approved.add(action)
+    if target == "EXECUTING" and pending - approved:
+        raise RuntimeErrorBase(f"Execution blocked: explicit Owner approval is pending for {sorted(pending - approved)}")
     if target == "REVIEWING" and evidence.get("verification_passed") is not True:
         raise RuntimeErrorBase("Cannot enter REVIEWING without verification_passed=true")
     if target == "CLOSED":
@@ -412,12 +453,14 @@ def persist_task_state(
     *,
     event_type: str,
     idempotency_key: str,
+    extra_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Commit a complete state snapshot before writing the convenience checkpoint."""
+    """Commit a complete state snapshot and approval receipts before checkpoint write."""
+    payload = {"state": state, **(extra_payload or {})}
     return ledger.append(
         task_id=state["task_id"],
         event_type=event_type,
-        payload={"state": state},
+        payload=payload,
         idempotency_key=idempotency_key,
     )
 
@@ -522,36 +565,73 @@ def main(argv: list[str] | None = None) -> int:
             except LedgerError as exc:
                 if not str(exc).startswith("Unknown task_id:"):
                     raise
-                # One-time adoption path for task files created before ledger integration.
+                # Legacy import is a controlled recovery operation, never a trust-on-first-use path.
                 state = checkpoint
+                if state.get("status") != "REQUESTED":
+                    raise RuntimeErrorBase("Legacy import requires status REQUESTED")
+                plan = state.get("plan")
+                if not isinstance(plan, dict):
+                    raise RuntimeErrorBase("Legacy import requires a complete plan")
+                derived = build_plan({
+                    "task_id": state.get("task_id"),
+                    "objective": plan.get("objective"),
+                    "repository": plan.get("repository"),
+                    "base_commit": plan.get("base_commit"),
+                })
+                if derived != plan:
+                    raise RuntimeErrorBase("Legacy import plan does not re-derive identically from its objective")
+                approval_records = read_json(Path(args.approval_record_file)).get("approvals", []) if args.approval_record_file else []
+                import_records = [record for record in approval_records if str(record.get("action", "")).lower() == "task_import"]
+                if len(import_records) != 1:
+                    raise RuntimeErrorBase("Legacy import requires exactly one explicit Owner approval for task_import")
+                import_approval = validate_owner_approval(import_records[0], state["task_id"])
+                ensure_approvals_unused(ledger, import_records)
                 persist_task_state(
                     ledger, state, event_type="TASK_IMPORTED",
                     idempotency_key=f"{state['task_id']}:imported",
+                    extra_payload={"import_approval": import_records[0]},
                 )
+            approval_records = read_json(Path(args.approval_record_file)).get("approvals", []) if args.approval_record_file else []
+            approval_records = [record for record in approval_records if str(record.get("action", "")).lower() != "task_import"]
             if args.to == state.get("status"):
-                updated = state  # Safe retry after ledger append but before checkpoint write.
+                if state.get("status") in {"EXECUTING", "VERIFYING", "REVIEWING"}:
+                    if not args.lease_owner or args.lease_owner != state.get("implementer_id"):
+                        raise RuntimeErrorBase("Same-state post-EXECUTING retry requires the active lease owner")
+                    lease = ledger.lease_status(state["task_id"])
+                    if not lease or lease.get("owner_id") != args.lease_owner:
+                        raise RuntimeErrorBase("Same-state post-EXECUTING retry requires an active lease")
+                updated = state
             else:
-                if args.to == "EXECUTING":
+                post_execution = state.get("status") in {"EXECUTING", "VERIFYING", "REVIEWING"}
+                lease_required = post_execution or args.to == "EXECUTING"
+                if lease_required:
                     if not args.lease_owner:
-                        raise RuntimeErrorBase("An active task lease and --lease-owner are required before EXECUTING")
+                        raise RuntimeErrorBase("An active task lease and --lease-owner are required for every post-EXECUTING transition")
+                    if post_execution and args.lease_owner != state.get("implementer_id"):
+                        raise RuntimeErrorBase("Post-EXECUTING transition lease owner must match the task implementer")
+                    lease = ledger.lease_status(state["task_id"])
+                    if not lease or lease.get("owner_id") != args.lease_owner:
+                        raise RuntimeErrorBase("Transition requires an active lease held by --lease-owner")
                 evidence = read_json(Path(args.evidence_file)) if args.evidence_file else {}
-                approval_records = read_json(Path(args.approval_record_file)).get("approvals", []) if args.approval_record_file else []
+                if approval_records:
+                    ensure_approvals_unused(ledger, approval_records)
                 updated = transition_task(state, args.to, evidence, approval_records=approval_records)
                 if args.to == "EXECUTING":
                     updated["implementer_id"] = args.lease_owner
                 transition_number = len(updated.get("events", [])) - 1
                 transition_key = f"{updated['task_id']}:transition:{transition_number}:{args.to}"
-                if args.to == "EXECUTING":
+                if lease_required:
                     ledger_event = ledger.append_transition_if_lease(
                         task_id=updated["task_id"],
                         owner_id=args.lease_owner,
-                        payload={"state": updated},
+                        payload={"state": updated, "approval_records": approval_records},
                         idempotency_key=transition_key,
                     )
                 else:
                     ledger_event = persist_task_state(
                         ledger, updated, event_type="TASK_TRANSITIONED",
                         idempotency_key=transition_key,
+                        extra_payload={"approval_records": approval_records},
                     )
             write_json(Path(args.output), updated)
             print(json.dumps({"task_id": updated["task_id"], "status": updated["status"],

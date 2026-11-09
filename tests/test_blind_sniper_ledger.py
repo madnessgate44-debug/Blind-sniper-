@@ -170,7 +170,7 @@ class TaskLedgerTests(unittest.TestCase):
             task_id="BS-LEASE-006", owner_id="runner-a", lease_seconds=60,
             idempotency_key="lease-a", now=now,
         )
-        payload = {"state": {"task_id": "BS-LEASE-006", "status": "EXECUTING"}}
+        payload = {"state": {"task_id": "BS-LEASE-006", "status": "EXECUTING", "implementer_id": "runner-a"}}
         with self.assertRaisesRegex(LedgerError, "active lease"):
             self.ledger.append_transition_if_lease(
                 task_id="BS-LEASE-006", owner_id="runner-b", payload=payload,
