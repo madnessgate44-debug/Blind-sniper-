@@ -69,3 +69,14 @@ A checked item means only the evidence described in the linked files; this manif
 - [x] Engineering Execution OS compliance also passed on the same commit: run 42473260744, job policy-compliance.
 
 **Boundary:** These checks validate repository assets and policy structure. They do not prove Codex CLI installation, ChatGPT hook execution, browser MCP connectivity, OpenHands result retrieval, isolated shell execution or full external-agent round trips. Those remain open readiness gates.
+
+## 2026-11-09 registry reconciliation
+
+The 2026-11-08 implementation checkpoint above is a historical snapshot, not the current catalog. The reconciled runtime index now records:
+
+- 11 native skill contracts, including `blind-sniper-continuity` and `github-research`.
+- 10 canonical native agent roles and 4 additional reference-only profiles; reference profiles are not dispatchable.
+- 17 workflow registry entries: 11 entries reference 9 markdown contracts and 6 are intentionally registry-only with explicit reasons.
+- 33 OpenHands skill/rule files remain a separate source-preserving mirror; they are not counted as native skills and are not automatically activated.
+
+The current source of truth is `runtime/agents.json`, `runtime/skills.index.json`, `runtime/workflows.json` and their corresponding README/catalog files.
