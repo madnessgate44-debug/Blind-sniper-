@@ -79,13 +79,13 @@ python3 -m unittest discover -s tests -p 'test_blind_sniper_runtime.py' -v
 The GitHub Actions workflow runs both checks for changes to this runtime. Passing registry tests prove the configuration is internally consistent; they do not prove external MCP, OpenHands, browser or background automation end-to-end paths.
 
 
-## Final corrected CI verification receipt
+## Historical CI verification receipt — 2026-11-08 (superseded)
 
 - Runtime registry: GitHub Actions run `42475103888`, job `128714562891` — PASS; 6 profiles, 26 agents, 11 adapters, 10 workflows, 10 native skills, 33 OpenHands skills; 3 unit tests OK.
 - Native environment: run `42475103885`, job `128714562694` — PASS; 39 required assets, 9 skill contracts, 9 agent contracts, 5 workflows, 6 safe Codex config templates, credential-pattern scan clean.
 - Engineering Execution OS compliance: run `42475103913`, job `128714562852` — PASS.
 
-These runs verify the preceding implementation checkpoint. Re-run the workflow after any registry, validator, test or workflow change. They do not prove external adapter end-to-end readiness.
+These runs verify the 2026-11-08 implementation checkpoint only; their counts are historical and superseded by the 2026-11-09 registry reconciliation. Current reconciliation evidence: Runtime Registry run `42555147080` (registry validator + 88 tests) and Engineering Execution OS Compliance run `42555146826`, both on `63f61d4f28d5e903d14ac3c0952afa79ee612459`; Environment Validation run `42555193851` and Engineering Execution OS Compliance run `42555193958`, both on `f649aa6ab628a404d747f16fb507b5dd39941d90`. The environment validation log reports 45 required assets, 11 skill contracts, 9 agent contracts, 9 workflows, 6 safe config templates and a clean credential scan. Later changes through `834994517e145ae6f6d402024b1e6fb40fca832b` were documentation-only. These checks do not prove external adapter end-to-end readiness.
 
 
 ## Executable orchestration engine
