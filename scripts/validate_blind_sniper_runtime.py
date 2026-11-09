@@ -46,22 +46,33 @@ def main() -> int:
     authority = load_json(RUNTIME / "authority.json")
 
     delegations = authority.get("delegations", [])
+    if not isinstance(delegations, list):
+        fail("authority.json: delegations must be a list")
+        delegations = []
     check_unique(delegations, "id", "authority delegations")
-    active_delegations = [row for row in delegations if row.get("status") == "active"]
-    if len(active_delegations) != 1:
-        fail("authority.json: expected exactly one active standing delegation")
-    elif active_delegations[0].get("repository") != "madnessgate44-debug/Blind-sniper-":
-        fail("authority.json: active delegation repository scope is incorrect")
-    else:
-        actions = set(active_delegations[0].get("actions", []))
-        forbidden = set(active_delegations[0].get("forbidden_actions", []))
+    active_delegations = [row for row in delegations if isinstance(row, dict) and row.get("status") == "active"]
+    if authority.get("schema_version") != "1.0.0":
+        fail("authority.json: unsupported schema_version")
+    if len(active_delegations) > 1:
+        fail("authority.json: more than one active standing delegation")
+    if active_delegations:
+        grant = active_delegations[0]
+        if grant.get("repository") != "madnessgate44-debug/Blind-sniper-" or grant.get("id") != "owner-standing-delegation-2026-11-09":
+            fail("authority.json: active delegation identity or repository scope is incorrect")
+        if grant.get("grantor") != "repository-owner" or grant.get("delegate") != "blind-sniper":
+            fail("authority.json: active delegation grantor/delegate identity is incorrect")
+        actions = set(grant.get("actions", []))
+        forbidden = set(grant.get("forbidden_actions", []))
         required_actions = {"merge", "merge_to_main", "default_branch_push", "ci_cd_edit", "workflow_edit", "deploy", "production_deploy", "release", "delete"}
-        if not required_actions.issubset(actions):
-            fail(f"authority.json: missing delegated actions {sorted(required_actions - actions)}")
-        if actions & (forbidden | {"force_push", "delete_branch", "credential_export", "secret_export", "disable_branch_protection", "unbounded_shell"}):
-            fail("authority.json: delegated actions overlap forbidden host actions")
-        if not {"secret_mutation", "permission_change", "paid_provisioning", "production_data_mutation"}.issubset(forbidden):
-            fail("authority.json: required exclusions are missing")
+        required_exclusions = {"secret_mutation", "permission_change", "paid_provisioning", "production_data_mutation", "force_push", "delete_branch", "credential_export", "secret_export", "disable_branch_protection", "unbounded_shell"}
+        if actions != required_actions:
+            fail("authority.json: active delegation action allowlist does not match the reviewed code policy")
+        if not required_exclusions.issubset(forbidden):
+            fail(f"authority.json: required exclusions are missing {sorted(required_exclusions - forbidden)}")
+        if actions & forbidden:
+            fail("authority.json: delegated actions overlap forbidden actions")
+    elif not delegations or not all(isinstance(row, dict) and row.get("status") == "revoked" for row in delegations):
+        fail("authority.json: no active grant is valid only when every recorded delegation is revoked")
     adapters = caps.get("adapters", [])
     profile_rows = profiles.get("profiles", [])
     agent_rows = agents.get("agents", [])
