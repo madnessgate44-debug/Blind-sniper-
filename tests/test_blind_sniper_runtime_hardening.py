@@ -75,6 +75,25 @@ class RuntimeHardeningTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2, result.stdout)
         self.assertIn("import", result.stderr.lower())
 
+    def test_state_events_use_compact_hash_verified_deltas(self):
+        state = runtime.create_task_state(self.plan)
+        runtime.persist_task_state(
+            self.ledger, state, event_type="TASK_CREATED",
+            idempotency_key="compact:create",
+        )
+        advanced = runtime.transition_task(state, "INSPECTING")
+        runtime.persist_task_state(
+            self.ledger, advanced, event_type="TASK_TRANSITIONED",
+            idempotency_key="compact:inspect",
+        )
+        history = self.ledger.task_history("BS-HARDEN-001")
+        self.assertIn("state_snapshot", history["events"][0]["payload"])
+        self.assertIn("state_delta", history["events"][1]["payload"])
+        self.assertNotIn("state", history["events"][1]["payload"])
+        recovered = runtime.recover_task_state(self.ledger, "BS-HARDEN-001")
+        self.assertEqual(recovered["status"], "INSPECTING")
+        self.assertEqual(len(recovered["events"]), 2)
+
     def test_approval_id_cannot_be_replayed(self):
         record = {
             "approval_id": "approval-used-once",

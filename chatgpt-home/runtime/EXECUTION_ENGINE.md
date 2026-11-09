@@ -97,15 +97,19 @@ The GitHub adapter first checks repository metadata and refuses any target where
 
 `REQUESTED → INSPECTING → SPECIFIED → PLANNED → EXECUTING → VERIFYING → REVIEWING → CLOSED`
 
-- Every accepted transition appends a full state snapshot to the ledger.
+- The first accepted state event stores a compact snapshot without its event history. Later transitions store a hash-verified top-level diff plus one lifecycle event; recovery rebuilds the event list from the ledger. Legacy full snapshots remain readable.
+- Appends are refused when the resulting JSONL ledger would exceed 512 KiB. Keep transcripts and artifacts outside this control-plane ledger.
 - The ledger append happens before the JSON checkpoint write. If the process stops between those operations, the next transition reloads the ledger's latest state. Repeating the already-committed target repairs the checkpoint without a duplicate event.
 - The CLI exposes `claim`, `release` and `lease-status`. Lease duration is bounded to 1–3600 seconds. The same owner may renew with a new idempotency key; another owner is blocked until expiry or release. Tasks with a latest state of CLOSED or CANCELLED cannot be claimed.
-- CLI entry into EXECUTING requires an active lease and matching `--lease-owner`. The lease check and EXECUTING event append occur under one local file lock or one GitHub blob-SHA CAS operation, avoiding a check-then-write race. The committed snapshot records that lease owner as `implementer_id`, so closure review cannot compare against a generic controller identity.
+- Entry into EXECUTING, every transition from EXECUTING/VERIFYING/REVIEWING, and same-state retries in those states require the active lease and matching `--lease-owner`. The lease check and event append occur under one local file lock or one GitHub blob-SHA CAS operation. The committed state binds `implementer_id` to that lease owner.
+- GitHub-backed lease expiry uses the server's HTTP `Date` response header. If the header is absent or invalid, lease operations fail closed rather than trusting a runner's local clock.
 - The atomic ledger method rejects any receipt whose snapshot is not `EXECUTING` or whose embedded task ID differs from the event task ID.
-- Legacy task JSON without ledger history can be adopted once as `TASK_IMPORTED`; subsequent transitions use ledger state as authoritative.
-- Unknown/unclassified requested actions require explicit action-specific Owner approval.
+- Legacy task JSON without ledger history can be adopted only when its status is `REQUESTED`, its complete plan re-derives identically from its objective, and the host supplies one valid Owner approval for `task_import`. Approval records bind `approval_id`, `task_id`, action, approver, verbatim words, issuance time and expiry; the ledger records consumed IDs and rejects replay.
+- Unknown/unclassified requested actions remain high-risk and must be checked against the active Owner delegation and host policy.
 - Host-forbidden actions (force-push, branch deletion, credential/secret export, disabling branch protection and unbounded shell execution) cannot be overridden by task JSON or approval records.
-- Other consequential actions, including merges, default-branch pushes, deployments, CI/CD edits, secret/permission changes, paid provisioning and destructive production-data changes, remain approval-gated.
+- The chat interface has a standing Owner delegation for repository-scoped merge, default-branch push, CI/CD, release and eligible deployment actions in `madnessgate44-debug/Blind-sniper-`; this does not authorize those actions elsewhere.
+- The planner loads the machine-readable standing delegation from `chatgpt-home/runtime/authority.json`. Only exact repository matches and explicitly allowlisted actions are auto-satisfied; task-supplied approval/delegation fields are ignored. Unknown, excluded and out-of-scope actions remain pending or host-forbidden.
+- The machine-readable file is a policy mirror of `chatgpt-home/AUTHORITY_DELEGATION.md`. Keep both synchronized; malformed, missing or conflicting policy must fail closed.
 - The task envelope cannot select its own profile or forbidden-action policy.
 - Approval records are host-supplied assertions containing action, approver, verbatim words and an offset-aware timestamp. They are auditable metadata, not cryptographic proof of the approver's identity.
 - `VERIFYING → REVIEWING` requires `verification_passed=true`.
@@ -125,7 +129,7 @@ The hash chain detects edits but is not a signed tamper-proof audit log. GitHub 
 - Agent contracts are selected and referenced; this engine does not spawn agents.
 - Skills are selected and referenced; the host must read the selected contract before applying it.
 - Browser, persistent background execution and generic shell execution remain unavailable unless a real host adapter is registered and verified.
-- No merge, deployment, secret mutation, permission change, paid provisioning or destructive action is performed by this runtime.
+- This runtime does not itself perform merge, deployment, secret mutation, permission change, paid provisioning or destructive actions. The conversational host may perform delegated repository actions through its own authorized tools; do not conflate the two execution paths.
 
 ## Verification
 
@@ -137,3 +141,17 @@ python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 Tests cover registry resolution, routing, task-envelope authority boundaries, Owner approval records, host-forbidden actions, correlated review receipts, local ledger persistence, GitHub CAS retries, remote hash-chain validation and recovery reads.
+
+
+## Allowlisted task executor
+
+**Entrypoint:** `scripts/blind_sniper_executor.py`  
+**Workflow:** `.github/workflows/blind-sniper-allowlisted-executor.yml`  
+**Task contract:** `.blind-sniper/tasks/<task>.json`  
+**Runtime workflow:** `bounded-verification`
+
+The executor accepts only the fixed command IDs `unit-tests` and `runtime-validator`. The task envelope must select the registered `bounded-verification` workflow; it cannot supply shell text or arguments. Each requested command maps to one named workflow step. The executor records RUNNING and terminal step receipts with start/completion times from GitHub's HTTP Date header, exact exit code (or timeout status), run ID, commit SHA and log line references. Commands not requested are marked NOT_REQUESTED; commands skipped after a failure are marked BLOCKED. The independent-review step remains AWAITING_INDEPENDENT_REVIEW and is never self-completed by this runner.
+
+**Persistence is deliberately per-run and ephemeral.** The local ledger, lease and receipts are created inside one GitHub Actions run and uploaded as a 14-day artifact. They do not provide cross-run exclusion, cross-run deduplication, durable task recovery or a persistent worker. A repeated task ID in a later run is not protected by the prior run's local ledger. The workflow uses `contents: read` only, sparse-checks out the workflow contracts needed by its own tests, and does not write private continuity data to this public repository.
+
+A successful verification run ends in `REVIEWING`, not `CLOSED`. A distinct reviewer must inspect the exact commit and artifact and supply a task-correlated PASS receipt before closure. A green executor job is not an independent review or closure receipt.

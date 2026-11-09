@@ -43,7 +43,47 @@ def main() -> int:
     skills = load_json(RUNTIME / "skills.index.json")
     task = load_json(RUNTIME / "templates" / "TASK_ENVELOPE.json")
     receipt = load_json(RUNTIME / "templates" / "RUN_RECEIPT.json")
+    authority = load_json(RUNTIME / "authority.json")
 
+    delegations = authority.get("delegations", [])
+    if not isinstance(delegations, list):
+        fail("authority.json: delegations must be a list")
+        delegations = []
+    if not all(isinstance(row, dict) for row in delegations):
+        fail("authority.json: every delegation entry must be an object")
+        delegations = [row for row in delegations if isinstance(row, dict)]
+    check_unique(delegations, "id", "authority delegations")
+    active_delegations = [row for row in delegations if row.get("status") == "active"]
+    if authority.get("schema_version") != "1.0.0":
+        fail("authority.json: unsupported schema_version")
+    if len(active_delegations) > 1:
+        fail("authority.json: more than one active standing delegation")
+    if active_delegations:
+        grant = active_delegations[0]
+        if grant.get("repository") != "madnessgate44-debug/Blind-sniper-" or grant.get("id") != "owner-standing-delegation-2026-11-09":
+            fail("authority.json: active delegation identity or repository scope is incorrect")
+        if grant.get("grantor") != "repository-owner" or grant.get("delegate") != "blind-sniper":
+            fail("authority.json: active delegation grantor/delegate identity is incorrect")
+        actions_raw = grant.get("actions", [])
+        forbidden_raw = grant.get("forbidden_actions", [])
+        if not isinstance(actions_raw, list) or not all(isinstance(x, str) for x in actions_raw):
+            fail("authority.json: actions must be a list of strings")
+            actions_raw = []
+        if not isinstance(forbidden_raw, list) or not all(isinstance(x, str) for x in forbidden_raw):
+            fail("authority.json: forbidden_actions must be a list of strings")
+            forbidden_raw = []
+        actions = set(actions_raw)
+        forbidden = set(forbidden_raw)
+        required_actions = {"merge", "merge_to_main", "default_branch_push", "ci_cd_edit", "workflow_edit", "deploy", "production_deploy", "release", "delete"}
+        required_exclusions = {"secret_mutation", "permission_change", "paid_provisioning", "production_data_mutation", "force_push", "delete_branch", "credential_export", "secret_export", "disable_branch_protection", "unbounded_shell"}
+        if actions != required_actions:
+            fail("authority.json: active delegation action allowlist does not match the reviewed code policy")
+        if not required_exclusions.issubset(forbidden):
+            fail(f"authority.json: required exclusions are missing {sorted(required_exclusions - forbidden)}")
+        if actions & forbidden:
+            fail("authority.json: delegated actions overlap forbidden actions")
+    elif not delegations or not all(row.get("status") == "revoked" for row in delegations):
+        fail("authority.json: no active grant is valid only when every recorded delegation is revoked")
     adapters = caps.get("adapters", [])
     profile_rows = profiles.get("profiles", [])
     agent_rows = agents.get("agents", [])
@@ -124,15 +164,61 @@ def main() -> int:
         if skill not in native_skill_names or not path.is_file():
             fail(f"missing native skill path or index mismatch: {path_text}")
 
+    canonical_agent_paths = set()
     for row in agent_rows:
         native_path = row.get("path") or row.get("native_contract_path")
-        if native_path and not (ROOT / native_path).is_file():
-            fail(f"agent {row.get('id')}: missing native contract {native_path}")
+        if native_path:
+            canonical_agent_paths.add(native_path)
+            if not (ROOT / native_path).is_file():
+                fail(f"agent {row.get('id')}: missing native contract {native_path}")
 
+    reference_rows = agents.get("reference_profiles", [])
+    check_unique(reference_rows, "id", "reference_profiles")
+    reference_paths = set()
+    for row in reference_rows:
+        profile_id = row.get("id")
+        path_text = row.get("path")
+        if profile_id in agent_ids:
+            fail(f"reference profile {profile_id}: must not also be a canonical native agent")
+        if row.get("status") != "reference_only_not_in_native_roster":
+            fail(f"reference profile {profile_id}: invalid or missing reference-only status")
+        if not path_text or not (ROOT / path_text).is_file():
+            fail(f"reference profile {profile_id}: missing path {path_text}")
+        elif path_text:
+            reference_paths.add(path_text)
+
+    for path in (HOME / "agents").glob("*.md"):
+        if path.name == "README.md":
+            continue
+        rel = path.relative_to(ROOT).as_posix()
+        if rel not in canonical_agent_paths and rel not in reference_paths:
+            fail(f"unclassified agent contract file: {rel}")
+
+    registered_workflow_contracts = set()
     for row in workflow_rows:
+        mode = row.get("contract_mode")
         contract = row.get("native_contract_path")
-        if contract and not (ROOT / contract).is_file():
-            fail(f"workflow {row.get('id')}: missing native contract {contract}")
+        if mode == "native_contract":
+            if not contract:
+                fail(f"workflow {row.get('id')}: native_contract mode requires native_contract_path")
+            elif not (ROOT / contract).is_file():
+                fail(f"workflow {row.get('id')}: missing native contract {contract}")
+            else:
+                registered_workflow_contracts.add(contract)
+        elif mode == "registry_only":
+            if contract:
+                fail(f"workflow {row.get('id')}: registry_only mode must not declare native_contract_path")
+            if not row.get("registry_only_reason"):
+                fail(f"workflow {row.get('id')}: registry_only mode requires a reason")
+        else:
+            fail(f"workflow {row.get('id')}: contract_mode must be native_contract or registry_only")
+
+    for path in (HOME / "workflows").glob("*.md"):
+        if path.name == "README.md":
+            continue
+        rel = path.relative_to(ROOT).as_posix()
+        if rel not in registered_workflow_contracts:
+            fail(f"orphaned workflow contract file: {rel}")
 
     expected_skill_count = skills.get("source", {}).get("declared_skill_files")
     if expected_skill_count != len(skill_names):

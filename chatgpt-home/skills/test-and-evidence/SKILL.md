@@ -15,7 +15,7 @@ Turn acceptance criteria into reproducible proof.
 Identify exact commit/tree, environment, test commands, expected behavior and known baseline.
 
 ## Permissions
-Tests should be non-destructive. Production probes, load tests, data mutation and external side effects require explicit approval.
+Tests should be non-destructive. Non-destructive deployed smoke tests within the Blind Sniper standing delegation are allowed after the release gate passes. Load tests, production data mutation, paid activity and external side effects outside the delegation require explicit Owner approval.
 
 ## Procedure
 1. Map each requirement to a verification method.
