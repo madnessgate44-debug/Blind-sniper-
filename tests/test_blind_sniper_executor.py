@@ -10,7 +10,6 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
-from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -200,6 +199,17 @@ class BoundedExecutorPlanTests(unittest.TestCase):
         workflow = (ROOT / ".github" / "workflows" / "blind-sniper-allowlisted-executor.yml").read_text(encoding="utf-8")
         self.assertIn("if: always()", workflow)
         self.assertIn("if-no-files-found: error", workflow)
+
+
+    def test_command_launch_error_is_recorded_and_blocks_following_step(self):
+        exit_code, receipt, log, calls = self.run_executor(
+            "123464", [OSError("simulated process launch failure")]
+        )
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(receipt["commands"][0]["status"], "ERROR")
+        self.assertIn("simulated process launch failure", log)
+        self.assertEqual(receipt["steps"][1]["status"], "BLOCKED")
+        self.assertEqual(calls, 1)
 
     def test_step_update_rejects_unregistered_step(self):
         plan = runtime.build_plan({
