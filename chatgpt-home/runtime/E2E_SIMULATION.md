@@ -40,3 +40,51 @@ The runtime unit suite also tests GitHub Contents CAS remote lease claim, releas
 The Blind Sniper Runtime Registry workflow runs the simulation on matching pushes and pull requests. The receipt and raw evidence are uploaded as a GitHub Actions artifact named blind-sniper-e2e-<run_id>.
 
 The simulation requires GitHub Actions GITHUB_SHA and GITHUB_RUN_ID environment variables and intentionally fails closed elsewhere.
+
+## Scheduled-jobs simulation
+
+`scripts/simulate_blind_sniper_jobs_e2e.py` is a second deterministic simulation
+that models the continuous-autonomy pipeline named in `workflows.json`
+(`receive -> deduplicate -> dispatch -> retry with loop breaker -> persist state
+-> deliver`) across a fixed set of scheduled ticks, using the real local task
+ledger for the dispatch lease and the append-only audit chain.
+
+Scenario:
+
+1. Two jobs run on their own cadences: a daily job (`0 9 * * *`) and a two-hour
+   job (`0 */2 * * *`). A job only fires when its next-run time is reached, so the
+   daily job fires once across the window and does not fire early.
+2. Events arrive on the two-hour job; a redelivered event with a seen key is
+   deduplicated instead of dispatched again.
+3. Dispatch claims one execution lease and proves a competing owner is denied.
+4. A task that fails then succeeds on retry; a task that keeps failing trips the
+   loop breaker after the configured consecutive-failure threshold.
+5. A later tick is skipped because the breaker is tripped.
+6. Each completed task produces a SHA-256 delivery receipt; the ledger hash chain
+   and event sequence are re-read and verified.
+
+What a PASS proves: the pipeline's receive/deduplicate/dispatch/retry/loop-breaker
+/skip/deliver controls hold, dispatch honours the exclusive ledger lease, and the
+job audit ledger is intact and contiguous.
+
+What a PASS does not prove:
+
+- No real scheduler or background trigger exists. The receipt records
+  `real_scheduler_present: false` and `scheduler_kind:
+  deterministic_test_harness_not_a_real_scheduler`. Ticks are simulated, not
+  delivered by a clock.
+- No agent, model, provider, browser or network call is made
+  (`actual_agent_spawned: false`, `external_network_calls: 0`).
+- It does not verify the OpenHands automation receiver or any external task
+  delivery route; the `automation` capability remains
+  `available_but_receiver_unverified`.
+
+Run:
+
+    GITHUB_SHA=$(git rev-parse HEAD) GITHUB_RUN_ID=123456789 \
+      python scripts/simulate_blind_sniper_jobs_e2e.py --output-dir artifacts/blind-sniper-jobs-e2e
+
+Like the runtime simulation it requires GitHub Actions `GITHUB_SHA` and
+`GITHUB_RUN_ID` and fails closed elsewhere. The runtime workflow runs it on
+matching pushes and pull requests and uploads the receipt as part of the
+`blind-sniper-e2e-<run_id>` artifact.
