@@ -1,11 +1,11 @@
 # Blind Sniper — Current Technical State
 
-**Snapshot:** 2026-11-09 — BS-OS-002 architecture blueprint recorded
+**Snapshot:** 2026-11-09 — BS-OS-003 adoption register recorded
 **Active work branch:** `feat/bs-os-001a-registry-reconciliation-2026-11-09`
+**Current branch HEAD:** `27eec82dcbcb7106df5078bd39f81f5c59ec6bd5`
 **Main baseline:** `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e`
-**BS-OS-002 architecture artifact:** `chatgpt-home/BS-OS-002_CANONICAL_ARCHITECTURE.md`
-**BS-OS-002 artifact commit:** `0491901b38dda1f30e3110ecdfe8c48170cafa17`
-**Source dependency decision commit:** `b39a5d62cb9cefbcb1cc0c6b7afbc5f729a1aa3a`
+**BS-OS-002:** `chatgpt-home/BS-OS-002_CANONICAL_ARCHITECTURE.md`
+**BS-OS-003:** `chatgpt-home/BS-OS-003_COMPONENT_ADOPTION_REGISTER.md`
 **Governing authority:** root `AGENTS.md`, `ENGINEERING_EXECUTION_OS.md` v2.2, `chatgpt-home/BLIND_SNIPER.md` v3.0.
 
 ## Canonical control plane
@@ -27,22 +27,32 @@
 - Full ChatGPT conversation archive export is not exposed as a native action.
 
 ## Source and architecture decisions
-- Blind Sniper native policies, registries, workflow contracts, runtime state machine, ledger and verification rules are the canonical system.
+- Blind Sniper native policies, registries, workflow contracts, runtime state machine, ledger and verification rules are canonical.
 - OpenHands remains a pinned reference mirror, not an installed runtime.
 - Ralph is eligible for selective concept/code review under its MIT license; never adopt its permission-bypass runner unchanged.
 - Showcase/Mendelevium are one source lineage; license evidence is insufficient for verbatim code reuse. Patterns may inform independently authored designs.
 - `mattzcarey/claude-code-agent-framework` is **UNAVAILABLE — EXCLUDED — NOT A PROJECT DEPENDENCY** by Owner decision. No further search or substitute.
-- Existing bounded executor work in draft PR #16 is a candidate for independent review; do not start a duplicate executor rewrite before reconciling it.
-- `chatgpt-home/CODEX_RUNTIME_ARCHITECTURE.md` contains older assumptions and must be reconciled in BS-OS-004. BS-OS-002 blueprint controls where it conflicts with current policy.
+- BS-OS-002 architecture blueprint and BS-OS-003 component adoption register are recorded. See the two documents for full decision and acceptance mappings.
+- `chatgpt-home/CODEX_RUNTIME_ARCHITECTURE.md` contains older assumptions and must be reconciled in BS-OS-004. BS-OS-002 controls where it conflicts with current policy.
+
+## Executor adoption status
+- PR #14 is merged into the orchestration integration branch at `431ff42040f7aa8f0bb21ea1515cf2bb20d34d0c`; it is not a merge to main.
+- PR #15 remains open/draft and is stacked on PR #14's head branch.
+- PR #16 remains open/draft at `025091cff34829d0a641d626357853d40c5dee7f`, based on PR #15.
+- PR #16's exact-head runtime registry, OS compliance and environment workflows concluded successfully (runs `42530706483`, `42530706493`, `42530706497`). Those results do not close the executor acceptance gaps.
+- PR #16 still has two blocking gaps: its embedded plan leaves all eight steps PENDING despite command execution; and its per-run ledger artifact is not cross-run durable task/run/step reservation storage. There is no formal independent review submission.
+- Do not merge PR #16 until receipt reconciliation, an honest persistence scope, and a task-correlated independent PASS review are complete.
+- PR #13 remains a separate draft design input. PR #9 remains a separate draft E2E branch with a dirty merge state; neither is automatically adopted.
 
 ## Repository and release state
-- Main remains at `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e`; this work is isolated on the feature branch.
-- Open draft PRs observed: #9, #13, #15 and #16; no action taken on them.
-- No PR created for BS-OS-002; no merge, default-branch push, deployment, paid provisioning, secret mutation, CI permission expansion or history rewrite performed.
-- BS-OS-001A runtime registry validator and 88 tests passed on implementation checkpoint `63f61d4`; environment validation and OS compliance passed on `f649aa6` (runs `42555193851`, `42555193958`). These historical checks do not validate the BS-OS-002 documentation.
+- Main remains at `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e`.
+- Work branch is 33 commits ahead and 0 behind main; cumulative compare contains 20 changed files. No PR has yet been created for this aggregate branch.
+- No merge, protected-branch push, deployment, paid provisioning, secret mutation, CI permission expansion or history rewrite performed.
+- Prior 001A runtime validator and 88 unit tests passed on the recorded 001A checkpoint; environment validation and OS compliance passed on recorded historical commits. The latest documentation-only commits have no associated Actions runs.
 
 ## Current task and next gate
-- BS-OS-002 architecture blueprint and component adoption matrix recorded in `chatgpt-home/BS-OS-002_CANONICAL_ARCHITECTURE.md`.
-- Source-library README now formally excludes the unavailable Mattzcarey reference as a non-dependency.
-- BS-OS-002 is a documentation/design artifact only; no runtime tests or new CI checks were run for it.
-- Next: BS-OS-003 — convert the matrix into a prioritized component adoption decision register, starting with review/reconciliation of existing executor PR #16, not a new executor build.
+- BS-OS-001A registry reconciliation: completed on feature branch.
+- BS-OS-001B source identity/license reconciliation: missing Mattzcarey dependency formally excluded.
+- BS-OS-002 canonical architecture: recorded.
+- BS-OS-003 component adoption decisions: recorded; no new runtime code adopted.
+- Next: **BS-EXECUTION-001A — PR #16 Receipt Reconciliation**, fixing G1 and selecting a truthful G2 persistence scope before independent review.
