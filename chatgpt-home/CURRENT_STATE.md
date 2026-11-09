@@ -1,8 +1,8 @@
 # Blind Sniper — Current Technical State
 
-**Snapshot:** 2026-11-09, after PR #24 merge and BS-OS-001A registry reconciliation
+**Snapshot:** 2026-11-09, after the integration batch merged (PR #18 → #19 → #21 → #22 → #25) onto `main`
 **Default branch:** main
-**Last validated checkpoint:** `5631bd3702595fc3c87a2902120634c584deba11`
+**Last validated checkpoint:** `19f6e4c2770c310d696d10d297ad75174c83913a` (PR #25 merge — `fix(policy): close residual authority contradictions with the standing Owner delegation`)
 **Authority:** Engineering Execution OS v2.3 plus active standing Owner delegation, recorded in `chatgpt-home/AUTHORITY_DELEGATION.md` and mirrored in `chatgpt-home/runtime/authority.json`.
 **Audit artifact:** `chatgpt-home/AGENT_OS_INTEGRATION_AUDIT.md` (BS-OS-001 static audit) and `chatgpt-home/BS-COMPLETION_AUDIT_AND_OPENAI_REVIEW.md` (completion audit).
 
@@ -15,27 +15,31 @@
 
 ## Authority consistency audit — 2026-11-09
 - Followed the active standing delegation and audited the repository for anything still contradicting it.
-- Found and fixed two residual native gaps (DRAFT PR #25): `runtime/profiles.json` global_rules still demanded explicit Owner approval for merge/deploy, and the planner resolved `owner-policy`, `git-workflow`, `multi-session-pr-coordination` to the inert OpenHands mirror ("never push to main / the owner merges"). Added three delegation-consistent native skills (native skills 10 → 13) plus a regression test.
-- Verified on PR #25 head `d63251d`: `validate-runtime` PASS (`native_skills=13`), 93 unit tests OK, environment validation PASS.
-- Open items for review (all DRAFT): #9, #13, #15, #16, #18, #19, #21, #22. #18 and #19 are conflicting (`dirty`) after `main` advanced; #21 and #22 are clean.
+- Found and fixed two residual native gaps (PR #25): `runtime/profiles.json` global_rules still demanded explicit Owner approval for merge/deploy, and the planner resolved `owner-policy`, `git-workflow`, `multi-session-pr-coordination` to the inert OpenHands mirror ("never push to main / the owner merges"). Added three delegation-consistent native skills (native skills 10 → 14) plus a regression test.
+- Verified on PR #25 merge `19f6e4c`: `validate-runtime` PASS (`native_skills=14`, `workflows=18`), 111 unit tests OK, environment validation PASS, OS compliance PASS.
+- Open PRs after the batch: none of the integration stack (#18, #19, #21, #22, #25) remains open — all merged or closed. Superseded #9, #15 and #16 were closed with their accepted content shipped via #21 and #19.
 
 ## Latest merged work
 - Main branch protection: GitHub branch metadata reports `protected=false`. The available GitHub connector exposes read access for branch-protection/ruleset state but no write action to configure it; this remains an unresolved governance-hardening risk. Do not confuse the standing execution delegation with branch protection.
 
-- PR #17 — native OS/runtime integration merged into `main` at `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e`.
-- PR #23 — standing Owner delegation aligned across 22 operating documents and policies; merged at `14769067bf3fa8ab251ba05ee74af31fbf05dead`.
-- PR #24 — native planner now consumes the machine-readable delegation; merged at `5631bd3702595fc3c87a2902120634c584deba11`.
-- GitHub Pages deployment for the latest merge completed successfully: run `42570568283`; published URL https://madnessgate44-debug.github.io/Blind-sniper-/.
+- PR #18 — native agent OS registry reconciliation (`feat: reconcile native agent OS registries and architecture`) merged into `main` at `c7a50fd9cfeccf67fcda295bccc5def271d81a11`.
+- PR #19 — rebase of the #15/#16 compact-ledger + bounded allowlisted executor onto `main` (`fix(reconcile)`) merged at `287446f110d4c69176901b0b3c6e05cd2c2b966b`.
+- PR #21 — deterministic E2E simulation extracted onto `main` (`feat(e2e)`, supersedes #9) merged at `972b8d69941e22a12926fa888f64ee47d61426db`.
+- PR #22 — stale-document and state register BS-OS-004 (`docs(bs-os-004)`) merged at `bcc549543dace980e5a74835ec53fb327ecc2f73`.
+- PR #25 — residual authority contradictions closed (`fix(policy)`) merged at `19f6e4c2770c310d696d10d297ad75174c83913a`.
+- PR #26 — deterministic approval-timestamp validation merged at `5f04aa1e84633199c74b58dc47c8e468187c5eb8`.
+- Earlier merged work retained: PR #17 (`ac8a5eb`), PR #23 (`14769067`), PR #24 (`5631bd37`).
+- GitHub Pages deployment for the latest merge: published URL https://madnessgate44-debug.github.io/Blind-sniper-/.
 
-## Latest verification — merge commit 5631bd3702595fc3c87a2902120634c584deba11
-- Runtime registry and full Python suite: PASS; 92 tests, `OK`; workflow run `42570569331`.
-- Environment validation: PASS; 40 required assets, 9 skill contracts, 9 agent contracts, 5 workflows, 6 safe Codex config templates; credential-pattern scan clean; workflow run `42570569372`.
-- Engineering Execution OS compliance: PASS; workflow run `42570569306`.
-- Pages build/deployment: PASS; build and deploy jobs succeeded; workflow run `42570568283`.
+## Latest verification — merge commit 19f6e4c2770c310d696d10d297ad75174c83913a
+- Runtime registry and full Python suite: PASS; 111 tests, `OK`; `validate_blind_sniper_runtime.py` reports `profiles=6 agents=10 adapters=13 workflows=18 native_skills=14 openhands_skills=33`.
+- Environment validation: PASS; 49 required assets, 14 skill contracts, 9 agent contracts, 9 workflows, 6 safe Codex config templates; credential-pattern scan clean.
+- Deterministic E2E simulation (`scripts/simulate_blind_sniper_e2e.py`): PASS on `main`.
+- Exact-head CI on `main` (`19f6e4c`): `validate-runtime`, `validate-environment`, `policy-compliance`, `build`, `deploy`, `report-build-status` — all `success`.
 - GitHub job conclusions are the authoritative success results. The logs did not print a separate process exit-code field for every job.
 
 ## Current open PR inventory
-- Live GitHub search on 2026-11-09 returned open PRs: #9, #13, #15, #16, #18, #19, #21, #22 and #25. Re-read each live PR before making any merge/closure decision; this list is a dated snapshot, not a substitute for live state.
+- After the 2026-11-09 integration batch, the open PR set is empty: #18/#19/#21/#22/#25 merged, and #9/#15/#16 closed as superseded (their accepted content shipped via #21 and #19). #13 remains a design-only artifact. Re-read each live PR before making any merge/closure decision; this is a dated snapshot, not a substitute for live state.
 - PR #23 and #24 are merged. PR #17 is merged; older text below that says otherwise is historical.
 - PR #24 had no formal independent review submission. The diff was self-reviewed and all exact-head checks passed; the limitation was recorded in the PR discussion. Do not claim independent approval.
 
@@ -53,13 +57,19 @@
 - Registry counts are authoritative only from the validator output on the reconciled head; re-read that line rather than this prose.
 
 ## Outstanding closure gates
-1. Distinct independent review of the reconciled integration head; the Shadow distinct-identity review requirement remains NOT VERIFIED while no eligible reviewer exists.
-2. Owner decision: accept ephemeral Option B (PR #16) or require cross-run durable execution; align PR #13.
-3. Reconcile the PR #15/#16 branch stack with `main`; rerun exact-head checks after integration changes.
-4. Decide whether to extract the unique PR #9 simulation or close it.
-5. BS-OS-004: reconcile historical `CODEX_RUNTIME_ARCHITECTURE.md`, task records and stale PR references.
+1. Distinct independent review of the reconciled integration head; the Shadow distinct-identity review requirement remains NOT VERIFIED while no eligible reviewer exists (no second collaborator on the repository).
+2. Owner decision: accept ephemeral Option B (shipped via PR #19) or require cross-run durable execution; align PR #13 (design-only).
+3. ~~Reconcile the PR #15/#16 branch stack with `main`~~ — DONE: shipped via PR #19 (`287446f`); #15/#16 closed as superseded.
+4. ~~Decide whether to extract the unique PR #9 simulation or close it~~ — DONE: extracted via PR #21 (`972b8d6`); #9 closed.
+5. BS-OS-004: reconcile historical `CODEX_RUNTIME_ARCHITECTURE.md` and task records (partially done — `CURRENT_STATE.md` reconciled 2026-11-09; see BS-OS-004 addendum).
 6. Prove Forge/OpenHands/persistent-host integrations only if real tools and result paths become available.
 7. Complete BS-RELEASE-001 acceptance before any production claim or deployment.
+8. TASK 2 (issue #20 comment `6740537843`) — create private continuity repository `madnessgate44-debug/blind-sniper-private-memory`: BLOCKED, the runner token lacks `createRepository` permission (`Resource not accessible by integration`). Requires an owner-side token scope change or creation from the account UI.
+
+## Reconciliation note — 2026-11-09 (post-integration batch)
+- This section records the reconciliation of the state document itself against live GitHub state after the batch `#18 → #19 → #21 → #22 → #25` merged onto `main` at `19f6e4c`. Original prose above this heading is preserved; superseded lines are struck through rather than deleted.
+- Superseded 2026-11-09: the earlier snapshot (2026-11-09, after PR #24 merge) listed #9/#13/#15/#16/#18/#19/#21/#22 as open drafts and cited `native_skills=13`; live state is `native_skills=14`, `workflows=18`, and the integration stack is merged/closed.
+- `BS-20261108-002.md` (D6) and `CODEX_RUNTIME_ARCHITECTURE.md` (D8) remain tracked in BS-OS-004 and are not yet edited.
 
 ## Historical record
 

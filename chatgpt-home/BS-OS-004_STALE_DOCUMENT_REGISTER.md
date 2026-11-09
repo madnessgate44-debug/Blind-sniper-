@@ -70,3 +70,15 @@ Added when PR #22 was refreshed onto the reconciled integration stack. The origi
 - R1, R3–R6 (registry drift): reconciled by PR #18 — non-roster agent files are reference-only, the skills index covers all native skills, every workflow carries an explicit `contract_mode`, and the workflow registry now holds 18 entries (the four previously-unreferenced docs plus #19's `bounded-verification`).
 - D9–D11 (cross-repository): unchanged; out of scope without cross-repo evidence.
 - These edits are DRAFT-PR content only. No merge to `main`, no deployment and no history rewrite occurred; merge remains an owner decision.
+
+## 8. Addendum — 2026-11-09 (post-merge reconciliation of the integration batch)
+
+Added after the batch `#18 → #19 → #21 → #22 → #25` merged onto `main` (`19f6e4c`). The original register and the §7 addendum are preserved unchanged.
+
+- The batch is fully landed on `main`: #18 (`c7a50fd`), #19 (`287446f`), #21 (`972b8d6`), #22 (`bcc5495`), #25 (`19f6e4c`); #26 (`5f04aa1`) also merged. Superseded #9/#15/#16 were closed with their accepted content shipped via #21 and #19.
+- Live registry counts on `main` are now `native_skills=14` and `workflows=18` (was 11/17 at the register baseline `ac8a5eb`).
+- D1–D5 (`CURRENT_STATE.md`): reconciled again this pass — the snapshot anchor, "latest merged work", "latest verification" and "open PR inventory" sections now reflect `main` at `19f6e4c`, `native_skills=14`, `workflows=18`, and an empty open-PR set. Original claims preserved above the "Historical record" heading.
+- D6 (`BS-20261108-002.md`) and D8 (`CODEX_RUNTIME_ARCHITECTURE.md`): still open; tracked here, not yet edited.
+- D7 (`BS-20261108-003.md`): landed via PR #21.
+- R1, R3–R6 (registry drift): reconciled by PR #18.
+- This addendum is committed on a reconciliation branch only. No merge to `main`, no deployment and no history rewrite; merge remains an owner decision.
