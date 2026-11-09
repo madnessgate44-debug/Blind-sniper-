@@ -2,8 +2,8 @@
 
 **Snapshot:** 2026-11-09 02:31 UTC  
 **Active integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`  
-**Last validated functional checkpoint:** `0d54a6d84cb8efe4780175f7bd61c59826ec3d70`  
-**Consolidation PR:** [#17](https://github.com/madnessgate44-debug/Blind-sniper-/pull/17) — OPEN / DRAFT / NOT MERGED. Resolve its live head SHA from GitHub at each review.
+**Last validated checkpoint before this state-only update:** `bce606594a4b70cca09ccc5d5e8eb615597f02b3`  
+**Consolidation PR:** [#17](https://github.com/madnessgate44-debug/Blind-sniper-/pull/17) — OPEN / READY FOR REVIEW / NOT MERGED. Resolve its live head SHA from GitHub at each review.
 
 ## Canonical control plane
 - Root authority: `AGENTS.md` and `ENGINEERING_EXECUTION_OS.md` v2.2.
@@ -33,7 +33,7 @@
 
 ## Repository and release state
 - Default branch: `main`; it does not yet contain the consolidated runtime.
-- PR #17 contains the consolidated runtime, execution engine, ledger, browser adapter, native skills/agents/workflows and licensed reference library.
+- PR #17 is ready for independent review and contains the consolidated runtime, execution engine, ledger, browser adapter, native skills/agents/workflows and licensed reference library.
 - Public personal/continuity files were restored to their exact `main` blob SHAs without reading or changing their contents; they are absent from the PR diff.
 - PRs #11 and #14 were merged into the integration branch, not into `main`. PRs #3, #6 and #7 remain open; PR #7's imported assets are already present in the integration tree.
 - No merge to `main`, deployment, paid provisioning, secret mutation or history rewrite has occurred in this task.
