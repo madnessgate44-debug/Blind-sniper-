@@ -42,10 +42,13 @@ def expected_sandbox(profile_sandbox: str) -> str:
 
 
 def scan_values(obj, path=""):
-    """Yield (dotted_key, value) for every string leaf, for secret detection."""
+    """Yield (path, value) for every leaf, including values nested in arrays."""
     if isinstance(obj, dict):
         for key, value in obj.items():
             yield from scan_values(value, f"{path}.{key}" if path else key)
+    elif isinstance(obj, list):
+        for index, value in enumerate(obj):
+            yield from scan_values(value, f"{path}[{index}]")
     else:
         yield path, obj
 
@@ -66,7 +69,7 @@ def validate_template(path: Path) -> tuple[list[str], dict]:
     if DANGEROUS.search(text):
         errors.append(f"DANGEROUS_SETTING: {path.name}")
     for key, value in scan_values(data):
-        leaf = key.rsplit(".", 1)[-1].lower()
+        leaf = re.sub(r"\[\d+\]$", "", key.rsplit(".", 1)[-1]).lower()
         if leaf in SECRET_KEYS and isinstance(value, str) and value:
             errors.append(f"SECRET_VALUE: {path.name} sets {key}")
         if isinstance(value, str) and CREDENTIAL.search(value):
