@@ -1,8 +1,15 @@
 """Tests for the bounded allowlisted CI verification executor."""
 from __future__ import annotations
 
+import json
+import os
+import subprocess
 import sys
+import tempfile
 import unittest
+from datetime import datetime, timezone
+from pathlib import Path
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,6 +62,104 @@ class BoundedExecutorPlanTests(unittest.TestCase):
         self.assertEqual(steps["run_unit_tests"]["status"], "PASS")
         self.assertEqual(steps["run_unit_tests"]["exit_code"], 0)
         self.assertEqual(steps["await_independent_review"]["status"], "AWAITING_INDEPENDENT_REVIEW")
+
+
+    def run_executor(self, run_id, command_results, date_error=None):
+        task_file = ".blind-sniper/tasks/runtime-hardening-verification.json"
+        with tempfile.TemporaryDirectory() as tmp:
+            args = [
+                "blind_sniper_executor.py",
+                "--task-file", task_file,
+                "--branch", "feat/allowlisted-executor-2026-11-09",
+                "--commit", "a" * 40,
+                "--run-id", str(run_id),
+                "--output-dir", tmp,
+            ]
+            fixed_time = datetime(2026, 11, 9, 3, 0, tzinfo=timezone.utc)
+            with patch.object(sys, "argv", args), patch.dict(os.environ, {
+                "GITHUB_REF_NAME": "feat/allowlisted-executor-2026-11-09",
+                "GITHUB_REPOSITORY": "owner/repo",
+            }), patch.object(executor, "server_now", side_effect=date_error or [fixed_time] * 30), patch.object(
+                executor.subprocess, "run", side_effect=command_results
+            ) as run_mock:
+                exit_code = executor.main()
+            receipt_path = Path(tmp) / "receipt.json"
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            log = (Path(tmp) / "executor.log").read_text(encoding="utf-8") if (Path(tmp) / "executor.log").exists() else ""
+            return exit_code, receipt, log, run_mock.call_count
+
+    def test_executor_success_writes_correlated_step_receipts_and_exact_log_ranges(self):
+        exit_code, receipt, log, calls = self.run_executor("123456", [
+            subprocess.CompletedProcess([], 0, "unit tests pass\n", ""),
+            subprocess.CompletedProcess([], 0, "runtime validator pass\n", ""),
+        ])
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(receipt["status"], "REVIEWING")
+        self.assertEqual([step["status"] for step in receipt["steps"]],
+                         ["PASS", "PASS", "AWAITING_INDEPENDENT_REVIEW"])
+        self.assertEqual(receipt["review_status"], "AWAITING_INDEPENDENT_REVIEW")
+        self.assertEqual(receipt["cross_run_exclusion"], False)
+        self.assertEqual(receipt["cross_run_deduplication"], False)
+        lines = log.splitlines()
+        first, second = receipt["commands"]
+        self.assertEqual(lines[first["log_start_line"] - 1], "COMMAND 1: unit-tests")
+        self.assertTrue(lines[first["log_end_line"] - 1].startswith("EXIT_CODE: 0"))
+        self.assertEqual(lines[second["log_start_line"] - 1], "COMMAND 2: runtime-validator")
+        self.assertTrue(lines[second["log_end_line"] - 1].startswith("EXIT_CODE: 0"))
+        self.assertLess(first["log_end_line"], second["log_start_line"])
+        self.assertEqual(calls, 2)
+
+    def test_first_command_failure_blocks_second_step(self):
+        exit_code, receipt, _, calls = self.run_executor("123457", [
+            subprocess.CompletedProcess([], 7, "first failed\n", ""),
+        ])
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(receipt["status"], "FAILED")
+        self.assertEqual([step["status"] for step in receipt["steps"]],
+                         ["FAIL", "BLOCKED", "AWAITING_INDEPENDENT_REVIEW"])
+        self.assertEqual(calls, 1)
+
+    def test_second_command_failure_preserves_first_pass_and_fails_task(self):
+        exit_code, receipt, _, calls = self.run_executor("123458", [
+            subprocess.CompletedProcess([], 0, "first pass\n", ""),
+            subprocess.CompletedProcess([], 2, "second failed\n", ""),
+        ])
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(receipt["status"], "FAILED")
+        self.assertEqual([step["status"] for step in receipt["steps"]],
+                         ["PASS", "FAIL", "AWAITING_INDEPENDENT_REVIEW"])
+        self.assertEqual(calls, 2)
+
+    def test_timeout_is_a_terminal_step_receipt_and_blocks_following_command(self):
+        timeout = subprocess.TimeoutExpired(["python"], 600, output="partial\n")
+        exit_code, receipt, log, calls = self.run_executor("123459", [timeout])
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(receipt["commands"][0]["status"], "TIMED_OUT")
+        self.assertIn("TIMEOUT after 600 seconds", log)
+        self.assertEqual(receipt["steps"][1]["status"], "BLOCKED")
+        self.assertEqual(calls, 1)
+
+    def test_missing_server_date_fails_closed_before_execution(self):
+        exit_code, receipt, _, calls = self.run_executor(
+            "123460", [],
+            date_error=RuntimeError("GitHub response Date header missing; refusing to use runner clock"),
+        )
+        self.assertEqual(exit_code, 2)
+        self.assertEqual(receipt["status"], "BLOCKED")
+        self.assertIn("Date header missing", receipt["error"])
+        self.assertEqual(calls, 0)
+
+    def test_reused_task_id_in_a_later_run_is_not_claimed_as_cross_run_deduplicated(self):
+        results = [
+            subprocess.CompletedProcess([], 0, "pass\n", ""),
+            subprocess.CompletedProcess([], 0, "pass\n", ""),
+        ]
+        first = self.run_executor("123461", results)
+        second = self.run_executor("123462", results)
+        self.assertEqual(first[1]["task_id"], second[1]["task_id"])
+        self.assertEqual(first[1]["status"], "REVIEWING")
+        self.assertEqual(second[1]["status"], "REVIEWING")
+        self.assertFalse(second[1]["cross_run_deduplication"])
 
     def test_step_update_rejects_unregistered_step(self):
         plan = runtime.build_plan({
