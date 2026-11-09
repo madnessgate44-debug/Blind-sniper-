@@ -82,6 +82,9 @@ The native, runtime-neutral capability layer is indexed in `chatgpt-home/ENVIRON
 - `skills/security-and-permissions/SKILL.md`
 - `skills/memory-and-continuity/SKILL.md`
 - `skills/codex-environment-maintenance/SKILL.md`
+- `skills/owner-policy/SKILL.md` (delegation-consistent standing Owner rules)
+- `skills/git-workflow/SKILL.md` (delegation-consistent version-control procedure)
+- `skills/multi-session-pr-coordination/SKILL.md` (delegation-consistent PR coordination)
 
 ### Specialist agent contracts
 Researcher, Planner, Engineer, Reviewer, QA Verifier, Recovery, Watcher, Shadow Auditor and Release Manager. See `agents/README.md`.
@@ -100,7 +103,7 @@ Session boot, task lifecycle, agent handoff, session close and release gate are 
 
 ## Unified runtime index — 2026-11-08
 - Runtime entrypoint: `chatgpt-home/runtime/README.md`.
-- Native + imported skill index: `chatgpt-home/runtime/skills.index.json` (10 native skills + 33 OpenHands skill/rule files).
+- Native + imported skill index: `chatgpt-home/runtime/skills.index.json` (13 native skills + 33 OpenHands skill/rule files).
 - Agent registry: `chatgpt-home/runtime/agents.json` (25 unique roles/contracts).
 - Profiles and permission posture: `chatgpt-home/runtime/profiles.json`.
 - Tool/adapter truth: `chatgpt-home/runtime/capabilities.json`.

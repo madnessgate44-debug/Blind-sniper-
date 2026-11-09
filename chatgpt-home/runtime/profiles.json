@@ -145,7 +145,7 @@
   "global_rules": [
     "No profile can grant permissions beyond the host and Owner authority.",
     "No dangerous full-access bypass by default.",
-    "Merge, deployment, secret mutation, permission change, paid provisioning and production data mutation require explicit Owner approval.",
+    "Merge, deployment, secret mutation, permission change, paid provisioning and production data mutation require either coverage by the active standing Owner delegation for the exact repository/action or explicit Owner approval; the delegation never authorizes secret mutation, permission change, paid provisioning or production data mutation.",
     "Model identifiers are selected from the host's actually available model list; no model is hardcoded."
   ]
 }

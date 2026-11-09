@@ -68,4 +68,10 @@ A checked item means only the evidence described in the linked files; this manif
 - [x] GitHub Actions structural validation executed successfully on branch head 1a70c10f3d49b67f51986ba383b2c7abbde1fba3: run 42473260867, job validate-environment, PASS: 39 required assets, 9 skill contracts, credential-pattern scan clean.
 - [x] Engineering Execution OS compliance also passed on the same commit: run 42473260744, job policy-compliance.
 
+## 2026-11-09 delegation-consistency checkpoint
+
+- [x] Added three native skills — `owner-policy`, `git-workflow`, `multi-session-pr-coordination` — so the runtime resolves authority-bearing skills to delegation-consistent native contracts instead of the inert OpenHands mirror copies that still state "never push to main / the owner merges". Native skill count is now 13.
+- [x] Corrected the `profiles.json` global rule that still said merge/deploy required explicit Owner approval regardless of the active standing delegation.
+- [x] Regression test `test_selected_skill_contracts_do_not_contradict_the_active_delegation` guards against re-introduction.
+
 **Boundary:** These checks validate repository assets and policy structure. They do not prove Codex CLI installation, ChatGPT hook execution, browser MCP connectivity, OpenHands result retrieval, isolated shell execution or full external-agent round trips. Those remain open readiness gates.

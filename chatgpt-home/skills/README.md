@@ -15,6 +15,9 @@ Skills are task-specific operating procedures. Read the relevant `SKILL.md` befo
 | `security-and-permissions` | Auth, secrets, permissions, MCP or sensitive operations | Threat/risk review and approval gates |
 | `memory-and-continuity` | Session boot, material decision or closeout | Provenance-tagged persistent state |
 | `codex-environment-maintenance` | Add/update profiles, skills, agents, tools or templates | Versioned environment change with validation |
+| `owner-policy` | Always active | Standing Owner rules applied under the active delegation |
+| `git-workflow` | Commit, branch, rebase, conflict, push | Deliberate, reversible version-control change |
+| `multi-session-pr-coordination` | Open/update/merge a PR with concurrent sessions | Safe PR coordination without clobbered heads |
 
 ## Skill authoring contract
 

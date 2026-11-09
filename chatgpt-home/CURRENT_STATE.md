@@ -55,7 +55,7 @@ Everything below this heading is the prior 2026-11-09 02:31 UTC snapshot. It is 
 - Primary entrypoint: `chatgpt-home/BLIND_SNIPER.md`.
 - Runtime source of truth: `chatgpt-home/runtime/` registries, templates and execution contract.
 - Runtime implementation: `scripts/blind_sniper_runtime.py`, `scripts/blind_sniper_ledger.py`; browser adapter is optional.
-- Registry: 6 profiles, 10 native agents, 13 capability adapters, 13 workflows, 10 native skills and 33 mirrored OpenHands skills.
+- Registry: 6 profiles, 10 native agents, 13 capability adapters, 13 workflows, 13 native skills and 33 mirrored OpenHands skills.
 - Watcher is assigned to recovery/reconciliation; Shadow is assigned to independent review. Their contracts do not prove separate agent processes are running.
 - Shadow is read-only and requires a distinct reviewer identity for an independent-review verdict.
 - Owner policy: no payment card, no payment and no paid plan. Oracle Always Free is marked UNUSABLE; the runner bootstrap is scoped only to this Blind Sniper repository.

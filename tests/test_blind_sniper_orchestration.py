@@ -1,6 +1,7 @@
 """Behavioral tests for Blind Sniper's executable orchestration engine."""
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -164,6 +165,19 @@ class OrchestrationEngineTests(unittest.TestCase):
         })
         self.assertEqual(plan["approval"]["approved_actions"], [])
         self.assertEqual(plan["approval"]["pending_actions"], sorted(actions))
+
+    def test_selected_skill_contracts_do_not_contradict_the_active_delegation(self):
+        # Regression: the runtime must resolve authority-bearing skills to the
+        # native, delegation-consistent contracts, never to the inert mirror
+        # copies that still say "never push to main / the owner merges".
+        index = json.loads((ROOT / "chatgpt-home/runtime/skills.index.json").read_text())
+        for skill in ("owner-policy", "git-workflow", "multi-session-pr-coordination"):
+            path = runtime.resolve_skill_path(skill, index)
+            self.assertTrue(path.startswith("chatgpt-home/skills/"), f"{skill} resolved to mirror path {path}")
+            text = (ROOT / path).read_text(encoding="utf-8")
+            lowered = text.lower()
+            for banned in ("never push to `main`", "the owner merges", "owner retains merge", "do not merge unless"):
+                self.assertNotIn(banned, lowered, f"{skill} still asserts '{banned}'")
 
     def test_release_gate_detects_missing_deploy_and_merge_capabilities(self):
         plan = runtime.build_plan({

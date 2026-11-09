@@ -53,7 +53,7 @@
   "native_source": {
     "type": "host_adapted_native_skills",
     "path": "chatgpt-home/skills",
-    "declared_skill_files": 10,
+    "declared_skill_files": 13,
     "activation": "Blind Sniper reads the selected native SKILL.md in the current session; no automatic hidden loader is claimed."
   },
   "native_skills": [
@@ -66,7 +66,10 @@
     "security-and-permissions",
     "test-and-evidence",
     "web-research",
-    "workflow-authoring"
+    "workflow-authoring",
+    "owner-policy",
+    "git-workflow",
+    "multi-session-pr-coordination"
   ],
   "native_skill_paths": {
     "agent-dispatch": "chatgpt-home/skills/agent-dispatch/SKILL.md",
@@ -78,6 +81,9 @@
     "security-and-permissions": "chatgpt-home/skills/security-and-permissions/SKILL.md",
     "test-and-evidence": "chatgpt-home/skills/test-and-evidence/SKILL.md",
     "web-research": "chatgpt-home/skills/web-research/SKILL.md",
-    "workflow-authoring": "chatgpt-home/skills/workflow-authoring/SKILL.md"
+    "workflow-authoring": "chatgpt-home/skills/workflow-authoring/SKILL.md",
+    "owner-policy": "chatgpt-home/skills/owner-policy/SKILL.md",
+    "git-workflow": "chatgpt-home/skills/git-workflow/SKILL.md",
+    "multi-session-pr-coordination": "chatgpt-home/skills/multi-session-pr-coordination/SKILL.md"
   }
 }
