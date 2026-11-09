@@ -18,11 +18,9 @@ if [[ "$ID" != "ubuntu" || ! "$VERSION_ID" =~ ^(22\.04|24\.04)$ ]]; then
   exit 2
 fi
 
-read -r -p "GitHub repository URL (https://github.com/OWNER/REPO): " REPO_URL
-if [[ ! "$REPO_URL" =~ ^https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/?$ ]]; then
-  echo "Invalid repository URL." >&2
-  exit 2
-fi
+# This runner bootstrap is intentionally scoped to Blind Sniper only.
+REPO_URL="https://github.com/madnessgate44-debug/Blind-sniper-"
+echo "Registering repository-scoped runner for $REPO_URL"
 read -r -s -p "Short-lived GitHub Actions runner registration token: " RUNNER_TOKEN
 echo
 if [[ -z "$RUNNER_TOKEN" ]]; then
