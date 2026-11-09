@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-11-09 — BS-OS-003 adoption register recorded
 **Active work branch:** `feat/bs-os-001a-registry-reconciliation-2026-11-09`
-**Current branch HEAD:** `27eec82dcbcb7106df5078bd39f81f5c59ec6bd5`
+**Current branch HEAD:** `04423e589247d3d456fcf0c258900986650e06b4` (before this state-anchor update)
 **Main baseline:** `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e`
 **BS-OS-002:** `chatgpt-home/BS-OS-002_CANONICAL_ARCHITECTURE.md`
 **BS-OS-003:** `chatgpt-home/BS-OS-003_COMPONENT_ADOPTION_REGISTER.md`
@@ -46,7 +46,9 @@
 
 ## Repository and release state
 - Main remains at `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e`.
-- Work branch is 33 commits ahead and 0 behind main; cumulative compare contains 20 changed files. No PR has yet been created for this aggregate branch.
+- Work branch was 34 commits ahead and 0 behind main at PR creation; cumulative compare contained 20 changed files.
+- Draft PR #18 opened against main: https://github.com/madnessgate44-debug/Blind-sniper-/pull/18. PR creation confirmed; it is open, unmerged and marked draft. Its head at creation was `04423e589247d3d456fcf0c258900986650e06b4`.
+- PR #18 has no associated workflow runs reported for its creation head at the time of this snapshot. Exact-head CI and cumulative review remain required.
 - No merge, protected-branch push, deployment, paid provisioning, secret mutation, CI permission expansion or history rewrite performed.
 - Prior 001A runtime validator and 88 unit tests passed on the recorded 001A checkpoint; environment validation and OS compliance passed on recorded historical commits. The latest documentation-only commits have no associated Actions runs.
 
