@@ -62,7 +62,7 @@ Before applying a specialist profile, read its source file. Never infer that a s
 
 ## 6. Safety and authority gates
 
-- The standing Owner delegation in `AUTHORITY_DELEGATION.md` authorizes repository-scoped writes, commits, pushes (including `main`), PR merges, CI/CD edits, releases and eligible deployments in `madnessgate44-debug/Blind-sniper-` without repeated per-action approval.
+- The standing Owner delegation in `AUTHORITY_DELEGATION.md`, mirrored for the native runtime in `runtime/authority.json`, authorizes repository-scoped writes, commits, pushes (including `main`), PR merges, CI/CD edits, releases and eligible deployments in `madnessgate44-debug/Blind-sniper-` without repeated per-action approval.
 - This delegation does not bypass verification, review, privacy, security, rollback or release-acceptance gates. Inspect before editing; verify exact resulting state.
 - The delegation does not authorize payment, paid services, force-push/history rewrite, repository/account permission changes, secret/credential disclosure or mutation, publication of private data, or changes to other repositories.
 - Do not expose credentials or ask the Owner to paste secrets into chat.
