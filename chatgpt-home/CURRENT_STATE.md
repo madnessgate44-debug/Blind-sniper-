@@ -39,3 +39,20 @@
 - Lease heartbeat scheduler, cancellation, stale-worker supervisor, bounded executor, interruption E2E and boot-size measurement remain future work.
 - Native-first is confirmed. Closing PRs #3/#6/#7 has not been authorized.
 - No main merge, deploy, paid resource, secret/permission mutation, transcript import, browser/Forge or OpenHands execution performed.
+
+
+## Browser adapter update — 2026-11-08
+
+- PR #11 head at last inspection: `024edf54c277e66bf321d5fe8b3604518c25b9f4`; base is `feat/blind-sniper-orchestration-integration-2026-11-08`; PR remains OPEN / DRAFT.
+- Native browser actions R14/R15: two-cycle Chromium E2E passed run 42496827462, 36 receipts total. Tabs, frames, upload, download and PDF are covered.
+- Oracle Always Free ARM64 bootstrap and an opt-in two-job session persistence probe are versioned. No Oracle tenancy/VM was provisioned; persistent host remains unverified.
+- ChatGPT custom MCP connection cannot be registered on the current Free plan; ChatGPT custom MCP is web-only. Authenticated profile/cookie persistence is not implemented.
+- Independent Claude review requested in PR #11 comment 6723622077; pending.
+- No merge or deployment. Vercel has no project linked to this repository.
+
+
+## Browser adapter release check — 2026-11-08
+
+PR #11 head `dbbe2ee39931d03c10dd237ac8a673d1f729bc48`: browser run 42497643588 PASS (36 receipts across two real Chromium cycles; tabs, frames, upload, download, PDF), runtime 42497643648 PASS, environment 42497643660 PASS, OS compliance 42497643517 PASS. Artifact 13624331916; SHA-256 35e6d3626e82712cc63a7bef49202521c719fae13835f19d709fa62eab3858c9.
+
+Release remains partial: Oracle Always Free host not provisioned; cross-job browser persistence not tested; ChatGPT custom MCP unavailable on current Free plan and web-only; authenticated profiles/cookies unsupported; independent Claude review not received. PR #11 remains draft/open/unmerged. No Vercel project is linked; no deployment target.

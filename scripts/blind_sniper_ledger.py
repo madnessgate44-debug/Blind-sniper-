@@ -169,6 +169,58 @@ class TaskLedger:
             "lease_expires_at": lease["lease_expires_at"],
         }
 
+    def reserve_browser_action_if_lease(
+        self,
+        *,
+        task_id: str,
+        owner_id: str,
+        payload: dict[str, Any],
+        idempotency_key: str,
+        min_remaining_seconds: int,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """Atomically validate EXECUTING state/lease and reserve one browser step."""
+        instant = now or datetime.now(timezone.utc)
+        if instant.tzinfo is None:
+            raise LedgerError("browser reservation time must include a timezone")
+        if not task_id.strip() or not owner_id.strip() or not idempotency_key.strip():
+            raise LedgerError("task_id, owner_id and idempotency_key are required")
+        if isinstance(min_remaining_seconds, bool) or not isinstance(min_remaining_seconds, int) or min_remaining_seconds < 1:
+            raise LedgerError("min_remaining_seconds must be a positive integer")
+        if not isinstance(payload, dict):
+            raise LedgerError("browser reservation payload must be an object")
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a+", encoding="utf-8") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                rows = self._read_unlocked()
+                snapshots = [
+                    row.get("payload", {}).get("state")
+                    for row in rows
+                    if row.get("task_id") == task_id and isinstance(row.get("payload", {}).get("state"), dict)
+                ]
+                if not snapshots or snapshots[-1].get("status") != "EXECUTING":
+                    raise LedgerError("Browser reservation requires authoritative task status EXECUTING")
+                if snapshots[-1].get("implementer_id") != owner_id:
+                    raise LedgerError("Browser reservation owner does not match executing implementer")
+                active = self._active_lease(rows, task_id, instant)
+                if not active or active.get("owner_id") != owner_id:
+                    raise LedgerError("Browser reservation requires an active lease held by this owner")
+                expiry = datetime.fromisoformat(str(active["lease_expires_at"]).replace("Z", "+00:00"))
+                if (expiry - instant).total_seconds() <= min_remaining_seconds:
+                    raise LedgerError("Task lease has insufficient remaining time for browser action")
+                if any(row.get("idempotency_key") == idempotency_key for row in rows):
+                    raise LedgerError("Browser step already reserved; duplicate or interrupted replay is forbidden")
+                event, created = self._append_locked(
+                    handle, rows, task_id=task_id, event_type="BROWSER_ACTION_STARTED",
+                    payload=payload, idempotency_key=idempotency_key,
+                )
+                if not created:
+                    raise LedgerError("Browser step reservation was not newly created")
+                return {"reserved": True, "event": event}
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
     def claim_task(
         self,
         *,
@@ -545,6 +597,41 @@ class GitHubContentsLedger:
                 return TaskLedger(local_path).lease_status(task_id, now)
             except LedgerError as exc:
                 raise GitHubLedgerError(f"Remote lease history is invalid: {exc}") from exc
+
+    def reserve_browser_action_if_lease(
+        self,
+        *,
+        task_id: str,
+        owner_id: str,
+        payload: dict[str, Any],
+        idempotency_key: str,
+        min_remaining_seconds: int,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """Reserve a browser step using GitHub Contents SHA-CAS and native lease checks."""
+        for _ in range(self.max_retries):
+            remote_content, remote_sha = self._read_remote()
+            with tempfile.TemporaryDirectory() as tmp:
+                local_path = Path(tmp) / "events.jsonl"
+                local_path.write_bytes(remote_content)
+                local = TaskLedger(local_path)
+                try:
+                    result = local.reserve_browser_action_if_lease(
+                        task_id=task_id, owner_id=owner_id, payload=payload,
+                        idempotency_key=idempotency_key,
+                        min_remaining_seconds=min_remaining_seconds, now=now,
+                    )
+                except LedgerError as exc:
+                    raise GitHubLedgerError(str(exc)) from exc
+                updated_content = local_path.read_bytes()
+            commit_sha = self._write_remote_content(
+                content=updated_content, remote_sha=remote_sha,
+                task_id=task_id, event_type="BROWSER_ACTION_STARTED",
+            )
+            if commit_sha is None:
+                continue
+            return {"reserved": True, "event": {**result["event"], "commit_sha": commit_sha}}
+        raise GitHubLedgerError(f"GitHub browser reservation CAS failed after {self.max_retries} attempts")
 
     def append_transition_if_lease(
         self,

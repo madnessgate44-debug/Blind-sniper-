@@ -260,3 +260,78 @@ Next: finish external runtime adapters and prove two consecutive correlated task
 - [VERIFIED] OS compliance run `42475329895` / job `128715259743` PASS.
 - [PASS] One correlated read-only OpenHands report handoff completed: T013 request `6720767727` → session `e341bd8463694d68bd79dc609e408f33` → result `6720817754` / final report `6720827623`.
 - [NOT PASSED] Two consecutive handoffs, direct OpenHands Cloud API from ChatGPT, code-execution artifact return and ChatGPT→Forge tool invocation.
+
+
+## 2026-11-08T15:23Z — Blind Sniper session resumed; BS-20261108-004 advanced
+
+### Boot evidence
+- [VERIFIED] Root AGENTS.md SHA: 91d63a56818ebf5d757ac7cda0e0786fff88b058.
+- [VERIFIED] Root ENGINEERING_EXECUTION_OS.md v2.2 SHA: 7c339a090eaf23fc1e4f9112f72a4ba28f2bfe1c.
+- [VERIFIED] Canonical chatgpt-home/BLIND_SNIPER.md SHA: 3d2f1fc661ef99b00589cbaafae12647f6339ee4.
+- [VERIFIED] Seven default-branch continuity files fetched non-empty:
+  - README.md: ed5678c548aa1e02e77bad79908499e1c2da7845
+  - OPERATING_PROFILE.md: d024a92c471f29a8b68bf33f9eaeccadc374d3fb
+  - MEMORY.md: 26b415e075b69e5f4af177b0dfcc844f1598bb7c
+  - PROJECTS.md: 97e848953da5ead22656f0a684438f3d73077536
+  - CONVERSATION_CONTINUITY.md: e767e8a8c8986776ae365e463477cfe8814f16ba
+  - SKILLS_CATALOG.md: 5589a1b2e768f7629648df090dc2c023e862c980
+  - SYNC_PROTOCOL.md: 1ed3ee1814dc3de5f628a1697f04eea215b57145
+- [VERIFIED] Relevant native review, security and testing skill checklists retrieved from the OpenHands mirror and applied as review lenses; no external reviewer was spawned.
+
+### BS-20261108-004 — native browser adapter
+- [VERIFIED] Inspected PR #11 and task record. Corrected two gaps: URL path/query/fragment redaction in receipts and session metadata; disabled the standalone adapter CLI to prevent bypassing the native task/lease dispatch entrypoint.
+- [VERIFIED] The first correction run exposed a missing sys import in the blocked-CLI entrypoint (run 42494306777). Added import sys in commit b48a5f9f0658f1210a66af02231079723039fbb6.
+- [VERIFIED] Corrected code CI: browser run 42494392033 passed 13 browser-policy tests, 8 dispatcher tests and the 7-step real Chromium fixture; runtime run 42494391958 passed 76 tests; environment run 42494391967 passed; OS compliance run 42494391928 passed.
+- [VERIFIED] Documentation-head recheck: browser run 42494489650 passed; runtime run 42494489779 passed (76 tests); environment run 42494489680 passed; OS compliance run 42494489781 passed. Browser artifact ID 13622514585, 11,772 bytes.
+- [VERIFIED] Latest inspected PR #11 head before this checkpoint write: e5c70bb2c24372cd5d3f58c4567739945987c38c. PR remains OPEN / DRAFT / NOT MERGED, base integration SHA db4e82ad831fbd231689a359d66a1153fc601407.
+- [VERIFIED] Task record and BROWSER_ADAPTER.md were appended with the security fixes, failure correction and evidence.
+- [PARTIAL] Persistent browser hosting, direct ChatGPT tool registration, cross-job live-session recovery, tabs/frames, upload/download, PDF, authenticated profiles and full interruption/recovery acceptance remain open. Independent external full-diff review remains pending.
+- [NOT DONE] No merge, deployment, secret/permission change, paid service or user-device extension.
+
+### Next pickup
+Continue BS-20261108-004 only after preserving the current PR boundary. Next engineering tranche: close the remaining browser acceptance gaps in small independently verified slices; do not represent the ephemeral CI runner as a persistent browser service.
+
+
+### Final closeout addendum — 2026-11-08T15:24Z
+- [VERIFIED] Task record read-back: chatgpt-home/tasks/BS-20261108-004.md blob c1f095b3e37b7c3d07a13f724ed88781562f2d55; R9–R11 atomic reservation verification is now explicitly closed PASS; R12–R13 security fixes are PASS.
+- [VERIFIED] Browser contract read-back: chatgpt-home/runtime/BROWSER_ADAPTER.md blob 33caf888678694eb5c611d3041de63ebd8ae5a2a; stale pending-verification wording corrected.
+- [VERIFIED] Latest PR #11 head after documentation closeout: 728d484b268e61abae9bcae5189a3a7933c9827d; OPEN / DRAFT / NOT MERGED; mergeable true; base integration SHA db4e82ad831fbd231689a359d66a1153fc601407.
+- [VERIFIED] Latest code-and-doc verification remains browser 42494489650, runtime 42494489779, environment 42494489680 and OS compliance 42494489781 — all SUCCESS. Subsequent edits were documentation/checkpoint-only; no browser/runtime source changed.
+
+
+## Native browser E2E extension — 2026-11-08T15:27Z
+
+- [VERIFIED] Replaced adapter-direct E2E with the real native dispatcher, local TaskLedger, active owner lease and canonical action events.
+- [VERIFIED] The first expanded E2E attempt (run 42494797871) exposed duplicate Python module identities: the E2E imported scripts.blind_sniper_ledger while the dispatcher imported blind_sniper_ledger, so the retry LedgerError class was not caught as BrowserDispatchError. Fixed by putting the scripts directory on sys.path and importing all three modules under the same top-level names in commit e515fecff3d2ac7e1529ef593d541cf06ed1dc29.
+- [VERIFIED] Final native E2E run 42494894841 passed: two consecutive real Chromium cycles; each cycle 8 started, 7 completed, 1 started-only interrupted action reconciled, 8 receipts; same-step retry blocked before adapter construction; each lease released. Total 16 receipts and 25,710 screenshot bytes.
+- [VERIFIED] Same run: 13 browser-policy tests and 8 native-dispatch tests passed, including concurrent atomic reservation. Runtime suite run 42494894866 passed 76 tests. Environment run 42494894828 and OS compliance run 42494894875 completed SUCCESS.
+- [VERIFIED] Artifact ID 13623151218; 29,755 bytes; SHA-256 340dc2a588b0ea0cb546c83421f02c114e7730313783f950a180f6b5054937e1.
+- [VERIFIED] Updated capability registry, workflow registry, runtime README, browser adapter contract and task BS-20261108-004 with R14 and current evidence. R6 is PASS for workspace-surviving interruption/no-replay/reconciliation; cross-job live browser session recovery remains PARTIAL.
+- [VERIFIED] Latest inspected PR #11 head before this checkpoint write: 12957916f507e3f3b8f16112eb156eac92edc2c6; OPEN / DRAFT / NOT MERGED; mergeable true at last PR read; base integration SHA db4e82ad831fbd231689a359d66a1153fc601407.
+- [PARTIAL] Tabs/frames, uploads/downloads, PDF, authenticated profiles, durable browser hosting and direct ChatGPT browser-tool registration remain unimplemented or unproven. No merge or deployment.
+
+
+## 2026-11-08 — Browser adapter R15 and free-hosting tranche
+
+- [VERIFIED] Added native dispatcher actions for tabs list/create/switch/close, iframe frame switching, approved upload, bounded download and PDF export.
+- [VERIFIED] Extended real Chromium E2E passed two consecutive cycles in run 42496827462. Each cycle: 18 started, 17 completed, one started-only action reconciled without replay, 18 receipts; tabs, frames, upload, download and PDF all exercised. Total 36 receipts; 38,746 screenshot bytes; artifact 13623019051; SHA-256 c4615fb9f7b98c9ddf78a9d05b385d72a773b04f1abedd8b082af69ea09825b4.
+- [VERIFIED] Runtime registry, environment validation and OS compliance passed on PR head 9c71cb92f1471fc44dbc647b2701c3a94e32db54. Latest head has additional documentation/workflow commits and its CI is being re-run.
+- [VERIFIED] Added Oracle Always Free ARM64 bootstrap. Because pinned agent-browser@0.41.2's bundled Chrome installer rejects Linux ARM64, the bootstrap downloads Chrome for Testing's official Linux ARM64 binary and sets AGENT_BROWSER_EXECUTABLE_PATH.
+- [VERIFIED] Added optional two-job self-hosted persistence acceptance, gated by repository variable BLIND_SNIPER_SELF_HOSTED_ENABLED=true and manual workflow_dispatch. It opens a page in job 1 and verifies the same browser session in job 2. It has not run because no Oracle VM/runner exists.
+- [PARTIAL] Oracle Always Free is the selected $0 recurring-cost cloud candidate, but signup normally requires payment-card verification and Oracle may reclaim low-utilization VMs. No tenancy or VM was provisioned; no persistent host is claimed.
+- [BLOCKED] Direct ChatGPT custom MCP connector registration is unavailable on the current Free plan; ChatGPT custom MCP connections are web-only. The browser adapter is not callable from the current ChatGPT tool surface.
+- [PENDING] Independent Claude full-diff review requested in PR #11 comment 6723622077; no review response received yet.
+- [NOT DONE] PR #11 remains OPEN / DRAFT / NOT MERGED. No production deployment target exists in Vercel for this repository. No merge or deployment performed.
+
+
+## Final verification checkpoint — 2026-11-08
+
+- [VERIFIED] PR #11 head `dbbe2ee39931d03c10dd237ac8a673d1f729bc48`; base integration branch `feat/blind-sniper-orchestration-integration-2026-11-08`; PR remains OPEN / DRAFT / NOT MERGED.
+- [VERIFIED] Browser run 42497643588: extended policy/dispatcher tests and two real Chromium cycles passed; each cycle 18 started, 17 completed, one interrupted/reconciled, 18 receipts; total 36 receipts and 38,746 screenshot bytes.
+- [VERIFIED] Artifact 13624331916; SHA-256 35e6d3626e82712cc63a7bef49202521c719fae13835f19d709fa62eab3858c9.
+- [VERIFIED] Runtime registry 42497643648, environment validation 42497643660, OS compliance 42497643517 all SUCCESS on the same head.
+- [VERIFIED] Tabs, frames, approved upload, bounded download and PDF are now implemented and covered by real Chromium E2E.
+- [PARTIAL] Oracle Always Free host bootstrap and optional two-job persistence test are versioned; no Oracle account/VM or runner exists. Persistent cross-job session recovery not verified.
+- [BLOCKED] ChatGPT custom MCP connector unavailable on current Free plan; custom MCP apps are web-only. Authenticated profiles/cookies remain unsupported.
+- [PENDING] Independent Claude full-diff review handoff created; formal reviewer request failed because `claude` is not a repository collaborator. Owner may relay `chatgpt-home/handoffs/BS-20261108-004-CLAUDE-REVIEW.md`.
+- [NOT DONE] No merge or deployment; Vercel reports no project linked to this repository.

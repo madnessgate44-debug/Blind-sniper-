@@ -75,3 +75,15 @@
 6. Move routing ownership into registries and remove duplicated routing maps.
 7. Reduce boot payload and measure actual bytes/lines before optimizing.
 8. Reconcile branch graph and prepare a privacy-safe consolidated draft PR only after storage containment.
+
+
+## Browser adapter tranche — 2026-11-08
+
+R14 and R15 are verified on the native browser adapter. Run 42496827462 passed two consecutive real Chromium cycles through the native lease-gated dispatcher, exercising tabs, frame switching, approved upload, bounded download and PDF export. Each cycle recorded 18 started, 17 completed and one interrupted/reconciled action with 18 receipts; total 36 receipts.
+
+Remaining:
+- Oracle Always Free ARM64 host not provisioned; cross-job browser persistence not tested. Bootstrap and opt-in two-job test are in `ops/oracle-free/` and `scripts/run_blind_sniper_browser_persistence_probe.py`.
+- Direct ChatGPT MCP connection unavailable on current Free plan; custom MCP app connections are web-only.
+- Authenticated profiles/cookies intentionally unsupported.
+- Independent full-diff review pending.
+- PR #11 remains draft; no merge/deployment target is available.

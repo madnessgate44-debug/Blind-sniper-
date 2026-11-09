@@ -119,3 +119,20 @@ Ahmed confirmed **native-first** as the single target architecture. The native r
 Workflow routing keywords, priorities and agent assignments now live in `workflows.json`; profile binding is resolved through `profiles.json`. The runtime no longer maintains duplicate workflow-to-profile or workflow-to-agent dictionaries. The registry validator checks workflow agent IDs, profile allowlists, routing rules and default agents.
 
 The runtime remains a planner and guarded state machine, not an autonomous executor. It now has local and remote-CAS task leases, but no heartbeat scheduler, cancellation supervisor or stale-worker sweeper. It does not spawn separate model processes or claim that role contracts have run. Current test and CI evidence is in `chatgpt-home/CURRENT_STATE.md`; implementation limits and next work are in `chatgpt-home/runtime/BUILD_PROGRESS.md`.
+
+
+## Native browser adapter — extended CI verified; persistent host pending
+
+The native adapter at `../../scripts/blind_sniper_browser.py` uses pinned `agent-browser@0.41.2` through `../../scripts/blind_sniper_browser_dispatch.py`. The dispatcher requires EXECUTING task state, a matching active owner lease, atomic pre-action reservation and correlated canonical ledger receipts.
+
+Verified capabilities:
+- Allowlisted navigation, accessibility snapshots, click/fill/press with host approval, screenshots and redacted receipts.
+- Tabs list/create/switch/close and iframe frame switching.
+- Workspace-contained upload with explicit host approval, file extension allowlist and 10 MiB limit.
+- Workspace-contained download with no-overwrite behavior and 25 MiB limit.
+- PDF export to a contained artifact path.
+- Two consecutive real Chromium E2E cycles through the native lease-gated dispatcher. Each cycle recorded 18 started actions, 17 completed actions, one started-only interruption reconciled without replay, and 18 receipts. Both cycles exercised tabs, frames, upload, download and PDF. Browser workflow run 42496827462 passed; artifact ID 13623019051, SHA-256 c4615fb9f7b98c9ddf78a9d05b385d72a773b04f1abedd8b082af69ea09825b4.
+
+Persistent host status is still NOT PROVISIONED / NOT VERIFIED. An Oracle Always Free ARM64 self-hosted-runner bootstrap is versioned at `ops/oracle-free/`; it installs the pinned CLI, a manually selected Chrome for Testing ARM64 binary and a persistent GitHub runner. The Oracle VM has not been created or smoke-tested. Oracle may reclaim Always Free VMs after seven days below published utilization thresholds, so this is not a guaranteed always-on SLA. Signup normally requires payment-card verification, though Oracle states the card is not charged unless the account is upgraded. Keep all resources inside Always Free limits.
+
+The adapter is not directly callable as a ChatGPT tool in this session. Custom MCP server connections are not available on the current Free plan; ChatGPT custom MCP connections are also web-only. Do not mark direct ChatGPT integration complete. Authenticated profiles, cookie transfer and credential-state persistence remain intentionally unsupported. The Oracle host must be provisioned by the Owner before cross-job session persistence can be tested.

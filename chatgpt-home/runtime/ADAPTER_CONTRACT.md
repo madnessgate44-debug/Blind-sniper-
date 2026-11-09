@@ -29,5 +29,22 @@ Provide a common boundary between Blind Sniper orchestration and execution provi
 | Forge | HTTP MCP design in Firstborn PR #147 | Connector not registered here | Not retrieved through MCP here | BLOCKED |
 | Codex CLI | Host invocation | Host runtime required | Local filesystem/worktree | NOT AVAILABLE HERE |
 
-## Acceptance
-An adapter is not READY until a harmless task completes dispatch → receipt → execution → artifact retrieval → independent verification → state sync twice consecutively.
+## Native browser adapter
+
+The browser mechanics live in `scripts/blind_sniper_browser.py`; the native lease-gated dispatch boundary lives in `scripts/blind_sniper_browser_dispatch.py`.
+
+The dispatch boundary requires:
+- An authoritative ledger snapshot with task status `EXECUTING`.
+- Host owner identity equal to the task's `implementer_id`.
+- A currently active lease owned by that identity, with timeout plus safety margin remaining.
+- A unique run/session/step reservation before browser invocation.
+- A completion event carrying the adapter receipt after the action.
+
+A started event without a completion event is a reconciliation state, not permission to replay. The bridge uses the existing local or GitHub Contents CAS ledger selected by runtime arguments. Browser policy remains host-supplied; task envelopes cannot grant their own lease or write approval.
+
+## Remaining adapter gaps
+
+- GitHub Actions remains an ephemeral runner, not a persistent browser service.
+- No direct ChatGPT browser tool/connector registration is established.
+- Tabs/frames, approved workspace upload, bounded download and PDF export are implemented and passed two-cycle real Chromium E2E (run 42496827462). Authenticated profiles/cookies remain intentionally unsupported. Persistent host and cross-job browser recovery are pending actual Oracle VM provisioning and the opt-in two-job acceptance workflow.
+- The browser allowlist is not an OS firewall; host/container egress restrictions remain a separate defense-in-depth control.
