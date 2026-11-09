@@ -1,5 +1,8 @@
 # Blind Sniper — Codex Runtime Architecture
 
+> **HISTORICAL / SUPERSEDED — 2026-11-09 (BS-OS-004 D8).** This document is retained for provenance only. It is **not** the current source of truth. The current canonical architecture is `chatgpt-home/BLIND_SNIPER.md` (operating instruction file) plus `chatgpt-home/BS-OS-002_CANONICAL_ARCHITECTURE.md`, and the live registry state is in `chatgpt-home/runtime/` (`agents.json`, `profiles.json`, `workflows.json`, `skills.index.json`, `capabilities.json`). Where this file disagrees with those sources, those sources win. Do not act on this document without reconciling it against the current runtime registries. The body below is preserved unchanged as historical evidence.
+
+
 **Status:** Target architecture; integrations are implemented incrementally and evidence-gated.  
 **Owner:** Ahmed / Natural Intelligence (NI)  
 **Controller:** Blind Sniper / ChatGPT  

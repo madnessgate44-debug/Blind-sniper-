@@ -94,3 +94,10 @@ Added after the second batch `#26 → #28 → #29 → #30 → #31 → #32` merge
 - GitHub Pages: the legacy builder status was `errored` from `1d323ea` to `11301c1`; fixed by `.nojekyll` in PR #32, status now `built`.
 - Superseded branches deleted 2026-11-09 after merge: `feat/blind-sniper-jobs-e2e-sim-2026-11-09`, `feat/skill-discovery-and-codex-config-2026-11-09`, `fix/pages-nojekyll-2026-11-09`.
 - This addendum reflects live state; the reconciliation is committed on a branch and merged via PR. No deployment or history rewrite occurred.
+
+## 10. Addendum — 2026-11-09 (D6 and D8 reconciled)
+
+- **D6 (`chatgpt-home/tasks/BS-20261108-002.md`):** status reconciled — the historical `VERIFIED — PR open, not merged` line is preserved and marked superseded; a dated note records that PR #6 was **closed** (not merged) and its content shipped to `main` via **PR #17** (`ac8a5eb`).
+- **D8 (`chatgpt-home/CODEX_RUNTIME_ARCHITECTURE.md`):** marked **HISTORICAL / SUPERSEDED** with a header banner pointing to the current canonical sources (`BLIND_SNIPER.md`, `BS-OS-002_CANONICAL_ARCHITECTURE.md`, `chatgpt-home/runtime/`). The body is preserved unchanged.
+- With D6 and D8 reconciled, every row in §3 (D1–D8) is now either reconciled or explicitly cross-repository (D9–D11).
+- This addendum reflects the reconciliation committed on a branch and merged via PR; no deployment or history rewrite occurred.
