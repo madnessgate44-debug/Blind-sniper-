@@ -6,7 +6,7 @@
       "id": "blind-sniper",
       "purpose": "Cross-repository AI operating lead",
       "sandbox": "read-only-by-default",
-      "approval": "on-request",
+      "approval": "delegation-aware; request Owner approval only for actions outside the exact active grant or within its exclusions",
       "skills": [
         "owner-policy",
         "agent-dispatch",
@@ -55,7 +55,7 @@
       "id": "engineering",
       "purpose": "Bounded implementation on an isolated feature branch",
       "sandbox": "scoped-workspace-write",
-      "approval": "on-request",
+      "approval": "delegation-aware for the exact authorized repository; request Owner approval only outside scope or for excluded actions",
       "skills": [
         "github-workspace",
         "workflow-authoring",
@@ -102,7 +102,7 @@
       "id": "recovery",
       "purpose": "Continuity, task and delivery recovery",
       "sandbox": "read-only-first",
-      "approval": "on-request-for-recovery-write",
+      "approval": "delegation-aware for repository-scoped recovery writes; request Owner approval only outside scope or for excluded actions",
       "skills": [
         "memory-and-continuity",
         "blind-sniper-continuity",
@@ -123,7 +123,7 @@
       "id": "release",
       "purpose": "Release readiness and post-release verification",
       "sandbox": "read-only-until-approved",
-      "approval": "explicit-owner-approval-for-merge-deploy",
+      "approval": "delegation-aware; merge/release/deploy in the exact authorized repository after all release gates pass; request Owner approval only outside scope or for excluded actions",
       "skills": [
         "workflow-authoring",
         "test-and-evidence",
