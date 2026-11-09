@@ -396,6 +396,18 @@
           "pdf_export"
         ]
       }
+    },
+    {
+      "id": "bounded-verification",
+      "trigger": "single_run_allowlisted_ci_verification",
+      "steps": [
+        "run_unit_tests",
+        "run_runtime_validator",
+        "await_independent_review"
+      ],
+      "adapters": [],
+      "execution": "fixed_command_allowlist_in_one_ephemeral_github_actions_run",
+      "status": "bounded_ci_verification_only_no_cross_run_reservation"
     }
   ],
   "native_workflow_library": "chatgpt-home/workflows/",
