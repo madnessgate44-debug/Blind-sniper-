@@ -72,19 +72,21 @@ When OpenHands skills or agents change, update this catalog from the live `Openh
 ## Blind Sniper native capability pack — 2026-11-08
 The native, runtime-neutral capability layer is indexed in `chatgpt-home/ENVIRONMENT_MANIFEST.md`.
 
-### Native skills
-- `skills/github-workspace/SKILL.md`
-- `skills/web-research/SKILL.md`
-- `skills/browser-operations/SKILL.md`
+### Native skills — 14 indexed contracts
 - `skills/agent-dispatch/SKILL.md`
-- `skills/workflow-authoring/SKILL.md`
-- `skills/test-and-evidence/SKILL.md`
-- `skills/security-and-permissions/SKILL.md`
-- `skills/memory-and-continuity/SKILL.md`
+- `skills/blind-sniper-continuity/SKILL.md`
+- `skills/browser-operations/SKILL.md`
 - `skills/codex-environment-maintenance/SKILL.md`
-- `skills/owner-policy/SKILL.md` (delegation-consistent standing Owner rules)
 - `skills/git-workflow/SKILL.md` (delegation-consistent version-control procedure)
+- `skills/github-research/SKILL.md`
+- `skills/github-workspace/SKILL.md`
+- `skills/memory-and-continuity/SKILL.md`
 - `skills/multi-session-pr-coordination/SKILL.md` (delegation-consistent PR coordination)
+- `skills/owner-policy/SKILL.md` (delegation-consistent standing Owner rules)
+- `skills/security-and-permissions/SKILL.md`
+- `skills/test-and-evidence/SKILL.md`
+- `skills/web-research/SKILL.md`
+- `skills/workflow-authoring/SKILL.md`
 
 ### Specialist agent contracts
 Researcher, Planner, Engineer, Reviewer, QA Verifier, Recovery, Watcher, Shadow Auditor and Release Manager. See `agents/README.md`.
@@ -101,10 +103,13 @@ Session boot, task lifecycle, agent handoff, session close and release gate are 
 - `mcp/MCP_AND_BROWSER_INTEGRATIONS.md` records the live state and acceptance gates for GitHub, OpenHands, Brain, Forge and Codex MCP/browser integrations.
 
 
-## Unified runtime index — 2026-11-08
+## Historical unified runtime index — 2026-11-08 (superseded)
+
+This section records the pre-reconciliation snapshot. Its native skill count below is historical; the current index contains 14 native skills. See `runtime/skills.index.json` and the 2026-11-09 reconciliation section above.
+
 - Runtime entrypoint: `chatgpt-home/runtime/README.md`.
-- Native + imported skill index: `chatgpt-home/runtime/skills.index.json` (13 native skills + 33 OpenHands skill/rule files).
-- Agent registry: `chatgpt-home/runtime/agents.json` (25 unique roles/contracts).
+- Native + imported skill index: `chatgpt-home/runtime/skills.index.json` (14 native skills + 33 OpenHands skill/rule files).
+- Agent registry: `chatgpt-home/runtime/agents.json` (10 canonical native roles; 4 additional profiles explicitly classified as reference-only; OpenHands profiles remain in the source mirror).
 - Profiles and permission posture: `chatgpt-home/runtime/profiles.json`.
 - Tool/adapter truth: `chatgpt-home/runtime/capabilities.json`.
 - Workflow contracts: `chatgpt-home/runtime/workflows.json`.

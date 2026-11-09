@@ -319,7 +319,7 @@ class OrchestrationEngineTests(unittest.TestCase):
             history = runtime.TaskLedger(ledger).task_history("BS-LIFECYCLE-001")
             self.assertEqual(history["event_count"], 1)
             self.assertEqual(history["last_event"]["event_type"], "TASK_CREATED")
-            self.assertEqual(history["last_event"]["payload"]["state"]["status"], "REQUESTED")
+            self.assertEqual(history["last_event"]["payload"]["state_snapshot"]["status"], "REQUESTED")
 
     def test_transition_cli_appends_every_state_and_recovery_reconstructs_latest(self):
         import json

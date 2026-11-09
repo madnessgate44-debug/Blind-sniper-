@@ -7,6 +7,7 @@ agents, invoke unregistered adapters, or bypass host/Owner permissions.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -510,21 +511,85 @@ def transition_task(
     return updated
 
 
-def recover_task_state(ledger_source: str | Path | TaskLedger | GitHubContentsLedger, task_id: str) -> dict[str, Any]:
-    """Reconstruct the latest committed task snapshot from a verified local or GitHub ledger."""
-    ledger = ledger_source if hasattr(ledger_source, "task_history") else TaskLedger(ledger_source)
+def _state_core(state: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in state.items() if key != "events"}
+
+
+def _state_hash(state: dict[str, Any]) -> str:
+    raw = json.dumps(state, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def build_state_event_payload(
+    ledger: TaskLedger | GitHubContentsLedger,
+    state: dict[str, Any],
+    extra_payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Encode one compact, hash-verified state delta instead of nesting event history."""
+    core = _state_core(state)
+    digest = _state_hash(core)
+    payload: dict[str, Any] = {
+        "state_hash": digest,
+        "state_event": (state.get("events") or [None])[-1],
+        "lease_guard": {
+            "task_id": state["task_id"],
+            "status": state["status"],
+            "implementer_id": state.get("implementer_id"),
+        },
+    }
     try:
-        history = ledger.task_history(task_id)
-    except LedgerError:
-        raise
-    latest = None
+        previous = recover_task_state(ledger, state["task_id"])
+    except LedgerError as exc:
+        if not str(exc).startswith("Unknown task_id:"):
+            raise
+        payload["state_snapshot"] = core
+    else:
+        previous_core = _state_core(previous)
+        payload["previous_state_hash"] = _state_hash(previous_core)
+        payload["state_delta"] = {
+            "set": {key: value for key, value in core.items() if previous_core.get(key) != value},
+            "remove": sorted(set(previous_core) - set(core)),
+        }
+    payload.update(extra_payload or {})
+    return payload
+
+
+def recover_task_state(ledger_source: str | Path | TaskLedger | GitHubContentsLedger, task_id: str) -> dict[str, Any]:
+    """Reconstruct compact state deltas and legacy full snapshots from the verified ledger."""
+    ledger = ledger_source if hasattr(ledger_source, "task_history") else TaskLedger(ledger_source)
+    history = ledger.task_history(task_id)
+    core: dict[str, Any] | None = None
+    lifecycle_events: list[dict[str, Any]] = []
     for event in history["events"]:
-        snapshot = event.get("payload", {}).get("state")
+        payload = event.get("payload", {})
+        legacy = payload.get("state")
+        if isinstance(legacy, dict):
+            core = _state_core(legacy)
+            lifecycle_events = list(legacy.get("events", []))
+            continue
+        snapshot = payload.get("state_snapshot")
         if isinstance(snapshot, dict):
-            latest = snapshot
-    if latest is None:
+            core = snapshot
+            if _state_hash(core) != payload.get("state_hash"):
+                raise RuntimeErrorBase("Ledger state snapshot hash mismatch")
+        elif isinstance(payload.get("state_delta"), dict):
+            if core is None or _state_hash(core) != payload.get("previous_state_hash"):
+                raise RuntimeErrorBase("Ledger state delta predecessor hash mismatch")
+            delta = payload["state_delta"]
+            core = dict(core)
+            core.update(delta.get("set", {}))
+            for key in delta.get("remove", []):
+                core.pop(key, None)
+            if _state_hash(core) != payload.get("state_hash"):
+                raise RuntimeErrorBase("Ledger state delta hash mismatch")
+        else:
+            continue
+        state_event = payload.get("state_event")
+        if isinstance(state_event, dict):
+            lifecycle_events.append(state_event)
+    if core is None:
         raise RuntimeErrorBase(f"Ledger has no recoverable state snapshot for task {task_id}")
-    return latest
+    return {**core, "events": lifecycle_events}
 
 
 def persist_task_state(
@@ -535,12 +600,11 @@ def persist_task_state(
     idempotency_key: str,
     extra_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Commit a complete state snapshot and approval receipts before checkpoint write."""
-    payload = {"state": state, **(extra_payload or {})}
+    """Commit a compact hash/diff receipt before writing the convenience checkpoint."""
     return ledger.append(
         task_id=state["task_id"],
         event_type=event_type,
-        payload=payload,
+        payload=build_state_event_payload(ledger, state, extra_payload),
         idempotency_key=idempotency_key,
     )
 
@@ -701,10 +765,13 @@ def main(argv: list[str] | None = None) -> int:
                 transition_number = len(updated.get("events", [])) - 1
                 transition_key = f"{updated['task_id']}:transition:{transition_number}:{args.to}"
                 if lease_required:
+                    compact_payload = build_state_event_payload(
+                        ledger, updated, {"approval_records": approval_records},
+                    )
                     ledger_event = ledger.append_transition_if_lease(
                         task_id=updated["task_id"],
                         owner_id=args.lease_owner,
-                        payload={"state": updated, "approval_records": approval_records},
+                        payload=compact_payload,
                         idempotency_key=transition_key,
                     )
                 else:

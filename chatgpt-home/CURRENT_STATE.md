@@ -1,9 +1,10 @@
 # Blind Sniper — Current Technical State
 
-**Snapshot:** 2026-11-09, after PR #24 merge
+**Snapshot:** 2026-11-09, after PR #24 merge and BS-OS-001A registry reconciliation
 **Default branch:** main
 **Last validated checkpoint:** `5631bd3702595fc3c87a2902120634c584deba11`
 **Authority:** Engineering Execution OS v2.3 plus active standing Owner delegation, recorded in `chatgpt-home/AUTHORITY_DELEGATION.md` and mirrored in `chatgpt-home/runtime/authority.json`.
+**Audit artifact:** `chatgpt-home/AGENT_OS_INTEGRATION_AUDIT.md` (BS-OS-001 static audit) and `chatgpt-home/BS-COMPLETION_AUDIT_AND_OPENAI_REVIEW.md` (completion audit).
 
 ## Current authority and operating contract
 - Blind Sniper is the repository's technical lead and execution operator through its ChatGPT conversational interface.
@@ -34,7 +35,7 @@
 - GitHub job conclusions are the authoritative success results. The logs did not print a separate process exit-code field for every job.
 
 ## Current open PR inventory
-- Live GitHub search on 2026-11-09 returned open PRs: #9, #13, #15, #16, #18, #19, #21 and #22. Re-read each live PR before making any merge/closure decision; this list is a dated snapshot, not a substitute for live state.
+- Live GitHub search on 2026-11-09 returned open PRs: #9, #13, #15, #16, #18, #19, #21, #22 and #25. Re-read each live PR before making any merge/closure decision; this list is a dated snapshot, not a substitute for live state.
 - PR #23 and #24 are merged. PR #17 is merged; older text below that says otherwise is historical.
 - PR #24 had no formal independent review submission. The diff was self-reviewed and all exact-head checks passed; the limitation was recorded in the PR discussion. Do not claim independent approval.
 
@@ -44,6 +45,21 @@
 - Persistent runner/background execution and unattended delivery are not verified.
 - Public-repository remote task-ledger writes remain constrained by the runtime's private-repository guard.
 - Full ChatGPT conversation archive export is not exposed as a native action.
+
+## BS-OS-001A registry reconciliation
+- This reconciliation aligns the agent/skill/workflow registries, provenance and this state anchor with the merged `main` runtime; the canonical ten-agent roster is preserved; four non-roster profiles are reference-only; all native skills are indexed; all workflows carry explicit contract modes; the unavailable Mattzcarey reference is documented without substitution.
+- BS-OS-001A CI: Runtime Registry run `42555147080` on `63f61d4f28d5e903d14ac3c0952afa79ee612459` PASS (registry validator + 88 tests); Engineering Execution OS Compliance run `42555146826` on the same commit PASS.
+- Environment validation run `42555123575` on `a25601f8daec9c5c0578e7f88c3171b387829e2e` PASS: 45 required assets, 11 skill contracts, 9 agent contracts, 9 workflows, 6 safe config templates, credential scan clean.
+- Registry counts are authoritative only from the validator output on the reconciled head; re-read that line rather than this prose.
+
+## Outstanding closure gates
+1. Distinct independent review of the reconciled integration head; the Shadow distinct-identity review requirement remains NOT VERIFIED while no eligible reviewer exists.
+2. Owner decision: accept ephemeral Option B (PR #16) or require cross-run durable execution; align PR #13.
+3. Reconcile the PR #15/#16 branch stack with `main`; rerun exact-head checks after integration changes.
+4. Decide whether to extract the unique PR #9 simulation or close it.
+5. BS-OS-004: reconcile historical `CODEX_RUNTIME_ARCHITECTURE.md`, task records and stale PR references.
+6. Prove Forge/OpenHands/persistent-host integrations only if real tools and result paths become available.
+7. Complete BS-RELEASE-001 acceptance before any production claim or deployment.
 
 ## Historical record
 

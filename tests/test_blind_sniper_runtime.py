@@ -32,10 +32,15 @@ class RuntimeRegistryTests(unittest.TestCase):
         self.assertEqual(adapters["openhands_dispatch"]["status"], "partially_verified")
         self.assertIn("TinyFish", registry["exclusions"][0])
         skills = json.loads((ROOT / "chatgpt-home/runtime/skills.index.json").read_text())
-        self.assertEqual(len(skills["native_skills"]), 13)
+        self.assertEqual(len(skills["native_skills"]), 14)
+        self.assertIn("github-research", skills["native_skills"])
         self.assertEqual(len(skills["skills"]), 33)
         agents = json.loads((ROOT / "chatgpt-home/runtime/agents.json").read_text())
         agent_ids = {a["id"] for a in agents["agents"]}
+        reference_ids = {a["id"] for a in agents.get("reference_profiles", [])}
+        self.assertEqual(len(reference_ids), 4)
+        self.assertTrue({"factory-orchestrator", "harness-controller", "independent-reviewer", "worker-executor"}.issubset(reference_ids))
+        self.assertFalse(reference_ids & agent_ids)
         self.assertTrue({"shadow", "watcher"}.issubset(agent_ids))
         self.assertFalse({"ghost", "openhands", "forge", "shadow-auditor"} & agent_ids)
         self.assertNotIn("shadow_provider_pool", adapters)
@@ -50,6 +55,10 @@ class RuntimeRegistryTests(unittest.TestCase):
         workflow_agents = {w["id"]: set(w.get("agents", [])) for w in workflows["workflows"]}
         self.assertIn("shadow", workflow_agents["independent-review"])
         self.assertIn("watcher", workflow_agents["recovery-and-reconciliation"])
+        self.assertEqual(len(workflows["workflows"]), 18)
+        self.assertEqual(sum(w.get("contract_mode") == "native_contract" for w in workflows["workflows"]), 11)
+        self.assertEqual(sum(w.get("contract_mode") == "registry_only" for w in workflows["workflows"]), 7)
+        self.assertTrue(all(w.get("registry_only_reason") for w in workflows["workflows"] if w.get("contract_mode") == "registry_only"))
 
     def test_profiles_do_not_enable_unrestricted_sandbox(self):
         import json
