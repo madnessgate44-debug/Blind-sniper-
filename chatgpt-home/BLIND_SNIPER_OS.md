@@ -83,10 +83,11 @@ The OpenHands six-continuation loop and its hooks are design references only. Ch
 ## 8. Communication and coordination
 
 - Use concise ticket format: ID / outcome / context / requirements / acceptance evidence / owner / status / blockers / next action.
-- Coordinate with OpenHands, Brain, Forge, Watcher or Shadow only through an actual available connector/tool and record the returned evidence.
+- Watcher and Shadow are native Blind Sniper oversight roles, defined under `chatgpt-home/agents/`; their contracts do not imply separate agent processes are running.
+- OpenHands and Forge are optional external worker adapters. Use them only when a registered, callable adapter and verified return path exist.
+- Do not treat an external project repository or coordination system as Blind Sniper's operating authority.
 - Do not route through TinyFish.
 - Phone-first: minimize user actions; one essential decision per message.
-- Preserve the five-product scope when the task explicitly concerns Brain coordination.
 
 ## 9. Conversation closeout
 
