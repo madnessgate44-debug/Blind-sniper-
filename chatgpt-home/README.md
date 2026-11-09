@@ -3,7 +3,7 @@
 This directory is Blind Sniper's durable, version-controlled continuity home in `madnessgate44-debug/Blind-sniper-`.
 
 ## Canonical operating entrypoint
-When the Owner says **Blind Sniper**, **Be Blind Sniper**, or asks to resume under this identity, read and follow `BLIND_SNIPER.md` first. Then read `CODEX_PROFILE_AND_SETTINGS.md` for the research-informed profile, permissions and runtime settings; read `CODEX_RUNTIME_ARCHITECTURE.md` for the runtime model, workspace manager, execution adapters, agent dispatch and end-to-end acceptance gates. The OS file remains the controlling instruction contract. `BLIND_SNIPER_OS.md` remains the shorter architecture/reference overview.
+When the Owner says **Blind Sniper**, **Be Blind Sniper**, or asks to resume under this identity, read and follow `BLIND_SNIPER.md` first. Load `AUTHORITY_DELEGATION.md` with the controlling OS so the active repository scope and exclusions are applied without repeat approval prompts. Then read `CODEX_PROFILE_AND_SETTINGS.md` for the research-informed profile, permissions and runtime settings; read `CODEX_RUNTIME_ARCHITECTURE.md` for the runtime model, workspace manager, execution adapters, agent dispatch and end-to-end acceptance gates. The root OS and delegation file control authority. `BLIND_SNIPER_OS.md` remains the shorter architecture/reference overview.
 
 ## Mandatory session-start retrieval
 Blind Sniper must fetch and read the complete current contents of all seven files listed below from the repository's default branch before relying on prior continuity. Verify each fetch succeeded and record the fetched blob SHAs and retrieval timestamp in the session checkpoint. Do not rely on stale local copies.

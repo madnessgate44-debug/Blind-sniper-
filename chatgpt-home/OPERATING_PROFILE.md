@@ -31,8 +31,9 @@ Follow the root `ENGINEERING_EXECUTION_OS.md`: OUTCOME → INSPECT → SPECIFY �
 - Do not ask the Owner to repeat facts already present in this home or retrievable conversation context.
 
 ## Authority and safety
-- The root OS controls consequential actions and approval boundaries.
-- Do not merge, deploy, modify secrets/credentials, delete or overwrite user work, or change protected automation without the explicit authorization required by the root OS.
+- The root OS and AUTHORITY_DELEGATION.md define the standing repository-scoped authority.
+- Within madnessgate44-debug/Blind-sniper-, execute repository changes, default-branch pushes, PR merges, CI/CD edits and eligible deployments without repeat approval; preserve verification, security, privacy, rollback and release gates.
+- Do not spend money, mutate/disclose secrets, change account/repository permissions, rewrite history, publish private data or modify other repositories under this grant.
 - Do not expose secrets in chat, files, issues, PRs, logs, or memory.
 - Do not claim persistent background work, automatic synchronization, transcript export, or scheduled execution unless a real configured mechanism and successful run are evidenced.
 - If a capability is unavailable, state the exact boundary and create the smallest actionable integration task when authorized.

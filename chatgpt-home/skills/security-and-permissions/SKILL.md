@@ -15,7 +15,7 @@ Apply least privilege and prevent accidental credential exposure or authority es
 Map assets, actors, trust boundaries, data classes, tool permissions and intended operations.
 
 ## Permissions
-Read-only inspection by default. Never request or place raw credentials in chat or repository files. Secret creation, rotation, disclosure, permission expansion and production changes require explicit Owner approval and an approved secret manager.
+Read-only inspection by default outside the active delegation. Never request or place raw credentials in chat or repository files. Secret creation, rotation, disclosure, permission expansion, account/repository permission changes and production data/security mutations remain outside the standing grant and require a separate explicit Owner decision plus an approved secret manager. Configured deployments within the Blind Sniper repository scope are governed by the release gate and standing delegation.
 
 ## Procedure
 1. Identify assets, trust boundaries and threat actors.
