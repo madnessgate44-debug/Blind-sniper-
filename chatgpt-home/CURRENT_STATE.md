@@ -1,8 +1,9 @@
 # Blind Sniper — Current Technical State
 
-**Snapshot:** 2026-11-09, after the integration batch merged (PR #18 → #19 → #21 → #22 → #25) onto `main`
+**Snapshot:** 2026-11-09, after the post-integration batch merged (PR #18 → #19 → #21 → #22 → #25 → #26 → #28 → #29 → #30 → #31 → #32) onto `main`
 **Default branch:** main
-**Last validated checkpoint:** `19f6e4c2770c310d696d10d297ad75174c83913a` (PR #25 merge — `fix(policy): close residual authority contradictions with the standing Owner delegation`)
+**Last validated checkpoint:** `3290b60e1de0594b648c02763f986564be3da7b4` (PR #32 merge — `fix(pages): add .nojekyll so the legacy Pages builder serves files as-is`)
+**Prior checkpoint (superseded 2026-11-09):** `19f6e4c2770c310d696d10d297ad75174c83913a` (PR #25 merge)
 **Authority:** Engineering Execution OS v2.3 plus active standing Owner delegation, recorded in `chatgpt-home/AUTHORITY_DELEGATION.md` and mirrored in `chatgpt-home/runtime/authority.json`.
 **Audit artifact:** `chatgpt-home/AGENT_OS_INTEGRATION_AUDIT.md` (BS-OS-001 static audit) and `chatgpt-home/BS-COMPLETION_AUDIT_AND_OPENAI_REVIEW.md` (completion audit).
 
@@ -28,18 +29,26 @@
 - PR #22 — stale-document and state register BS-OS-004 (`docs(bs-os-004)`) merged at `bcc549543dace980e5a74835ec53fb327ecc2f73`.
 - PR #25 — residual authority contradictions closed (`fix(policy)`) merged at `19f6e4c2770c310d696d10d297ad75174c83913a`.
 - PR #26 — deterministic approval-timestamp validation merged at `5f04aa1e84633199c74b58dc47c8e468187c5eb8`.
+- PR #28 — independent model review receipt (`docs(review)`) merged at `1d323eab`.
+- PR #29 — review-gate state closure (`docs(state)`) merged at `ce452b5`.
+- PR #30 — scheduled-jobs end-to-end simulation (`feat(e2e)`) merged at `68c4dd3`.
+- PR #31 — skill discovery, skill adaptation, and Codex config validation merged at `11301c1`.
+- PR #32 — `.nojekyll` to fix the legacy Pages builder merged at `3290b60e1de0594b648c02763f986564be3da7b4`.
 - Earlier merged work retained: PR #17 (`ac8a5eb`), PR #23 (`14769067`), PR #24 (`5631bd37`).
 - GitHub Pages deployment for the latest merge: published URL https://madnessgate44-debug.github.io/Blind-sniper-/.
 
-## Latest verification — merge commit 19f6e4c2770c310d696d10d297ad75174c83913a
-- Runtime registry and full Python suite: PASS; 111 tests, `OK`; `validate_blind_sniper_runtime.py` reports `profiles=6 agents=10 adapters=13 workflows=18 native_skills=14 openhands_skills=33`.
+## Latest verification — merge commit 3290b60e1de0594b648c02763f986564be3da7b4
+- Runtime registry and full Python suite: PASS; 128 tests, `OK`; `validate_blind_sniper_runtime.py` reports `profiles=6 agents=10 adapters=13 workflows=18 native_skills=14 openhands_skills=33`.
 - Environment validation: PASS; 49 required assets, 14 skill contracts, 9 agent contracts, 9 workflows, 6 safe Codex config templates; credential-pattern scan clean.
-- Deterministic E2E simulation (`scripts/simulate_blind_sniper_e2e.py`): PASS on `main`.
-- Exact-head CI on `main` (`19f6e4c`): `validate-runtime`, `validate-environment`, `policy-compliance`, `build`, `deploy`, `report-build-status` — all `success`.
+- Skill tooling: `find_skill.py --validate` PASS (47 skills: 14 native, 33 mirror); `validate_codex_config.py` PASS (6 templates, least-privilege, 6 profile sandbox postures).
+- Deterministic E2E simulations (`scripts/simulate_blind_sniper_e2e.py`, `scripts/simulate_blind_sniper_jobs_e2e.py`): PASS on `main`.
+- Engineering Execution OS compliance check: PASS.
+- GitHub Pages: legacy build status recovered from `errored` to `built` on `3290b60` (see the 2026-11-09 addendum); the Actions `pages-build-deployment` run succeeded and the live site serves current `main`.
 - GitHub job conclusions are the authoritative success results. The logs did not print a separate process exit-code field for every job.
 
 ## Current open PR inventory
-- After the 2026-11-09 integration batch, the open PR set is empty: #18/#19/#21/#22/#25 merged, and #9/#15/#16 closed as superseded (their accepted content shipped via #21 and #19). #13 remains a design-only artifact. Re-read each live PR before making any merge/closure decision; this is a dated snapshot, not a substitute for live state.
+- After the 2026-11-09 post-integration batch, the open PR set is empty: #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32 merged, and #9/#15/#16 closed as superseded (their accepted content shipped via #21 and #19). #13 remains a design-only artifact. Re-read each live PR before making any merge/closure decision; this is a dated snapshot, not a substitute for live state.
+- Superseded branches were deleted 2026-11-09 after merge: `feat/blind-sniper-jobs-e2e-sim-2026-11-09`, `feat/skill-discovery-and-codex-config-2026-11-09`, `fix/pages-nojekyll-2026-11-09`.
 - PR #23 and #24 are merged. PR #17 is merged; older text below that says otherwise is historical.
 - PR #24 had no formal independent review submission. The diff was self-reviewed and all exact-head checks passed; the limitation was recorded in the PR discussion. Do not claim independent approval.
 
@@ -70,6 +79,14 @@
 - This section records the reconciliation of the state document itself against live GitHub state after the batch `#18 → #19 → #21 → #22 → #25` merged onto `main` at `19f6e4c`. Original prose above this heading is preserved; superseded lines are struck through rather than deleted.
 - Superseded 2026-11-09: the earlier snapshot (2026-11-09, after PR #24 merge) listed #9/#13/#15/#16/#18/#19/#21/#22 as open drafts and cited `native_skills=13`; live state is `native_skills=14`, `workflows=18`, and the integration stack is merged/closed.
 - `BS-20261108-002.md` (D6) and `CODEX_RUNTIME_ARCHITECTURE.md` (D8) remain tracked in BS-OS-004 and are not yet edited.
+
+## Reconciliation note — 2026-11-09 (post-integration +1 batch)
+- Re-reconciled against live GitHub state after the second batch `#26 → #28 → #29 → #30 → #31 → #32` merged onto `main`; head is now `3290b60` (was `19f6e4c`). Superseded values above are struck through or dated rather than deleted.
+- Added to the merged work above: #28 (review receipt, `1d323eab`), #29 (review-gate state, `ce452b5`), #30 (jobs E2E sim, `68c4dd3`), #31 (skill discovery + adaptation + Codex config validation, `11301c1`), #32 (`.nojekyll` Pages fix, `3290b60`).
+- Verification on `3290b60`: 128 unit tests `OK` (was 111); `find_skill --validate` 47 skills; `validate_codex_config` 6/6; runtime registry `profiles=6 agents=10 adapters=13 workflows=18 native_skills=14 openhands_skills=33`; environment validation PASS; OS compliance PASS.
+- GitHub Pages defect fixed: the legacy builder reported `errored` for every commit from the `1d323ea` merge onward (last good `1382c74`); a root `.nojekyll` (PR #32) restored status to `built`. The Actions `pages-build-deployment` pipeline had already been succeeding and the live site serves current `main`.
+- Superseded branches deleted 2026-11-09 after merge: `feat/blind-sniper-jobs-e2e-sim-2026-11-09`, `feat/skill-discovery-and-codex-config-2026-11-09`, `fix/pages-nojekyll-2026-11-09`.
+- Still open (unchanged): owner decision on durable vs ephemeral execution (gate 2); BS-OS-004 remaining edits to `BS-20261108-002.md` (D6) and `CODEX_RUNTIME_ARCHITECTURE.md` (D8); branch protection remains `protected=false` (gate 6 / hardening).
 
 ## Historical record
 

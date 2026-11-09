@@ -82,3 +82,15 @@ Added after the batch `#18 → #19 → #21 → #22 → #25` merged onto `main` (
 - D7 (`BS-20261108-003.md`): landed via PR #21.
 - R1, R3–R6 (registry drift): reconciled by PR #18.
 - This addendum is committed on a reconciliation branch only. No merge to `main`, no deployment and no history rewrite; merge remains an owner decision.
+
+## 9. Addendum — 2026-11-09 (post-integration +1 batch)
+
+Added after the second batch `#26 → #28 → #29 → #30 → #31 → #32` merged onto `main` (`3290b60`). All prior sections are preserved unchanged.
+
+- The batch is fully landed on `main`: #28 (`1d323eab`), #29 (`ce452b5`), #30 (`68c4dd3`), #31 (`11301c1`), #32 (`3290b60`); #26 (`5f04aa1`) also merged earlier.
+- Live registry counts on `main` unchanged: `native_skills=14`, `workflows=18`; full Python suite now 128 tests `OK` (was 111).
+- D1–D5 (`CURRENT_STATE.md`): reconciled again — snapshot anchor, checkpoint (`3290b60`), "latest merged work", "latest verification" and "open PR inventory" now reflect `main` at `3290b60`. Original claims preserved above the "Historical record" heading.
+- D6 (`BS-20261108-002.md`) and D8 (`CODEX_RUNTIME_ARCHITECTURE.md`): still open; tracked here, not yet edited.
+- GitHub Pages: the legacy builder status was `errored` from `1d323ea` to `11301c1`; fixed by `.nojekyll` in PR #32, status now `built`.
+- Superseded branches deleted 2026-11-09 after merge: `feat/blind-sniper-jobs-e2e-sim-2026-11-09`, `feat/skill-discovery-and-codex-config-2026-11-09`, `fix/pages-nojekyll-2026-11-09`.
+- This addendum reflects live state; the reconciliation is committed on a branch and merged via PR. No deployment or history rewrite occurred.
