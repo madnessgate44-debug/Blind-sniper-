@@ -75,15 +75,15 @@ class SkillAdapterTest(unittest.TestCase):
             original = adapt_skill.INDEX_PATH
             try:
                 adapt_skill.INDEX_PATH = index_copy
-                changed = adapt_skill.register_in_index("adapted-demo", "chatpt-home/skills/adapted-demo/SKILL.md")
+                changed = adapt_skill.register_in_index("adapted-demo", "chatgpt-home/skills/adapted-demo/SKILL.md")
                 self.assertTrue(changed)
                 data = json.loads(index_copy.read_text(encoding="utf-8"))
                 self.assertIn("adapted-demo", data["native_skills"])
                 self.assertEqual(data["native_skill_paths"]["adapted-demo"],
-                                 "chatpt-home/skills/adapted-demo/SKILL.md")
+                                 "chatgpt-home/skills/adapted-demo/SKILL.md")
                 # Idempotent: a second call makes no further change.
                 self.assertFalse(adapt_skill.register_in_index(
-                    "adapted-demo", "chatpt-home/skills/adapted-demo/SKILL.md"))
+                    "adapted-demo", "chatgpt-home/skills/adapted-demo/SKILL.md"))
             finally:
                 adapt_skill.INDEX_PATH = original
 
