@@ -7,6 +7,7 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,18 +23,25 @@ class FakeContentsAPI:
         self.put_count = 0
         self.conflict_once = False
         self.is_private = True
+        self.include_date = True
+        self.server_date = "Sun, 08 Nov 2026 15:00:00 GMT"
+
+    def _response(self, status, body):
+        if self.include_date:
+            return status, body, {"Date": self.server_date}
+        return status, body
 
     def __call__(self, method, url, headers, body=None):
         if method == "GET":
             if url == "https://api.github.com/repos/example/blind-sniper":
-                return 200, json.dumps({"private": self.is_private}).encode()
+                return self._response(200, json.dumps({"private": self.is_private}).encode())
             if self.content is None:
-                return 404, b'{"message":"Not Found"}'
-            return 200, json.dumps({
+                return self._response(404, b'{"message":"Not Found"}')
+            return self._response(200, json.dumps({
                 "sha": self.sha,
                 "encoding": "base64",
                 "content": base64.b64encode(self.content).decode("ascii"),
-            }).encode()
+            }).encode())
         if method == "PUT":
             payload = json.loads(body.decode())
             expected = payload.get("sha")
@@ -175,6 +183,27 @@ class GitHubContentsLedgerTests(unittest.TestCase):
             )
         self.assertEqual(self.api.put_count, 0)
 
+
+    def test_remote_lease_expiry_uses_server_date_not_caller_clock(self):
+        self.ledger.append(
+            task_id="BS-GH-SERVER-TIME", event_type="TASK_CREATED",
+            payload={"state": {"task_id": "BS-GH-SERVER-TIME", "status": "REQUESTED"}},
+            idempotency_key="server-time:create",
+        )
+        caller_clock = datetime(2030, 1, 1, tzinfo=timezone.utc)
+        claimed = self.ledger.claim_task(
+            task_id="BS-GH-SERVER-TIME", owner_id="runner-a", lease_seconds=60,
+            idempotency_key="server-time:claim", now=caller_clock,
+        )
+        self.assertEqual(claimed["lease_expires_at"], "2026-11-08T15:01:00+00:00")
+
+    def test_remote_lease_refuses_to_guess_when_date_header_is_missing(self):
+        self.api.include_date = False
+        with self.assertRaisesRegex(GitHubLedgerError, "Date header"):
+            self.ledger.claim_task(
+                task_id="BS-GH-NO-DATE", owner_id="runner-a", lease_seconds=60,
+                idempotency_key="no-date:claim",
+            )
 
     def test_remote_lease_claim_release_and_status_use_private_cas_store(self):
         self.ledger.append(task_id="BS-GH-009", event_type="TASK_CREATED",
