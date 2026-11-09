@@ -4,7 +4,7 @@
 **Register date:** 2026-11-09
 **Baseline:** `main` at `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e` (the PR #17 merge commit).
 **Repository:** `madnessgate44-debug/Blind-sniper-` (PUBLIC).
-**Authority:** `AGENTS.md` → `ENGINEERING_EXECUTION_OS.md` v2.2 → `chatgpt-home/BLIND_SNIPER.md` → `chatgpt-home/BS-OS-002_CANONICAL_ARCHITECTURE.md` → this register.
+**Authority:** `AGENTS.md` → `ENGINEERING_EXECUTION_OS.md` v2.3 → `chatgpt-home/BLIND_SNIPER.md` → `chatgpt-home/BS-OS-002_CANONICAL_ARCHITECTURE.md` → this register.
 **Scope:** identify documents and registry entries on `main` whose recorded state is stale relative to live GitHub state. This document **does not overwrite** historical records; it records the discrepancy and the reconciliation action with provenance.
 
 ## 1. Outcome
@@ -58,3 +58,15 @@ These are structural drift findings; PR #18 reconciles most of them. Recorded he
 2. Land PR #18 (R1, R3–R6) and PR #21 (D7).
 3. Refresh `CODEX_RUNTIME_ARCHITECTURE.md`'s reconciliation date (D8).
 4. Keep this register current; add a row whenever a live state change supersedes a document.
+
+## 7. Addendum — 2026-11-09 (post-integration reconciliation)
+
+Added when PR #22 was refreshed onto the reconciled integration stack. The original register above is preserved unchanged.
+
+- The integration stack now carries the reconciled state on top of current `main` (`a33e38e`): PR #18 head `350e084`, PR #19 head `ab07de6`, PR #21 head `09bf032`.
+- D1–D5 (`CURRENT_STATE.md`): the reconciled `CURRENT_STATE.md` no longer states PR #17 is open/unmerged; it records the #17 merge, the standing-delegation authority and the BS-OS-001A reconciliation, with the prior 02:31 UTC snapshot retained under "Historical record" for provenance.
+- D6 (`BS-20261108-002.md`) and D8 (`CODEX_RUNTIME_ARCHITECTURE.md`): still open; tracked here, not yet edited.
+- D7 (`BS-20261108-003.md`): landed via PR #21.
+- R1, R3–R6 (registry drift): reconciled by PR #18 — non-roster agent files are reference-only, the skills index covers all native skills, every workflow carries an explicit `contract_mode`, and the workflow registry now holds 18 entries (the four previously-unreferenced docs plus #19's `bounded-verification`).
+- D9–D11 (cross-repository): unchanged; out of scope without cross-repo evidence.
+- These edits are DRAFT-PR content only. No merge to `main`, no deployment and no history rewrite occurred; merge remains an owner decision.
