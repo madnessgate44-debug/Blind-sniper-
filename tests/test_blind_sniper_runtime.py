@@ -35,12 +35,21 @@ class RuntimeRegistryTests(unittest.TestCase):
         self.assertEqual(len(skills["native_skills"]), 10)
         self.assertEqual(len(skills["skills"]), 33)
         agents = json.loads((ROOT / "chatgpt-home/runtime/agents.json").read_text())
-        self.assertFalse(any(a["id"] in {"shadow", "watcher", "ghost", "openhands", "forge", "shadow-auditor"} for a in agents["agents"]))
+        agent_ids = {a["id"] for a in agents["agents"]}
+        self.assertTrue({"shadow", "watcher"}.issubset(agent_ids))
+        self.assertFalse({"ghost", "openhands", "forge", "shadow-auditor"} & agent_ids)
         self.assertNotIn("shadow_provider_pool", adapters)
         self.assertEqual(
-            {a["id"] for a in agents["agents"]},
-            {"blind-sniper", "researcher", "planner", "engineer", "reviewer", "qa-verifier", "recovery", "release-manager"},
+            agent_ids,
+            {"blind-sniper", "researcher", "planner", "engineer", "reviewer", "qa-verifier", "recovery", "watcher", "shadow", "release-manager"},
         )
+        contracts = {a["id"]: a.get("path") or a.get("native_contract_path") for a in agents["agents"]}
+        self.assertEqual(contracts["watcher"], "chatgpt-home/agents/watcher.md")
+        self.assertEqual(contracts["shadow"], "chatgpt-home/agents/shadow.md")
+        workflows = json.loads((ROOT / "chatgpt-home/runtime/workflows.json").read_text())
+        workflow_agents = {w["id"]: set(w.get("agents", [])) for w in workflows["workflows"]}
+        self.assertIn("shadow", workflow_agents["independent-review"])
+        self.assertIn("watcher", workflow_agents["recovery-and-reconciliation"])
 
     def test_profiles_do_not_enable_unrestricted_sandbox(self):
         import json
