@@ -94,6 +94,7 @@ class OrchestrationEngineTests(unittest.TestCase):
             "workflow": "task-control-loop",
             "requested_actions": ["production_deploy"],
             "owner_approval": {"approved_actions": ["production_deploy"]},
+            "authority_delegation": {"id": "owner-standing-delegation-2026-11-09", "approved_actions": ["production_deploy"]},
         })
         self.assertEqual(plan["approval"]["approved_actions"], [])
         self.assertEqual(plan["approval"]["pending_actions"], ["production_deploy"])
