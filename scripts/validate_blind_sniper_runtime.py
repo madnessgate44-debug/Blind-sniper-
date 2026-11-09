@@ -43,7 +43,47 @@ def main() -> int:
     skills = load_json(RUNTIME / "skills.index.json")
     task = load_json(RUNTIME / "templates" / "TASK_ENVELOPE.json")
     receipt = load_json(RUNTIME / "templates" / "RUN_RECEIPT.json")
+    authority = load_json(RUNTIME / "authority.json")
 
+    delegations = authority.get("delegations", [])
+    if not isinstance(delegations, list):
+        fail("authority.json: delegations must be a list")
+        delegations = []
+    if not all(isinstance(row, dict) for row in delegations):
+        fail("authority.json: every delegation entry must be an object")
+        delegations = [row for row in delegations if isinstance(row, dict)]
+    check_unique(delegations, "id", "authority delegations")
+    active_delegations = [row for row in delegations if row.get("status") == "active"]
+    if authority.get("schema_version") != "1.0.0":
+        fail("authority.json: unsupported schema_version")
+    if len(active_delegations) > 1:
+        fail("authority.json: more than one active standing delegation")
+    if active_delegations:
+        grant = active_delegations[0]
+        if grant.get("repository") != "madnessgate44-debug/Blind-sniper-" or grant.get("id") != "owner-standing-delegation-2026-11-09":
+            fail("authority.json: active delegation identity or repository scope is incorrect")
+        if grant.get("grantor") != "repository-owner" or grant.get("delegate") != "blind-sniper":
+            fail("authority.json: active delegation grantor/delegate identity is incorrect")
+        actions_raw = grant.get("actions", [])
+        forbidden_raw = grant.get("forbidden_actions", [])
+        if not isinstance(actions_raw, list) or not all(isinstance(x, str) for x in actions_raw):
+            fail("authority.json: actions must be a list of strings")
+            actions_raw = []
+        if not isinstance(forbidden_raw, list) or not all(isinstance(x, str) for x in forbidden_raw):
+            fail("authority.json: forbidden_actions must be a list of strings")
+            forbidden_raw = []
+        actions = set(actions_raw)
+        forbidden = set(forbidden_raw)
+        required_actions = {"merge", "merge_to_main", "default_branch_push", "ci_cd_edit", "workflow_edit", "deploy", "production_deploy", "release", "delete"}
+        required_exclusions = {"secret_mutation", "permission_change", "paid_provisioning", "production_data_mutation", "force_push", "delete_branch", "credential_export", "secret_export", "disable_branch_protection", "unbounded_shell"}
+        if actions != required_actions:
+            fail("authority.json: active delegation action allowlist does not match the reviewed code policy")
+        if not required_exclusions.issubset(forbidden):
+            fail(f"authority.json: required exclusions are missing {sorted(required_exclusions - forbidden)}")
+        if actions & forbidden:
+            fail("authority.json: delegated actions overlap forbidden actions")
+    elif not delegations or not all(row.get("status") == "revoked" for row in delegations):
+        fail("authority.json: no active grant is valid only when every recorded delegation is revoked")
     adapters = caps.get("adapters", [])
     profile_rows = profiles.get("profiles", [])
     agent_rows = agents.get("agents", [])

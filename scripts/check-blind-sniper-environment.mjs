@@ -41,6 +41,7 @@ const required = [
   "chatgpt-home/templates/REVIEW_REPORT.md",
   "chatgpt-home/templates/RUN_RECEIPT.md",
   "chatgpt-home/runtime/ADAPTER_CONTRACT.md",
+  "chatgpt-home/runtime/authority.json",
   "chatgpt-home/hooks/HOOKS_AND_GUARDS.md",
   "chatgpt-home/mcp/MCP_AND_BROWSER_INTEGRATIONS.md",
   "chatgpt-home/config/base.config.toml.example",

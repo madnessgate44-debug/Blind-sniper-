@@ -1,46 +1,105 @@
 # Blind Sniper — Current Technical State
 
-**Snapshot:** 2026-11-09 — completion audit recorded  
-**Default branch:** `main` at `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e`  
-**Audit/architecture branch:** `feat/bs-os-001a-registry-reconciliation-2026-11-09`  
-**Audit packet:** `chatgpt-home/BS-COMPLETION_AUDIT_AND_OPENAI_REVIEW.md`  
-**Governing authority:** `AGENTS.md`, `ENGINEERING_EXECUTION_OS.md` v2.2, `chatgpt-home/BLIND_SNIPER.md` v3.0.
+**Snapshot:** 2026-11-09, after PR #24 merge and BS-OS-001A registry reconciliation
+**Default branch:** main
+**Last validated checkpoint:** `5631bd3702595fc3c87a2902120634c584deba11`
+**Authority:** Engineering Execution OS v2.3 plus active standing Owner delegation, recorded in `chatgpt-home/AUTHORITY_DELEGATION.md` and mirrored in `chatgpt-home/runtime/authority.json`.
+**Audit artifact:** `chatgpt-home/AGENT_OS_INTEGRATION_AUDIT.md` (BS-OS-001 static audit) and `chatgpt-home/BS-COMPLETION_AUDIT_AND_OPENAI_REVIEW.md` (completion audit).
 
-## Canonical control plane
-- PR #17 is MERGED into main at `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e`; main contains the native OS/runtime/browser integration.
-- Native core: policy, registries, ten role contracts, workflow/skill routing, planner/state machine, local append-only ledger, lease/approval gates, recovery and browser adapter.
-- Runtime roles are contracts; no separate model processes are spawned by the native runtime.
-- Registry reconciliation on this branch records 6 profiles, 10 native agents, 4 reference-only profiles, 13 adapters, 17 workflows, 11 native skills and 33 mirrored OpenHands skill/rule files.
-- The runtime validator, unit tests, environment validation and OS compliance pass on the last exact tested registry head; resolve live branch HEAD and checks before review.
+## Current authority and operating contract
+- Blind Sniper is the repository's technical lead and execution operator through its ChatGPT conversational interface.
+- Standing delegation applies only to `madnessgate44-debug/Blind-sniper-`: repository writes/deletions, commits, branch/default-branch pushes, PR and issue operations, merges, code/tests/docs/config/CI changes, releases and eligible deployments.
+- No repeat per-action approval is required for in-scope work. The runtime planner evaluates only the exact repository and hardcoded action allowlist; unknown/out-of-scope actions remain pending.
+- Exclusions remain: payment/paid services, force-push/history rewrite, repository/account permission changes, secret/credential mutation or disclosure, private-data publication, production data mutation and work in other repositories.
+- Verification, independent review where required, privacy/security, rollback and release-acceptance gates remain mandatory. The authority record is declarative, not a cryptographic identity proof; the host must recheck actual tool permissions.
 
-## Executor and PR state
-- PR #16 head `7c3965bbfd3e2ccff44c59fc74ee7cd87f5b04ff`: bounded read-only two-command CI verifier; Option B per-run ephemeral receipts; 79 unit tests and runtime validator pass; artifact `13647678570`; review remains outstanding.
-- PR #16 is stacked on PR #15. PR #15 is stacked on PR #14's branch. #15 and #16 compare 19 commits behind main and require branch/base reconciliation before integration.
-- PR #15 head `86c9b6277a00093b3d94a8baf065eacfd1a66a08`: exact-head runtime/environment/OS checks passed; independent review and mainline reconciliation remain.
-- PR #13 remains a draft design contract requiring task/run/step reservations; reconcile it with PR #16's narrower Option B contract.
-- PR #9 remains draft; its exact head has successful push checks but is 31 commits behind main. Its unique deterministic simulation is not in main; preserve/extract or close after comparing with current E2E coverage.
-- PR #18 is open/draft against main. Exact head `2c90e37ff48312af39401da33313f537fd6fed63` passed Runtime Registry (88 tests; run `42558193995`), Environment Validation (run `42558194080`) and OS Compliance (run `42558193895`). A subsequent status-anchor-only commit may advance the branch; resolve the live HEAD before review.
-- PR #17 had no formal review submission in the review list despite its stated independent-review gate. No rollback is proposed; owner intent and branch-protection enforcement remain questions.
-- PRs #3, #11 and #14 are merged; #4, #5, #6, #7 and #12 are closed unmerged/superseded or inactive.
+## Latest merged work
+- Main branch protection: GitHub branch metadata reports `protected=false`. The available GitHub connector exposes read access for branch-protection/ruleset state but no write action to configure it; this remains an unresolved governance-hardening risk. Do not confuse the standing execution delegation with branch protection.
 
-## Capability and privacy boundaries
-- GitHub repository operations and configured Actions are available. Actions jobs are ephemeral; no generic workflow-dispatch tool or persistent shell is exposed in this session.
-- PR #16 is only a fixed read-only verifier, not a general code-writing executor.
-- Direct OpenHands Cloud API and Forge browser MCP are not callable in this session; one OpenHands report route and browser fixture E2E do not prove full adapters.
-- Browser local-fixture Chromium E2E is implemented; authenticated profiles/cookies and cross-job persistent browser recovery are not verified.
-- GitHub Contents ledger adapter is mock-tested only, refuses public repositories, and has no verified live private write. Current Actions permissions are `contents: read`.
-- No verified private memory destination; no full ChatGPT archive export action. This repository is PUBLIC. Do not put private memory, client data, credentials or raw transcripts here.
-- The governing OS records public continuity copies/history; their contents were not inspected for this audit. No history rewrite or visibility change was performed.
-- No payment card, payment, paid infrastructure or paid provisioning is authorized.
+- PR #17 — native OS/runtime integration merged into `main` at `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e`.
+- PR #23 — standing Owner delegation aligned across 22 operating documents and policies; merged at `14769067bf3fa8ab251ba05ee74af31fbf05dead`.
+- PR #24 — native planner now consumes the machine-readable delegation; merged at `5631bd3702595fc3c87a2902120634c584deba11`.
+- GitHub Pages deployment for the latest merge completed successfully: run `42570568283`; published URL https://madnessgate44-debug.github.io/Blind-sniper-/.
+
+## Latest verification — merge commit 5631bd3702595fc3c87a2902120634c584deba11
+- Runtime registry and full Python suite: PASS; 92 tests, `OK`; workflow run `42570569331`.
+- Environment validation: PASS; 40 required assets, 9 skill contracts, 9 agent contracts, 5 workflows, 6 safe Codex config templates; credential-pattern scan clean; workflow run `42570569372`.
+- Engineering Execution OS compliance: PASS; workflow run `42570569306`.
+- Pages build/deployment: PASS; build and deploy jobs succeeded; workflow run `42570568283`.
+- GitHub job conclusions are the authoritative success results. The logs did not print a separate process exit-code field for every job.
+
+## Current open PR inventory
+- Live GitHub search on 2026-11-09 returned open PRs: #9, #13, #15, #16, #18, #19, #21, #22 and #25. Re-read each live PR before making any merge/closure decision; this list is a dated snapshot, not a substitute for live state.
+- PR #23 and #24 are merged. PR #17 is merged; older text below that says otherwise is historical.
+- PR #24 had no formal independent review submission. The diff was self-reviewed and all exact-head checks passed; the limitation was recorded in the PR discussion. Do not claim independent approval.
+
+## Remaining verified capability boundaries
+- The native runtime remains a planner and guarded state machine; it does not spawn separate model processes or claim external agent execution.
+- Direct OpenHands Cloud API dispatch/result retrieval and direct Forge browser MCP invocation are not verified as callable in this ChatGPT session.
+- Persistent runner/background execution and unattended delivery are not verified.
+- Public-repository remote task-ledger writes remain constrained by the runtime's private-repository guard.
+- Full ChatGPT conversation archive export is not exposed as a native action.
+
+## BS-OS-001A registry reconciliation
+- This reconciliation aligns the agent/skill/workflow registries, provenance and this state anchor with the merged `main` runtime; the canonical ten-agent roster is preserved; four non-roster profiles are reference-only; all native skills are indexed; all workflows carry explicit contract modes; the unavailable Mattzcarey reference is documented without substitution.
+- BS-OS-001A CI: Runtime Registry run `42555147080` on `63f61d4f28d5e903d14ac3c0952afa79ee612459` PASS (registry validator + 88 tests); Engineering Execution OS Compliance run `42555146826` on the same commit PASS.
+- Environment validation run `42555123575` on `a25601f8daec9c5c0578e7f88c3171b387829e2e` PASS: 45 required assets, 11 skill contracts, 9 agent contracts, 9 workflows, 6 safe config templates, credential scan clean.
+- Registry counts are authoritative only from the validator output on the reconciled head; re-read that line rather than this prose.
 
 ## Outstanding closure gates
-1. Distinct independent review of PR #18 and PR #16; review of PR #15 if retained.
-2. Owner decision: accept ephemeral Option B or require cross-run durable execution; align PR #13.
-3. Reconcile PR #15/#16 branch stack with main; rerun exact-head checks after integration changes.
+1. Distinct independent review of the reconciled integration head; the Shadow distinct-identity review requirement remains NOT VERIFIED while no eligible reviewer exists.
+2. Owner decision: accept ephemeral Option B (PR #16) or require cross-run durable execution; align PR #13.
+3. Reconcile the PR #15/#16 branch stack with `main`; rerun exact-head checks after integration changes.
 4. Decide whether to extract the unique PR #9 simulation or close it.
 5. BS-OS-004: reconcile historical `CODEX_RUNTIME_ARCHITECTURE.md`, task records and stale PR references.
-6. Resolve private-storage/privacy policy and the public continuity-history risk without exposing content.
-7. Prove Forge/OpenHands/persistent-host integrations only if real tools and result paths become available.
-8. Complete BS-RELEASE-001 acceptance before any production claim or deployment.
+6. Prove Forge/OpenHands/persistent-host integrations only if real tools and result paths become available.
+7. Complete BS-RELEASE-001 acceptance before any production claim or deployment.
 
-**Audit verdict:** Repository/PR/capability audit completed and recorded. Blind Sniper project is not yet complete or production-accepted. See the audit packet for the full PR inventory, exact CI run IDs, blocker analysis, OpenAI questions and owner decisions.
+## Historical record
+
+Everything below this heading is the prior 2026-11-09 02:31 UTC snapshot. It is preserved for provenance and must not override the current state above or live GitHub records.
+
+# Historical snapshot — Blind Sniper technical state before standing-delegation merges
+
+**Snapshot:** 2026-11-09 02:31 UTC  
+**Active integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`  
+**Last validated checkpoint before this state-only update:** `bce606594a4b70cca09ccc5d5e8eb615597f02b3`  
+**Consolidation PR:** [#17](https://github.com/madnessgate44-debug/Blind-sniper-/pull/17) — OPEN / READY FOR REVIEW / NOT MERGED. Resolve its live head SHA from GitHub at each review.
+
+## Canonical control plane
+- Root authority: `AGENTS.md` and `ENGINEERING_EXECUTION_OS.md` v2.2.
+- Primary entrypoint: `chatgpt-home/BLIND_SNIPER.md`.
+- Runtime source of truth: `chatgpt-home/runtime/` registries, templates and execution contract.
+- Runtime implementation: `scripts/blind_sniper_runtime.py`, `scripts/blind_sniper_ledger.py`; browser adapter is optional.
+- Registry: 6 profiles, 10 native agents, 13 capability adapters, 13 workflows, 10 native skills and 33 mirrored OpenHands skills.
+- Watcher is assigned to recovery/reconciliation; Shadow is assigned to independent review. Their contracts do not prove separate agent processes are running.
+- Shadow is read-only and requires a distinct reviewer identity for an independent-review verdict.
+- Owner policy: no payment card, no payment and no paid plan. Oracle Always Free is marked UNUSABLE; the runner bootstrap is scoped only to this Blind Sniper repository.
+
+## Verification ledger — functional checkpoint `0d54a6d84cb8efe4780175f7bd61c59826ec3d70`
+- OS compliance run `42551335539`: PASS — `ENGINEERING EXECUTION OS COMPLIANCE: PASS`.
+- Environment validation run `42551335554`: PASS — 39 required assets; 9 skill contracts; 9 agent contracts; 5 workflows; 6 safe Codex config templates; credential-pattern scan clean.
+- Runtime registry run `42551335543`: PASS — registry cross-references and safety invariants clean; 88 unit tests passed.
+- Browser acceptance run `42551335575`: PASS — 19 browser policy tests + 8 dispatch/lease tests; two consecutive real Chromium cycles; 36 correlated receipts; each cycle reconciled one started-only interruption without replay.
+- Browser evidence artifact: `13645347821`, SHA-256 `af186a097da47b6ad9352377b18830fbee697b379fca8cbc2fcd0669701ddf93`.
+- Independent PR review submissions: none. Shadow's distinct-identity review requirement is therefore NOT VERIFIED.
+
+## Capability boundaries
+- GitHub repository operations and Actions checks are available through the connected host.
+- OpenHands direct API dispatch/result retrieval is not verified as a callable ChatGPT tool in this session.
+- Forge browser MCP is optional and not registered as a callable ChatGPT tool in this session.
+- Persistent runner, unattended execution and scheduled worker delivery are not verified.
+- Public-repository remote task-ledger writes remain blocked by the runtime's private-repository guard.
+- Full ChatGPT conversation archive export is not exposed as a native action.
+
+## Repository and release state
+- Default branch: `main`; it does not yet contain the consolidated runtime.
+- PR #17 is ready for independent review and contains the consolidated runtime, execution engine, ledger, browser adapter, native skills/agents/workflows and licensed reference library.
+- Public personal/continuity files were restored to their exact `main` blob SHAs without reading or changing their contents; they are absent from the PR diff.
+- PRs #11 and #14 were merged into the integration branch, not into `main`. PRs #3, #6 and #7 remain open; PR #7's imported assets are already present in the integration tree.
+- No merge to `main`, deployment, paid provisioning, secret mutation or history rewrite has occurred in this task.
+- Repository is public. Do not add private memory, personal/client data, credentials, raw transcripts or private attachments.
+
+## Scope and next gate
+- This task is confined to `madnessgate44-debug/Blind-sniper-`.
+- Next gate: complete full diff review and obtain a distinct independent review; then merge PR #17 and close superseded PRs.

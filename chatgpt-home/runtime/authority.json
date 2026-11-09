@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0.0",
+  "delegations": [
+    {
+      "id": "owner-standing-delegation-2026-11-09",
+      "status": "active",
+      "grantor": "repository-owner",
+      "delegate": "blind-sniper",
+      "repository": "madnessgate44-debug/Blind-sniper-",
+      "effective_date": "2026-11-09",
+      "source_document": "chatgpt-home/AUTHORITY_DELEGATION.md",
+      "actions": [
+        "merge",
+        "merge_to_main",
+        "default_branch_push",
+        "ci_cd_edit",
+        "workflow_edit",
+        "deploy",
+        "production_deploy",
+        "release",
+        "delete"
+      ],
+      "forbidden_actions": [
+        "force_push",
+        "delete_branch",
+        "credential_export",
+        "secret_export",
+        "disable_branch_protection",
+        "unbounded_shell",
+        "secret_mutation",
+        "permission_change",
+        "paid_provisioning",
+        "production_data_mutation"
+      ]
+    }
+  ]
+}

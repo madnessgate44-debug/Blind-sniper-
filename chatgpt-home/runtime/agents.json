@@ -11,7 +11,7 @@
       "id": "blind-sniper",
       "source": "native-operating-contract",
       "role": "AI operating lead and dispatcher",
-      "authority": "coordinates; does not override Owner gates",
+      "authority": "Technical lead and execution operator; executes allowlisted actions under the active standing Owner delegation for the exact repository; does not override host permissions or delegation exclusions.",
       "status": "active_in_chat_session"
     },
     {
