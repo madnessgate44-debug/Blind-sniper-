@@ -407,7 +407,9 @@
       ],
       "adapters": [],
       "execution": "fixed_command_allowlist_in_one_ephemeral_github_actions_run",
-      "status": "bounded_ci_verification_only_no_cross_run_reservation"
+      "status": "bounded_ci_verification_only_no_cross_run_reservation",
+      "contract_mode": "registry_only",
+      "registry_only_reason": "Single-run allowlisted CI verification via the bounded executor workflow; no persistent session runner or native workflow engine is claimed."
     }
   ],
   "native_workflow_library": "chatgpt-home/workflows/",
