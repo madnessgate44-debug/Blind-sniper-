@@ -26,6 +26,7 @@ jobs:
           persist-credentials: false
           sparse-checkout: |
             .blind-sniper/tasks/
+            .github/workflows/
             scripts/
             tests/
             chatgpt-home/runtime/
