@@ -25,7 +25,9 @@
         "reviewer",
         "qa-verifier",
         "recovery",
-        "release-manager"
+        "release-manager",
+        "watcher",
+        "shadow"
       ],
       "workflow": "task-control-loop",
       "config_template": "chatgpt-home/config/blind-sniper.config.toml.example"
@@ -90,7 +92,8 @@
       ],
       "agents": [
         "reviewer",
-        "qa-verifier"
+        "qa-verifier",
+        "shadow"
       ],
       "workflow": "independent-review",
       "config_template": "chatgpt-home/config/review.config.toml.example"
@@ -110,7 +113,8 @@
       ],
       "agents": [
         "recovery",
-        "planner"
+        "planner",
+        "watcher"
       ],
       "workflow": "recovery-and-reconciliation",
       "config_template": "chatgpt-home/config/recovery.config.toml.example"
