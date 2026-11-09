@@ -1,6 +1,6 @@
 # Workflow Library
 
-The native workflow directory contains nine reusable contracts. The runtime registry contains 17 workflow entries: these nine documented contracts plus six registry-only capability/status records and two additional? See classification below; the registry is authoritative for routing and status.
+The native workflow directory contains nine reusable contracts. The runtime registry contains 17 workflow entries: 11 entries reference these nine contracts (some contracts serve more than one workflow), and six are explicitly classified as registry-only capability/status records.
 
 | Workflow | Trigger | Required outputs |
 |---|---|---|
