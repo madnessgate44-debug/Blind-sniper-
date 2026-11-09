@@ -9,7 +9,9 @@ on:
       - "scripts/blind_sniper_runtime.py"
       - "scripts/blind_sniper_ledger.py"
       - "scripts/simulate_blind_sniper_e2e.py"
+      - "scripts/simulate_blind_sniper_jobs_e2e.py"
       - "tests/test_blind_sniper_ledger.py"
+      - "tests/test_blind_sniper_jobs_simulation.py"
       - "tests/test_blind_sniper_github_ledger.py"
       - "tests/test_blind_sniper_orchestration.py"
       - "tests/test_blind_sniper_runtime.py"
@@ -24,7 +26,9 @@ on:
       - "scripts/blind_sniper_runtime.py"
       - "scripts/blind_sniper_ledger.py"
       - "scripts/simulate_blind_sniper_e2e.py"
+      - "scripts/simulate_blind_sniper_jobs_e2e.py"
       - "tests/test_blind_sniper_ledger.py"
+      - "tests/test_blind_sniper_jobs_simulation.py"
       - "tests/test_blind_sniper_github_ledger.py"
       - "tests/test_blind_sniper_orchestration.py"
       - "tests/test_blind_sniper_runtime.py"
@@ -50,11 +54,15 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Run end-to-end interruption and recovery simulation
         run: python scripts/simulate_blind_sniper_e2e.py --output-dir artifacts/blind-sniper-e2e
-      - name: Upload end-to-end simulation receipt
+      - name: Run scheduled-jobs end-to-end simulation
+        run: python scripts/simulate_blind_sniper_jobs_e2e.py --output-dir artifacts/blind-sniper-jobs-e2e
+      - name: Upload end-to-end simulation receipts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: blind-sniper-e2e-${{ github.run_id }}
-          path: artifacts/blind-sniper-e2e/
+          path: |
+            artifacts/blind-sniper-e2e/
+            artifacts/blind-sniper-jobs-e2e/
           if-no-files-found: warn
           retention-days: 14
