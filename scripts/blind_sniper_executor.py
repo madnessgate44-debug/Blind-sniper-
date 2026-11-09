@@ -11,7 +11,6 @@ import sys
 from datetime import timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
-from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
