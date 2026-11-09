@@ -114,7 +114,7 @@ The licensed source imports and native adaptations are now part of this integrat
 
 ## Native core status — 8 November 2026
 
-Ahmed confirmed **native-first** as the single target architecture. The native roster has eight internal roles: Blind Sniper, researcher, planner, engineer, reviewer, QA verifier, recovery and release manager. Operating profiles and workflow-specific agent assignments are checked in. External OpenHands/Forge/other worker identities are not native agents or required execution dependencies. TinyFish remains excluded.
+Ahmed confirmed **native-first** as the single target architecture. The native roster has ten internal roles: Blind Sniper, researcher, planner, engineer, reviewer, QA verifier, recovery, Watcher, Shadow and release manager. Watcher is the native task-progress observer; Shadow is the native adversarial auditor. Their contracts do not imply separate agent processes are running. Operating profiles and workflow-specific agent assignments are checked in. External OpenHands/Forge/other worker identities are not native agents or required execution dependencies. TinyFish remains excluded.
 
 Workflow routing keywords, priorities and agent assignments now live in `workflows.json`; profile binding is resolved through `profiles.json`. The runtime no longer maintains duplicate workflow-to-profile or workflow-to-agent dictionaries. The registry validator checks workflow agent IDs, profile allowlists, routing rules and default agents.
 
