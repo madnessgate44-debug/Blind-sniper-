@@ -129,7 +129,8 @@
       "native_contract_path": "chatgpt-home/templates/REVIEW_REPORT.md",
       "agents": [
         "reviewer",
-        "qa-verifier"
+        "qa-verifier",
+        "shadow"
       ],
       "routing": {
         "priority": 80,
@@ -307,7 +308,8 @@
       "native_contract_path": "chatgpt-home/workflows/session-close.md",
       "agents": [
         "recovery",
-        "planner"
+        "planner",
+        "watcher"
       ],
       "routing": {
         "priority": 70,
