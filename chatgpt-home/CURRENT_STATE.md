@@ -1,10 +1,10 @@
 # Blind Sniper — Current Technical State
 
-**Snapshot:** 2026-11-10, after PR #34 merged onto `main`
+**Snapshot:** 2026-11-10, after PR #36 merged onto `main`
 **Default branch:** main
-**Latest merged commit:** `9be328f9ffe5bf062fe6afce120e62396569cccc` (PR #34 — D6/D8 stale-document reconciliation; documentation-only)
-**Last full runtime-validation checkpoint:** `3290b60e1de0594b648c02763f986564be3da7b4` (128 Python tests + runtime registry + skill/config validation)
-**Latest post-merge checks:** OS Compliance `42715516140` PASS; Environment Validation `42715516348` PASS; Pages deployment `42715514977` SUCCESS.
+**Latest code/runtime commit:** `031b245bca32fbe91abae1f96e9e394efe50f959` (PR #36 — array-secret scanning and test-isolation fixes)
+**Latest full runtime validation:** 130 Python tests OK; runtime registry and skill catalog validation PASS.
+**Post-merge checks:** Runtime Registry `42716156320` PASS; Environment Validation `42716156014` PASS; OS Compliance `42716156010` PASS; Pages deployment `42716155494` was still in progress at 2026-11-09 22:56 UTC.
 **Authority:** Engineering Execution OS v2.3 plus active standing Owner delegation, recorded in `chatgpt-home/AUTHORITY_DELEGATION.md` and mirrored in `chatgpt-home/runtime/authority.json`.
 **Audit artifact:** `chatgpt-home/AGENT_OS_INTEGRATION_AUDIT.md` (BS-OS-001 static audit) and `chatgpt-home/BS-COMPLETION_AUDIT_AND_OPENAI_REVIEW.md` (completion audit).
 
@@ -37,21 +37,25 @@
 - PR #32 — `.nojekyll` to fix the legacy Pages builder merged at `3290b60e1de0594b648c02763f986564be3da7b4`.
 - PR #33 — current-state and BS-OS-004 reconciliation to the `3290b60` checkpoint merged at `fe6b15d99e71037a00f0df196e487721950fe112`.
 - PR #34 — D6 task record and D8 historical architecture marking merged at `9be328f9ffe5bf062fe6afce120e62396569cccc`.
+- PR #35 — current operating/build state refresh merged at `4d742319bf499b826048bb63407f917a9aad2c3a`.
+- PR #36 — config-array secret scanning and test-isolation fixes merged at `031b245bca32fbe91abae1f96e9e394efe50f959`.
 - Earlier merged work retained: PR #17 (`ac8a5eb`), PR #23 (`14769067`), PR #24 (`5631bd37`).
 - GitHub Pages deployment for the latest merge: published URL https://madnessgate44-debug.github.io/Blind-sniper-/.
 
-## Latest verification — runtime checkpoint 3290b60; docs-only head 9be328f
-- Runtime registry and full Python suite: PASS; 128 tests, `OK`; `validate_blind_sniper_runtime.py` reports `profiles=6 agents=10 adapters=13 workflows=18 native_skills=14 openhands_skills=33`.
+## Latest verification — runtime checkpoint 031b245
+- Runtime registry and full Python suite: PASS; 130 tests, `OK`; `validate_blind_sniper_runtime.py` reports `profiles=6 agents=10 adapters=13 workflows=18 native_skills=14 openhands_skills=33`.
 - Environment validation: PASS; 49 required assets, 14 skill contracts, 9 agent contracts, 9 workflows, 6 safe Codex config templates; credential-pattern scan clean.
 - Skill tooling: `find_skill.py --validate` PASS (47 skills: 14 native, 33 mirror); `validate_codex_config.py` PASS (6 templates, least-privilege, 6 profile sandbox postures).
 - Deterministic E2E simulations (`scripts/simulate_blind_sniper_e2e.py`, `scripts/simulate_blind_sniper_jobs_e2e.py`): PASS on `main`.
 - Engineering Execution OS compliance check: PASS.
 - GitHub Pages: legacy build status recovered from `errored` to `built` on `3290b60` (see the 2026-11-09 addendum); the Actions `pages-build-deployment` run succeeded and the live site serves current `main`.
 - GitHub job conclusions are the authoritative success results. The logs did not print a separate process exit-code field for every job.
-- Post-PR #34 exact-main checks on `9be328f`: OS Compliance run `42715516140` SUCCESS; Environment Validation run `42715516348` SUCCESS; GitHub Pages deployment run `42715514977` SUCCESS. PR #34 changed only the D6 task record, D8 historical-document banner and BS-OS-004 register addendum; no runtime code changed.
+- PR #35 exact-head checks: Runtime Registry `42715791184`, Environment Validation `42715791323`, and OS Compliance `42715791619` SUCCESS; post-merge main runs `42715869998`, `42715870329`, `42715870058` and Pages deployment `42715869300` SUCCESS.
+- PR #36 exact-head checks: Runtime Registry `42716090457`, Environment Validation `42716090404`, and OS Compliance `42716062338` SUCCESS. Post-merge main Runtime Registry `42716156320`, Environment Validation `42716156014`, and OS Compliance `42716156010` SUCCESS; Runtime Registry log reports 130 tests `OK`.
+- Pages deployment for PR #36 merge: run `42716155494`; build and status-report jobs succeeded, but deploy job was still `in_progress` at 2026-11-09 22:56 UTC. Do not claim it deployed until the job completes.
 
 ## Current open PR inventory
-- After the 2026-11-10 documentation closeout, the live open PR set is empty: #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34 merged, and #9/#15/#16 closed as superseded (their accepted content shipped via #21 and #19). #13 remains a design-only artifact. Re-read live GitHub state before any merge/closure decision.
+- At the `031b245` main baseline before this documentation refresh, the open PR set was empty: #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34/#35/#36 merged, and #9/#15/#16 closed as superseded (their accepted content shipped via #21 and #19). #13 remains a design-only artifact. This PR is the current state-document refresh; re-read live GitHub state before any merge/closure decision.
 - Superseded branches were deleted 2026-11-09 after merge: `feat/blind-sniper-jobs-e2e-sim-2026-11-09`, `feat/skill-discovery-and-codex-config-2026-11-09`, `fix/pages-nojekyll-2026-11-09`.
 - PR #23 and #24 are merged. PR #17 is merged; older text below that says otherwise is historical.
 - PR #24 had no formal independent review submission. The diff was self-reviewed and all exact-head checks passed; the limitation was recorded in the PR discussion. Do not claim independent approval.
@@ -92,12 +96,13 @@
 - Superseded branches deleted 2026-11-09 after merge: `feat/blind-sniper-jobs-e2e-sim-2026-11-09`, `feat/skill-discovery-and-codex-config-2026-11-09`, `fix/pages-nojekyll-2026-11-09`.
 - Still open (unchanged): owner decision on durable vs ephemeral execution (gate 2); BS-OS-004 remaining edits to `BS-20261108-002.md` (D6) and `CODEX_RUNTIME_ARCHITECTURE.md` (D8); branch protection remains `protected=false` (gate 6 / hardening).
 
-## Reconciliation note — 2026-11-10 (PR #33/#34 closeout)
-- PR #33 merged at `fe6b15d99e71037a00f0df196e487721950fe112`, reconciling the current-state and BS-OS-004 register to the `3290b60` checkpoint.
-- PR #34 merged at `9be328f9ffe5bf062fe6afce120e62396569cccc`; D6 and D8 are now reconciled, with historical content preserved and marked superseded where appropriate.
-- Exact-main checks on `9be328f`: OS Compliance `42715516140` SUCCESS; Environment Validation `42715516348` SUCCESS; GitHub Pages deployment `42715514977` SUCCESS.
+## Reconciliation note — 2026-11-10 (PR #33–#36 closeout)
+- PR #33 merged at `fe6b15d99e71037a00f0df196e487721950fe112`; PR #34 merged at `9be328f9ffe5bf062fe6afce120e62396569cccc` and completed BS-OS-004 D6/D8.
+- PR #35 merged at `4d742319bf499b826048bb63407f917a9aad2c3a` and refreshed `CURRENT_STATE.md`, `BLIND_SNIPER.md` (v3.2) and `BUILD_PROGRESS.md`.
+- PR #36 merged at `031b245bca32fbe91abae1f96e9e394efe50f959`; Codex config validator now scans array values for secrets, scheduled simulation tests restore environment variables, and the skill tooling test fixture path is corrected.
+- Post-merge main CI on `031b245`: Runtime Registry `42716156320` PASS (130 tests), Environment Validation `42716156014` PASS, OS Compliance `42716156010` PASS. Pages deploy `42716155494` remained in progress at 2026-11-09 22:56 UTC.
 - The live open PR set is empty. Main branch protection remains `protected=false`.
-- Private continuity scaffold remains at `madnessgate44-debug/G/blind-sniper-continuity/` (private repository, five non-empty files); it is not a transcript archive. Transcript import and recurring conversation sync remain BLOCKED by the unavailable authorized export/source and the scheduled-task limit.
+- Private continuity scaffold remains at `madnessgate44-debug/G/blind-sniper-continuity/` (private repository, five non-empty files); it is not a transcript archive. Transcript import and recurring conversation sync remain BLOCKED by the unavailable authorized export/source and scheduled-task limit.
 
 ## Historical record
 
