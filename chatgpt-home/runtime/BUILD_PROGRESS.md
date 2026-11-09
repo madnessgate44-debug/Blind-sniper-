@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-11-10  
 **Default branch:** `main`  
-**Current main:** `9be328f9ffe5bf062fe6afce120e62396569cccc` (PR #34 merge)  
+**Latest code/runtime commit:** `031b245bca32fbe91abae1f96e9e394efe50f959` (PR #36 merge)  
 **Open PRs:** 0 (live GitHub search)  
 **Architecture:** Native-first; runtime is a planner and guarded task state machine, not a system that spawns separate model processes.
 
@@ -10,10 +10,10 @@
 
 - Profiles: 6; native agent roles: 10; capability adapters: 13; workflows: 18.
 - Native skills: 14; mirrored OpenHands skills/rules: 33.
-- Latest full runtime-registry + Python test checkpoint: `3290b60e1de0594b648c02763f986564be3da7b4` — 128 tests OK; runtime registry, skill discovery and Codex config validation passed.
-- PR #34 is documentation-only and merged at `9be328f9ffe5bf062fe6afce120e62396569cccc`. Exact-main OS Compliance run `42715516140` PASS; Environment Validation run `42715516348` PASS; Pages deployment run `42715514977` SUCCESS.
-- PR #34 completed BS-OS-004 D6 and D8: task record corrected with preserved historical status; legacy Codex architecture document marked HISTORICAL / SUPERSEDED; register addendum records both.
-- PR #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34 are merged. PR #9/#15/#16 are closed as superseded. PR #13 remains a design-only artifact.
+- Latest full runtime-registry + Python test checkpoint: `031b245bca32fbe91abae1f96e9e394efe50f959` — 130 tests OK; runtime registry, skill catalog and Codex config validation passed.
+- PR #34 completed BS-OS-004 D6/D8. PR #35 refreshed the operating instructions and current/build state. PR #36 fixed array secret scanning and test-isolation defects found during review of PR #30/#31.
+- Exact-main checks after PR #36: Runtime Registry `42716156320` PASS (130 tests); Environment Validation `42716156014` PASS; OS Compliance `42716156010` PASS. GitHub Pages deploy `42716155494` was still in progress at 2026-11-09 22:56 UTC; do not claim completion until confirmed.
+- PR #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34/#35/#36 are merged. PR #9/#15/#16 are closed as superseded. PR #13 remains a design-only artifact.
 
 ## Continuity and privacy status
 
@@ -31,11 +31,9 @@
 5. **Transcript source:** obtain a supported, authorized export or account-history connector before attempting migration; preserve source order, timestamps and identifiers.
 
 ---
-
 # Historical implementation log — pre-2026-11-10 (preserved, not current status)
 
 The material below is the earlier 2026-11-08 build log. It is retained for provenance only. Any old branch, PR, test count, limitation or next-step statement below is superseded by the current status above and the live GitHub state.
-
 # Blind Sniper build progress — 8 November 2026
 
 **Architecture:** Native-first. Blind Sniper's own runtime, policy, workforce contracts, ledger and recovery are core. External agents are optional adapters.
