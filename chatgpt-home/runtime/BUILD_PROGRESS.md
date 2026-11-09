@@ -3,7 +3,7 @@
 **Snapshot:** 2026-11-10  
 **Default branch:** `main`  
 **Latest code/runtime commit:** `031b245bca32fbe91abae1f96e9e394efe50f959` (PR #36 merge)  
-**Open PRs:** 0 (live GitHub search)  
+**Open PRs on the `031b245` main baseline:** 0; this PR is the current documentation refresh.  
 **Architecture:** Native-first; runtime is a planner and guarded task state machine, not a system that spawns separate model processes.
 
 ## Current verified system inventory
