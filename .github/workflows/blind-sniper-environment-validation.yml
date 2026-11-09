@@ -4,11 +4,13 @@ on:
     paths:
       - "chatgpt-home/**"
       - "scripts/check-blind-sniper-environment.mjs"
+      - "scripts/validate_codex_config.py"
       - ".github/workflows/blind-sniper-environment-validation.yml"
   pull_request:
     paths:
       - "chatgpt-home/**"
       - "scripts/check-blind-sniper-environment.mjs"
+      - "scripts/validate_codex_config.py"
       - ".github/workflows/blind-sniper-environment-validation.yml"
   workflow_dispatch:
 permissions:
@@ -21,5 +23,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
       - name: Validate environment assets
         run: node scripts/check-blind-sniper-environment.mjs
+      - name: Validate Codex config templates
+        run: python scripts/validate_codex_config.py
