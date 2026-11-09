@@ -1,0 +1,172 @@
+name: Blind Sniper Durable Executor
+
+# Durable allowlisted executor: runs one Owner-selected allowlisted command against a
+# named branch and publishes a machine-readable receipt that survives the run.
+# No secrets beyond the default GITHUB_TOKEN; no raw shell strings are accepted.
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: "Task identifier (A-Za-z0-9._- , max 64 chars)"
+        required: true
+        type: string
+      command:
+        description: "Allowlisted command to run"
+        required: true
+        type: choice
+        options:
+          - validate-runtime
+          - run-tests
+
+concurrency:
+  group: blind-sniper-executor-${{ inputs.task_id }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    name: Execute allowlisted command
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      status: ${{ steps.receipt.outputs.status }}
+    steps:
+      - name: Validate task_id
+        env:
+          TASK_ID: ${{ inputs.task_id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$TASK_ID" =~ ^[A-Za-z0-9._-]{1,64}$ ]]; then
+            echo "invalid task_id: must match [A-Za-z0-9._-]{1,64}" >&2
+            exit 64
+          fi
+
+      - name: Checkout named branch (read-only, sparse)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/
+            tests/
+            chatgpt-home/
+          sparse-checkout-cone-mode: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run allowlisted command
+        id: run
+        shell: bash
+        env:
+          COMMAND: ${{ inputs.command }}
+        run: |
+          set +e
+          echo "::group::allowlisted command: ${COMMAND}"
+          case "$COMMAND" in
+            validate-runtime)
+              python scripts/validate_blind_sniper_runtime.py
+              ;;
+            run-tests)
+              python -m unittest discover -s tests -p 'test_*.py' -v
+              ;;
+            *)
+              echo "refusing: '${COMMAND}' is not in the allowlist" >&2
+              exit 64
+              ;;
+          esac
+          code=$?
+          echo "::endgroup::"
+          echo "exit_code=${code}" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Write receipt
+        id: receipt
+        env:
+          TASK_ID: ${{ inputs.task_id }}
+          COMMAND: ${{ inputs.command }}
+          EXIT_CODE: ${{ steps.run.outputs.exit_code }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          python scripts/blind_sniper_receipt.py \
+            --task-id "$TASK_ID" \
+            --command "$COMMAND" \
+            --exit-code "$EXIT_CODE" \
+            --run-id "$RUN_ID" \
+            --run-url "$RUN_URL" \
+            --output-dir .
+          status=$(python -c "import json,sys;print(json.load(open(sys.argv[1]))['status'])" "ops/receipts/${TASK_ID}.json")
+          echo "status=${status}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload receipt artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blind-sniper-receipt-${{ inputs.task_id }}
+          path: ops/receipts/${{ inputs.task_id }}.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Fail the run when the allowlisted command failed
+        if: steps.run.outputs.exit_code != '0'
+        env:
+          COMMAND: ${{ inputs.command }}
+          EXIT_CODE: ${{ steps.run.outputs.exit_code }}
+        run: |
+          echo "allowlisted command '${COMMAND}' exited ${EXIT_CODE}" >&2
+          exit 1
+
+  publish-receipt:
+    name: Publish receipt to receipts/main
+    needs: execute
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download receipt artifact
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: blind-sniper-receipt-${{ inputs.task_id }}
+          path: receipt-artifact
+
+      - name: Commit and push the receipt to receipts/main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TASK_ID: ${{ inputs.task_id }}
+          COMMAND: ${{ inputs.command }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          receipt="receipt-artifact/ops/receipts/${TASK_ID}.json"
+          if [ ! -f "$receipt" ]; then
+            echo "no receipt artifact available; nothing to publish" >&2
+            exit 0
+          fi
+          git config --global user.name "blind-sniper-executor"
+          git config --global user.email "blind-sniper-executor@users.noreply.github.com"
+          git init -q publish && cd publish
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git fetch -q --depth 1 origin receipts/main 2>/dev/null; then
+            git checkout -q -b receipts/main FETCH_HEAD
+          else
+            git checkout -q --orphan receipts/main
+          fi
+          mkdir -p ops/receipts
+          cp "../$receipt" "ops/receipts/${TASK_ID}.json"
+          git add "ops/receipts/${TASK_ID}.json"
+          if git diff --cached --quiet; then
+            echo "receipt unchanged; nothing to publish"
+            exit 0
+          fi
+          git commit -q -m "receipt(${TASK_ID}): ${COMMAND} (run ${RUN_ID})"
+          git push -q origin HEAD:receipts/main
