@@ -1,8 +1,9 @@
 # Blind Sniper — Current Technical State
 
-**Snapshot:** 2026-11-09 — BS-OS-001A registry reconciliation
+**Snapshot:** 2026-11-09 — BS-OS-001A final verification
 **Active work branch:** `feat/bs-os-001a-registry-reconciliation-2026-11-09`
 **Main baseline:** `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e`
+**Reconciliation branch HEAD:** `f649aa6ab628a404d747f16fb507b5dd39941d90`
 **Integration consolidation:** PR #17 merged into main; merge commit is the current main baseline.
 **Audit artifact:** `chatgpt-home/AGENT_OS_INTEGRATION_AUDIT.md` (BS-OS-001 static audit).
 
@@ -38,5 +39,7 @@
 - Environment validation run `42555123575` on `a25601f8daec9c5c0578e7f88c3171b387829e2e` PASS: 45 required assets, 11 skill contracts, 9 agent contracts, 9 workflows, 6 safe config templates, credential scan clean. The later `63f61d4` commit only strengthened runtime registry validation and its test coverage.
 
 ## Current task and next gate
-- BS-OS-001A reconciles agent/skill/workflow registries, provenance and this state anchor.
-- Next gate: run runtime registry validation and environment validation on this branch; inspect the complete diff; then open a PR for review. Do not merge without the required current-session authorization.
+- BS-OS-001A registry reconciliation is implemented and reviewed on this branch. The canonical ten-agent roster is preserved; four non-roster profiles are reference-only; all 11 native skills are indexed; all 17 workflows have explicit contract modes; the unavailable Mattzcarey reference is documented without substitution.
+- Validation is complete: runtime registry validator + 88 unit tests passed on `63f61d4`; environment validation and OS compliance passed on branch HEAD `f649aa6`.
+- Complete branch diff reviewed: 17 changed files relative to main; only documentation/current-state changes follow the tested runtime commit.
+- Next gate: open a PR for independent review. PR creation has not been performed; it is a publishing action and requires explicit current-session authorization under `ENGINEERING_EXECUTION_OS.md` §9. Merge/deploy remain separate approval gates.
