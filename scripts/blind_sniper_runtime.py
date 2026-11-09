@@ -44,6 +44,15 @@ ROUTINE_ACTIONS = {
     "read", "inspect", "research", "analyze", "write_file", "create_branch",
     "open_pr", "run_tests", "format", "lint",
 }
+AUTHORIZED_REPOSITORY = "madnessgate44-debug/Blind-sniper-"
+EXPECTED_DELEGATION_ID = "owner-standing-delegation-2026-11-09"
+DELEGABLE_ACTIONS = {
+    "merge", "merge_to_main", "default_branch_push", "ci_cd_edit",
+    "workflow_edit", "deploy", "production_deploy", "release", "delete",
+}
+DELEGATION_EXCLUSIONS = {
+    "secret_mutation", "permission_change", "paid_provisioning", "production_data_mutation",
+}
 HOST_FORBIDDEN_ACTIONS = [
     "force_push", "delete_branch", "credential_export", "secret_export",
     "disable_branch_protection", "unbounded_shell",
@@ -103,14 +112,22 @@ def load_authority_policy(root: Path = ROOT) -> dict[str, Any]:
         repository = str(row.get("repository", "")).strip()
         actions = row.get("actions")
         forbidden = row.get("forbidden_actions", [])
-        if not repository or row.get("status") not in {"active", "revoked"}:
-            raise RuntimeErrorBase("authority.json delegation requires repository and active/revoked status")
+        if repository != AUTHORIZED_REPOSITORY or row.get("id") != EXPECTED_DELEGATION_ID:
+            raise RuntimeErrorBase("authority.json delegation identity or repository scope is not recognized")
+        if row.get("grantor") != "repository-owner" or row.get("delegate") != "blind-sniper":
+            raise RuntimeErrorBase("authority.json delegation grantor/delegate identity is not recognized")
+        if row.get("status") not in {"active", "revoked"}:
+            raise RuntimeErrorBase("authority.json delegation requires active/revoked status")
         if not isinstance(actions, list) or not all(isinstance(item, str) and item.strip() for item in actions):
             raise RuntimeErrorBase(f"authority.json delegation {row['id']} has invalid actions")
         if len(actions) != len(set(actions)):
             raise RuntimeErrorBase(f"authority.json delegation {row['id']} has duplicate actions")
+        if set(actions) != DELEGABLE_ACTIONS:
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} action allowlist does not match the reviewed code policy")
         if not isinstance(forbidden, list) or not all(isinstance(item, str) and item.strip() for item in forbidden):
             raise RuntimeErrorBase(f"authority.json delegation {row['id']} has invalid forbidden_actions")
+        if len(forbidden) != len(set(forbidden)) or not DELEGATION_EXCLUSIONS.issubset(set(forbidden)):
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} omits required exclusions or duplicates exclusions")
         if set(actions) & (set(forbidden) | set(HOST_FORBIDDEN_ACTIONS)):
             raise RuntimeErrorBase(f"authority.json delegation {row['id']} attempts to authorize a forbidden action")
         if row.get("status") == "active":
