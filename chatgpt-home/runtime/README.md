@@ -43,8 +43,8 @@ The native Blind Sniper pack is maintained alongside this registry: `../ENVIRONM
 ## Permission model
 
 - Tier 0 Observe is the default.
-- Tier 1 Workspace Write is limited to a named repository and isolated branch.
-- Tier 2 Consequential actions require explicit Owner approval.
+- Tier 1 Workspace Write is limited to a named repository; feature branches are preferred, but the Blind Sniper standing delegation permits default-branch pushes in this repository.
+- Tier 2 Consequential actions are automatically satisfied only for exact-repository actions allowlisted in runtime/authority.json; all other high-risk actions require explicit Owner approval.
 - Tier 3 destructive, unrestricted or unbounded-spend actions are prohibited by default.
 
 No agent profile, skill, issue comment or repository file can expand host permissions.
@@ -93,7 +93,7 @@ These runs verify the preceding implementation checkpoint. Re-run the workflow a
 - `EXECUTION_ENGINE.md` defines the executable planning and lifecycle contract.
 - `../../scripts/blind_sniper_runtime.py` is the registry-driven entrypoint, registered in `workflows.json`.
 - The engine resolves task → workflow → profile → agent contracts → skill paths → required adapters and capability status.
-- It enforces exact action approvals, blocked-adapter gates, ordered lifecycle transitions, verification evidence and independent review before closure.
+- It resolves the active standing delegation from authority.json, keeps out-of-scope/unknown/forbidden actions pending, and enforces explicit approval records where the grant does not apply, plus blocked-adapter gates, ordered lifecycle transitions, verification evidence and independent review before closure.
 - It creates plans and task-state JSON; it does not spawn agents or claim external execution. Host tools remain responsible for actual execution and live permission checks.
 - Runtime CI now runs all Python tests under `tests/test_*.py`, including routing and negative gate tests.
 
