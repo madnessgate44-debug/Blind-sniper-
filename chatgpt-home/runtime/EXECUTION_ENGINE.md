@@ -143,10 +143,13 @@ Tests cover registry resolution, routing, task-envelope authority boundaries, Ow
 
 ## Allowlisted task executor
 
-**Entrypoint:** \`scripts/blind_sniper_executor.py\`  
-**Workflow:** \`.github/workflows/blind-sniper-allowlisted-executor.yml\`  
-**Task contract:** \`.blind-sniper/tasks/<task>.json\`
+**Entrypoint:** `scripts/blind_sniper_executor.py`  
+**Workflow:** `.github/workflows/blind-sniper-allowlisted-executor.yml`  
+**Task contract:** `.blind-sniper/tasks/<task>.json`  
+**Runtime workflow:** `bounded-verification`
 
-The executor accepts only the fixed IDs \`unit-tests\` and \`runtime-validator\`. Task files cannot supply shell text or arguments. The runner checks the named branch and full commit SHA, reserves a core task lease using GitHub's HTTP Date header, runs the allowlisted commands with shell disabled and a minimal child-process environment, and uploads logs, a compact ledger and a machine-readable receipt. The workflow uses \`contents: read\` only and sparse-checks out required runtime/test/contracts paths rather than the full \`chatgpt-home\` tree.
+The executor accepts only the fixed command IDs `unit-tests` and `runtime-validator`. The task envelope must select the registered `bounded-verification` workflow; it cannot supply shell text or arguments. Each requested command maps to one named workflow step. The executor records RUNNING and terminal step receipts with start/completion times from GitHub's HTTP Date header, exact exit code (or timeout status), run ID, commit SHA and log line references. Commands not requested are marked NOT_REQUESTED; commands skipped after a failure are marked BLOCKED. The independent-review step remains AWAITING_INDEPENDENT_REVIEW and is never self-completed by this runner.
 
-A successful run ends in \`REVIEWING\`, not \`CLOSED\`. An independent reviewer must inspect the artifact and supply a task-correlated PASS receipt before closure. A green executor job is not an independent review and is not a closure receipt. The current executor uses a per-run local ledger artifact; it does not claim cross-run durable lease storage.
+**Persistence is deliberately per-run and ephemeral.** The local ledger, lease and receipts are created inside one GitHub Actions run and uploaded as a 14-day artifact. They do not provide cross-run exclusion, cross-run deduplication, durable task recovery or a persistent worker. A repeated task ID in a later run is not protected by the prior run's local ledger. The workflow uses `contents: read` only and does not write private continuity data to this public repository.
+
+A successful verification run ends in `REVIEWING`, not `CLOSED`. A distinct reviewer must inspect the exact commit and artifact and supply a task-correlated PASS receipt before closure. A green executor job is not an independent review or closure receipt.
