@@ -100,7 +100,10 @@ Session boot, task lifecycle, agent handoff, session close and release gate are 
 - `mcp/MCP_AND_BROWSER_INTEGRATIONS.md` records the live state and acceptance gates for GitHub, OpenHands, Brain, Forge and Codex MCP/browser integrations.
 
 
-## Unified runtime index — 2026-11-08
+## Historical unified runtime index — 2026-11-08 (superseded)
+
+This section records the pre-reconciliation snapshot. Its native skill count below is historical; the current index contains 11 native skills. See `runtime/skills.index.json` and the 2026-11-09 reconciliation section above.
+
 - Runtime entrypoint: `chatgpt-home/runtime/README.md`.
 - Native + imported skill index: `chatgpt-home/runtime/skills.index.json` (10 native skills + 33 OpenHands skill/rule files).
 - Agent registry: `chatgpt-home/runtime/agents.json` (10 canonical native roles; 4 additional profiles explicitly classified as reference-only; OpenHands profiles remain in the source mirror).
