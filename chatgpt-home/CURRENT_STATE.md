@@ -19,7 +19,7 @@
 - PR #15 head `86c9b6277a00093b3d94a8baf065eacfd1a66a08`: exact-head runtime/environment/OS checks passed; independent review and mainline reconciliation remain.
 - PR #13 remains a draft design contract requiring task/run/step reservations; reconcile it with PR #16's narrower Option B contract.
 - PR #9 remains draft; its exact head has successful push checks but is 31 commits behind main. Its unique deterministic simulation is not in main; preserve/extract or close after comparing with current E2E coverage.
-- PR #18 is open/draft against main. Previous exact head `a6855d9ccb7da7cec2763cc3507e5a24223968e3` passed runtime, environment and OS-compliance PR checks. The completion audit packet and this state update are documentation changes; resolve the new live HEAD and its exact checks before review.
+- PR #18 is open/draft against main. Exact head `2c90e37ff48312af39401da33313f537fd6fed63` passed Runtime Registry (88 tests; run `42558193995`), Environment Validation (run `42558194080`) and OS Compliance (run `42558193895`). A subsequent status-anchor-only commit may advance the branch; resolve the live HEAD before review.
 - PR #17 had no formal review submission in the review list despite its stated independent-review gate. No rollback is proposed; owner intent and branch-protection enforcement remain questions.
 - PRs #3, #11 and #14 are merged; #4, #5, #6, #7 and #12 are closed unmerged/superseded or inactive.
 
