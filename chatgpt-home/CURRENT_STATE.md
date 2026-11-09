@@ -55,7 +55,7 @@
 - Pages deployment for PR #36 merge: run `42716155494`; build and status-report jobs succeeded, but deploy job was still `in_progress` at 2026-11-09 22:56 UTC. Do not claim it deployed until the job completes.
 
 ## Current open PR inventory
-- After the 2026-11-10 closeout, the live open PR set is empty: #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34/#35/#36 merged, and #9/#15/#16 closed as superseded (their accepted content shipped via #21 and #19). #13 remains a design-only artifact. Re-read live GitHub state before any merge/closure decision.
+- At the `031b245` main baseline before this documentation refresh, the open PR set was empty: #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34/#35/#36 merged, and #9/#15/#16 closed as superseded (their accepted content shipped via #21 and #19). #13 remains a design-only artifact. This PR is the current state-document refresh; re-read live GitHub state before any merge/closure decision.
 - Superseded branches were deleted 2026-11-09 after merge: `feat/blind-sniper-jobs-e2e-sim-2026-11-09`, `feat/skill-discovery-and-codex-config-2026-11-09`, `fix/pages-nojekyll-2026-11-09`.
 - PR #23 and #24 are merged. PR #17 is merged; older text below that says otherwise is historical.
 - PR #24 had no formal independent review submission. The diff was self-reviewed and all exact-head checks passed; the limitation was recorded in the PR discussion. Do not claim independent approval.
