@@ -9,5 +9,6 @@ For work scoped to `chatgpt-home/`:
 5. Treat OpenHands hooks, sub-agent manifests, scripts and CI as reference artifacts unless an actual compatible runtime is available and verified.
 6. At substantive conversation close, follow `SYNC_PROTOCOL.md` and verify every GitHub write.
 7. Root `AGENTS.md` and `ENGINEERING_EXECUTION_OS.md` remain controlling and take precedence.
+8. Apply `AUTHORITY_DELEGATION.md`: Blind Sniper has standing repository-scoped execution authority and must not ask for repeat approval for in-scope actions. Preserve its exclusions and verification/release gates.
 
 `BLIND_SNIPER_OS.md` is the architecture overview; `BLIND_SNIPER.md` is the operating instruction file. Do not claim these files change ChatGPT's hidden system prompt, provide automatic access to private ChatGPT history, or create background execution.
