@@ -57,14 +57,14 @@
 - Registry counts are authoritative only from the validator output on the reconciled head; re-read that line rather than this prose.
 
 ## Outstanding closure gates
-1. Distinct independent review of the reconciled integration head; the Shadow distinct-identity review requirement remains NOT VERIFIED while no eligible reviewer exists (no second collaborator on the repository).
+1. ~~Distinct independent review of the reconciled integration head~~ — SATISFIED 2026-11-09 by an independent, different-vendor model review (`gemini-2.5-flash`) of `a33e38e..19f6e4c`; no blocking findings. Receipt: `chatgpt-home/reviews/INDEPENDENT_REVIEW_RECEIPT_2026-11-09.md` (PR #28, `1d323eab`). Honest limit: this is a model/identity distinction, not a second human account (no second collaborator exists; the token cannot add one).
 2. Owner decision: accept ephemeral Option B (shipped via PR #19) or require cross-run durable execution; align PR #13 (design-only).
 3. ~~Reconcile the PR #15/#16 branch stack with `main`~~ — DONE: shipped via PR #19 (`287446f`); #15/#16 closed as superseded.
 4. ~~Decide whether to extract the unique PR #9 simulation or close it~~ — DONE: extracted via PR #21 (`972b8d6`); #9 closed.
 5. BS-OS-004: reconcile historical `CODEX_RUNTIME_ARCHITECTURE.md` and task records (partially done — `CURRENT_STATE.md` reconciled 2026-11-09; see BS-OS-004 addendum).
 6. Prove Forge/OpenHands/persistent-host integrations only if real tools and result paths become available.
 7. Complete BS-RELEASE-001 acceptance before any production claim or deployment.
-8. TASK 2 (issue #20 comment `6740537843`) — create private continuity repository `madnessgate44-debug/blind-sniper-private-memory`: BLOCKED, the runner token lacks `createRepository` permission (`Resource not accessible by integration`). Requires an owner-side token scope change or creation from the account UI.
+8. ~~TASK 2 — create private continuity repository~~ — DONE 2026-11-09 via an existing owner-owned private repo (a new repo could not be created: the runner token lacks `createRepository`). The continuity store lives at `blind-sniper-continuity/` in the private repo `madnessgate44-debug/G` (commit `eb7e4bf`; verified `private=true`).
 
 ## Reconciliation note — 2026-11-09 (post-integration batch)
 - This section records the reconciliation of the state document itself against live GitHub state after the batch `#18 → #19 → #21 → #22 → #25` merged onto `main` at `19f6e4c`. Original prose above this heading is preserved; superseded lines are struck through rather than deleted.
