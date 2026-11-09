@@ -11,15 +11,15 @@
       "id": "blind-sniper",
       "source": "native-operating-contract",
       "role": "AI operating lead and dispatcher",
-      "authority": "coordinates; does not override Owner gates",
+      "authority": "Technical lead and execution operator; executes allowlisted actions under the active standing Owner delegation for the exact repository; does not override host permissions or delegation exclusions.",
       "status": "active_in_chat_session"
     },
     {
       "id": "release-manager",
-      "source": "openhands-library",
+      "source": "native-blind-sniper-contract-adapted-from-openhands",
       "role": "release planning and gates",
-      "status": "reference_profile_present",
-      "native_contract_path": "chatgpt-home/agents/release-manager.md"
+      "status": "native_contract_present_execution_depends_on_host_or_worker",
+      "path": "chatgpt-home/agents/release-manager.md"
     },
     {
       "id": "researcher",
@@ -104,5 +104,36 @@
       "artifact_links",
       "blockers"
     ]
-  }
+  },
+  "reference_profiles": [
+    {
+      "id": "factory-orchestrator",
+      "path": "chatgpt-home/agents/factory-orchestrator.md",
+      "status": "reference_only_not_in_native_roster",
+      "origin": "Adapted from os-factory/har factory-line skill (Apache-2.0)",
+      "reason": "Specialized sequential/parallel station orchestration; no distinct runtime routing or profile binding is defined."
+    },
+    {
+      "id": "harness-controller",
+      "path": "chatgpt-home/agents/harness-controller.md",
+      "status": "reference_only_not_in_native_roster",
+      "origin": "Adapted from 0xenzyme/agent-harness and SUNRNEHUI/agent-harness (MIT)",
+      "reason": "Overlaps the canonical blind-sniper controller/planner responsibilities; retained as an implementation pattern, not a second controller."
+    },
+    {
+      "id": "independent-reviewer",
+      "path": "chatgpt-home/agents/independent-reviewer.md",
+      "status": "reference_only_not_in_native_roster",
+      "origin": "Independently authored review-pattern adaptation; no upstream files copied",
+      "reason": "Overlaps canonical reviewer and shadow roles; distinct independent execution identity is not available merely from this profile."
+    },
+    {
+      "id": "worker-executor",
+      "path": "chatgpt-home/agents/worker-executor.md",
+      "status": "reference_only_not_in_native_roster",
+      "origin": "Adapted from 0xenzyme worker-runner contract and SUNRNEHUI subagent task template (MIT)",
+      "reason": "Execution role is represented by canonical engineer plus host adapter; no separate worker process is created by registering this profile."
+    }
+  ],
+  "reference_profile_policy": "Reference profiles are preserved for design reuse but are not dispatchable native agents. Only entries in agents[] belong to the canonical roster. Promote a reference profile only through an explicit architecture decision, profile allowlist update and runtime acceptance."
 }

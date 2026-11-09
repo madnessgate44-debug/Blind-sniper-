@@ -15,7 +15,7 @@ Delegate only when the recipient has a real, verified receive and result path.
 Read the target agent contract, task ticket and current coordination protocol. Resolve repository, branch, base SHA and permitted scope.
 
 ## Permissions
-Dispatching a bounded task is allowed. Do not grant broader permissions than the task needs. Merge, deployment, secret changes and paid resources remain Owner-gated.
+Dispatching a bounded task is allowed. Do not grant broader permissions than the task needs. Merge and deployment are allowed without repeat approval when covered by the active standing delegation for madnessgate44-debug/Blind-sniper-. Secret changes, paid resources and actions outside the delegated repository remain Owner-gated.
 
 ## Procedure
 1. Create a unique task/correlation ID.

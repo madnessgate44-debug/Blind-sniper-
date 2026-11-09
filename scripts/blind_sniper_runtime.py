@@ -7,6 +7,7 @@ agents, invoke unregistered adapters, or bypass host/Owner permissions.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -43,6 +44,15 @@ HIGH_RISK_ACTIONS = {
 ROUTINE_ACTIONS = {
     "read", "inspect", "research", "analyze", "write_file", "create_branch",
     "open_pr", "run_tests", "format", "lint",
+}
+AUTHORIZED_REPOSITORY = "madnessgate44-debug/Blind-sniper-"
+EXPECTED_DELEGATION_ID = "owner-standing-delegation-2026-11-09"
+DELEGABLE_ACTIONS = {
+    "merge", "merge_to_main", "default_branch_push", "ci_cd_edit",
+    "workflow_edit", "deploy", "production_deploy", "release", "delete",
+}
+DELEGATION_EXCLUSIONS = {
+    "secret_mutation", "permission_change", "paid_provisioning", "production_data_mutation",
 }
 HOST_FORBIDDEN_ACTIONS = [
     "force_push", "delete_branch", "credential_export", "secret_export",
@@ -85,6 +95,68 @@ def load_registries(root: Path = ROOT) -> dict[str, dict[str, Any]]:
     names = ("capabilities", "profiles", "agents", "workflows", "skills.index")
     result = {name: read_json(runtime / f"{name}.json") for name in names}
     return result
+
+
+def load_authority_policy(root: Path = ROOT) -> dict[str, Any]:
+    """Load the machine-readable, repository-scoped standing delegation."""
+    policy = read_json(root / "chatgpt-home" / "runtime" / "authority.json")
+    if policy.get("schema_version") != "1.0.0":
+        raise RuntimeErrorBase("authority.json has an unsupported schema_version")
+    delegations = policy.get("delegations")
+    if not isinstance(delegations, list):
+        raise RuntimeErrorBase("authority.json delegations must be a list")
+    ids = [str(row.get("id", "")).strip() for row in delegations if isinstance(row, dict)]
+    if len(ids) != len(delegations) or not all(ids) or len(ids) != len(set(ids)):
+        raise RuntimeErrorBase("authority.json requires unique, non-empty delegation IDs")
+    active_repositories = set()
+    for row in delegations:
+        repository = str(row.get("repository", "")).strip()
+        actions = row.get("actions")
+        forbidden = row.get("forbidden_actions", [])
+        if repository != AUTHORIZED_REPOSITORY or row.get("id") != EXPECTED_DELEGATION_ID:
+            raise RuntimeErrorBase("authority.json delegation identity or repository scope is not recognized")
+        if row.get("grantor") != "repository-owner" or row.get("delegate") != "blind-sniper":
+            raise RuntimeErrorBase("authority.json delegation grantor/delegate identity is not recognized")
+        if row.get("status") not in {"active", "revoked"}:
+            raise RuntimeErrorBase("authority.json delegation requires active/revoked status")
+        if not isinstance(actions, list) or not all(isinstance(item, str) and item.strip() for item in actions):
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} has invalid actions")
+        if len(actions) != len(set(actions)):
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} has duplicate actions")
+        if set(actions) != DELEGABLE_ACTIONS:
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} action allowlist does not match the reviewed code policy")
+        if not isinstance(forbidden, list) or not all(isinstance(item, str) and item.strip() for item in forbidden):
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} has invalid forbidden_actions")
+        if len(forbidden) != len(set(forbidden)) or not DELEGATION_EXCLUSIONS.issubset(set(forbidden)):
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} omits required exclusions or duplicates exclusions")
+        if set(actions) & (set(forbidden) | set(HOST_FORBIDDEN_ACTIONS)):
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} attempts to authorize a forbidden action")
+        if row.get("status") == "active":
+            if repository in active_repositories:
+                raise RuntimeErrorBase(f"authority.json has multiple active delegations for {repository}")
+            active_repositories.add(repository)
+    return policy
+
+
+def delegated_approval_actions(
+    repository: str | None,
+    requested_actions: set[str],
+    policy: dict[str, Any],
+) -> tuple[set[str], str | None]:
+    """Resolve only explicitly allowlisted actions for an exact repository match."""
+    target = str(repository or "").strip()
+    if not target:
+        return set(), None
+    for row in policy.get("delegations", []):
+        if row.get("status") != "active" or row.get("repository") != target:
+            continue
+        allowed = set(row.get("actions", []))
+        forbidden = set(row.get("forbidden_actions", [])) | set(HOST_FORBIDDEN_ACTIONS)
+        approved = (requested_actions & allowed) - forbidden
+        if "merge_or_deploy" in requested_actions and {"merge", "deploy"}.issubset(allowed) and not ({"merge", "deploy"} & forbidden):
+            approved.add("merge_or_deploy")
+        return approved, str(row.get("id"))
+    return set(), None
 
 
 def tokenize(value: str) -> set[str]:
@@ -253,10 +325,12 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
     approval_actions = sorted(requested_actions - ROUTINE_ACTIONS)
     if workflow_id == "release-gate":
         approval_actions = sorted(set(approval_actions) | {"merge_or_deploy"})
-    # Task envelopes are untrusted input. They may request consequential actions,
-    # but they cannot assert Owner consent. Approval is accepted only at the
-    # guarded transition boundary from the authorized host caller.
-    approved_actions: set[str] = set()
+    # Task envelopes are untrusted. Standing authority is loaded only from the
+    # checked-in host policy, never from task-supplied approval/delegation fields.
+    authority_policy = load_authority_policy(root)
+    approved_actions, delegation_id = delegated_approval_actions(
+        task.get("repository"), set(approval_actions), authority_policy
+    )
     pending_approvals = [action for action in approval_actions if action not in approved_actions]
 
     steps = []
@@ -291,11 +365,18 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
         "required_adapters": required_adapters,
         "selected_agents": selected_agents,
         "selected_skills": skill_rows,
+        "authority_delegation": ({
+            "id": delegation_id,
+            "repository": task.get("repository"),
+            "source": "chatgpt-home/runtime/authority.json",
+            "applied_actions": sorted(approved_actions),
+        } if delegation_id and approved_actions else None),
         "approval": {
             "required_actions": approval_actions,
             "approved_actions": sorted(approved_actions),
             "pending_actions": pending_approvals,
             "satisfied": not pending_approvals,
+            "authority_source": "standing_delegation" if approved_actions else ("explicit_owner_approval_required" if pending_approvals else "none"),
         },
         "steps": steps,
         "constraints": {
@@ -430,21 +511,85 @@ def transition_task(
     return updated
 
 
-def recover_task_state(ledger_source: str | Path | TaskLedger | GitHubContentsLedger, task_id: str) -> dict[str, Any]:
-    """Reconstruct the latest committed task snapshot from a verified local or GitHub ledger."""
-    ledger = ledger_source if hasattr(ledger_source, "task_history") else TaskLedger(ledger_source)
+def _state_core(state: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in state.items() if key != "events"}
+
+
+def _state_hash(state: dict[str, Any]) -> str:
+    raw = json.dumps(state, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
+def build_state_event_payload(
+    ledger: TaskLedger | GitHubContentsLedger,
+    state: dict[str, Any],
+    extra_payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Encode one compact, hash-verified state delta instead of nesting event history."""
+    core = _state_core(state)
+    digest = _state_hash(core)
+    payload: dict[str, Any] = {
+        "state_hash": digest,
+        "state_event": (state.get("events") or [None])[-1],
+        "lease_guard": {
+            "task_id": state["task_id"],
+            "status": state["status"],
+            "implementer_id": state.get("implementer_id"),
+        },
+    }
     try:
-        history = ledger.task_history(task_id)
-    except LedgerError:
-        raise
-    latest = None
+        previous = recover_task_state(ledger, state["task_id"])
+    except LedgerError as exc:
+        if not str(exc).startswith("Unknown task_id:"):
+            raise
+        payload["state_snapshot"] = core
+    else:
+        previous_core = _state_core(previous)
+        payload["previous_state_hash"] = _state_hash(previous_core)
+        payload["state_delta"] = {
+            "set": {key: value for key, value in core.items() if previous_core.get(key) != value},
+            "remove": sorted(set(previous_core) - set(core)),
+        }
+    payload.update(extra_payload or {})
+    return payload
+
+
+def recover_task_state(ledger_source: str | Path | TaskLedger | GitHubContentsLedger, task_id: str) -> dict[str, Any]:
+    """Reconstruct compact state deltas and legacy full snapshots from the verified ledger."""
+    ledger = ledger_source if hasattr(ledger_source, "task_history") else TaskLedger(ledger_source)
+    history = ledger.task_history(task_id)
+    core: dict[str, Any] | None = None
+    lifecycle_events: list[dict[str, Any]] = []
     for event in history["events"]:
-        snapshot = event.get("payload", {}).get("state")
+        payload = event.get("payload", {})
+        legacy = payload.get("state")
+        if isinstance(legacy, dict):
+            core = _state_core(legacy)
+            lifecycle_events = list(legacy.get("events", []))
+            continue
+        snapshot = payload.get("state_snapshot")
         if isinstance(snapshot, dict):
-            latest = snapshot
-    if latest is None:
+            core = snapshot
+            if _state_hash(core) != payload.get("state_hash"):
+                raise RuntimeErrorBase("Ledger state snapshot hash mismatch")
+        elif isinstance(payload.get("state_delta"), dict):
+            if core is None or _state_hash(core) != payload.get("previous_state_hash"):
+                raise RuntimeErrorBase("Ledger state delta predecessor hash mismatch")
+            delta = payload["state_delta"]
+            core = dict(core)
+            core.update(delta.get("set", {}))
+            for key in delta.get("remove", []):
+                core.pop(key, None)
+            if _state_hash(core) != payload.get("state_hash"):
+                raise RuntimeErrorBase("Ledger state delta hash mismatch")
+        else:
+            continue
+        state_event = payload.get("state_event")
+        if isinstance(state_event, dict):
+            lifecycle_events.append(state_event)
+    if core is None:
         raise RuntimeErrorBase(f"Ledger has no recoverable state snapshot for task {task_id}")
-    return latest
+    return {**core, "events": lifecycle_events}
 
 
 def persist_task_state(
@@ -455,12 +600,11 @@ def persist_task_state(
     idempotency_key: str,
     extra_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Commit a complete state snapshot and approval receipts before checkpoint write."""
-    payload = {"state": state, **(extra_payload or {})}
+    """Commit a compact hash/diff receipt before writing the convenience checkpoint."""
     return ledger.append(
         task_id=state["task_id"],
         event_type=event_type,
-        payload=payload,
+        payload=build_state_event_payload(ledger, state, extra_payload),
         idempotency_key=idempotency_key,
     )
 
@@ -621,10 +765,13 @@ def main(argv: list[str] | None = None) -> int:
                 transition_number = len(updated.get("events", [])) - 1
                 transition_key = f"{updated['task_id']}:transition:{transition_number}:{args.to}"
                 if lease_required:
+                    compact_payload = build_state_event_payload(
+                        ledger, updated, {"approval_records": approval_records},
+                    )
                     ledger_event = ledger.append_transition_if_lease(
                         task_id=updated["task_id"],
                         owner_id=args.lease_owner,
-                        payload={"state": updated, "approval_records": approval_records},
+                        payload=compact_payload,
                         idempotency_key=transition_key,
                     )
                 else:

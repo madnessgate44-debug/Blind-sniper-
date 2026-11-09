@@ -15,7 +15,7 @@ Maintain the environment as a versioned product, not a loose collection of promp
 Read the environment manifest, profile blueprint, skill catalog, tool registry, relevant agent contracts and current branch state.
 
 ## Permissions
-Documentation and scoped configuration assets may be changed on a task branch. Activating tools, changing security defaults, installing connectors, provisioning compute or altering credentials requires explicit approval.
+Documentation, repository code and scoped configuration/workflow assets may be changed under the standing delegation, including default-branch updates when appropriate. Activating external tools or connectors still requires a real available integration and its platform permissions; paid provisioning, account/security permission changes and credential/secret mutation remain outside the grant.
 
 ## Procedure
 1. Identify capability gap and target layer.
