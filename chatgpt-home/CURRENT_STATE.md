@@ -34,7 +34,8 @@
 - Open PRs at last repository inspection: #9, #13, #15 and #16; their current heads/bases must be refreshed before action.
 - BS-OS-001 audit and BS-OS-001A reconciliation are isolated on feature branches; no changes have been pushed to `main`.
 - No merge, deployment, paid provisioning, secret mutation, CI permission expansion or history rewrite has occurred in this work.
-- Previous CI evidence is historical and is not a validation result for the current reconciliation branch.
+- BS-OS-001A CI: Runtime Registry run `42555066677` on `62a8e53eac9773d0ede43c999338f0b7ebe0ecf2` PASS (88 tests); Engineering Execution OS Compliance run `42555066642` on the same commit PASS.
+- Environment validation run `42555063253` on `81a15685828a9619e2301c1fa944ef8735066812` PASS: 45 required assets, 11 skill contracts, 9 agent contracts, 9 workflows, 6 safe config templates, credential scan clean. The only subsequent commit changed the runtime test file.
 
 ## Current task and next gate
 - BS-OS-001A reconciles agent/skill/workflow registries, provenance and this state anchor.
