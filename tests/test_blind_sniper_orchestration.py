@@ -143,6 +143,15 @@ class OrchestrationEngineTests(unittest.TestCase):
         self.assertEqual(plan["approval"]["pending_actions"], ["default_branch_push", "merge"])
         self.assertIsNone(plan["authority_delegation"])
 
+    def test_revoked_standing_delegation_no_longer_auto_approves(self):
+        policy = runtime.load_authority_policy()
+        policy["delegations"][0]["status"] = "revoked"
+        approved, delegation_id = runtime.delegated_approval_actions(
+            "madnessgate44-debug/Blind-sniper-", {"merge", "production_deploy"}, policy
+        )
+        self.assertEqual(approved, set())
+        self.assertIsNone(delegation_id)
+
     def test_standing_delegation_never_approves_excluded_actions(self):
         actions = ["secret_mutation", "permission_change", "paid_provisioning", "production_data_mutation", "force_push"]
         plan = runtime.build_plan({
