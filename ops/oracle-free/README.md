@@ -1,6 +1,8 @@
 # Oracle Always Free persistent browser host
 
-## Why this is the selected $0 option
+**OWNER STATUS: UNUSABLE.** This option requires payment-card verification at account signup. The Owner's hard constraint is no card, no payment and no paid plan. Do not ask the Owner to register, do not recommend this service as a usable hosting path, and do not initiate provisioning. This document is retained only as a technical record, not an actionable hosting recommendation.
+
+## Technical background only — not an approved option
 
 Oracle lists Always Free Ampere A1 resources: 1,500 OCPU-hours and 9,000 GB-hours monthly (equivalent to 2 OCPUs and 12 GB RAM total), plus up to two AMD micro VMs. This is the strongest $0 recurring-cost VM option found for a persistent browser host. It is not an uptime guarantee: Oracle may reclaim an Always Free compute instance after a 7-day period when CPU, network and (for A1) memory utilization all remain below its published thresholds. A lightly used browser runner can therefore be reclaimed. Sources: https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm and https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier.htm.
 
