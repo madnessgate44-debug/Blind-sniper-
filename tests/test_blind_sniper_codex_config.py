@@ -55,6 +55,18 @@ class UnsafeTemplateTest(unittest.TestCase):
         errors, _ = vcc.validate_template(path)
         self.assertTrue(any("SECRET_VALUE" in e or "CREDENTIAL_PATTERN" in e for e in errors), errors)
 
+    def test_credential_pattern_inside_array_rejected(self) -> None:
+        path = write_template('approval_policy = "on-request"\nsandbox_mode = "read-only"\n'
+                              'allowed_tokens = ["ghp_abcdefghijklmnopqrstuvwx"]\n')
+        errors, _ = vcc.validate_template(path)
+        self.assertTrue(any("CREDENTIAL_PATTERN" in e for e in errors), errors)
+
+    def test_secret_key_array_value_rejected(self) -> None:
+        path = write_template('approval_policy = "on-request"\nsandbox_mode = "read-only"\n'
+                              'api_key = ["example-secret"]\n')
+        errors, _ = vcc.validate_template(path)
+        self.assertTrue(any("SECRET_VALUE" in e for e in errors), errors)
+
     def test_invalid_toml_rejected(self) -> None:
         path = write_template('approval_policy = "on-request\nsandbox_mode = \n')
         errors, _ = vcc.validate_template(path)
