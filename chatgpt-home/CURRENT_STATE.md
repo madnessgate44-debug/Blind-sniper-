@@ -1,5 +1,48 @@
 # Blind Sniper — Current Technical State
 
+**Snapshot:** 2026-11-09, after PR #24 merge
+**Default branch:** main
+**Last validated checkpoint:** `5631bd3702595fc3c87a2902120634c584deba11`
+**Authority:** Engineering Execution OS v2.3 plus active standing Owner delegation, recorded in `chatgpt-home/AUTHORITY_DELEGATION.md` and mirrored in `chatgpt-home/runtime/authority.json`.
+
+## Current authority and operating contract
+- Blind Sniper is the repository's technical lead and execution operator through its ChatGPT conversational interface.
+- Standing delegation applies only to `madnessgate44-debug/Blind-sniper-`: repository writes/deletions, commits, branch/default-branch pushes, PR and issue operations, merges, code/tests/docs/config/CI changes, releases and eligible deployments.
+- No repeat per-action approval is required for in-scope work. The runtime planner evaluates only the exact repository and hardcoded action allowlist; unknown/out-of-scope actions remain pending.
+- Exclusions remain: payment/paid services, force-push/history rewrite, repository/account permission changes, secret/credential mutation or disclosure, private-data publication, production data mutation and work in other repositories.
+- Verification, independent review where required, privacy/security, rollback and release-acceptance gates remain mandatory. The authority record is declarative, not a cryptographic identity proof; the host must recheck actual tool permissions.
+
+## Latest merged work
+- PR #17 — native OS/runtime integration merged into `main` at `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e`.
+- PR #23 — standing Owner delegation aligned across 22 operating documents and policies; merged at `14769067bf3fa8ab251ba05ee74af31fbf05dead`.
+- PR #24 — native planner now consumes the machine-readable delegation; merged at `5631bd3702595fc3c87a2902120634c584deba11`.
+- GitHub Pages deployment for the latest merge completed successfully: run `42570568283`; published URL https://madnessgate44-debug.github.io/Blind-sniper-/.
+
+## Latest verification — merge commit 5631bd3702595fc3c87a2902120634c584deba11
+- Runtime registry and full Python suite: PASS; 92 tests, `OK`; workflow run `42570569331`.
+- Environment validation: PASS; 40 required assets, 9 skill contracts, 9 agent contracts, 5 workflows, 6 safe Codex config templates; credential-pattern scan clean; workflow run `42570569372`.
+- Engineering Execution OS compliance: PASS; workflow run `42570569306`.
+- Pages build/deployment: PASS; build and deploy jobs succeeded; workflow run `42570568283`.
+- GitHub job conclusions are the authoritative success results. The logs did not print a separate process exit-code field for every job.
+
+## Current open PR inventory
+- Live GitHub search on 2026-11-09 returned open PRs: #9, #13, #15, #16, #18, #19, #21 and #22. Re-read each live PR before making any merge/closure decision; this list is a dated snapshot, not a substitute for live state.
+- PR #23 and #24 are merged. PR #17 is merged; older text below that says otherwise is historical.
+- PR #24 had no formal independent review submission. The diff was self-reviewed and all exact-head checks passed; the limitation was recorded in the PR discussion. Do not claim independent approval.
+
+## Remaining verified capability boundaries
+- The native runtime remains a planner and guarded state machine; it does not spawn separate model processes or claim external agent execution.
+- Direct OpenHands Cloud API dispatch/result retrieval and direct Forge browser MCP invocation are not verified as callable in this ChatGPT session.
+- Persistent runner/background execution and unattended delivery are not verified.
+- Public-repository remote task-ledger writes remain constrained by the runtime's private-repository guard.
+- Full ChatGPT conversation archive export is not exposed as a native action.
+
+## Historical record
+
+Everything below this heading is the prior 2026-11-09 02:31 UTC snapshot. It is preserved for provenance and must not override the current state above or live GitHub records.
+
+# Historical snapshot — Blind Sniper technical state before standing-delegation merges
+
 **Snapshot:** 2026-11-09 02:31 UTC  
 **Active integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`  
 **Last validated checkpoint before this state-only update:** `bce606594a4b70cca09ccc5d5e8eb615597f02b3`  
