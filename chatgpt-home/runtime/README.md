@@ -24,7 +24,7 @@ The native Blind Sniper pack is maintained alongside this registry: `../ENVIRONM
 | `profiles.json` | Six operating profiles and permission boundaries |
 | `agents.json` | Agent roster, authority and delegation contract |
 | `workflows.json` | Lifecycle workflows, triggers, steps and evidence status |
-| `skills.index.json` | Index of 33 mirrored OpenHands skills and activation policy |
+| `skills.index.json` | Index of 11 native Blind Sniper skills and 33 mirrored OpenHands skill/rule files, with separate activation policies |
 | `templates/TASK_ENVELOPE.json` | Portable task request contract |
 | `templates/RUN_RECEIPT.json` | Standardized executor result and verification receipt |
 | `../openhands-library/</...>` | Source-preserving skills, specialist profiles, hooks and original validation suite |
