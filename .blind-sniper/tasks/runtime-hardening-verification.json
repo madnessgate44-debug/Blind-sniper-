@@ -1,9 +1,10 @@
 {
   "task_id": "BS-20261109-001",
-  "objective": "Implement and verify runtime hardening by running the repository unit tests and runtime validator on the named branch",
+  "objective": "Run the bounded allowlisted unit-test and runtime-registry verification commands for this exact branch commit; do not implement repository changes or claim independent review.",
   "branch": "feat/allowlisted-executor-2026-11-09",
   "commands": [
     "unit-tests",
     "runtime-validator"
-  ]
+  ],
+  "workflow": "bounded-verification"
 }
