@@ -13,7 +13,8 @@
       ],
       "execution": "conversation_procedure",
       "status": "documented",
-      "native_contract_path": "chatgpt-home/workflows/session-boot.md"
+      "native_contract_path": "chatgpt-home/workflows/session-boot.md",
+      "contract_mode": "native_contract"
     },
     {
       "id": "research-and-synthesis",
@@ -45,7 +46,9 @@
           "primary source",
           "sources"
         ]
-      }
+      },
+      "contract_mode": "registry_only",
+      "registry_only_reason": "Session-scoped research procedure routed through available web/GitHub tools; no separate runner or persistent workflow engine is claimed."
     },
     {
       "id": "task-control-loop",
@@ -71,7 +74,8 @@
       "agents": [
         "blind-sniper",
         "planner"
-      ]
+      ],
+      "contract_mode": "native_contract"
     },
     {
       "id": "inspect-plan-implement-verify",
@@ -110,7 +114,8 @@
           "write code",
           "test"
         ]
-      }
+      },
+      "contract_mode": "native_contract"
     },
     {
       "id": "independent-review",
@@ -142,7 +147,8 @@
           "review pull request",
           "review"
         ]
-      }
+      },
+      "contract_mode": "native_contract"
     },
     {
       "id": "release-gate",
@@ -184,7 +190,8 @@
           "default branch push",
           "ci/cd edit"
         ]
-      }
+      },
+      "contract_mode": "native_contract"
     },
     {
       "id": "openhands-two-way-handoff",
@@ -206,7 +213,8 @@
         "openhands_dispatch": [
           "session_result_retrieval"
         ]
-      }
+      },
+      "contract_mode": "native_contract"
     },
     {
       "id": "forge-browser-roundtrip",
@@ -227,7 +235,9 @@
         "forge_browser_mcp": [
           "authenticated_browser_interaction"
         ]
-      }
+      },
+      "contract_mode": "registry_only",
+      "registry_only_reason": "Blocked capability record; no durable Forge browser host or registered ChatGPT connector is verified."
     },
     {
       "id": "persistent-browser-host-acceptance",
@@ -259,7 +269,9 @@
           "self_hosted_arm64_runner",
           "persistent_state_directory"
         ]
-      }
+      },
+      "contract_mode": "registry_only",
+      "registry_only_reason": "Owner-gated acceptance recipe only; no persistent browser host or self-hosted runner is provisioned."
     },
     {
       "id": "continuous-autonomy",
@@ -285,7 +297,9 @@
         "persistent_runner": [
           "persistent_runner"
         ]
-      }
+      },
+      "contract_mode": "registry_only",
+      "registry_only_reason": "Capability/status record only; no verified background trigger, scheduler or persistent runner exists."
     },
     {
       "id": "recovery-and-reconciliation",
@@ -320,7 +334,8 @@
           "continuity failure",
           "resume interrupted task"
         ]
-      }
+      },
+      "contract_mode": "native_contract"
     },
     {
       "id": "conversation-archive-export",
@@ -344,7 +359,9 @@
         "chatgpt_history_export": [
           "export_conversations"
         ]
-      }
+      },
+      "contract_mode": "registry_only",
+      "registry_only_reason": "Blocked capability record; no native ChatGPT history-export action is exposed and public continuity files are not an authorized substitute."
     },
     {
       "id": "native-browser-acceptance",
@@ -395,7 +412,77 @@
           "workspace_contained_file_download",
           "pdf_export"
         ]
-      }
+      },
+      "contract_mode": "registry_only",
+      "registry_only_reason": "CI-backed browser acceptance record; this does not establish a persistent authenticated browser host."
+    },
+    {
+      "id": "idea-to-contract",
+      "trigger": "owner_submits_raw_idea_or_new_task",
+      "steps": [
+        "capture_raw_intent_without_silently_resolving_ambiguity",
+        "inspect_repository_instructions_and_current_state",
+        "define_outcome_scope_non_goals_constraints_and_evidence",
+        "label_facts_assumptions_defaults_and_open_decisions",
+        "stop_for_material_unresolved_scope_cost_security_or_authority",
+        "create_reviewable_task_contract_and_acceptance_criteria",
+        "route_only_after_contract_is_sufficiently_complete"
+      ],
+      "execution": "conversation_procedure",
+      "status": "documented_read_only_intake",
+      "native_contract_path": "chatgpt-home/workflows/idea-to-contract.md",
+      "contract_mode": "native_contract"
+    },
+    {
+      "id": "isolated-execution-line",
+      "trigger": "owner_declares_multi_station_or_parallel_work",
+      "steps": [
+        "read_station_manifest_and_find_next_incomplete_station",
+        "check_workspace_and_worker_slot_availability",
+        "parallelize_only_independent_tasks_with_isolated_workspaces",
+        "collect_worker_commits_and_verification_evidence",
+        "independently_review_outputs_before_integration",
+        "run_cumulative_gates_and_stop_on_failure",
+        "produce_human_handoff; merge_or_release_requires_owner_approval"
+      ],
+      "execution": "manual_orchestrator_procedure",
+      "status": "documented_no_parallel_runner_claim",
+      "native_contract_path": "chatgpt-home/workflows/isolated-execution-line.md",
+      "contract_mode": "native_contract"
+    },
+    {
+      "id": "plugin-and-tool-onboarding",
+      "trigger": "owner_requests_new_plugin_or_tool",
+      "steps": [
+        "research_official_provider_docs_and_host_capabilities",
+        "define_adapter_inputs_outputs_auth_permissions_timeouts_errors_and_evidence",
+        "add_disabled_by_default_registry_entry",
+        "add_health_check_and_deterministic_fixture_tests",
+        "validate_in_supported_environment_without_exposing_secrets",
+        "enable_only_after_owner_approval_and_end_to_end_test",
+        "record_provenance_license_limits_and_rollback"
+      ],
+      "execution": "owner_gated_onboarding_procedure",
+      "status": "documented_owner_gated",
+      "native_contract_path": "chatgpt-home/workflows/plugin-and-tool-onboarding.md",
+      "contract_mode": "native_contract"
+    },
+    {
+      "id": "verification-and-handoff",
+      "trigger": "worker_returns_result_or_task_reaches_closeout",
+      "steps": [
+        "map_each_acceptance_criterion_to_check_or_human_review",
+        "identify_state_witness_for_state_ui_async_or_concurrency_changes",
+        "run_smallest_falsifying_test_then_required_regressions",
+        "capture_actual_commands_exit_codes_and_results",
+        "inspect_diff_and_scope",
+        "update_task_state_with_result_evidence_and_blockers",
+        "handoff_exact_branch_commit_artifacts_tests_and_unverified_paths"
+      ],
+      "execution": "verification_and_handoff_procedure",
+      "status": "documented",
+      "native_contract_path": "chatgpt-home/workflows/verification-and-handoff.md",
+      "contract_mode": "native_contract"
     }
   ],
   "native_workflow_library": "chatgpt-home/workflows/",
@@ -409,5 +496,6 @@
   "default_agent_selection": [
     "blind-sniper",
     "planner"
-  ]
+  ],
+  "workflow_contract_policy": "Every workflow is classified as native_contract (a checked-in markdown contract) or registry_only (an intentional bounded registry/CI/capability record with a reason). A registry entry or profile does not prove a trigger or runner is active."
 }
