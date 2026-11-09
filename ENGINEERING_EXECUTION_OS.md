@@ -1,4 +1,4 @@
-# Engineering Execution OS — Version 2.2
+# Engineering Execution OS — Version 2.3
 
 **Version:** v2.3 — Standing Owner Delegation Amendment  
 **Effective:** 2026-11-09  
