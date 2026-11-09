@@ -1,6 +1,6 @@
 {
   "task_id": "BS-20261109-001",
-  "objective": "Run the bounded allowlisted unit-test and runtime-registry verification commands for this exact branch commit; do not implement repository changes or claim independent review.",
+  "objective": "Run the bounded allowlisted unit-test and runtime-registry verification commands for this exact branch commit; emit correlated per-step receipts, and do not implement repository changes or claim independent review.",
   "branch": "feat/allowlisted-executor-2026-11-09",
   "commands": [
     "unit-tests",
