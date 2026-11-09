@@ -12,6 +12,12 @@
 - Exclusions remain: payment/paid services, force-push/history rewrite, repository/account permission changes, secret/credential mutation or disclosure, private-data publication, production data mutation and work in other repositories.
 - Verification, independent review where required, privacy/security, rollback and release-acceptance gates remain mandatory. The authority record is declarative, not a cryptographic identity proof; the host must recheck actual tool permissions.
 
+## Authority consistency audit — 2026-11-09
+- Followed the active standing delegation and audited the repository for anything still contradicting it.
+- Found and fixed two residual native gaps (DRAFT PR #25): `runtime/profiles.json` global_rules still demanded explicit Owner approval for merge/deploy, and the planner resolved `owner-policy`, `git-workflow`, `multi-session-pr-coordination` to the inert OpenHands mirror ("never push to main / the owner merges"). Added three delegation-consistent native skills (native skills 10 → 13) plus a regression test.
+- Verified on PR #25 head `d63251d`: `validate-runtime` PASS (`native_skills=13`), 93 unit tests OK, environment validation PASS.
+- Open items for review (all DRAFT): #9, #13, #15, #16, #18, #19, #21, #22. #18 and #19 are conflicting (`dirty`) after `main` advanced; #21 and #22 are clean.
+
 ## Latest merged work
 - Main branch protection: GitHub branch metadata reports `protected=false`. The available GitHub connector exposes read access for branch-protection/ruleset state but no write action to configure it; this remains an unresolved governance-hardening risk. Do not confuse the standing execution delegation with branch protection.
 
