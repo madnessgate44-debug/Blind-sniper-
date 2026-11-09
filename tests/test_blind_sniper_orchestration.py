@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import sys
 import unittest
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -85,7 +86,7 @@ class OrchestrationEngineTests(unittest.TestCase):
             "verbatim_words": "Ahmed: I approve production_deploy for BS-TEST-005",
             "timestamp": "2026-11-08T13:00:00Z",
             "expires_at": "2026-11-09T13:00:00Z",
-        }])
+        }], now=datetime.fromisoformat("2026-11-09T12:00:00+00:00"))
         self.assertEqual(state["plan"]["approval"]["pending_actions"], [])
 
     def test_task_envelope_cannot_self_approve_high_risk_action(self):
@@ -257,7 +258,7 @@ class OrchestrationEngineTests(unittest.TestCase):
             "timestamp": "2026-11-08T13:00:00Z",
             "expires_at": "2026-11-09T13:00:00Z",
         }
-        state = runtime.transition_task(state, "EXECUTING", approval_records=[record])
+        state = runtime.transition_task(state, "EXECUTING", approval_records=[record], now=datetime.fromisoformat("2026-11-09T12:00:00+00:00"))
         self.assertEqual(state["plan"]["approval"]["pending_actions"], [])
 
     def test_closure_requires_correlated_independent_reviewer_receipt(self):

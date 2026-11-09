@@ -86,6 +86,7 @@
     "security-and-permissions": "chatgpt-home/skills/security-and-permissions/SKILL.md",
     "test-and-evidence": "chatgpt-home/skills/test-and-evidence/SKILL.md",
     "web-research": "chatgpt-home/skills/web-research/SKILL.md",
-    "workflow-authoring": "chatgpt-home/skills/workflow-authoring/SKILL.md"
+    "workflow-authoring": "chatgpt-home/skills/workflow-authoring/SKILL.md",
+    "github-research": "chatgpt-home/skills/github-research/SKILL.md"
   }
 }
