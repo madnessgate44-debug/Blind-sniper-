@@ -1,0 +1,10 @@
+{
+  "task_id": "BS-20261109-001",
+  "objective": "Run the bounded allowlisted unit-test and runtime-registry verification commands for this exact branch commit; emit correlated per-step receipts with exact log ranges, and keep independent review outstanding.",
+  "branch": "feat/allowlisted-executor-2026-11-09",
+  "commands": [
+    "unit-tests",
+    "runtime-validator"
+  ],
+  "workflow": "bounded-verification"
+}

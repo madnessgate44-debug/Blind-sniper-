@@ -55,9 +55,9 @@ class RuntimeRegistryTests(unittest.TestCase):
         workflow_agents = {w["id"]: set(w.get("agents", [])) for w in workflows["workflows"]}
         self.assertIn("shadow", workflow_agents["independent-review"])
         self.assertIn("watcher", workflow_agents["recovery-and-reconciliation"])
-        self.assertEqual(len(workflows["workflows"]), 17)
+        self.assertEqual(len(workflows["workflows"]), 18)
         self.assertEqual(sum(w.get("contract_mode") == "native_contract" for w in workflows["workflows"]), 11)
-        self.assertEqual(sum(w.get("contract_mode") == "registry_only" for w in workflows["workflows"]), 6)
+        self.assertEqual(sum(w.get("contract_mode") == "registry_only" for w in workflows["workflows"]), 7)
         self.assertTrue(all(w.get("registry_only_reason") for w in workflows["workflows"] if w.get("contract_mode") == "registry_only"))
 
     def test_profiles_do_not_enable_unrestricted_sandbox(self):
