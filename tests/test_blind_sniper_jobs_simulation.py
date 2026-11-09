@@ -13,6 +13,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -21,9 +22,7 @@ import simulate_blind_sniper_jobs_e2e as jobs_e2e  # noqa: E402
 
 class JobsSimulationTest(unittest.TestCase):
     def test_simulation_passes_and_proves_pipeline_controls(self) -> None:
-        with tempfile.TemporaryDirectory() as temp:
-            os.environ["GITHUB_SHA"] = "a" * 40
-            os.environ["GITHUB_RUN_ID"] = "424242"
+        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {"GITHUB_SHA": "a" * 40, "GITHUB_RUN_ID": "424242"}):
             receipt = jobs_e2e.run(Path(temp) / "out")
 
         self.assertEqual(receipt["status"], "PASS")
@@ -52,9 +51,7 @@ class JobsSimulationTest(unittest.TestCase):
         self.assertEqual(len(receipt["deliveries"]), 2)
 
     def test_simulation_fails_closed_without_ci_identity(self) -> None:
-        with tempfile.TemporaryDirectory() as temp:
-            os.environ["GITHUB_SHA"] = ""
-            os.environ["GITHUB_RUN_ID"] = ""
+        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {"GITHUB_SHA": "", "GITHUB_RUN_ID": ""}):
             with self.assertRaises(jobs_e2e.SimulationFailure):
                 jobs_e2e.run(Path(temp) / "out")
 
