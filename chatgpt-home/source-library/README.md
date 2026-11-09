@@ -19,3 +19,15 @@ https://github.com/mendelevium/claude-code-config was inspected, but GitHub repo
 3. Translate Claude Code-specific hooks, agents, MCP config and commands into explicit Blind Sniper adapters.
 4. External calls, browser access, secrets, deployments and paid resources remain permission-gated.
 5. Record upstream revision, license, adaptations and validation in the runtime registry.
+
+## Reference identity reconciliation — 2026-11-09
+
+The previously selected URL `https://github.com/mattzcarey/claude-code-agent-framework` does not resolve: GitHub returns 404, and repository search under the `mattzcarey` owner does not find that repository. The source identity is therefore classified as **unavailable / invalid reference**; no files were imported from it.
+
+Nearby repositories were inspected but are not interchangeable replacements:
+
+- [`mattzcarey/crossroads`](https://github.com/mattzcarey/crossroads) — AI-agent orchestration on Cloudflare Durable Objects; MPL-2.0. It is a Cloudflare-specific runtime project, not the named Claude Code framework.
+- [`mattzcarey/shippie`](https://github.com/mattzcarey/shippie) — extendable code-review and QA agent; not a general agent framework.
+- [`mattzcarey/claude-code-action`](https://github.com/mattzcarey/claude-code-action) — Claude Code GitHub action for PRs/issues; not the requested framework.
+
+None is substituted automatically. If one of these was the intended fourth reference, the exact repository must be explicitly selected before any adoption or import.
