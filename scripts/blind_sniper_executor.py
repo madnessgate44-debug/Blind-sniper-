@@ -54,6 +54,13 @@ def append_lease_transition(ledger, state, owner_id, key, repository):
     )
 
 
+def count_log_lines(path):
+    if not path.exists():
+        return 0
+    with path.open("r", encoding="utf-8") as handle:
+        return sum(1 for _ in handle)
+
+
 def update_step(plan, step_id, **fields):
     matches = [step for step in plan["steps"] if step["id"] == step_id]
     if len(matches) != 1:
@@ -165,8 +172,6 @@ def main():
         receipt["status"] = "EXECUTING"
         safe_env = {"PATH": os.environ.get("PATH", ""), "PYTHONUNBUFFERED": "1"}
         failed = False
-        log_line = 1
-
         with log_path.open("w", encoding="utf-8") as log:
             for position, command_id in enumerate(command_ids, start=1):
                 step_id = COMMAND_STEPS[command_id]
@@ -178,7 +183,7 @@ def main():
                 if not renewed["claimed"]:
                     raise RuntimeError("Active task lease could not be renewed")
                 started = server_now(repository).isoformat()
-                start_line = log_line
+                start_line = count_log_lines(log_path) + 1
                 update_step(plan, step_id, status="RUNNING", started_at=started,
                             run_id=args.run_id, commit_sha=args.commit)
                 event = {"at": started, "status": "RUNNING", "run_id": args.run_id}
@@ -188,7 +193,6 @@ def main():
                 header = f"COMMAND {position}: {command_id}\n"
                 log.write(header)
                 log.flush()
-                log_line += 1
                 try:
                     result = subprocess.run(
                         command, cwd=ROOT, env=safe_env, capture_output=True,
@@ -198,24 +202,22 @@ def main():
                     stderr = result.stderr or ""
                     log.write(stdout)
                     log.write(stderr)
-                    output_lines = stdout.count("\n") + stderr.count("\n")
-                    log_line += output_lines
                     completed = server_now(repository).isoformat()
                     log.write(f"\nEXIT_CODE: {result.returncode}\n")
                     log.flush()
-                    log_line += 2
+                    end_line = count_log_lines(log_path)
                     status = "PASS" if result.returncode == 0 else "FAIL"
                     step_fields = {
                         "status": status, "exit_code": result.returncode,
                         "completed_at": completed, "log_ref": "executor.log",
-                        "log_start_line": start_line, "log_end_line": log_line,
+                        "log_start_line": start_line, "log_end_line": end_line,
                     }
                     command_row = {
                         "command_id": command_id, "workflow_step_id": step_id,
                         "status": status, "exit_code": result.returncode,
                         "started_at": started, "completed_at": completed,
                         "log_ref": "executor.log", "log_start_line": start_line,
-                        "log_end_line": log_line,
+                        "log_end_line": end_line,
                     }
                     failed = result.returncode != 0
                 except subprocess.TimeoutExpired as exc:
@@ -224,18 +226,36 @@ def main():
                     stderr = exc.stderr.decode("utf-8", "replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
                     log.write(stdout + stderr + f"\nTIMEOUT after {COMMAND_TIMEOUT_SECONDS} seconds\n")
                     log.flush()
-                    log_line += stdout.count("\n") + stderr.count("\n") + 2
+                    end_line = count_log_lines(log_path)
                     step_fields = {
                         "status": "TIMED_OUT", "completed_at": completed,
                         "timeout_seconds": COMMAND_TIMEOUT_SECONDS, "log_ref": "executor.log",
-                        "log_start_line": start_line, "log_end_line": log_line,
+                        "log_start_line": start_line, "log_end_line": end_line,
                     }
                     command_row = {
                         "command_id": command_id, "workflow_step_id": step_id,
                         "status": "TIMED_OUT", "exit_code": None,
                         "started_at": started, "completed_at": completed,
                         "timeout_seconds": COMMAND_TIMEOUT_SECONDS, "log_ref": "executor.log",
-                        "log_start_line": start_line, "log_end_line": log_line,
+                        "log_start_line": start_line, "log_end_line": end_line,
+                    }
+                    failed = True
+                except Exception as exc:
+                    completed = server_now(repository).isoformat()
+                    log.write(f"\nEXECUTION_ERROR: {type(exc).__name__}: {exc}\n")
+                    log.flush()
+                    end_line = count_log_lines(log_path)
+                    step_fields = {
+                        "status": "ERROR", "completed_at": completed,
+                        "error": f"{type(exc).__name__}: {exc}", "log_ref": "executor.log",
+                        "log_start_line": start_line, "log_end_line": end_line,
+                    }
+                    command_row = {
+                        "command_id": command_id, "workflow_step_id": step_id,
+                        "status": "ERROR", "exit_code": None,
+                        "started_at": started, "completed_at": completed,
+                        "error": f"{type(exc).__name__}: {exc}", "log_ref": "executor.log",
+                        "log_start_line": start_line, "log_end_line": end_line,
                     }
                     failed = True
                 update_step(plan, step_id, **step_fields)
