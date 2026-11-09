@@ -161,6 +161,46 @@ class BoundedExecutorPlanTests(unittest.TestCase):
         self.assertEqual(second[1]["status"], "REVIEWING")
         self.assertFalse(second[1]["cross_run_deduplication"])
 
+
+    def test_invalid_server_date_is_rejected_without_falling_back_to_runner_clock(self):
+        class Response:
+            headers = {"Date": "not-a-valid-http-date"}
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+        with patch.object(executor, "urlopen", return_value=Response()):
+            with self.assertRaises((TypeError, ValueError)):
+                executor.server_now("owner/repo")
+
+    def test_receipt_finalization_failure_raises_instead_of_returning_success(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            args = [
+                "blind_sniper_executor.py",
+                "--task-file", ".blind-sniper/tasks/runtime-hardening-verification.json",
+                "--branch", "feat/allowlisted-executor-2026-11-09",
+                "--commit", "a" * 40,
+                "--run-id", "123463",
+                "--output-dir", tmp,
+            ]
+            fixed_time = datetime(2026, 11, 9, 3, 0, tzinfo=timezone.utc)
+            with patch.object(sys, "argv", args), patch.dict(os.environ, {
+                "GITHUB_REF_NAME": "feat/allowlisted-executor-2026-11-09",
+                "GITHUB_REPOSITORY": "owner/repo",
+            }), patch.object(executor, "server_now", side_effect=[fixed_time] * 30), patch.object(
+                executor.subprocess, "run", side_effect=[
+                    subprocess.CompletedProcess([], 0, "pass\n", ""),
+                    subprocess.CompletedProcess([], 0, "pass\n", ""),
+                ]
+            ), patch.object(Path, "write_text", side_effect=OSError("simulated receipt finalization failure")):
+                with self.assertRaisesRegex(OSError, "receipt finalization failure"):
+                    executor.main()
+
+    def test_workflow_fails_if_receipt_artifact_is_missing(self):
+        workflow = (ROOT / ".github" / "workflows" / "blind-sniper-allowlisted-executor.yml").read_text(encoding="utf-8")
+        self.assertIn("if: always()", workflow)
+        self.assertIn("if-no-files-found: error", workflow)
+
     def test_step_update_rejects_unregistered_step(self):
         plan = runtime.build_plan({
             "task_id": "BS-EXECUTOR-PLAN-003",
