@@ -10,8 +10,15 @@ on:
       - "scripts/blind_sniper_ledger.py"
       - "scripts/simulate_blind_sniper_e2e.py"
       - "scripts/simulate_blind_sniper_jobs_e2e.py"
+      - "scripts/find_skill.py"
+      - "scripts/adapt_skill.py"
+      - "scripts/validate_codex_config.py"
+      - "chatgpt-home/config/**"
+      - "chatgpt-home/runtime/skills.index.json"
       - "tests/test_blind_sniper_ledger.py"
       - "tests/test_blind_sniper_jobs_simulation.py"
+      - "tests/test_blind_sniper_skill_tooling.py"
+      - "tests/test_blind_sniper_codex_config.py"
       - "tests/test_blind_sniper_github_ledger.py"
       - "tests/test_blind_sniper_orchestration.py"
       - "tests/test_blind_sniper_runtime.py"
@@ -27,8 +34,15 @@ on:
       - "scripts/blind_sniper_ledger.py"
       - "scripts/simulate_blind_sniper_e2e.py"
       - "scripts/simulate_blind_sniper_jobs_e2e.py"
+      - "scripts/find_skill.py"
+      - "scripts/adapt_skill.py"
+      - "scripts/validate_codex_config.py"
+      - "chatgpt-home/config/**"
+      - "chatgpt-home/runtime/skills.index.json"
       - "tests/test_blind_sniper_ledger.py"
       - "tests/test_blind_sniper_jobs_simulation.py"
+      - "tests/test_blind_sniper_skill_tooling.py"
+      - "tests/test_blind_sniper_codex_config.py"
       - "tests/test_blind_sniper_github_ledger.py"
       - "tests/test_blind_sniper_orchestration.py"
       - "tests/test_blind_sniper_runtime.py"
@@ -50,6 +64,8 @@ jobs:
           python-version: "3.12"
       - name: Validate runtime registries
         run: python scripts/validate_blind_sniper_runtime.py
+      - name: Audit the skill catalog
+        run: python scripts/find_skill.py --validate
       - name: Run runtime unit tests
         run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Run end-to-end interruption and recovery simulation

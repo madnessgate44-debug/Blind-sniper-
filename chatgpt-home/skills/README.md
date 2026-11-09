@@ -26,3 +26,24 @@ Skills are task-specific operating procedures. Read the relevant `SKILL.md` befo
 Each skill must contain YAML metadata: `name`, `description`, `triggers`, `risk`, `required_tools`; and sections for purpose, prerequisites, permissions, procedure, evidence, failure handling and completion criteria.
 
 Do not mark a skill as automatically installed or loaded unless the active host proves that behavior.
+
+## Finding and adapting skills
+
+Two read-only tools keep the catalog usable as it grows:
+
+- `python scripts/find_skill.py "<what you need to do>"` searches every indexed
+  skill (native + OpenHands mirror) by matching your description against each
+  skill's id, description and triggers. Use `--profile <id>` to restrict to a
+  profile's skills, `--list` to list all, `--json` for machine output, and
+  `--validate` to audit the catalog (every entry has a file with a description;
+  native skills that shadow a same-named mirror skill are reported as notes).
+- `python scripts/adapt_skill.py <source-skill-or-path>` turns an external or
+  mirror skill into a native contract scaffold that already conforms to the
+  authoring contract above, carrying over the description and triggers and
+  recording provenance. It is a dry run by default; `--write` creates
+  `chatgpt-home/skills/<id>/SKILL.md` and registers the skill in
+  `runtime/skills.index.json`. The generated file is a DRAFT: fill the body,
+  set the real risk level, and confirm permissions before relying on it.
+
+Neither tool activates anything. Adapting a skill records a contract; it does
+not make the host load it.
