@@ -119,7 +119,7 @@ Default posture is **read-only** unless either (a) the Owner explicitly authoriz
 
 ### 9.1 Active standing delegation — Blind Sniper repository
 
-The Owner has granted Blind Sniper standing authority as technical lead and execution operator for exactly madnessgate44-debug/Blind-sniper-. The durable record is chatgpt-home/AUTHORITY_DELEGATION.md.
+The Owner has granted Blind Sniper standing authority as technical lead and execution operator for exactly madnessgate44-debug/Blind-sniper-. The human-readable record is chatgpt-home/AUTHORITY_DELEGATION.md; the native runtime reads the synchronized machine-readable mirror at chatgpt-home/runtime/authority.json.
 
 Within that repository, and only while the grant remains active, the delegate may perform without another per-action/per-session approval:
 - Repository file creation, editing and deletion; commits; branch creation; feature/default-branch pushes.
