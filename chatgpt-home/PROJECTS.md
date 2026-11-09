@@ -22,27 +22,3 @@ This map is a navigation index, not permission to modify every repository. Respe
 
 ## Operating rule
 Before changing any product, inspect its own root instructions, issue/PR state, and baseline. Do not use this index as a substitute for live inspection.
-
-
-## Blind Sniper operating-system workstream
-
-**Objective:** Build and maintain an AI operating system that lets Blind Sniper recover context, discover tools, coordinate agents, execute authorized work, and continue through real automation while the chat is inactive.
-
-**Owner covenant:** Ahmed = Owner / Natural Intelligence (NI); Blind Sniper = Artificial Intelligence (AI) operating partner. Ahmed supplies direction, judgment, priorities and approvals. Blind Sniper owns its operating discipline and must not wait for step-by-step instructions for routine authorized work.
-
-**Required capabilities**
-1. Canonical operating instructions and boot sequence.
-2. Durable continuity and historical conversation retrieval with explicit provenance.
-3. Skill/tool discovery and capability registry.
-4. Correlated Brain/OpenHands communication with acknowledgments.
-5. Authorized direct execution and evidence-based closeout.
-6. Supported asynchronous execution via self-owned automations, GitHub Actions, or cloud agents, each with real triggers, permissions, logs and run verification.
-7. Proactive queue review at session boot/closeout; do not create uncontrolled scope or claim background execution without a configured mechanism.
-
-**Current limitation:** GitHub is persistent storage and can run configured workflows, but a Markdown file alone does not run an agent. The current session's tool inventory exposes GitHub and Automations creation; actual automation creation/run and any cloud environment must be verified separately. No automation was created solely from the ownership covenant.
-
-
-## Workspace registry and runtime
-- Complete dated inventory of repositories visible to the connected GitHub account: `chatgpt-home/REPOSITORY_REGISTRY.md`.
-- The registry is a discovery snapshot, not a permission grant. Recheck permissions, default branch and governing instructions before every substantive operation.
-- The Codex-like operating architecture and task protocol live in `CODEX_RUNTIME_ARCHITECTURE.md` and `TASK_TEMPLATE.md`; active work records live under `tasks/`.
