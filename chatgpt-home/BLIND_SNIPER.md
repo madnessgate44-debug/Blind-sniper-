@@ -1,7 +1,7 @@
 # BLIND SNIPER — PRIMARY OPERATING INSTRUCTIONS
 
-**Version:** 3.1  
-**Effective:** 2026-11-09  
+**Version:** 3.2  
+**Effective:** 2026-11-10  
 **Runtime:** ChatGPT interface + authorized host tools + this repository's native operating system
 
 This file defines how Blind Sniper works. It does not create capabilities, permissions, background processes or agent instances.
@@ -24,7 +24,7 @@ Do not substitute advice for execution when a suitable authorized tool is availa
 1. Platform safety, system/developer instructions and actual tool contracts.
 2. Owner's latest instructions plus the active standing delegation in `AUTHORITY_DELEGATION.md`, subject to its scope and exclusions.
 3. Repository-root `AGENTS.md`.
-4. Repository-root `ENGINEERING_EXECUTION_OS.md` v2.2.
+4. Repository-root `ENGINEERING_EXECUTION_OS.md` v2.3.
 5. This file.
 6. `chatgpt-home/CURRENT_STATE.md` and the active branch's technical source of truth.
 7. Native workflow, agent, skill and tool registries.
@@ -58,7 +58,7 @@ The repository `madnessgate44-debug/Blind-sniper-` is PUBLIC.
 
 - Never write private memory, personal details, client information, credentials, raw ChatGPT transcripts or private attachments into this repository.
 - Do not read, quote, copy, index or migrate the public copies of `MEMORY.md`, `PROJECTS.md`, `CONVERSATION_CONTINUITY.md` or any raw archive as personal context.
-- The proposed private memory repository is `blind-sniper-private-memory`; it has not yet been created. Until it exists and is verified private, private-memory retrieval and transcript archive work are BLOCKED.
+- Private continuity storage is established at `madnessgate44-debug/G/blind-sniper-continuity/` in the owner-owned repository `madnessgate44-debug/G`; repository metadata was verified `visibility=private`, and the five-file scaffold was re-fetched. The scaffold is not a transcript archive: no transcripts have been imported, and transcript migration remains BLOCKED pending a verified export/source.
 - Public technical state is maintained in `chatgpt-home/CURRENT_STATE.md` (single current-state anchor, target ≤60 lines), `runtime/BUILD_PROGRESS.md` and technical source files.
 - Public repository history retains earlier copies. Editing a file does not erase its historical versions. No history rewrite is authorized.
 
@@ -79,8 +79,8 @@ If a controlling file is unavailable, report the exact missing path and mark boo
 
 ### 4.2 Resolve the active workspace
 - Inspect repository branches, open PRs and `chatgpt-home/CURRENT_STATE.md`.
-- Do not assume `main` is current. It may be an older baseline while an integration branch is active.
-- Use the branch explicitly named by the latest verified `CURRENT_STATE.md` and corroborate its HEAD SHA.
+- Inspect the default branch and every relevant open PR before selecting the active workspace; do not assume a feature branch is current.
+- Use the branch explicitly named by the latest verified `CURRENT_STATE.md`, corroborate its HEAD SHA, and prefer `main` when the live state anchor and GitHub refs agree.
 - Never silently combine files from different branches.
 
 ### 4.3 Load technical state only
@@ -97,7 +97,7 @@ Read from the active branch:
 Verify fetch success, non-empty content, branch/ref and blob SHA. Do not claim a complete technical boot if any required file is missing.
 
 ### 4.4 Private memory
-Only after the private memory repository exists and its visibility is verified as private may Blind Sniper read its continuity files or authorized transcript archive. Until then, use only current-session context and non-sensitive public technical state. Mark private-memory boot PARTIAL/BLOCKED rather than reading exposed public copies.
+The private continuity store has been verified in `madnessgate44-debug/G` with `visibility=private`; its `blind-sniper-continuity/` directory contains the five scaffold files. The files remain a continuity scaffold, not imported conversation history. Read private continuity only when the connected tool actually exposes that repository and the task requires it; never substitute public copies. Transcript archive access remains BLOCKED until an authorized export/source is available.
 
 ### 4.5 Session checkpoint
 Record the active branch, HEAD SHA, controlling policy SHAs, boot result, task ID, current status, evidence and blockers in the approved private memory location when available. Do not write personal session details to the public repository. If private storage is unavailable, update only the public technical `CURRENT_STATE.md` when there is a material technical change.
