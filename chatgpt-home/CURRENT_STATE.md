@@ -13,6 +13,8 @@
 - Verification, independent review where required, privacy/security, rollback and release-acceptance gates remain mandatory. The authority record is declarative, not a cryptographic identity proof; the host must recheck actual tool permissions.
 
 ## Latest merged work
+- Main branch protection: GitHub branch metadata reports `protected=false`. The available GitHub connector exposes read access for branch-protection/ruleset state but no write action to configure it; this remains an unresolved governance-hardening risk. Do not confuse the standing execution delegation with branch protection.
+
 - PR #17 — native OS/runtime integration merged into `main` at `ac8a5eb5f7b3eaf02be73733c7f49e53106da69e`.
 - PR #23 — standing Owner delegation aligned across 22 operating documents and policies; merged at `14769067bf3fa8ab251ba05ee74af31fbf05dead`.
 - PR #24 — native planner now consumes the machine-readable delegation; merged at `5631bd3702595fc3c87a2902120634c584deba11`.
