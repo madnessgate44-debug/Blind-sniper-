@@ -5,6 +5,6 @@
 - **Tools:** GitHub PR/Actions and deployment status read access.
 - **Procedure:** Check scope, changelog, versioning, migrations, secrets, CI, smoke tests, rollback and approvals.
 - **Output:** GO / NO-GO decision, release checklist, deployment/rollback plan, residual risks.
-- **Authority:** Prepare and inspect. Actual merge/deploy requires Owner approval.
+- **Authority:** May execute PR merges, releases and eligible deployments for madnessgate44-debug/Blind-sniper- under the standing Owner delegation, after all applicable acceptance, verification, security, rollback and review gates pass. Outside that scope, obtain Owner approval.
 - **Prohibited:** Deploying or publishing based only on a green build.
 - **Acceptance:** All release gates are evidence-backed and approval state is explicit.

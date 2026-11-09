@@ -94,6 +94,7 @@ class OrchestrationEngineTests(unittest.TestCase):
             "workflow": "task-control-loop",
             "requested_actions": ["production_deploy"],
             "owner_approval": {"approved_actions": ["production_deploy"]},
+            "authority_delegation": {"id": "owner-standing-delegation-2026-11-09", "approved_actions": ["production_deploy"]},
         })
         self.assertEqual(plan["approval"]["approved_actions"], [])
         self.assertEqual(plan["approval"]["pending_actions"], ["production_deploy"])
@@ -111,6 +112,58 @@ class OrchestrationEngineTests(unittest.TestCase):
             "requested_actions": ["merge"],
         })
         self.assertEqual(plan["approval"]["pending_actions"], ["merge"])
+
+    def test_standing_delegation_auto_approves_only_allowlisted_actions_for_exact_repo(self):
+        plan = runtime.build_plan({
+            "task_id": "BS-TEST-DELEGATION-001",
+            "objective": "Merge and deploy an accepted Blind Sniper repository release",
+            "workflow": "task-control-loop",
+            "repository": "madnessgate44-debug/Blind-sniper-",
+            "requested_actions": ["merge", "merge_to_main", "default_branch_push", "ci_cd_edit", "production_deploy"],
+        })
+        expected = ["ci_cd_edit", "default_branch_push", "merge", "merge_to_main", "production_deploy"]
+        self.assertEqual(plan["approval"]["approved_actions"], expected)
+        self.assertEqual(plan["approval"]["pending_actions"], [])
+        self.assertEqual(plan["approval"]["authority_source"], "standing_delegation")
+        self.assertEqual(plan["authority_delegation"]["id"], "owner-standing-delegation-2026-11-09")
+        state = runtime.create_task_state(plan)
+        for target in ("INSPECTING", "SPECIFIED", "PLANNED"):
+            state = runtime.transition_task(state, target)
+        state = runtime.transition_task(state, "EXECUTING")
+        self.assertEqual(state["status"], "EXECUTING")
+
+    def test_standing_delegation_does_not_apply_to_other_repositories(self):
+        plan = runtime.build_plan({
+            "task_id": "BS-TEST-DELEGATION-002",
+            "objective": "Merge a repository change",
+            "workflow": "task-control-loop",
+            "repository": "another-owner/another-repo",
+            "requested_actions": ["merge", "default_branch_push"],
+        })
+        self.assertEqual(plan["approval"]["approved_actions"], [])
+        self.assertEqual(plan["approval"]["pending_actions"], ["default_branch_push", "merge"])
+        self.assertIsNone(plan["authority_delegation"])
+
+    def test_revoked_standing_delegation_no_longer_auto_approves(self):
+        policy = runtime.load_authority_policy()
+        policy["delegations"][0]["status"] = "revoked"
+        approved, delegation_id = runtime.delegated_approval_actions(
+            "madnessgate44-debug/Blind-sniper-", {"merge", "production_deploy"}, policy
+        )
+        self.assertEqual(approved, set())
+        self.assertIsNone(delegation_id)
+
+    def test_standing_delegation_never_approves_excluded_actions(self):
+        actions = ["secret_mutation", "permission_change", "paid_provisioning", "production_data_mutation", "force_push"]
+        plan = runtime.build_plan({
+            "task_id": "BS-TEST-DELEGATION-003",
+            "objective": "Attempt excluded actions",
+            "workflow": "task-control-loop",
+            "repository": "madnessgate44-debug/Blind-sniper-",
+            "requested_actions": actions,
+        })
+        self.assertEqual(plan["approval"]["approved_actions"], [])
+        self.assertEqual(plan["approval"]["pending_actions"], sorted(actions))
 
     def test_release_gate_detects_missing_deploy_and_merge_capabilities(self):
         plan = runtime.build_plan({

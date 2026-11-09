@@ -31,15 +31,15 @@
 5. Every workflow has entry conditions, states, idempotency, retries, timeout, evidence and stop conditions.
 6. Every run is correlated to a task ID, repository, base SHA, worker/session ID and resulting SHA.
 7. Isolate concurrent writes by branch/worktree. Never have two agents mutate one working tree concurrently.
-8. Default to read-only and least privilege. Workspace writes require scoped authorization. Consequential operations require Owner approval.
-9. No paid resource, credential rotation, secret mutation, merge, production deployment or permission expansion without explicit Owner approval.
+8. Default to read-only outside an active delegation. Within madnessgate44-debug/Blind-sniper-, the standing Owner delegation authorizes scoped repository writes, pushes, PR merges, CI/CD edits and eligible deployments without repeat approval; retain least privilege. The native runtime policy mirror is chatgpt-home/runtime/authority.json.
+9. No paid resource, credential rotation, secret mutation/disclosure or permission expansion. Merges and production deployments are permitted only within the active repository delegation and after the release gate passes.
 10. Do not claim background execution unless a real trigger, runner, delivery route and successful run are verified.
 
 ## Execution modes
 
 - **Native:** Blind Sniper executes in the current ChatGPT session using exposed tools.
 - **Portable:** Task envelope and artifacts are persisted for another session or external worker.
-- **Audited:** Isolated branch/worktree, independent review, test evidence and explicit approval gates for high-risk changes.
+- **Audited:** Isolated branch/worktree, independent review, test evidence and either active standing delegation or explicit Owner approval for high-risk changes.
 
 ## Readiness gates
 
@@ -69,3 +69,14 @@ A checked item means only the evidence described in the linked files; this manif
 - [x] Engineering Execution OS compliance also passed on the same commit: run 42473260744, job policy-compliance.
 
 **Boundary:** These checks validate repository assets and policy structure. They do not prove Codex CLI installation, ChatGPT hook execution, browser MCP connectivity, OpenHands result retrieval, isolated shell execution or full external-agent round trips. Those remain open readiness gates.
+
+## 2026-11-09 registry reconciliation
+
+The 2026-11-08 implementation checkpoint above is a historical snapshot, not the current catalog. The reconciled runtime index now records:
+
+- 11 native skill contracts, including `blind-sniper-continuity` and `github-research`.
+- 10 canonical native agent roles and 4 additional reference-only profiles; reference profiles are not dispatchable.
+- 17 workflow registry entries: 11 entries reference 9 markdown contracts and 6 are intentionally registry-only with explicit reasons.
+- 33 OpenHands skill/rule files remain a separate source-preserving mirror; they are not counted as native skills and are not automatically activated.
+
+The current source of truth is `runtime/agents.json`, `runtime/skills.index.json`, `runtime/workflows.json` and their corresponding README/catalog files.

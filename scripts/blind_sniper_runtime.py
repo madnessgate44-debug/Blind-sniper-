@@ -45,6 +45,15 @@ ROUTINE_ACTIONS = {
     "read", "inspect", "research", "analyze", "write_file", "create_branch",
     "open_pr", "run_tests", "format", "lint",
 }
+AUTHORIZED_REPOSITORY = "madnessgate44-debug/Blind-sniper-"
+EXPECTED_DELEGATION_ID = "owner-standing-delegation-2026-11-09"
+DELEGABLE_ACTIONS = {
+    "merge", "merge_to_main", "default_branch_push", "ci_cd_edit",
+    "workflow_edit", "deploy", "production_deploy", "release", "delete",
+}
+DELEGATION_EXCLUSIONS = {
+    "secret_mutation", "permission_change", "paid_provisioning", "production_data_mutation",
+}
 HOST_FORBIDDEN_ACTIONS = [
     "force_push", "delete_branch", "credential_export", "secret_export",
     "disable_branch_protection", "unbounded_shell",
@@ -86,6 +95,68 @@ def load_registries(root: Path = ROOT) -> dict[str, dict[str, Any]]:
     names = ("capabilities", "profiles", "agents", "workflows", "skills.index")
     result = {name: read_json(runtime / f"{name}.json") for name in names}
     return result
+
+
+def load_authority_policy(root: Path = ROOT) -> dict[str, Any]:
+    """Load the machine-readable, repository-scoped standing delegation."""
+    policy = read_json(root / "chatgpt-home" / "runtime" / "authority.json")
+    if policy.get("schema_version") != "1.0.0":
+        raise RuntimeErrorBase("authority.json has an unsupported schema_version")
+    delegations = policy.get("delegations")
+    if not isinstance(delegations, list):
+        raise RuntimeErrorBase("authority.json delegations must be a list")
+    ids = [str(row.get("id", "")).strip() for row in delegations if isinstance(row, dict)]
+    if len(ids) != len(delegations) or not all(ids) or len(ids) != len(set(ids)):
+        raise RuntimeErrorBase("authority.json requires unique, non-empty delegation IDs")
+    active_repositories = set()
+    for row in delegations:
+        repository = str(row.get("repository", "")).strip()
+        actions = row.get("actions")
+        forbidden = row.get("forbidden_actions", [])
+        if repository != AUTHORIZED_REPOSITORY or row.get("id") != EXPECTED_DELEGATION_ID:
+            raise RuntimeErrorBase("authority.json delegation identity or repository scope is not recognized")
+        if row.get("grantor") != "repository-owner" or row.get("delegate") != "blind-sniper":
+            raise RuntimeErrorBase("authority.json delegation grantor/delegate identity is not recognized")
+        if row.get("status") not in {"active", "revoked"}:
+            raise RuntimeErrorBase("authority.json delegation requires active/revoked status")
+        if not isinstance(actions, list) or not all(isinstance(item, str) and item.strip() for item in actions):
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} has invalid actions")
+        if len(actions) != len(set(actions)):
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} has duplicate actions")
+        if set(actions) != DELEGABLE_ACTIONS:
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} action allowlist does not match the reviewed code policy")
+        if not isinstance(forbidden, list) or not all(isinstance(item, str) and item.strip() for item in forbidden):
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} has invalid forbidden_actions")
+        if len(forbidden) != len(set(forbidden)) or not DELEGATION_EXCLUSIONS.issubset(set(forbidden)):
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} omits required exclusions or duplicates exclusions")
+        if set(actions) & (set(forbidden) | set(HOST_FORBIDDEN_ACTIONS)):
+            raise RuntimeErrorBase(f"authority.json delegation {row['id']} attempts to authorize a forbidden action")
+        if row.get("status") == "active":
+            if repository in active_repositories:
+                raise RuntimeErrorBase(f"authority.json has multiple active delegations for {repository}")
+            active_repositories.add(repository)
+    return policy
+
+
+def delegated_approval_actions(
+    repository: str | None,
+    requested_actions: set[str],
+    policy: dict[str, Any],
+) -> tuple[set[str], str | None]:
+    """Resolve only explicitly allowlisted actions for an exact repository match."""
+    target = str(repository or "").strip()
+    if not target:
+        return set(), None
+    for row in policy.get("delegations", []):
+        if row.get("status") != "active" or row.get("repository") != target:
+            continue
+        allowed = set(row.get("actions", []))
+        forbidden = set(row.get("forbidden_actions", [])) | set(HOST_FORBIDDEN_ACTIONS)
+        approved = (requested_actions & allowed) - forbidden
+        if "merge_or_deploy" in requested_actions and {"merge", "deploy"}.issubset(allowed) and not ({"merge", "deploy"} & forbidden):
+            approved.add("merge_or_deploy")
+        return approved, str(row.get("id"))
+    return set(), None
 
 
 def tokenize(value: str) -> set[str]:
@@ -254,10 +325,12 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
     approval_actions = sorted(requested_actions - ROUTINE_ACTIONS)
     if workflow_id == "release-gate":
         approval_actions = sorted(set(approval_actions) | {"merge_or_deploy"})
-    # Task envelopes are untrusted input. They may request consequential actions,
-    # but they cannot assert Owner consent. Approval is accepted only at the
-    # guarded transition boundary from the authorized host caller.
-    approved_actions: set[str] = set()
+    # Task envelopes are untrusted. Standing authority is loaded only from the
+    # checked-in host policy, never from task-supplied approval/delegation fields.
+    authority_policy = load_authority_policy(root)
+    approved_actions, delegation_id = delegated_approval_actions(
+        task.get("repository"), set(approval_actions), authority_policy
+    )
     pending_approvals = [action for action in approval_actions if action not in approved_actions]
 
     steps = []
@@ -292,11 +365,18 @@ def build_plan(task: dict[str, Any], root: Path = ROOT) -> dict[str, Any]:
         "required_adapters": required_adapters,
         "selected_agents": selected_agents,
         "selected_skills": skill_rows,
+        "authority_delegation": ({
+            "id": delegation_id,
+            "repository": task.get("repository"),
+            "source": "chatgpt-home/runtime/authority.json",
+            "applied_actions": sorted(approved_actions),
+        } if delegation_id and approved_actions else None),
         "approval": {
             "required_actions": approval_actions,
             "approved_actions": sorted(approved_actions),
             "pending_actions": pending_approvals,
             "satisfied": not pending_approvals,
+            "authority_source": "standing_delegation" if approved_actions else ("explicit_owner_approval_required" if pending_approvals else "none"),
         },
         "steps": steps,
         "constraints": {
