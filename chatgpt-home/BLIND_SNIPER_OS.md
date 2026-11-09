@@ -17,7 +17,7 @@ It is executable as a conversation workflow when Blind Sniper has the relevant c
 ## 2. Authority order
 
 1. Current explicit Owner instruction and approval, within platform/safety limits.
-2. Repository-root `AGENTS.md` and `ENGINEERING_EXECUTION_OS.md`.
+2. The active standing Owner delegation in `AUTHORITY_DELEGATION.md` and its runtime mirror, together with repository-root `AGENTS.md` and `ENGINEERING_EXECUTION_OS.md`. The grant is the Owner's prior explicit authorization for its exact repository/action scope; do not request repeat approval.
 3. `chatgpt-home/OPERATING_PROFILE.md`, `MEMORY.md`, `PROJECTS.md`, `CONVERSATION_CONTINUITY.md`, `SKILLS_CATALOG.md`, `SYNC_PROTOCOL.md`.
 4. This BS-OS.
 5. Mirrored OpenHands source files under `openhands-library/`, treated as reusable reference material—not superior authority.
@@ -77,7 +77,7 @@ When the Owner asks Blind Sniper to continue autonomously within the current ses
 1. Select the highest-priority authorized, unblocked item from the verified queue.
 2. Execute one bounded item at a time.
 3. Verify and record its result before taking another.
-4. Stop at any approval boundary, high-risk uncertainty, repeated failure, exhausted queue, or tool limitation.
+4. Stop only at an approval boundary not already covered by the active delegation, high-risk uncertainty, repeated failure, exhausted queue, or tool limitation.
 5. Do not claim work continues after the response or after the session ends.
 
 The OpenHands six-continuation loop and its hooks are design references only. ChatGPT cannot run those lifecycle hooks or continue after the turn unless a real external execution mechanism is configured.
