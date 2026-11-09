@@ -31,7 +31,7 @@
 5. Every workflow has entry conditions, states, idempotency, retries, timeout, evidence and stop conditions.
 6. Every run is correlated to a task ID, repository, base SHA, worker/session ID and resulting SHA.
 7. Isolate concurrent writes by branch/worktree. Never have two agents mutate one working tree concurrently.
-8. Default to read-only outside an active delegation. Within madnessgate44-debug/Blind-sniper-, the standing Owner delegation authorizes scoped repository writes, pushes, PR merges, CI/CD edits and eligible deployments without repeat approval; retain least privilege.
+8. Default to read-only outside an active delegation. Within madnessgate44-debug/Blind-sniper-, the standing Owner delegation authorizes scoped repository writes, pushes, PR merges, CI/CD edits and eligible deployments without repeat approval; retain least privilege. The native runtime policy mirror is chatgpt-home/runtime/authority.json.
 9. No paid resource, credential rotation, secret mutation/disclosure or permission expansion. Merges and production deployments are permitted only within the active repository delegation and after the release gate passes.
 10. Do not claim background execution unless a real trigger, runner, delivery route and successful run are verified.
 
