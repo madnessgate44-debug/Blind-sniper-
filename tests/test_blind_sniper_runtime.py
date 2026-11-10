@@ -26,10 +26,13 @@ class RuntimeRegistryTests(unittest.TestCase):
         import json
         registry = json.loads((ROOT / "chatgpt-home/runtime/capabilities.json").read_text())
         adapters = {item["id"]: item for item in registry["adapters"]}
-        self.assertEqual(adapters["forge_browser_mcp"]["status"], "endpoint_remote_smoke_reported_connector_not_registered")
+        self.assertNotIn("forge_browser_mcp", adapters)
         self.assertEqual(adapters["chatgpt_history_export"]["status"], "blocked_no_native_export_action")
         self.assertEqual(adapters["ephemeral_execution"]["status"], "available_in_current_session")
-        self.assertEqual(adapters["openhands_dispatch"]["status"], "partially_verified")
+        self.assertNotIn("openhands_dispatch", adapters)
+        self.assertEqual(adapters["native_model_runtime"]["status"], "not_implemented_pending_p0")
+        self.assertIn("native_task_queue", adapters)
+        self.assertIn("agent_browser_cli", adapters)
         self.assertIn("TinyFish", registry["exclusions"][0])
         skills = json.loads((ROOT / "chatgpt-home/runtime/skills.index.json").read_text())
         self.assertEqual(len(skills["native_skills"]), 14)
@@ -56,6 +59,10 @@ class RuntimeRegistryTests(unittest.TestCase):
         self.assertIn("shadow", workflow_agents["independent-review"])
         self.assertIn("watcher", workflow_agents["recovery-and-reconciliation"])
         self.assertEqual(len(workflows["workflows"]), 18)
+        workflow_adapters = {w["id"]: set(w.get("adapters", [])) for w in workflows["workflows"]}
+        self.assertIn("native_model_runtime", workflow_adapters["native-model-agent-execution"])
+        self.assertIn("agent_browser_cli", workflow_adapters["native-browser-interaction"])
+        self.assertFalse(any({"forge_browser_mcp", "openhands_dispatch"} & used for used in workflow_adapters.values()))
         self.assertEqual(sum(w.get("contract_mode") == "native_contract" for w in workflows["workflows"]), 11)
         self.assertEqual(sum(w.get("contract_mode") == "registry_only" for w in workflows["workflows"]), 7)
         self.assertTrue(all(w.get("registry_only_reason") for w in workflows["workflows"] if w.get("contract_mode") == "registry_only"))
