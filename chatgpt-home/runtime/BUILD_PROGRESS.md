@@ -150,3 +150,14 @@ Remaining:
 - [V] The native browser adapter already has CI-backed Chromium acceptance for bounded navigation/actions, task-lease checks, action receipts and interruption reconciliation. This does not prove a persistent authenticated browser host or cross-job browser-session recovery.
 - [U] Independent model invocations are not implemented; the runtime currently resolves agent contracts rather than spawning separate model executions.
 - [U] Full durable worker cancellation, heartbeat supervision, stale-lease reclamation and interruption-safe cross-run recovery remain incomplete.
+
+
+## Native autonomy checkpoint — 2026-11-10
+
+- [V] Branch `feat/p0-autonomous-agent-runtime` latest implementation commit at checkpoint: `5c8fa87722863df0e28aba6d56e605079b403cb1` (19 ahead of main, 0 behind before this state-documentation commit).
+- [V] PR #48 is a draft validation PR; it remains unmerged.
+- [V] Runtime CI run `42805873386`: validator PASS; skill catalog audit PASS; 158 unit tests in 2.319s (`OK`); interruption/recovery simulation PASS; scheduled-jobs simulation PASS; artifact `13758272503`.
+- [V] Environment validation `42805873383` and OS compliance `42805873397` both PASS on the same head.
+- [V] The earlier E2E failure `42805773341` was caused by a simulation fixture selecting `task-control-loop`, which correctly fails closed because the native model provider is not configured. The fixture now selects `bounded-verification` for local deterministic work; the subsequent complete runtime workflow passed.
+- [U] These checks verify the current planner, local ledger lifecycle and deterministic simulations; they do not verify independent model-agent invocation, a private cross-run queue worker, a persistent authenticated browser host, or unattended native autonomy.
+- [U] R1 NOT IMPLEMENTED; R2 PARTIAL; R3 PARTIAL; R4 PARTIAL; R5 NOT VERIFIED.
