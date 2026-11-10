@@ -7,6 +7,7 @@ queue ledger. The ledger stores only a digest, lease events and result digest.
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 import hashlib
 import json
 import os
@@ -21,6 +22,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from blind_sniper_ledger import GitHubContentsLedger, LedgerError, TaskLedger  # noqa: E402
 from blind_sniper_model_worker import AgentSpec, ModelTask, ModelWorker, NativeModelInvoker, ModelWorkerError  # noqa: E402
 from blind_sniper_worker import DurableQueue, QueueError  # noqa: E402
+from blind_sniper_tool_runtime import NativeToolRuntime  # noqa: E402
 
 
 class AgentRuntimeError(RuntimeError):
@@ -55,6 +57,7 @@ def dispatch_task(
         "payload": task.payload,
         "permission_profile": spec.permission_profile,
         "tool_allowlist": list(spec.tool_allowlist),
+        "allowed_paths": list(spec.allowed_paths),
     }
     payload_digest = _canonical_digest(envelope)
     current = queue.status(task.task_id)
@@ -72,7 +75,7 @@ def dispatch_task(
     if not claim:
         raise AgentRuntimeError("No pending task could be claimed")
     queue.heartbeat(task_id=task.task_id, owner_id=owner_id, lease_seconds=lease_seconds)
-    result = worker.run([spec], [task])
+    result = worker.run([spec], [replace(task, lease_owner_id=owner_id)])
     receipt = result["receipts"][0]
     receipt["queue_attempt"] = claim["attempt"]
     receipt["lease_owner"] = owner_id
@@ -148,6 +151,9 @@ def main(argv: list[str] | None = None) -> int:
         data = json.loads(task_path.read_text(encoding="utf-8"))
         if not isinstance(data, dict):
             raise AgentRuntimeError("Task file must contain a JSON object")
+        allowed_keys = {"task_id", "agent_id", "objective", "payload", "tool_allowlist", "permission_profile", "allowed_paths"}
+        if set(data) - allowed_keys:
+            raise AgentRuntimeError(f"Task file contains unsupported fields: {sorted(set(data) - allowed_keys)}")
         task = ModelTask(
             task_id=str(data.get("task_id", "")),
             agent_id=str(data.get("agent_id", "")),
@@ -159,13 +165,15 @@ def main(argv: list[str] | None = None) -> int:
             fresh_context=True,
             tool_allowlist=tuple(data.get("tool_allowlist", [])),
             permission_profile=str(data.get("permission_profile", "read_only")),
+            allowed_paths=tuple(data.get("allowed_paths", [])),
         )
-        invoker = NativeModelInvoker.from_env()
+        queue = DurableQueue(configure_ledger(args))
+        tool_runtime = NativeToolRuntime(queue)
+        invoker = NativeModelInvoker.from_env(tool_runtime=tool_runtime)
         worker = ModelWorker(
             invoker, max_concurrency=args.max_concurrency,
             timeout_seconds=args.timeout_seconds, max_retries=1,
         )
-        queue = DurableQueue(configure_ledger(args))
         receipt = dispatch_task(
             queue, worker, spec, task, owner_id=args.owner_id,
             lease_seconds=min(3600, max(60, (args.timeout_seconds * 2) + 60)),
