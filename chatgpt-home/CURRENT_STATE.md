@@ -19,8 +19,8 @@
 - [V] Implementation branch: `feat/p0-autonomous-agent-runtime`; base `main` at `bed0df1664be72b060512eea218f7071f9bfa09c`; latest head `5c8fa87722863df0e28aba6d56e605079b403cb1`; 19 commits ahead, 0 behind.
 - [V] Issue #46 defines native model agents, native durable queue/worker recovery, native executor/tool runtime, native browser and safe continuous autonomy.
 - [V] Active registries contain no OpenHands dispatch or Forge browser adapter. The native browser route is `agent_browser_cli`.
-- [V] CI run `42805873386` on exact head `5c8fa877`: runtime registry validator PASS; skill catalog audit PASS; 158 unit tests in 2.319s, `OK`; interruption/recovery E2E simulation PASS; scheduled-jobs E2E simulation PASS; artifact `13758272503`.
-- [V] Environment validation run `42805873383` PASS; Engineering Execution OS compliance run `42805873397` PASS.
+- [V] CI run `42806162980` on exact head `719178fbe858d5a2d3740c8b1d40aa1d37bb56fe`: runtime registry validator PASS; skill catalog audit PASS; 158 unit tests in 2.067s, `OK`; interruption/recovery E2E simulation PASS; scheduled-jobs E2E simulation PASS; artifact `13757958161`.
+- [V] Environment validation run `42806162970` PASS; Engineering Execution OS compliance run `42806162985` PASS.
 - [V] Earlier CI run `42805773341` failed after validator and 158 unit tests passed because the local E2E fixture selected `task-control-loop`, whose native model adapter is intentionally BLOCKED until configured. The fixture now selects `bounded-verification`; the subsequent exact-head run passed all configured steps.
 - [U] R1 NOT IMPLEMENTED/BLOCKED: role contracts exist, but no independent model invocation boundary is implemented or configured.
 - [U] R2 PARTIAL: local ledger persistence, claims, lease renewal/release, idempotency and local expiry/reclaim simulation exist; cross-run worker supervision, heartbeat/cancellation command and private durable queue execution remain unverified.
