@@ -103,6 +103,30 @@ TOOL_DEFINITIONS = {
             "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
         },
     },
+    "browser.click": {
+        "type": "function",
+        "function": {
+            "name": "browser.click",
+            "description": "Click one selector in the task browser; requires host-approved browser write permission.",
+            "parameters": {"type": "object", "properties": {"selector": {"type": "string", "minLength": 1, "maxLength": 256}}, "required": ["selector"], "additionalProperties": False},
+        },
+    },
+    "browser.fill": {
+        "type": "function",
+        "function": {
+            "name": "browser.fill",
+            "description": "Fill one non-sensitive selector in the task browser; requires host-approved browser write permission.",
+            "parameters": {"type": "object", "properties": {"selector": {"type": "string", "minLength": 1, "maxLength": 256}, "value": {"type": "string", "maxLength": 4000}}, "required": ["selector", "value"], "additionalProperties": False},
+        },
+    },
+    "browser.press": {
+        "type": "function",
+        "function": {
+            "name": "browser.press",
+            "description": "Press one supported navigation key in the task browser; requires host-approved browser write permission.",
+            "parameters": {"type": "object", "properties": {"key": {"type": "string", "enum": ["ENTER", "TAB", "ESC", "ESCAPE", "ARROWDOWN", "ARROWUP", "ARROWLEFT", "ARROWRIGHT"]}}, "required": ["key"], "additionalProperties": False},
+        },
+    },
     "browser.screenshot": {
         "type": "function",
         "function": {
@@ -185,6 +209,14 @@ class NativeToolRuntime:
                 raise NativeToolError("repo.write_file requires explicit exact allowed_paths")
         if any(name.startswith("repo.") for name in spec.tool_allowlist) and not spec.allowed_paths:
             raise NativeToolError("Repository tools require explicit allowed_paths")
+        browser_write_tools = {"browser.click", "browser.fill", "browser.press"} & set(spec.tool_allowlist)
+        if browser_write_tools:
+            if spec.permission_profile != "workspace_write":
+                raise NativeToolError("Mutating browser tools require workspace_write permission")
+            if not spec.browser_approval_reference.strip():
+                raise NativeToolError("Mutating browser tools require a host approval reference")
+            if os.environ.get("BLIND_SNIPER_BROWSER_WRITE_APPROVED") != "1":
+                raise NativeToolError("Mutating browser tools require host BLIND_SNIPER_BROWSER_WRITE_APPROVED=1")
 
     def _workspace_path(self, raw: str, spec: Any, *, write: bool) -> tuple[Path, str]:
         if not isinstance(raw, str) or not raw.strip() or "\\" in raw:
@@ -311,6 +343,9 @@ class NativeToolRuntime:
             "browser.get_url": ("get-url", []),
             "browser.tabs": ("tabs", []),
             "browser.screenshot": ("screenshot", [arguments.get("filename", "")]),
+            "browser.click": ("click", [arguments.get("selector", "")]),
+            "browser.fill": ("fill", [arguments.get("selector", ""), arguments.get("value", "")]),
+            "browser.press": ("press", [arguments.get("key", "")]),
         }
         action, action_args = actions[name]
         session_id = "s" + hashlib.sha256(f"{task.task_id}:{run_id}".encode()).hexdigest()[:20]
@@ -321,6 +356,7 @@ class NativeToolRuntime:
             session_id=session_id,
             state_dir=self.browser_state_dir / task.task_id,
             timeout=min(45, task.lease_seconds - 10),
+            approval_reference=spec.browser_approval_reference or None,
         )
         result = adapter.execute(action, step_id, *action_args)
         receipt = result.get("receipt", {})
