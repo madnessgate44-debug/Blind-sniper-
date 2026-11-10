@@ -1,11 +1,12 @@
 # Blind Sniper — Current Technical State
 
-**Snapshot:** 2026-11-10, after PR #37 merged onto `main`
-**Default branch:** main
-**Latest code/runtime commit:** `031b245bca32fbe91abae1f96e9e394efe50f959` (PR #36 — array-secret scanning and test-isolation fixes)
-**Latest docs-state commit:** `cf350f7ee5b25bfd0541549e93538e9186430051` (PR #37 — state/build-progress reconciliation)
-**Latest full runtime validation:** 130 Python tests OK; runtime registry and skill catalog validation PASS.
-**Latest main checks:** Runtime Registry `42716484899` PASS; Environment Validation `42716484975` PASS; OS Compliance `42716484935` PASS; GitHub Pages deployment `42716484749` SUCCESS.
+**Snapshot:** 2026-11-10 — live GitHub state rechecked after commit `ada63e11d3047a3560565a4bcaa72c6768e4ae34`.
+**Default branch:** `main`
+**Live main HEAD:** `ada63e11d3047a3560565a4bcaa72c6768e4ae34` (executor workflow full-checkout fix).
+**Latest full runtime-validation baseline:** `031b245bca32fbe91abae1f96e9e394efe50f959` — 130 Python tests OK; runtime registry and skill catalog validation PASS.
+**Latest live HEAD checks:** 7/7 GitHub check runs completed successfully, including Runtime Registry, Environment Validation, OS Compliance, bounded executor, receipt publication and Pages deployment. This does not claim a fresh 130-test count on `ada63e11`.
+**Open PRs:** 0 (live GitHub query).
+**Branch protection:** `main` reports `protected=false`; unresolved governance-hardening item.
 **Authority:** Engineering Execution OS v2.3 plus active standing Owner delegation, recorded in `chatgpt-home/AUTHORITY_DELEGATION.md` and mirrored in `chatgpt-home/runtime/authority.json`.
 **Audit artifact:** `chatgpt-home/AGENT_OS_INTEGRATION_AUDIT.md` (BS-OS-001 static audit) and `chatgpt-home/BS-COMPLETION_AUDIT_AND_OPENAI_REVIEW.md` (completion audit).
 
@@ -105,6 +106,15 @@
 - Post-merge main CI on `031b245`: Runtime Registry `42716156320` PASS (130 tests), Environment Validation `42716156014` PASS, OS Compliance `42716156010` PASS. The deployment run `42716155494` was later cancelled; the subsequent `cf350f7` deployment run `42716484749` succeeded.
 - PR #37 merged at `cf350f7ee5b25bfd0541549e93538e9186430051`; post-merge Runtime Registry `42716484899`, Environment Validation `42716484975`, OS Compliance `42716484935` and Pages deployment `42716484749` all succeeded. The live open PR set is empty. Main branch protection remains `protected=false`.
 - Private continuity scaffold remains at `madnessgate44-debug/G/blind-sniper-continuity/` (private repository, five non-empty files); it is not a transcript archive. Transcript import and recurring conversation sync remain BLOCKED by the unavailable authorized export/source and scheduled-task limit.
+
+## Live reconciliation — 2026-11-10 (HEAD ada63e11)
+
+- Live GitHub branch query confirms `main` HEAD is `ada63e11d3047a3560565a4bcaa72c6768e4ae34`; commit message: `fix(executor): full read-only checkout so run-tests can read all fixtures (#41)`.
+- The change removes sparse checkout from `.github/workflows/blind-sniper-executor.yml` because the test suite reads workflow and task fixtures outside the former sparse paths. Read-only checkout remains enforced by `contents: read` and `persist-credentials: false`.
+- Commit check-runs query: 7 total, all completed with conclusion `success`. Runtime Registry, Environment Validation, OS Compliance, Build, executor command, receipt publication and Pages deploy are included. No new exact test-count claim is made for this HEAD.
+- Live open-PR query returned an empty list. Main remains unprotected (`protected=false`).
+- The prior header and historical verification entries that cited `cf350f7` are superseded by this live checkpoint; historical entries remain for provenance.
+- This state refresh does not change runtime code, branch protection, permissions, secrets, or private continuity.
 
 ## Historical record
 
