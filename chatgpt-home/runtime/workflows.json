@@ -217,8 +217,8 @@
           "correlated_run_receipts"
         ]
       },
-      "contract_mode": "registry_only",
-      "registry_only_reason": "Acceptance workflow only; the current planner selects role contracts but does not yet create independent model executions."
+      "contract_mode": "native_contract",
+      "native_contract_path": "chatgpt-home/workflows/agent-handoff.md"
     },
     {
       "id": "native-browser-interaction",
