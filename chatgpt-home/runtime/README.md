@@ -28,6 +28,19 @@ Registered tools are limited to:
 Every tool call is reserved against the current unexpired durable task lease before side effects and
 receives a terminal ledger receipt. There is no arbitrary shell, unrestricted filesystem, arbitrary network, Forge, OpenHands or external browser tool. The model can use the checked-in native Chromium adapter through lease-bound browser tools; navigation is domain-allowlisted and click/fill/press require host approval. Browser state and artifacts remain outside the public repository. R1/R3/R4 are contract-tested; a live configured provider host remains unverified. R2 private remote payload recovery is partial, persistent browser hosting is unverified, and R5 unattended autonomy remains blocked.
 
+## Persistent native worker
+
+`scripts/blind_sniper_daemon.py` provides a persistent single-host poller. It scans owner-only
+private task JSON files, recovers stale leases, runs the native model/tool runtime, writes private
+receipts and health, and appends a metadata-only notification outbox. It is not run by GitHub
+Actions and this repository does not start or enable the service.
+
+The systemd example is `deploy/blind-sniper-worker.service.example`. Host setup requires a
+persistent owner-only state directory, an approved model provider configuration, and a service
+manager. The local ledger survives process restarts on that host; remote cross-host CAS and
+notification delivery remain unverified. R5 is PARTIAL until a real host service is run and
+monitored.
+
 ## Components
 
 The native Blind Sniper pack is maintained alongside this registry: `../ENVIRONMENT_MANIFEST.md`, `../skills/`, `../agents/`, `../workflows/`, `../templates/`, `../tools/TOOL_REGISTRY.md` and `../config/`. Prefer native skills/contracts. The `openhands-library/` mirror is source-preserving reference material only.
