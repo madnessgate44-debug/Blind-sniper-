@@ -189,6 +189,42 @@ class PrivateTaskStore:
         except Exception:
             raise
 
+    def reconcile_notifications(self) -> int:
+        """Rebuild missing metadata-only outbox entries from private durable receipts."""
+        known: set[tuple[str, str]] = set()
+        if self.notification_path.exists():
+            _ensure_private_file(self.notification_path, max_bytes=64 * 1024 * 1024)
+            for line in self.notification_path.read_text(encoding="utf-8").splitlines():
+                try:
+                    event = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    raise DaemonError("Notification outbox is corrupt; refusing to append") from exc
+                if isinstance(event, dict):
+                    known.add((str(event.get("task_id", "")), str(event.get("run_id", ""))))
+        repaired = 0
+        for path in sorted(self.receipt_dir.glob("*.json"), key=lambda item: item.name):
+            _ensure_private_file(path, max_bytes=MAX_TASK_FILE_BYTES * 2)
+            try:
+                receipt = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise DaemonError(f"Private receipt is invalid ({type(exc).__name__})") from exc
+            if not isinstance(receipt, dict):
+                raise DaemonError("Private receipt must contain a JSON object")
+            task_id = str(receipt.get("queue_task_id", ""))
+            run_id = str(receipt.get("run_id", ""))
+            key = (task_id, run_id)
+            if key in known or not TASK_ID.fullmatch(task_id) or not run_id:
+                continue
+            status = str(receipt.get("queue_status", ""))
+            event_name = "task.completed" if status == "COMPLETED" else "task.failed" if status == "FAILED" else "task.retry_scheduled"
+            self.append_notification({
+                "event": event_name, "task_id": task_id, "run_id": run_id,
+                "status": status, "result_digest": receipt.get("output_digest", ""),
+            })
+            known.add(key)
+            repaired += 1
+        return repaired
+
     def write_health(self, health: dict[str, Any]) -> None:
         _atomic_private_json(self.health_path, health)
 
@@ -225,6 +261,7 @@ class BlindSniperDaemon:
         last_error_type = None
         recovered = self.queue.recover_stale()
         counts["recovered_stale_leases"] = len(recovered.get("recovered", []))
+        counts["notifications_reconciled"] = self.store.reconcile_notifications()
         files = self.store.task_files()
         counts["scanned"] = len(files)
         counts["attempted"] = 0
@@ -269,11 +306,11 @@ class BlindSniperDaemon:
                 else:
                     counts["retry_scheduled"] += 1
                     event = "task.retry_scheduled"
+                self.store.write_receipt(task_id, receipt)
                 self.store.append_notification({
                     "event": event, "task_id": task_id, "run_id": receipt.get("run_id", ""),
                     "status": status, "result_digest": receipt.get("output_digest", ""),
                 })
-                self.store.write_receipt(task_id, receipt)
             except Exception as exc:
                 counts["errors"] += 1
                 last_error_type = type(exc).__name__
