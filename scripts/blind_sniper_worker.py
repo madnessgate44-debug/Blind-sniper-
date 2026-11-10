@@ -221,11 +221,14 @@ class DurableQueue:
         *,
         owner_id: str,
         lease_seconds: int = 300,
+        task_id: str | None = None,
         now: datetime | None = None,
     ) -> dict[str, Any] | None:
-        """Atomically claim the oldest claimable task, or return None."""
+        """Atomically claim the oldest claimable task, or one exact task when task_id is supplied."""
         if not str(owner_id).strip():
             raise QueueError("owner_id is required")
+        if task_id is not None and not str(task_id).strip():
+            raise QueueError("task_id must be non-empty when supplied")
         if not 1 <= lease_seconds <= MAX_LEASE_SECONDS:
             raise QueueError(f"lease_seconds must be between 1 and {MAX_LEASE_SECONDS}")
         instant = now or datetime.now(timezone.utc)
@@ -233,7 +236,8 @@ class DurableQueue:
             states = self._states()
             candidates = [
                 state for state in states.values()
-                if state and state["status"] in CLAIMABLE_STATUSES
+                if state and (task_id is None or state["task_id"] == task_id)
+                and state["status"] in CLAIMABLE_STATUSES
                 and state["attempt"] < state["max_attempts"]
             ]
             if not candidates:
