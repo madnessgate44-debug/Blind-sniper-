@@ -58,6 +58,33 @@ class DurableQueueTests(unittest.TestCase):
         state = self.queue.status("T1")
         self.assertEqual(state["status"], "CLAIMED")
 
+    def test_tool_call_receipts_are_reserved_before_execution_and_bound_to_lease(self):
+        self.queue.enqueue(task_id="T-TOOL", kind="model_task", payload_digest="d-tool", now=T0)
+        self.queue.claim(owner_id="w-tool", lease_seconds=60, task_id="T-TOOL", now=T0)
+        started = self.queue.reserve_tool_call(
+            task_id="T-TOOL", owner_id="w-tool", run_id="run-1",
+            tool_call_id="call-1", tool_name="repo.read_file",
+            arguments_digest="args-digest", now=T0 + timedelta(seconds=1),
+        )
+        self.assertEqual(started["event_type"], "QUEUE_TOOL_STARTED")
+        with self.assertRaisesRegex(QueueError, "already reserved"):
+            self.queue.reserve_tool_call(
+                task_id="T-TOOL", owner_id="w-tool", run_id="run-1",
+                tool_call_id="call-1", tool_name="repo.read_file",
+                arguments_digest="args-digest", now=T0 + timedelta(seconds=2),
+            )
+        completed = self.queue.complete_tool_call(
+            task_id="T-TOOL", owner_id="w-tool", run_id="run-1",
+            tool_call_id="call-1", result_digest="result-digest",
+            now=T0 + timedelta(seconds=3),
+        )
+        self.assertEqual(completed["event_type"], "QUEUE_TOOL_COMPLETED")
+        events = self.ledger.events("T-TOOL")
+        self.assertEqual(
+            [row["event_type"] for row in events if row["event_type"].startswith("QUEUE_TOOL_")],
+            ["QUEUE_TOOL_STARTED", "QUEUE_TOOL_COMPLETED"],
+        )
+
     def test_expired_lease_cannot_complete_or_fail(self):
         self.queue.enqueue(task_id="T-EXPIRED", kind="model_task", payload_digest="d1", now=T0)
         self.queue.claim(owner_id="w1", lease_seconds=60, now=T0)
