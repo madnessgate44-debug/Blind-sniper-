@@ -2,7 +2,7 @@
 
 **Snapshot:** 2026-11-10 — native model-provider transport and digest-bound queue dispatch implemented on `feat/p0-autonomous-agent-runtime`; PR #48 remains DRAFT.
 **Architecture:** Self-contained. No external agent or external browser handoff.
-**Current head at this update:** `3d4b7fc0bc944a1ea11eaa07e0a38931ea1fa0df`; exact-head Runtime Registry, Environment Validation and OS Compliance CI pass.
+**Current head at this update:** `fb4cf73488ed07870567d771e040462309db747d`; exact-head Runtime Registry, Environment Validation, OS Compliance and native browser CI pass.
 **Release:** NO-GO; no merge or deployment.
 
 ## P0 capability status
@@ -28,8 +28,8 @@
 
 - Head `4e4836015a5b051f891aaa934c0aed7fa850bdce`: registry/environment/OS validation passed; 208 tests passed and one readiness-classification test failed. The failure was corrected without weakening the readiness gate.
 - Head `c3005cfacafaddcf1c58083487de6827b580bed0`: Runtime Registry PASS with 209 tests; E2E interruption/recovery and scheduled-jobs simulations PASS; Environment Validation and OS Compliance PASS.
-- Current head `3d4b7fc0bc944a1ea11eaa07e0a38931ea1fa0df`: Runtime Registry run `42807947193` PASS with 210 tests in 4.501s; Environment Validation `42807947200` PASS; OS Compliance `42807947404` PASS. Push equivalents also PASS.
-- Native Browser Adapter run `42807947135` remains in progress; persistent-host verification jobs are skipped by design.
+- Current head `fb4cf73488ed07870567d771e040462309db747d`: Runtime Registry run `42808329545` PASS with 210 tests in 4.157s; Environment Validation `42808329930` PASS; OS Compliance `42808329480` PASS; Native Browser Adapter `42808329898` PASS including real Chromium local-fixture acceptance. Persistent-host jobs are skipped by design.
+- A concurrent branch change briefly restored optional external client files; the files and tests were removed again before the validated head. The active registry and execution path remain native-only; duplicate PR #49 is closed as superseded.
 - Local clone/test attempt was NOT RUN because this execution environment could not resolve `github.com`.
 - Do not claim live model invocation, private cross-run durability, persistent browser hosting or unattended autonomy until separately demonstrated.
 
