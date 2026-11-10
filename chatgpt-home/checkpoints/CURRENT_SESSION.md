@@ -25,7 +25,7 @@
 ## Current work split
 
 - **Blind Sniper / ChatGPT:** completed post-merge state reconciliation and exact-head verification; PR #42 and PR #43 are merged.
-- **OpenHands:** completed bounded runtime hardening in PR #43; the PR is merged. Its reported local 158-test result is recorded as agent-reported evidence.
+- **OpenHands:** completed bounded runtime hardening in PR #43; the PR is merged. GitHub Actions job `129564554848` confirms 158 tests in 2.319s (`OK`).
 - **Independent review:** distinct reviewer where required; do not treat implementer self-review as independent approval.
 
 ## Current blockers and limits
@@ -38,6 +38,6 @@
 
 ## Evidence discipline
 
-- The latest independently verified full-suite count remains 130 tests on baseline `031b245bca32fbe91abae1f96e9e394efe50f959`; OpenHands separately reported 158 tests OK on PR #43 head `dcd26f7a`, and post-merge `validate-runtime` passed on `918eb0a`.
-- Post-merge HEAD `918eb0a` has 7/7 successful GitHub check runs; exact contexts are recorded in CURRENT_STATE.md. The 158-test local suite result is attributed to OpenHands' receipt, not a local rerun in this session.
+- PR #43 exact-head GitHub Actions validate-runtime job `129564554848` verified 158 tests in 2.319s (`OK`); post-merge `validate-runtime` passed on `918eb0a` (run `129605579888`). The earlier 130-test baseline is `031b245bca32fbe91abae1f96e9e394efe50f959`.
+- Post-merge HEAD `918eb0a` has 7/7 successful GitHub check runs; exact contexts are recorded in CURRENT_STATE.md. The 158-test result is verified from the GitHub Actions job log; it was not rerun locally in this session.
 - This checkpoint is a technical session summary, not a transcript archive or proof of unattended execution.
