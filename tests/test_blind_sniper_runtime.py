@@ -33,6 +33,7 @@ class RuntimeRegistryTests(unittest.TestCase):
         self.assertEqual(adapters["native_model_runtime"]["status"], "not_implemented_pending_p0")
         self.assertIn("native_task_queue", adapters)
         self.assertIn("agent_browser_cli", adapters)
+        self.assertFalse(any("openhands-conversation-export" in p["skills"] for p in json.loads((ROOT / "chatgpt-home/runtime/profiles.json").read_text())["profiles"]))
         self.assertIn("TinyFish", registry["exclusions"][0])
         skills = json.loads((ROOT / "chatgpt-home/runtime/skills.index.json").read_text())
         self.assertEqual(len(skills["native_skills"]), 14)
