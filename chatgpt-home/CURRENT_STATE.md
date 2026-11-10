@@ -58,7 +58,7 @@
 - Pages deployment run `42716155494` for PR #36 was cancelled after remaining in progress; the subsequent deployment for PR #37's main commit `cf350f7` completed successfully as run `42716484749`.
 
 ## Current open PR inventory
-- At the `cf350f7` main baseline before this documentation refresh, the open PR set was empty: #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34/#35/#36/#37 merged, and #9/#15/#16 closed as superseded (their accepted content shipped via #21 and #19). #13 remains a design-only artifact. This PR is the current state-document refresh; re-read live GitHub state before any merge/closure decision.
+- Historical inventory at the `cf350f7` baseline before PR #42: the open PR set was empty; #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34/#35/#36/#37 were merged and #9/#15/#16 were closed as superseded. PR #42 and PR #43 were subsequently merged on 2026-11-10; PR #44 is the current post-merge state-document refresh. The live GitHub inventory remains authoritative.
 - Superseded branches were deleted 2026-11-09 after merge: `feat/blind-sniper-jobs-e2e-sim-2026-11-09`, `feat/skill-discovery-and-codex-config-2026-11-09`, `fix/pages-nojekyll-2026-11-09`.
 - PR #23 and #24 are merged. PR #17 is merged; older text below that says otherwise is historical.
 - PR #24 had no formal independent review submission. The diff was self-reviewed and all exact-head checks passed; the limitation was recorded in the PR discussion. Do not claim independent approval.
