@@ -68,7 +68,8 @@
         "github",
         "native_model_runtime",
         "native_task_queue",
-        "native_tool_runtime"
+        "native_tool_runtime",
+        "agent_browser_cli"
       ],
       "status": "partial_native_model_and_tool_dispatch_remote_worker_persistence_pending",
       "native_contract_path": "chatgpt-home/workflows/task-lifecycle.md",
@@ -211,7 +212,8 @@
       "adapters": [
         "native_model_runtime",
         "native_task_queue",
-        "native_tool_runtime"
+        "native_tool_runtime",
+        "agent_browser_cli"
       ],
       "status": "implemented_native_provider_and_bounded_tool_runtime_live_provider_unverified",
       "required_capabilities": {
@@ -233,17 +235,19 @@
       "id": "native-browser-interaction",
       "trigger": "native_browser_task",
       "steps": [
-        "resolve_native_browser_tool_allowlist",
-        "validate_task_and_lease",
-        "execute_bounded_agent_browser_action",
-        "persist_action_receipt_to_native_task_ledger",
+        "resolve_task_scoped_native_browser_tool_allowlist",
+        "validate_active_task_lease_and_host_domain_allowlist",
+        "execute_checked_in_browser_adapter_action",
+        "require_host_approval_for_mutating_browser_tools",
+        "persist_tool_and_browser_action_receipts",
         "verify_observed_page_state_and_artifacts"
       ],
       "adapters": [
         "agent_browser_cli",
-        "native_task_queue"
+        "native_task_queue",
+        "native_tool_runtime"
       ],
-      "status": "native_browser_ci_e2e_passed_persistent_host_not_provisioned",
+      "status": "implemented_native_model_browser_tools_ephemeral_host_persistent_host_unverified",
       "required_capabilities": {
         "agent_browser_cli": [
           "allowlisted_http_navigation",
@@ -256,7 +260,7 @@
         ]
       },
       "contract_mode": "registry_only",
-      "registry_only_reason": "Blind Sniper's native agent-browser adapter has CI-backed Chromium E2E evidence; persistent authenticated host and cross-job session recovery remain unverified."
+      "registry_only_reason": "Blind Sniper's native model tool runtime now exposes lease-bound navigation, snapshot, URL, tabs and screenshot actions; click/fill/press require host approval. Chromium local-fixture CI proves the adapter path, but no persistent browser host or cross-job session recovery is provisioned."
     },
     {
       "id": "persistent-browser-host-acceptance",
