@@ -262,7 +262,7 @@ class NativeToolRuntime:
         if not owner_id:
             raise NativeToolError("Tool execution requires the durable task lease owner")
         arguments_digest = _digest(arguments)
-        self.queue.heartbeat(task_id=task.task_id, owner_id=owner_id, lease_seconds=900)
+        self.queue.heartbeat(task_id=task.task_id, owner_id=owner_id, lease_seconds=task.lease_seconds)
         self.queue.reserve_tool_call(
             task_id=task.task_id, owner_id=owner_id, run_id=run_id,
             tool_call_id=tool_call_id, tool_name=name, arguments_digest=arguments_digest,
