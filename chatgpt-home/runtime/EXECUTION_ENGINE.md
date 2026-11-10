@@ -167,12 +167,40 @@ python scripts/blind_sniper_agent_runtime.py \
 Current boundaries:
 - **R1 — IMPLEMENTED / LIVE-UNVERIFIED:** native provider transport, isolated context, identity, timeout, retry, concurrency and redacted receipt contracts; no real provider credentials or round trip verified here.
 - **R2 — PARTIAL:** model dispatch is connected to queue claim/heartbeat/completion/retry; remote cross-run operation still requires the private GitHub CAS store and host-supplied private payload recovery.
-- **R3 — BLOCKED / NOT IMPLEMENTED:** model tool calls and non-empty tool allowlists fail closed until a native task-scoped executor/tool registry exists.
+- **R3 — IMPLEMENTED / HOST-UNVERIFIED:** bounded native model tool-call loop and static task-scoped tool registry exist; live provider-host execution is not verified.
 - **R4 — PARTIAL:** checked-in `agent_browser_cli` adapter has bounded Chromium CI evidence; persistent browser host and cross-job session recovery are not verified.
 - **R5 — BLOCKED:** no unattended poller is activated. The autonomy gate remains closed until a native executor, durable private store, private payload retrieval and notification path are verified.
 
 No OpenHands, Forge, external agent runtime or external browser adapter is part of the execution path.
 A scheduled Actions run is an ephemeral invocation, not a resident worker.
+
+## Native task-scoped tool runtime
+
+`scripts/blind_sniper_tool_runtime.py` is the only model-tool execution boundary. It exposes three
+static function tools; the model cannot supply shell commands, import modules, call arbitrary URLs,
+or name unregistered tools.
+
+| Tool | Permission and scope | Execution contract |
+|---|---|---|
+| `repo.read_file` | Explicit task `allowed_paths`; relative workspace paths only | UTF-8 text, symlink/traversal rejection, 256 KB file cap, redacted/truncated output |
+| `repo.write_file` | `workspace_write` plus an exact file path in `allowed_paths` | Atomic workspace replacement; policy/authority files and `.github/workflows/` are denied |
+| `verification.run` | Fixed command ID only | `runtime-validator` or `unit-tests`; no shell and no model-supplied command arguments |
+
+The provider receives only the current agent's registered tool schemas. The model loop is bounded to
+four tool rounds and eight tool calls per invocation. Task paths and tool permissions are included
+in the queue payload digest. The internal lease owner and lease duration are carried to the tool
+runtime but are not exposed in model context.
+
+Before a tool side effect, the queue appends a `QUEUE_TOOL_STARTED` event guarded by the active,
+unexpired task lease. After execution it appends a terminal `QUEUE_TOOL_COMPLETED` or
+`QUEUE_TOOL_FAILED` event with a result digest. Replayed call IDs and expired leases fail closed.
+Tool output returned to the model is bounded; receipts contain identifiers, status and digests,
+not raw task payloads.
+
+This is contract-tested against deterministic provider responses and a local ledger. A real
+configured model host, private remote CAS tool receipts, and recovery of a tool call interrupted
+between its start and terminal event remain host-level acceptance work. An interrupted start is
+never silently replayed.
 
 ## Verification
 
