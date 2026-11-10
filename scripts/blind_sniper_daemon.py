@@ -121,7 +121,9 @@ class PrivateTaskStore:
         return sorted(self.task_dir.glob("*.json"), key=lambda item: item.name)
 
     def read_task(self, path: Path) -> dict[str, Any]:
-        info = _ensure_private_file(path, max_bytes=MAX_TASK_FILE_BYTES)
+        if path.parent.resolve() != self.task_dir:
+            raise DaemonError("Task file must be directly inside the private task directory")
+        _ensure_private_file(path, max_bytes=MAX_TASK_FILE_BYTES)
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -225,7 +227,8 @@ class BlindSniperDaemon:
         counts["recovered_stale_leases"] = len(recovered.get("recovered", []))
         files = self.store.task_files()
         counts["scanned"] = len(files)
-        for path in files[: self.max_tasks_per_cycle]:
+        counts["attempted"] = 0
+        for path in files:
             try:
                 data = self.store.read_task(path)
                 task_id = data["task_id"]
@@ -236,6 +239,9 @@ class BlindSniperDaemon:
                 if current and current.get("status") == "CLAIMED":
                     counts["skipped"] += 1
                     continue
+                if counts["attempted"] >= self.max_tasks_per_cycle:
+                    break
+                counts["attempted"] += 1
                 spec = AgentSpec(
                     agent_id=data["agent_id"],
                     tool_allowlist=tuple(data.get("tool_allowlist", [])),
@@ -253,7 +259,6 @@ class BlindSniperDaemon:
                     self.queue, self.worker, spec, task,
                     owner_id=self.owner_id, lease_seconds=self.lease_seconds,
                 )
-                self.store.write_receipt(task_id, receipt)
                 status = receipt.get("queue_status", "")
                 if status == "COMPLETED":
                     counts["completed"] += 1
@@ -268,6 +273,7 @@ class BlindSniperDaemon:
                     "event": event, "task_id": task_id, "run_id": receipt.get("run_id", ""),
                     "status": status, "result_digest": receipt.get("output_digest", ""),
                 })
+                self.store.write_receipt(task_id, receipt)
             except Exception as exc:
                 counts["errors"] += 1
                 last_error_type = type(exc).__name__
@@ -310,6 +316,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
+        if not 30 <= args.timeout_seconds <= 900:
+            raise DaemonError("timeout_seconds must be between 30 and 900")
+        if not 1 <= args.max_concurrency <= 8:
+            raise DaemonError("max_concurrency must be between 1 and 8")
+        if not 0 <= args.model_retries <= 3:
+            raise DaemonError("model_retries must be between 0 and 3")
         workspace_root = Path(args.workspace_root).resolve()
         store = PrivateTaskStore(Path(args.state_dir), workspace_root=workspace_root)
         ledger = TaskLedger(store.ledger_path)
