@@ -2,9 +2,10 @@
 
 **Snapshot:** 2026-11-10 — post-merge state after PR #42 and PR #43; code/runtime merge `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`.  
 **Default branch:** `main`  
-**Live main HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4` (PR #43 bounded runtime hardening).  
+**Latest code/runtime HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4` (PR #43 bounded runtime hardening).  
+**Latest docs-state merge:** PR #44 at `3b86f8c9e8de637072f12976eb6906e564c348a5`.  
 **Latest full runtime-validation evidence:** PR #43 head `dcd26f7a` — OpenHands reported 158 Python tests OK; post-merge `validate-runtime` run `129605579888` passed on `918eb0a`. ChatGPT did not rerun the local suite.  
-**Open PRs after merge:** none; PR #42 and PR #43 are merged. PR #44 is this post-merge documentation refresh.  
+**Open PRs after integration:** none; PR #42, PR #43 and PR #44 are merged.  
 **Architecture:** Native-first; runtime is a planner and guarded task state machine, not a system that spawns separate model processes.
 
 ## Current verified system inventory
@@ -18,7 +19,7 @@
 
 ## Live repository checkpoint — 2026-11-10
 
-- `main` HEAD after PR #43 merge: `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`.
+- Code/runtime HEAD after PR #43 merge: `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`; the later documentation-only merge is PR #44 at `3b86f8c9e8de637072f12976eb6906e564c348a5`.
 - Latest commit removes sparse checkout from the read-only executor checkout so fixtures under `.github/workflows` and `.blind-sniper/tasks` are present for tests. Read-only controls remain `contents: read` and `persist-credentials: false`.
 - The post-merge exact HEAD has 7/7 completed successful check runs: `policy-compliance` (2), `validate-runtime`, `validate-environment`, `build`, `report-build-status`, and `deploy`.
 - Live open-PR query after PR #42 and #43 merged: empty. Branch protection remains disabled and is tracked separately.
