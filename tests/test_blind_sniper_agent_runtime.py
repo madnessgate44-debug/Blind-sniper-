@@ -102,7 +102,7 @@ class NativeModelInvokerTests(unittest.TestCase):
         responses = [
             {"choices": [{"message": {"tool_calls": [{
                 "id": "call-1", "type": "function",
-                "function": {"name": "repo.read_file", "arguments": "{\\"path\\":\\"src/sample.py\\"}"},
+                "function": {"name": "repo.read_file", "arguments": json.dumps({"path": "src/sample.py"})},
             }]}, "finish_reason": "tool_calls"}]},
             {"choices": [{"message": {"content": "Read completed"}, "finish_reason": "stop"}]},
         ]
