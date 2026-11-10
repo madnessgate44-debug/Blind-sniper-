@@ -2,10 +2,10 @@
 
 **Snapshot:** 2026-11-10 — post-merge reconciliation after PR #42 and PR #43 merged.
 **Default branch:** `main`
-**Live main HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4` (PR #43 runtime hardening merge).
+**Latest code/runtime HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4` (PR #43 runtime hardening merge).
 **Latest full runtime-validation evidence:** PR #43 exact head `dcd26f7a` — OpenHands reported 158 Python tests OK; post-merge `validate-runtime` on `918eb0a` passed (run `129605579888`). The 158-test local result is agent-reported, not a local rerun by ChatGPT.
 **Latest merged main checks:** 7/7 GitHub check runs completed successfully on `918eb0a`: `policy-compliance` (2), `validate-runtime`, `validate-environment`, `build`, `report-build-status`, and `deploy`. PR #43's own head also passed browser-acceptance; its two persistent-host checks were skipped, not failed.
-**Open PRs after merge:** none. PR #42 (documentation reconciliation) and PR #43 (bounded runtime hardening) are both merged; PR #44 is this post-merge documentation refresh.
+**Latest docs-state merge:** PR #44 at `3b86f8c9e8de637072f12976eb6906e564c348a5`. PRs #42, #43 and #44 are merged; the live open-PR inventory is empty.
 **Branch protection:** `main` reports `protected=false`; unresolved governance-hardening item.
 **Authority:** Engineering Execution OS v2.3 plus active standing Owner delegation, recorded in `chatgpt-home/AUTHORITY_DELEGATION.md` and mirrored in `chatgpt-home/runtime/authority.json`.
 **Audit artifact:** `chatgpt-home/AGENT_OS_INTEGRATION_AUDIT.md` (BS-OS-001 static audit) and `chatgpt-home/BS-COMPLETION_AUDIT_AND_OPENAI_REVIEW.md` (completion audit).
