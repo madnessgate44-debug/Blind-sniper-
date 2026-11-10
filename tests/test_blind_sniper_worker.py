@@ -36,6 +36,14 @@ class DurableQueueTests(unittest.TestCase):
         # Nothing else is claimable, and a competing worker cannot take T1.
         self.assertIsNone(self.queue.claim(owner_id="w2", lease_seconds=60, now=T0))
 
+    def test_claim_can_target_a_specific_task_without_claiming_older_work(self):
+        self.queue.enqueue(task_id="T-OLDER", kind="model_task", payload_digest="d1", now=T0)
+        self.queue.enqueue(task_id="T-TARGET", kind="model_task", payload_digest="d2", now=T0)
+        claim = self.queue.claim(owner_id="w1", lease_seconds=60, task_id="T-TARGET", now=T0)
+        self.assertEqual(claim["task_id"], "T-TARGET")
+        self.assertEqual(self.queue.status("T-OLDER")["status"], "PENDING")
+        self.assertEqual(self.queue.status("T-TARGET")["status"], "CLAIMED")
+
     def test_enqueue_is_idempotent_and_rejects_duplicates(self):
         self.queue.enqueue(task_id="T1", kind="model_task", payload_digest="d1", now=T0)
         with self.assertRaises(QueueError):
