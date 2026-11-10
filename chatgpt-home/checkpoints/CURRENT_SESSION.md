@@ -37,6 +37,6 @@
 
 ## Evidence discipline
 
-- The latest runtime test-count evidence remains 130 tests on baseline `031b245bca32fbe91abae1f96e9e394efe50f959`.
+- The latest independently verified full-suite count remains 130 tests on baseline `031b245bca32fbe91abae1f96e9e394efe50f959`; OpenHands separately reported 158 tests OK on PR #43 head `dcd26f7a`, and post-merge `validate-runtime` passed on `918eb0a`.
 - Post-merge HEAD `918eb0a` has 7/7 successful GitHub check runs; exact contexts are recorded in CURRENT_STATE.md. The 158-test local suite result is attributed to OpenHands' receipt, not a local rerun in this session.
 - This checkpoint is a technical session summary, not a transcript archive or proof of unattended execution.
