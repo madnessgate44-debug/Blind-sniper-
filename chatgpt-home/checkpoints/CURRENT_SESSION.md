@@ -15,8 +15,8 @@
 |---|---|
 | Default branch | `main` |
 | HEAD | `ada63e11d3047a3560565a4bcaa72c6768e4ae34` |
-| Open pull requests | 0 |
-| HEAD check runs | 7/7 completed successfully |
+| Open pull requests | #42 and #43 open at this correction |
+| HEAD check runs | 8/8 completed successfully; exact contexts listed in CURRENT_STATE.md |
 | Main branch protection | Disabled; separately tracked |
 | OpenHands direct API from this session | Not available |
 | Verified coordination fallback | Brain issue #292 GitHub comments |
@@ -38,5 +38,5 @@
 ## Evidence discipline
 
 - The latest runtime test-count evidence remains 130 tests on baseline `031b245bca32fbe91abae1f96e9e394efe50f959`.
-- Newer HEAD `ada63e11` has 7/7 successful GitHub check runs; do not claim the same exact test count unless the corresponding workflow log is inspected.
+- Newer HEAD `ada63e11` has 8/8 successful GitHub check runs; the exact contexts are recorded in CURRENT_STATE.md. Do not claim the same exact test count unless the corresponding workflow log is inspected.
 - This checkpoint is a technical session summary, not a transcript archive or proof of unattended execution.
