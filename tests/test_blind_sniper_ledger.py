@@ -227,6 +227,74 @@ class TaskLedgerTests(unittest.TestCase):
                 idempotency_key="closed:claim",
             )
 
+    def _executing_compact_task(self, task_id: str, owner_id: str, now: datetime):
+        """Build the canonical compact-state ledger the native runtime writes."""
+        import blind_sniper_runtime as runtime
+        plan = runtime.build_plan({"task_id": task_id, "objective": "Research a technical question"})
+        state = runtime.create_task_state(plan)
+        runtime.persist_task_state(self.ledger, state, event_type="TASK_CREATED", idempotency_key=f"{task_id}:created")
+        for status in ("INSPECTING", "SPECIFIED", "PLANNED"):
+            state = runtime.transition_task(state, status)
+            runtime.persist_task_state(self.ledger, state, event_type="TASK_TRANSITIONED", idempotency_key=f"{task_id}:{status}")
+        self.ledger.claim_task(
+            task_id=task_id, owner_id=owner_id, lease_seconds=300,
+            idempotency_key=f"{task_id}:claim", now=now,
+        )
+        state = runtime.transition_task(state, "EXECUTING")
+        state["implementer_id"] = owner_id
+        self.ledger.append_transition_if_lease(
+            task_id=task_id, owner_id=owner_id,
+            payload=runtime.build_state_event_payload(self.ledger, state),
+            idempotency_key=f"{task_id}:execute", now=now,
+        )
+        return state
+
+    def test_browser_reservation_reads_compact_authoritative_state(self):
+        # Regression: compact state writes have no legacy "state" field, so a
+        # reservation must not fail closed on an EXECUTING compact task.
+        now = datetime(2026, 11, 8, 15, 0, tzinfo=timezone.utc)
+        self._executing_compact_task("BS-LEASE-009", "runner-a", now)
+        result = self.ledger.reserve_browser_action_if_lease(
+            task_id="BS-LEASE-009", owner_id="runner-a",
+            payload={"owner_id": "runner-a", "run_id": "r", "session_id": "s", "step_id": "st", "action": "snapshot"},
+            idempotency_key="browser:r:s:st:started", min_remaining_seconds=30, now=now,
+        )
+        self.assertTrue(result["reserved"])
+
+    def test_browser_reservation_blocked_after_compact_terminal_transition(self):
+        # Regression: a terminal compact transition must revoke reservation rights
+        # even when an earlier legacy full snapshot still says EXECUTING.
+        import blind_sniper_runtime as runtime
+        now = datetime(2026, 11, 8, 15, 0, tzinfo=timezone.utc)
+        state = self._executing_compact_task("BS-LEASE-010", "runner-a", now)
+        closed = dict(state)
+        closed["status"] = "CLOSED"
+        runtime.persist_task_state(self.ledger, closed, event_type="TASK_TRANSITIONED", idempotency_key="BS-LEASE-010:closed")
+        with self.assertRaisesRegex(LedgerError, "authoritative task status EXECUTING"):
+            self.ledger.reserve_browser_action_if_lease(
+                task_id="BS-LEASE-010", owner_id="runner-a",
+                payload={"owner_id": "runner-a", "run_id": "r", "session_id": "s", "step_id": "st", "action": "snapshot"},
+                idempotency_key="browser:r:s:st:started", min_remaining_seconds=30, now=now,
+            )
+
+    def test_browser_reservation_rejects_corrupt_compact_delta(self):
+        import blind_sniper_runtime as runtime
+        now = datetime(2026, 11, 8, 15, 0, tzinfo=timezone.utc)
+        self._executing_compact_task("BS-LEASE-011", "runner-a", now)
+        # Tamper the last event's payload state_delta while keeping the chain valid
+        # is not possible without breaking hashes, so craft a standalone corrupt event.
+        self.ledger.append(
+            task_id="BS-LEASE-011", event_type="TASK_TRANSITIONED",
+            payload={"state_delta": {"set": {"status": "EXECUTING"}}, "previous_state_hash": "deadbeef", "state_hash": "deadbeef"},
+            idempotency_key="BS-LEASE-011:corrupt",
+        )
+        with self.assertRaisesRegex(LedgerError, "predecessor hash mismatch"):
+            self.ledger.reserve_browser_action_if_lease(
+                task_id="BS-LEASE-011", owner_id="runner-a",
+                payload={"owner_id": "runner-a", "run_id": "r", "session_id": "s", "step_id": "st", "action": "snapshot"},
+                idempotency_key="browser:r:s:st:started", min_remaining_seconds=30, now=now,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

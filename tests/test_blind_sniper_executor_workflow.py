@@ -58,13 +58,19 @@ class ExecutorWorkflowContractTests(unittest.TestCase):
         self.assertIn("actions/download-artifact@v4", self.text)
         self.assertIn("ops/receipts/", self.text)
 
-    def test_checkout_is_read_only(self):
+    def test_checkout_is_read_only_full_tree(self):
         # Read-only is enforced by the job's contents:read permission plus
-        # persist-credentials:false, not by sparse-checkout. Sparse checkout was
-        # removed because the test suite reads .github/workflows and .blind-sniper.
+        # persist-credentials:false. Sparse checkout must be absent: the
+        # `unit-tests` command reads the whole tree, including chatgpt-home/config
+        # and tests/fixtures, which a narrow sparse checkout would omit.
         self.assertIn("persist-credentials: false", self.text)
         self.assertIn("contents: read", self.text)
         self.assertNotIn("sparse-checkout:", self.text)
+
+    def test_checkout_does_not_restrict_paths_for_unit_tests(self):
+        # Regression: the allowlisted `unit-tests` command must be able to read
+        # every path its test suite requires (chatgpt-home/config, tests/fixtures).
+        self.assertNotIn("sparse-checkout-cone-mode", self.text)
 
     def test_publish_handles_stripped_artifact_path(self):
         # upload-artifact@v4 strips the common parent, so publish must find the

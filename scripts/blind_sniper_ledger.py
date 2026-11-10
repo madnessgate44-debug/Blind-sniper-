@@ -37,6 +37,41 @@ def _digest(value: dict[str, Any]) -> str:
     return hashlib.sha256(_canonical(value)).hexdigest()
 
 
+def _authoritative_task_state(rows: list[dict[str, Any]], task_id: str) -> dict[str, Any] | None:
+    """Reconstruct the current task state core by replaying this task's events.
+
+    Mirrors ``runtime.recover_task_state`` so that lease guards read the
+    authoritative status/implementer from compact state snapshots and deltas,
+    not merely from a legacy full-snapshot ``state`` field that compact writes
+    never update. Legacy full snapshots are still accepted for recovery.
+    """
+    core: dict[str, Any] | None = None
+    for row in rows:
+        if row.get("task_id") != task_id:
+            continue
+        payload = row.get("payload", {})
+        legacy = payload.get("state")
+        if isinstance(legacy, dict):
+            core = {key: value for key, value in legacy.items() if key != "events"}
+            continue
+        snapshot = payload.get("state_snapshot")
+        if isinstance(snapshot, dict):
+            if _digest(snapshot) != payload.get("state_hash"):
+                raise LedgerError("Task state snapshot hash mismatch")
+            core = snapshot
+        elif isinstance(payload.get("state_delta"), dict):
+            if core is None or _digest(core) != payload.get("previous_state_hash"):
+                raise LedgerError("Task state delta predecessor hash mismatch")
+            delta = payload["state_delta"]
+            core = dict(core)
+            core.update(delta.get("set", {}))
+            for key in delta.get("remove", []):
+                core.pop(key, None)
+            if _digest(core) != payload.get("state_hash"):
+                raise LedgerError("Task state delta hash mismatch")
+    return core
+
+
 class TaskLedger:
     """Hash-chained JSONL event store with process locking and idempotent writes."""
 
@@ -201,14 +236,10 @@ class TaskLedger:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
             try:
                 rows = self._read_unlocked()
-                snapshots = [
-                    row.get("payload", {}).get("state")
-                    for row in rows
-                    if row.get("task_id") == task_id and isinstance(row.get("payload", {}).get("state"), dict)
-                ]
-                if not snapshots or snapshots[-1].get("status") != "EXECUTING":
+                state = _authoritative_task_state(rows, task_id)
+                if not isinstance(state, dict) or state.get("status") != "EXECUTING":
                     raise LedgerError("Browser reservation requires authoritative task status EXECUTING")
-                if snapshots[-1].get("implementer_id") != owner_id:
+                if state.get("implementer_id") != owner_id:
                     raise LedgerError("Browser reservation owner does not match executing implementer")
                 active = self._active_lease(rows, task_id, instant)
                 if not active or active.get("owner_id") != owner_id:
