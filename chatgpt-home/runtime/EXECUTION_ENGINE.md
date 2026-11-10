@@ -144,6 +144,22 @@ Required host environment:
 - `BLIND_SNIPER_MODEL_API_KEY` — optional provider credential, read only from the environment.
 - `BLIND_SNIPER_MODEL_API_KEY_HEADER` — optional auth header override; defaults to Authorization.
 
+### Durable queue, autonomy and optional external clients
+
+- **R2 — durable queue.** `scripts/blind_sniper_worker.py` implements
+  enqueue/claim/lease/heartbeat/cancel/recovery/reconciliation over the native ledger via the atomic
+  `append_guarded` primitive. It is a protocol, not a persistent process; an ephemeral Actions job is
+  never called a persistent worker. Only payload digests are stored.
+- **R5 — continuous autonomy.** `scripts/blind_sniper_autonomy.py` runs one bounded pass and gates
+  unattended activation behind an explicit prerequisite check. No scheduler is created and no
+  schedule is activated.
+- **R3/R4 — optional external clients (unregistered, disabled).**
+  `scripts/blind_sniper_openhands_cloud.py` (OpenHands Cloud V1) and
+  `scripts/blind_sniper_forge_mcp.py` (Forge Streamable HTTP MCP) are contract-tested optional
+  modules. They are NOT in the registry, are not wired into any profile or workflow, and stay
+  disabled unless explicitly configured, so native paths are unaffected. Enabling either is an
+  Owner decision.
+
 No credentials belong in task files, command arguments, logs, artifacts or this public repository.
 A live provider call is NOT VERIFIED until a host with an approved no-card/no-paid provider
 configuration runs the real boundary and retains a redacted correlated receipt.
