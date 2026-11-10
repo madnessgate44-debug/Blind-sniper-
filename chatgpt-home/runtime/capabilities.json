@@ -150,36 +150,6 @@
       ]
     },
     {
-      "id": "openhands_cloud_api",
-      "kind": "agent_execution_api",
-      "status": "partial_contract_implemented_no_live_round_trip",
-      "tools": [
-        "scripts/blind_sniper_openhands_cloud.py",
-        "scripts/blind_sniper_model_worker.py"
-      ],
-      "capabilities": [
-        "create_conversation",
-        "poll_start_task",
-        "conversation_status",
-        "messages_and_events",
-        "best_effort_cancel",
-        "bearer_auth_from_env",
-        "secret_redaction",
-        "idempotent_start"
-      ],
-      "limitations": [
-        "Optional adapter, not a dependency: not wired into any profile or workflow and not invoked by the native runtime. Blind Sniper stays native-first; enabling this is an Owner decision.",
-        "Implements the documented V1 surface with bearer auth read from OPENHANDS_CLOUD_API_KEY; the token is never printed, logged or committed.",
-        "Contract-tested with a fake HTTP transport only; no live authenticated round trip has been performed, so the adapter remains PARTIAL.",
-        "Cancellation is best-effort: the endpoint returns supported=false on 404/405/501."
-      ],
-      "evidence": {
-        "contract_tests": "tests/test_blind_sniper_openhands_cloud.py",
-        "model_worker_tests": "tests/test_blind_sniper_model_worker.py"
-      },
-      "dependency_class": "optional_not_required"
-    },
-    {
       "id": "durable_queue",
       "kind": "durable_task_queue",
       "status": "partial_protocol_implemented_remote_unverified",
@@ -207,34 +177,6 @@
         "queue_tests": "tests/test_blind_sniper_worker.py",
         "autonomy_tests": "tests/test_blind_sniper_autonomy.py"
       }
-    },
-    {
-      "id": "forge_mcp_client",
-      "kind": "authenticated_mcp_client",
-      "status": "blocked_no_durable_endpoint_or_auth",
-      "tools": [
-        "scripts/blind_sniper_forge_mcp.py"
-      ],
-      "capabilities": [
-        "streamable_http_mcp_transport",
-        "initialize",
-        "tools_list",
-        "tools_call",
-        "tool_allowlist",
-        "browser_write_approval_gate",
-        "audit_receipts",
-        "secret_redaction"
-      ],
-      "limitations": [
-        "Optional adapter, not a dependency: not wired into any profile or workflow and not invoked by the native runtime. Blind Sniper stays native-first; enabling this is an Owner decision.",
-        "Implements the MCP Streamable HTTP protocol (JSON-RPC 2.0) but stays disabled unless a durable HTTPS endpoint and auth token are configured.",
-        "Refuses ephemeral sandbox hosts by default; browser write tools require an explicit host approval reference.",
-        "No direct ChatGPT connector is registered; contract-tested only, so this remains BLOCKED until a real round trip is proven."
-      ],
-      "evidence": {
-        "contract_tests": "tests/test_blind_sniper_forge_mcp.py"
-      },
-      "dependency_class": "optional_not_required"
     },
     {
       "id": "ephemeral_execution",
@@ -317,32 +259,39 @@
     {
       "id": "native_model_runtime",
       "kind": "native_model_agent_orchestration",
-      "status": "not_implemented_pending_p0",
+      "status": "implemented_native_provider_transport_and_queue_dispatch_not_live_verified",
       "tools": [
-        "scripts/blind_sniper_runtime.py",
+        "scripts/blind_sniper_model_worker.py",
+        "scripts/blind_sniper_agent_runtime.py",
         "chatgpt-home/runtime/agents.json"
       ],
       "capabilities": [
-        "independent_model_invocation",
+        "independent_model_invocation_boundary",
         "fresh_bounded_context",
-        "agent_run_identity",
-        "tool_and_permission_allowlists",
+        "distinct_agent_and_run_identity",
+        "tool_and_permission_allowlist_enforcement",
         "bounded_concurrency",
-        "timeouts_and_retries",
-        "correlated_run_receipts"
+        "provider_transport_timeout",
+        "bounded_retries",
+        "redacted_correlated_receipts",
+        "durable_queue_claim_and_completion_integration"
       ],
       "limitations": [
-        "Current runtime selects agent role contracts but does not spawn independent model processes.",
-        "Implement and test the provider invocation boundary inside Blind Sniper; no external agent runtime is permitted."
+        "OpenAI-compatible HTTPS provider transport is implemented inside Blind Sniper; no provider is hard-coded.",
+        "Host must configure BLIND_SNIPER_MODEL_BASE_URL and BLIND_SNIPER_MODEL_NAME; BLIND_SNIPER_MODEL_API_KEY is optional and read only from the environment.",
+        "No live provider credentials or round trip are available in this repository validation; real model invocation remains NOT LIVE-VERIFIED.",
+        "Tool calls and non-empty tool allowlists fail closed until the native executor/tool runtime is connected.",
+        "Queue dispatch stores only a payload digest; task payload and output receipt must be supplied/stored by a private host path."
       ]
     },
     {
       "id": "native_task_queue",
       "kind": "native_durable_task_state_and_recovery",
-      "status": "partial_local_ledger_cross_run_recovery_incomplete",
+      "status": "partial_native_model_dispatch_local_ledger_remote_private_cas_unverified",
       "tools": [
         "scripts/blind_sniper_ledger.py",
-        "scripts/blind_sniper_runtime.py"
+        "scripts/blind_sniper_worker.py",
+        "scripts/blind_sniper_agent_runtime.py"
       ],
       "capabilities": [
         "append_only_event_ledger",
@@ -350,11 +299,17 @@
         "lease_claim_renew_release",
         "local_process_locking",
         "github_contents_compare_and_swap_for_private_target",
-        "lease_bound_browser_action_receipts"
+        "lease_bound_browser_action_receipts",
+        "native_model_dispatch_claim",
+        "lease_heartbeat_before_and_after_invocation",
+        "result_digest_completion",
+        "bounded_failure_retry"
       ],
       "limitations": [
-        "Full cancellation, heartbeat supervision, stale-lease reclamation and interruption-safe cross-run worker recovery are not yet verified end to end.",
-        "Never store private task payloads or personal continuity in this public repository."
+        "Native model dispatch now enqueues or validates a digest-bound task, claims a lease, heartbeats, invokes one bounded model task and records completion or retry.",
+        "Queue state is durable only to the configured ledger; cross-run durability requires the private GitHub Contents CAS target and a host-provided token.",
+        "The task payload and output artifact remain outside the public repository and must be supplied by the private host on each retry.",
+        "No persistent worker, automatic payload retrieval, or unattended queue poller is established."
       ]
     }
   ],
