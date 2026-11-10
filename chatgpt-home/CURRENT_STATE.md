@@ -1,11 +1,11 @@
 # Blind Sniper — Current Technical State
 
-**Snapshot:** 2026-11-10 — live GitHub state rechecked after commit `ada63e11d3047a3560565a4bcaa72c6768e4ae34`.
+**Snapshot:** 2026-11-10 — post-merge reconciliation after PR #42 and PR #43 merged.
 **Default branch:** `main`
-**Live main HEAD:** `ada63e11d3047a3560565a4bcaa72c6768e4ae34` (executor workflow full-checkout fix).
-**Latest full runtime-validation baseline:** `031b245bca32fbe91abae1f96e9e394efe50f959` — 130 Python tests OK; runtime registry and skill catalog validation PASS.
-**Latest live HEAD checks:** 8/8 GitHub check runs completed successfully: `policy-compliance` (2), `validate-runtime`, `build`, `Execute allowlisted command`, `report-build-status`, `deploy`, and `Publish receipt to receipts/main`. This exact-HEAD set does not include Environment Validation or OS Compliance. No fresh 130-test count is claimed for `ada63e11`.
-**Open PRs at this refresh:** #42 (this documentation reconciliation) and #43 (bounded runtime hardening); both were open when this snapshot was corrected. Re-query before later merge/closure decisions.
+**Live main HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4` (PR #43 runtime hardening merge).
+**Latest full runtime-validation evidence:** PR #43 exact head `dcd26f7a` — OpenHands reported 158 Python tests OK; post-merge `validate-runtime` on `918eb0a` passed (run `129605579888`). The 158-test local result is agent-reported, not a local rerun by ChatGPT.
+**Latest merged main checks:** 7/7 GitHub check runs completed successfully on `918eb0a`: `policy-compliance` (2), `validate-runtime`, `validate-environment`, `build`, `report-build-status`, and `deploy`. PR #43's own head also passed browser-acceptance; its two persistent-host checks were skipped, not failed.
+**Open PRs after merge:** none. PR #42 (documentation reconciliation) and PR #43 (bounded runtime hardening) are both merged; PR #44 is this post-merge documentation refresh.
 **Branch protection:** `main` reports `protected=false`; unresolved governance-hardening item.
 **Authority:** Engineering Execution OS v2.3 plus active standing Owner delegation, recorded in `chatgpt-home/AUTHORITY_DELEGATION.md` and mirrored in `chatgpt-home/runtime/authority.json`.
 **Audit artifact:** `chatgpt-home/AGENT_OS_INTEGRATION_AUDIT.md` (BS-OS-001 static audit) and `chatgpt-home/BS-COMPLETION_AUDIT_AND_OPENAI_REVIEW.md` (completion audit).
@@ -58,7 +58,7 @@
 - Pages deployment run `42716155494` for PR #36 was cancelled after remaining in progress; the subsequent deployment for PR #37's main commit `cf350f7` completed successfully as run `42716484749`.
 
 ## Current open PR inventory
-- At the `cf350f7` main baseline before this documentation refresh, the open PR set was empty: #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34/#35/#36/#37 merged, and #9/#15/#16 closed as superseded (their accepted content shipped via #21 and #19). #13 remains a design-only artifact. This PR is the current state-document refresh; re-read live GitHub state before any merge/closure decision.
+- Historical inventory at the `cf350f7` baseline before PR #42: the open PR set was empty; #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34/#35/#36/#37 were merged and #9/#15/#16 were closed as superseded. PR #42 and PR #43 were subsequently merged on 2026-11-10; PR #44 is the current post-merge state-document refresh. The live GitHub inventory remains authoritative.
 - Superseded branches were deleted 2026-11-09 after merge: `feat/blind-sniper-jobs-e2e-sim-2026-11-09`, `feat/skill-discovery-and-codex-config-2026-11-09`, `fix/pages-nojekyll-2026-11-09`.
 - PR #23 and #24 are merged. PR #17 is merged; older text below that says otherwise is historical.
 - PR #24 had no formal independent review submission. The diff was self-reviewed and all exact-head checks passed; the limitation was recorded in the PR discussion. Do not claim independent approval.
@@ -107,14 +107,24 @@
 - PR #37 merged at `cf350f7ee5b25bfd0541549e93538e9186430051`; post-merge Runtime Registry `42716484899`, Environment Validation `42716484975`, OS Compliance `42716484935` and Pages deployment `42716484749` all succeeded. The live open PR set is empty. Main branch protection remains `protected=false`.
 - Private continuity scaffold remains at `madnessgate44-debug/G/blind-sniper-continuity/` (private repository, five non-empty files); it is not a transcript archive. Transcript import and recurring conversation sync remain BLOCKED by the unavailable authorized export/source and scheduled-task limit.
 
-## Live reconciliation — 2026-11-10 (HEAD ada63e11)
+## Historical live reconciliation — 2026-11-10 (pre-PR #42/#43 merge, HEAD ada63e11)
 
 - Live GitHub branch query confirms `main` HEAD is `ada63e11d3047a3560565a4bcaa72c6768e4ae34`; commit message: `fix(executor): full read-only checkout so run-tests can read all fixtures (#41)`.
 - The change removes sparse checkout from `.github/workflows/blind-sniper-executor.yml` because the test suite reads workflow and task fixtures outside the former sparse paths. Read-only checkout remains enforced by `contents: read` and `persist-credentials: false`.
 - Commit check-runs query: 8 total, all completed with conclusion `success`: `policy-compliance` (2), `validate-runtime`, `build`, `Execute allowlisted command`, `report-build-status`, `deploy`, and `Publish receipt to receipts/main`. Environment Validation and OS Compliance are not present on this exact HEAD. No new exact test-count claim is made for this HEAD.
-- Live open-PR query at this correction lists PRs #42 and #43. Main remains unprotected (`protected=false`).
+- After PR #42 and #43 merged, the live open-PR query returned an empty list. Main remains unprotected (`protected=false`).
 - The prior header and historical verification entries that cited `cf350f7` are superseded by this live checkpoint; historical entries remain for provenance.
 - This state refresh does not change runtime code, branch protection, permissions, secrets, or private continuity.
+
+## Post-merge reconciliation — 2026-11-10 (PR #42 and PR #43)
+
+- PR #42 documentation reconciliation merged at `69ff80afd02ca326b2cad588aff3227ac67f53e0`.
+- PR #43 bounded runtime hardening merged at `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`.
+- Post-merge `main` check-runs API returned 7/7 completed successes: policy-compliance (2), validate-runtime, validate-environment, build, report-build-status and deploy. Runs: `129605738187`, `129605649799`, `129605649782`, `129605602051`, `129605580456`, `129605580217`, `129605579888`.
+- PR #43 head CI had 6 successful checks and 2 skipped persistent-host checks; no persistent-host capability is claimed. OpenHands reported 158 local unit tests OK; ChatGPT did not rerun that local command.
+- The corrected PR #42 head passed 5/5 documentation CI checks before merge.
+- Open PR inventory after both merges: empty. Branch protection remains disabled and was explicitly excluded from this work.
+- Durable cross-run queue/worker, heartbeat, cancellation and stale-worker supervision remain unimplemented; BS-RELEASE-001 acceptance remains outstanding. No manual production deployment was performed.
 
 ## Historical record
 
