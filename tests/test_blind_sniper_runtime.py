@@ -68,6 +68,8 @@ class RuntimeRegistryTests(unittest.TestCase):
         workflow_adapters = {w["id"]: set(w.get("adapters", [])) for w in workflows["workflows"]}
         self.assertIn("native_model_runtime", workflow_adapters["native-model-agent-execution"])
         self.assertIn("native_tool_runtime", workflow_adapters["native-model-agent-execution"])
+        self.assertIn("agent_browser_cli", workflow_adapters["native-model-agent-execution"])
+        self.assertIn("native_tool_runtime", workflow_adapters["native-browser-interaction"])
         self.assertIn("agent_browser_cli", workflow_adapters["native-browser-interaction"])
         self.assertFalse(any({"forge_browser_mcp", "openhands_dispatch"} & used for used in workflow_adapters.values()))
         self.assertEqual(sum(w.get("contract_mode") == "native_contract" for w in workflows["workflows"]), 11)
