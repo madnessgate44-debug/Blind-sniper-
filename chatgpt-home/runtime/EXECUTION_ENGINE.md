@@ -131,44 +131,48 @@ The hash chain detects edits but is not a signed tamper-proof audit log. GitHub 
 - Browser, persistent background execution and generic shell execution remain unavailable unless a real host adapter is registered and verified.
 - This runtime does not itself perform merge, deployment, secret mutation, permission change, paid provisioning or destructive actions. The conversational host may perform delegated repository actions through its own authorized tools; do not conflate the two execution paths.
 
-## Autonomous execution tranche (R1–R5)
+## Native model invocation and durable task dispatch
 
-The registry planner above is unchanged. This tranche adds separate, independently invoked
-execution components. Blind Sniper stays native-first and self-contained: the durable queue, the
-model-worker contract and the autonomy runner are native, while the OpenHands and Forge clients are
-**optional adapters, not dependencies** — they are not wired into any profile or workflow and stay
-disabled until the Owner configures them. None of the components claims a live external integration
-until a real round trip is recorded.
+Blind Sniper owns the model invocation boundary in `scripts/blind_sniper_model_worker.py`.
+`NativeModelInvoker` sends one fresh, bounded OpenAI-compatible chat-completions request per
+agent task. It does not create an external agent session, share conversation history, or delegate
+orchestration. The host configures the provider; no vendor or paid service is hard-coded.
 
-- **R1 — model workers.** `scripts/blind_sniper_model_worker.py` runs separate model agents with
-  distinct agent IDs, a mandatory fresh context, explicit tool/permission allowlists, correlated
-  task IDs, bounded concurrency, a per-attempt timeout, bounded retries and one redacted receipt
-  per task. The injected invoker is the execution boundary; `OpenHandsCloudInvoker` is an optional
-  backend (one fresh conversation per task) that must be explicitly configured. A selected agent
-  contract is not execution — a receipt exists only after the invoker returns.
-- **R2 — durable queue.** `scripts/blind_sniper_worker.py` implements
-  enqueue/claim/lease/heartbeat/cancel/recovery/reconciliation over the native ledger via the new
-  atomic `append_guarded` primitive. It is durable across runs when the ledger is the private
-  GitHub Contents CAS store. It is a protocol, not a persistent process; an ephemeral Actions job
-  is never called a persistent worker. Only payload digests are stored.
-- **R3 — OpenHands Cloud V1 (optional).** `scripts/blind_sniper_openhands_cloud.py` (see
-  `ADAPTER_CONTRACT.md`). PARTIAL until a live authenticated round trip is proven.
-- **R4 — Forge MCP (optional).** `scripts/blind_sniper_forge_mcp.py` (see `ADAPTER_CONTRACT.md`).
-  BLOCKED until a durable endpoint and auth are configured.
-- **R5 — continuous autonomy.** `scripts/blind_sniper_autonomy.py` runs one bounded pass and gates
-  unattended activation behind an explicit prerequisite check. No scheduler is created and no
-  schedule is activated. `scripts/blind_sniper_redact.py` is the shared redaction helper.
+Required host environment:
+- `BLIND_SNIPER_MODEL_BASE_URL` — HTTPS OpenAI-compatible API base (loopback HTTP is allowed for local testing).
+- `BLIND_SNIPER_MODEL_NAME` — model identifier.
+- `BLIND_SNIPER_MODEL_API_KEY` — optional provider credential, read only from the environment.
+- `BLIND_SNIPER_MODEL_API_KEY_HEADER` — optional auth header override; defaults to Authorization.
 
-Run the new tests with:
+No credentials belong in task files, command arguments, logs, artifacts or this public repository.
+A live provider call is NOT VERIFIED until a host with an approved no-card/no-paid provider
+configuration runs the real boundary and retains a redacted correlated receipt.
+
+`scripts/blind_sniper_agent_runtime.py` connects a single model invocation to
+`DurableQueue`: validate/enqueue a digest-bound task, claim a lease, heartbeat, invoke the model,
+then commit a result digest or schedule a bounded retry. The queue stores only the payload digest;
+the task JSON and output receipt must remain in a private host path and be supplied again on retry.
+The CLI rejects task and receipt paths inside this public repository.
+
+Example (run only on a configured private host):
 
 ```bash
-python -m unittest discover -s tests -p 'test_blind_sniper_worker.py' -v
-python -m unittest discover -s tests -p 'test_blind_sniper_model_worker.py' -v
-python -m unittest discover -s tests -p 'test_blind_sniper_autonomy.py' -v
-python -m unittest discover -s tests -p 'test_blind_sniper_openhands_cloud.py' -v
-python -m unittest discover -s tests -p 'test_blind_sniper_forge_mcp.py' -v
+python scripts/blind_sniper_agent_runtime.py \
+  --task-file /private/blind-sniper/tasks/task.json \
+  --output /private/blind-sniper/receipts/task-run.json \
+  --github-ledger --github-owner OWNER --github-repo PRIVATE_REPO \
+  --github-branch main --github-path blind-sniper-continuity/QUEUE.jsonl
 ```
 
+Current boundaries:
+- **R1 — IMPLEMENTED / LIVE-UNVERIFIED:** native provider transport, isolated context, identity, timeout, retry, concurrency and redacted receipt contracts; no real provider credentials or round trip verified here.
+- **R2 — PARTIAL:** model dispatch is connected to queue claim/heartbeat/completion/retry; remote cross-run operation still requires the private GitHub CAS store and host-supplied private payload recovery.
+- **R3 — BLOCKED / NOT IMPLEMENTED:** model tool calls and non-empty tool allowlists fail closed until a native task-scoped executor/tool registry exists.
+- **R4 — PARTIAL:** checked-in `agent_browser_cli` adapter has bounded Chromium CI evidence; persistent browser host and cross-job session recovery are not verified.
+- **R5 — BLOCKED:** no unattended poller is activated. The autonomy gate remains closed until a native executor, durable private store, private payload retrieval and notification path are verified.
+
+No OpenHands, Forge, external agent runtime or external browser adapter is part of the execution path.
+A scheduled Actions run is an ephemeral invocation, not a resident worker.
 
 ## Verification
 
