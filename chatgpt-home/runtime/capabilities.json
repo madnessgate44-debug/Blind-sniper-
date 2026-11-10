@@ -352,6 +352,34 @@
         "The task payload and output artifact remain outside the public repository and must be supplied by the private host on each retry.",
         "No persistent worker, automatic private payload retrieval, or unattended queue poller is established."
       ]
+    },
+    {
+      "id": "native_worker_daemon",
+      "kind": "private_host_persistent_queue_worker",
+      "status": "partial_native_polling_private_store_health_outbox_host_activation_pending",
+      "tools": [
+        "scripts/blind_sniper_daemon.py",
+        "scripts/blind_sniper_agent_runtime.py",
+        "scripts/blind_sniper_worker.py"
+      ],
+      "capabilities": [
+        "private_owner_only_task_file_ingestion",
+        "persistent_poll_loop",
+        "stale_lease_recovery",
+        "private_local_durable_ledger",
+        "private_receipt_storage",
+        "health_file",
+        "notification_outbox",
+        "graceful_sigterm_shutdown",
+        "systemd_service_template"
+      ],
+      "limitations": [
+        "The daemon is code-complete for a single persistent host but has not been started or verified on an approved host.",
+        "Task ingestion is through owner-only JSON files in the private state directory; no external task-ingestion API is enabled.",
+        "The local ledger persists across restarts on the same host; private remote CAS cross-host durability remains unverified.",
+        "The notification outbox is local and metadata-only; delivery to an external notification receiver is not implemented.",
+        "A real configured provider call, unattended task execution and long-running service health are not live-verified."
+      ]
     }
   ],
   "exclusions": [
