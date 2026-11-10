@@ -14,7 +14,6 @@
         "codex-environment-maintenance",
         "memory-and-continuity",
         "multi-session-pr-coordination",
-        "openhands-conversation-export",
         "zero-cost-gate"
       ],
       "agents": [
@@ -108,8 +107,7 @@
         "blind-sniper-continuity",
         "incident-response",
         "sandbox-lifecycle",
-        "multi-session-pr-coordination",
-        "openhands-conversation-export"
+        "multi-session-pr-coordination"
       ],
       "agents": [
         "recovery",
