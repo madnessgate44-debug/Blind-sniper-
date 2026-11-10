@@ -4,7 +4,7 @@
 **Default branch:** `main`  
 **Live main HEAD:** `ada63e11d3047a3560565a4bcaa72c6768e4ae34` (executor full-checkout fix, PR #41).  
 **Latest full runtime-validation baseline:** `031b245bca32fbe91abae1f96e9e394efe50f959` (130 tests OK); do not attribute this exact count to the newer HEAD without a fresh log.  
-**Open PRs:** 0 at the time of the live query; re-query before merge/closure decisions.  
+**Open PRs at this refresh:** #42 (documentation reconciliation) and #43 (runtime hardening); both open when this correction was made. Re-query before merge/closure decisions.  
 **Architecture:** Native-first; runtime is a planner and guarded task state machine, not a system that spawns separate model processes.
 
 ## Current verified system inventory
@@ -20,8 +20,8 @@
 
 - `main` HEAD: `ada63e11d3047a3560565a4bcaa72c6768e4ae34`.
 - Latest commit removes sparse checkout from the read-only executor checkout so fixtures under `.github/workflows` and `.blind-sniper/tasks` are present for tests. Read-only controls remain `contents: read` and `persist-credentials: false`.
-- The exact HEAD has 7/7 completed successful check runs, including runtime/environment/OS compliance, executor, receipt publication and Pages deployment.
-- Live open-PR query: empty. Branch protection remains disabled and is tracked separately.
+- The exact HEAD has 8/8 completed successful check runs: `policy-compliance` (2), `validate-runtime`, `build`, `Execute allowlisted command`, `report-build-status`, `deploy`, and `Publish receipt to receipts/main`. Environment Validation and OS Compliance are not in this exact-HEAD set.
+- Live open-PR query at this correction: #42 and #43 are open. Branch protection remains disabled and is tracked separately.
 - Durable cross-run worker/queue, heartbeat, cancellation and stale-worker supervision remain unimplemented/unverified; no persistent runner is established.
 - Direct OpenHands Cloud dispatch/result retrieval and direct Forge MCP invocation remain unavailable as callable tools in this ChatGPT session. GitHub issue-comment coordination is the verified fallback, not proof of a direct API session.
 
