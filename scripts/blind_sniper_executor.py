@@ -16,7 +16,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import blind_sniper_runtime as runtime  # noqa: E402
-from blind_sniper_ledger import TaskLedger  # noqa: E402
+from blind_sniper_ledger import GitHubContentsLedger, GitHubLedgerError, TaskLedger  # noqa: E402
 
 ALLOWLIST = {
     "unit-tests": [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"],
@@ -89,6 +89,12 @@ def main():
     parser.add_argument("--commit", required=True)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--output-dir", required=True)
+    parser.add_argument("--github-ledger", action="store_true")
+    parser.add_argument("--github-owner")
+    parser.add_argument("--github-repo")
+    parser.add_argument("--github-branch")
+    parser.add_argument("--github-path", default="blind-sniper-continuity/TASK_LEDGER.jsonl")
+    parser.add_argument("--github-token-env", default="GITHUB_TOKEN")
     args = parser.parse_args()
 
     output = Path(args.output_dir).resolve()
@@ -99,9 +105,9 @@ def main():
         "task_id": None, "branch": args.branch, "commit_sha": args.commit,
         "run_id": args.run_id, "commands": [], "steps": [], "status": "BLOCKED",
         "review_status": "NOT_REACHED",
-        "reservation_scope": "single_workflow_run_artifact",
-        "cross_run_exclusion": False,
-        "cross_run_deduplication": False,
+        "reservation_scope": "private_github_contents_cas_ledger" if args.github_ledger else "single_workflow_run_local_ledger",
+        "cross_run_exclusion": bool(args.github_ledger),
+        "cross_run_deduplication": bool(args.github_ledger),
         "artifact_retention_days": 14,
     }
 
@@ -128,12 +134,26 @@ def main():
         if len(command_ids) != len(set(command_ids)):
             raise RuntimeError("Duplicate command IDs are not permitted")
 
-        repository = os.environ["GITHUB_REPOSITORY"]
+        repository = os.environ.get("BLIND_SNIPER_REPOSITORY", os.environ["GITHUB_REPOSITORY"])
         instant = server_now(repository)
         task_id = str(task["task_id"])
-        owner_id = "blind-sniper-executor"
+        owner_id = f"blind-sniper-executor:{args.run_id}"
         receipt["task_id"] = task_id
-        ledger = TaskLedger(output / "events.jsonl")
+        if args.github_ledger:
+            token = os.environ.get(args.github_token_env, "")
+            if not token:
+                raise RuntimeError(f"GitHub ledger requires token in {args.github_token_env}")
+            required = (args.github_owner, args.github_repo, args.github_branch)
+            if not all(value and value.strip() for value in required):
+                raise RuntimeError("--github-ledger requires --github-owner, --github-repo and --github-branch")
+            ledger = GitHubContentsLedger(
+                owner=args.github_owner, repo=args.github_repo, path=args.github_path,
+                branch=args.github_branch, token=token, max_retries=5,
+            )
+        else:
+            ledger = TaskLedger(output / "events.jsonl")
+        if args.github_ledger and ledger.events(task_id):
+            raise RuntimeError("Task ID already exists in the private durable ledger; duplicate execution is refused")
 
         plan = runtime.build_plan({
             "task_id": task_id,
@@ -291,7 +311,17 @@ def main():
             receipt["review_status"] = "NOT_REACHED"
         receipt["server_time_source"] = "GitHub HTTP Date header"
         receipt["lease_owner"] = owner_id
-        receipt["lease_expires_at"] = ledger.lease_status(task_id, server_now(repository))["lease_expires_at"]
+        active_lease = ledger.lease_status(task_id, server_now(repository))
+        receipt["lease_expires_at"] = active_lease["lease_expires_at"] if active_lease else None
+        if active_lease:
+            released = ledger.release_task(
+                task_id=task_id, owner_id=owner_id,
+                idempotency_key=f"{task_id}:release:{args.run_id}",
+                now=server_now(repository),
+            )
+            receipt["lease_released"] = bool(released.get("released"))
+        else:
+            receipt["lease_released"] = False
         receipt["state"] = state
         receipt["steps"] = state["plan"]["steps"]
         receipt["exit_code"] = 0 if passed else 1
