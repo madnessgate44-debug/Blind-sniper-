@@ -2,7 +2,7 @@
 
 **Assessment date:** 2026-11-10  
 **Assessed repository:** `madnessgate44-debug/Blind-sniper-`  
-**Assessed main commit:** `e253c25a6dcf00b2a1cd03d26975c74b9d5ad6cc`  
+**Assessed main commit:** `3b4ef572dc8b6aa819185e08e22a80e4f8cfd9ff`  
 **Release decision:** **NO-GO — NOT APPROVED FOR A PRODUCT/PRODUCTION RELEASE**  
 **Assessment type:** Evidence-backed acceptance review; no release or production deployment was initiated.
 
@@ -20,10 +20,10 @@ The repository did not contain a dedicated `BS-RELEASE-001` acceptance record wh
 
 | Requirement | Acceptance criterion | Result | Evidence / gap |
 |---|---|---|---|
-| R1 — Runtime integrity | Runtime validator, full unit suite, registry and policy checks pass on the release code | **PASS** | Runtime validation run `42748297211`, commit `918eb0a`, job `129605579888`: validator passed; 158 tests completed in 1.735s and output `OK`. |
+| R1 — Runtime integrity | Runtime validator, full unit suite, registry and policy checks pass on the release code | **PASS** | Private executor run `42758395681` passed the runtime validator on `3b4ef57`; run `42758698543` passed 158 unit tests in 1.332s (`OK`, exit 0), with correlated receipt/artifact `13735839796`. |
 | R2 — Browser/E2E behavior | Real browser acceptance and interruption reconciliation pass | **PASS — bounded scope** | PR #43 run `42735786150`, exact head `dcd26f7`, completed successfully. Recorded acceptance: two Chromium cycles and 36 correlated receipts. This is not persistent cross-job browser recovery. |
-| R3 — Cross-run execution | Task dispatch, durable reservations/deduplication, recovery, cancellation, heartbeat, stale-worker supervision and a persistent worker operate across independent runs | **FAIL / NOT IMPLEMENTED** | `runtime/EXECUTION_ENGINE.md` explicitly says executor persistence is per-run and ephemeral; repeated task IDs in later runs are not protected. No persistent worker, heartbeat scheduler, cancellation flow or stale-worker supervisor is implemented. |
-| R4 — Durable private ledger | Live private-store writes, recovery and concurrency behavior are verified against the approved private target | **NOT VERIFIED** | GitHub Contents adapter is mock-tested only. Runtime documentation says no live write was performed; current Actions permissions are `contents: read`. A private continuity scaffold is documented, but that is not proof of a live task-ledger integration. |
+| R3 — Cross-run execution | Task dispatch, durable reservations/deduplication, recovery, cancellation, heartbeat, stale-worker supervision and a persistent worker operate across independent runs | **PARTIAL — B1 tranche verified** | A private request-triggered runner now executes bounded allowlisted commands against Blind Sniper `main`; state/events and receipts persist in the private CAS ledger. Run `42758395681` executed tasks and released leases; independent run `42758616125` refused replay of an existing task ID. Run-specific lease owners prevent different runs from sharing one owner identity. Still NOT VERIFIED: simultaneous claim contention, interruption-safe resume, cancellation, periodic heartbeat and stale-worker recovery. This is not yet a general persistent worker. |
+| R4 — Durable private ledger | Live private-store writes, recovery and concurrency behavior are verified against the approved private target | **PARTIAL — live integration verified** | Private smoke run `42758084356` proved append, read-after-write hash integrity and idempotent replay. Execution run `42758395681` proved live task creation, state-delta writes, lease claim/renew/release and correlated receipt writes through the private repository's scoped `GITHUB_TOKEN` (`contents: write` for that workflow job only). Still NOT VERIFIED: forced CAS-conflict behavior under concurrent writers and recovery after an interrupted remote write. No PAT or new secret was created. |
 | R5 — Agent/browser adapters | Required external dispatch, status, cancel and artifact round trips work end-to-end | **BLOCKED / PARTIAL** | Adapter contract marks OpenHands PARTIAL and Forge BLOCKED. No direct OpenHands Cloud API or Forge MCP action is exposed in this session. Do not infer execution from a GitHub mention route or an adapter contract. |
 | R6 — Security and privacy | Least privilege, public/private data separation, approval and review controls, and governance are verified | **PARTIAL — release blocker** | Runtime policy and environment checks pass. Public repository remains public; private data was not inspected or copied. Reviewer/approval metadata is not cryptographic identity proof. Main reports `protected=false`; rulesets query returned an empty list. |
 | R7 — Release deployment | Exact release artifact is deployed to the intended product target and a deployed smoke test passes | **PARTIAL / NOT VERIFIED** | GitHub Pages deploy job `129607049000` succeeded for `e253c25` and reported the Pages URL. This proves a Pages deployment, not deployment of a persistent Blind Sniper execution host. A live Pages smoke-test retrieval was unavailable in this assessment. |
@@ -47,6 +47,11 @@ The GitHub Actions logs do not expose a separate shell process exit code for eve
 | GitHub Releases query | `GET /repos/.../releases` | `[]` | 2026-11-10 current query | NOT RELEASED |
 | Live Pages smoke test | Open deployed Pages URL | Retrieval unavailable through the web reader in this assessment | 2026-11-10 current query | NOT VERIFIED |
 
+| Private GitHub Contents ledger smoke | Run `42758084356`, job `129637041549` | `result=PASS`; one event; event hash read-back matched; idempotent replay returned `true`; private-repository guard passed | 2026-11-10 04:47:46 UTC | PASS |
+| Private cross-run execution | Run `42758395681`, job `129638039568` | Tasks `BS-B1-VALIDATE-001` and `BS-B1-VALIDATE-002` each reached `REVIEWING`; runtime-validator step `PASS`; lease released; correlated receipts persisted | 2026-11-10 04:51:45 UTC | PASS |
+| Independent duplicate replay | Run `42758616125`, job `129638758540` | `policy_outcome=DUPLICATE_REFUSED`; existing task ID was not re-executed; workflow concluded success | 2026-11-10 04:53:05 UTC | PASS |
+| Full unit suite through private executor | Run `42758698543`, job `129639018974`, artifact `13735839796` | `Ran 158 tests in 1.332s`; `OK`; executor receipt exit code 0 | 2026-11-10 04:54:21 UTC | PASS |
+
 ### Evidence interpretation
 
 - Runtime code at `918eb0a` is the tested code base. The seven commits from `918eb0a` to `e253c25` changed only `CURRENT_STATE.md`, `checkpoints/CURRENT_SESSION.md`, and `runtime/BUILD_PROGRESS.md`; no runtime code changed in that range.
@@ -58,15 +63,17 @@ The GitHub Actions logs do not expose a separate shell process exit code for eve
 
 ### B1 — Durable cross-run execution
 
-**Required before full autonomous-engineering release:** Define and implement the persistent task/worker model with cross-run task identity, durable lease exclusion and deduplication, heartbeat/renewal, cancellation, stale-worker detection/recovery, interruption-safe resumption, and task-correlated artifacts.
+**Implemented tranche:** Private request-triggered workflow, GitHub Contents CAS ledger, run-specific lease owners, duplicate task-ID refusal, lease renewal between bounded commands, lease release, task-correlated state and receipts. The exact target is private and Owner-authorized; its identity is intentionally omitted from this public assessment.
 
-**Exit evidence:** At least two independent runner/job lifetimes using the same task identity; prove one claimant wins, duplicate dispatch is rejected, interruption is reconciled without replay, cancellation is observed, stale leases are recovered safely, and a final receipt is bound to the exact commit and run. Use a verified no-card/no-paid host or approved free infrastructure; do not provision paid services.
+**Still required before full autonomous-engineering release:** Simultaneous cross-run claim contention testing; durable recovery/resumption from an interrupted run after lease expiry; explicit cancellation request and cooperative stop; periodic heartbeat for long-running commands; stale-worker detection and recovery; and proof that receipts remain bound to the exact commit/run through interruption.
+
+**Evidence already obtained:** Private ledger smoke `42758084356` PASS; bounded execution run `42758395681` PASS; independent duplicate replay run `42758616125` PASS with `DUPLICATE_REFUSED`; full unit-test run `42758698543` PASS (158 tests). No paid infrastructure was provisioned.
 
 ### B2 — Live private persistence
 
-**Required:** Verify a live append/recover/claim/release cycle against the approved private repository or storage target, with least-privilege credentials supplied only by the host. Keep credentials and private continuity content out of this public repository.
+**Verified tranche:** Live private append/read-back/idempotency, task-state event writes, lease claim/renew/release, and correlated receipt writes now operate through the private GitHub Contents adapter. The workflow job receives only its repository-scoped `GITHUB_TOKEN` with `contents: write`; no PAT or new secret was created.
 
-**Exit evidence:** Retrieved before/after ledger state, CAS conflict behavior, recovery after an interrupted write, private-target metadata, and redacted logs. Mock tests alone do not close this blocker.
+**Still required:** Live simultaneous-writer CAS conflict/retry testing and interrupted-write recovery, plus a recovery test that reconstructs task state from the remote ledger on a later independent runner. Keep credentials and private continuity content out of this public repository.
 
 ### B3 — Adapter execution round trips
 
