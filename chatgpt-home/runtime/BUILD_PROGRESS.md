@@ -1,29 +1,36 @@
 # Blind Sniper build progress — current status
 
-**Snapshot:** 2026-11-10 — live state rechecked at `ada63e11d3047a3560565a4bcaa72c6768e4ae34`.  
+**Snapshot:** 2026-11-10 — post-merge state after PR #42 and PR #43; code/runtime merge `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`.  
 **Default branch:** `main`  
-**Live main HEAD:** `ada63e11d3047a3560565a4bcaa72c6768e4ae34` (executor full-checkout fix, PR #41).  
-**Latest full runtime-validation baseline:** `031b245bca32fbe91abae1f96e9e394efe50f959` (130 tests OK); do not attribute this exact count to the newer HEAD without a fresh log.  
-**Open PRs at this refresh:** #42 (documentation reconciliation) and #43 (runtime hardening); both open when this correction was made. Re-query before merge/closure decisions.  
+**Live main HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4` (PR #43 bounded runtime hardening).  
+**Latest full runtime-validation evidence:** PR #43 head `dcd26f7a` — OpenHands reported 158 Python tests OK; post-merge `validate-runtime` run `129605579888` passed on `918eb0a`. ChatGPT did not rerun the local suite.  
+**Open PRs after merge:** none; PR #42 and PR #43 are merged. PR #44 is this post-merge documentation refresh.  
 **Architecture:** Native-first; runtime is a planner and guarded task state machine, not a system that spawns separate model processes.
 
 ## Current verified system inventory
 
 - Profiles: 6; native agent roles: 10; capability adapters: 13; workflows: 18.
 - Native skills: 14; mirrored OpenHands skills/rules: 33.
-- Latest full runtime-registry + Python test checkpoint: `031b245bca32fbe91abae1f96e9e394efe50f959` — 130 tests OK; runtime registry, skill catalog and Codex config validation passed.
+- Latest full runtime-registry + Python test evidence: PR #43 head `dcd26f7a` — 158 tests OK as reported by OpenHands; post-merge runtime validator run `129605579888` passed. Skill catalog and Codex config checks passed on PR #43 head per OpenHands' execution receipt.
 - PR #34 completed BS-OS-004 D6/D8. PR #35 refreshed the operating instructions and current/build state. PR #36 fixed array secret scanning and test-isolation defects found during review of PR #30/#31.
 - Exact-main checks after PR #36: Runtime Registry `42716156320` PASS (130 tests); Environment Validation `42716156014` PASS; OS Compliance `42716156010` PASS. Its Pages deploy run `42716155494` was cancelled. The subsequent PR #37 main commit `cf350f7` passed Runtime Registry `42716484899`, Environment Validation `42716484975`, OS Compliance `42716484935`, and Pages deployment `42716484749`.
 - PR #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34/#35/#36/#37 are merged. PR #9/#15/#16 are closed as superseded. PR #13 remains a design-only artifact.
 
 ## Live repository checkpoint — 2026-11-10
 
-- `main` HEAD: `ada63e11d3047a3560565a4bcaa72c6768e4ae34`.
+- `main` HEAD after PR #43 merge: `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`.
 - Latest commit removes sparse checkout from the read-only executor checkout so fixtures under `.github/workflows` and `.blind-sniper/tasks` are present for tests. Read-only controls remain `contents: read` and `persist-credentials: false`.
-- The exact HEAD has 8/8 completed successful check runs: `policy-compliance` (2), `validate-runtime`, `build`, `Execute allowlisted command`, `report-build-status`, `deploy`, and `Publish receipt to receipts/main`. Environment Validation and OS Compliance are not in this exact-HEAD set.
-- Live open-PR query at this correction: #42 and #43 are open. Branch protection remains disabled and is tracked separately.
+- The post-merge exact HEAD has 7/7 completed successful check runs: `policy-compliance` (2), `validate-runtime`, `validate-environment`, `build`, `report-build-status`, and `deploy`.
+- Live open-PR query after PR #42 and #43 merged: empty. Branch protection remains disabled and is tracked separately.
 - Durable cross-run worker/queue, heartbeat, cancellation and stale-worker supervision remain unimplemented/unverified; no persistent runner is established.
 - Direct OpenHands Cloud dispatch/result retrieval and direct Forge MCP invocation remain unavailable as callable tools in this ChatGPT session. GitHub issue-comment coordination is the verified fallback, not proof of a direct API session.
+
+## Post-merge workstream closeout — 2026-11-10
+
+- PR #42 merged at `69ff80afd02ca326b2cad588aff3227ac67f53e0`; PR #43 merged at `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`.
+- PR #43 changed the allowlisted executor checkout and compact-state browser reservation guard, with regression tests; no cross-run worker/queue architecture was added.
+- Post-merge `main` checks: 7/7 success, including validate-runtime, validate-environment and deploy. PR #43 head: 6 success, 2 persistent-host checks skipped.
+- No PRs remain open after the two merges. Branch protection remains excluded; BS-RELEASE-001 acceptance remains open.
 
 ## Continuity and privacy status
 
