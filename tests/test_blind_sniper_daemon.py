@@ -114,6 +114,21 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         self.assertEqual(health["counts"]["completed"], 1)
         self.assertEqual(self.queue.status(data["task_id"])["status"], "COMPLETED")
 
+    def test_notification_outbox_reconciles_from_private_receipts(self):
+        receipt = {
+            "task_id": "DAEMON-RECON-1", "run_id": "reconcile-run",
+            "queue_status": "COMPLETED", "output_digest": "receipt-digest",
+            "output_text": "private content that must not enter outbox",
+        }
+        self.store.write_receipt("DAEMON-RECON-1", receipt)
+        repaired = self.store.reconcile_notifications()
+        self.assertEqual(repaired, 1)
+        outbox = self.store.notification_path.read_text(encoding="utf-8")
+        self.assertIn("receipt-digest", outbox)
+        self.assertIn("DAEMON-RECON-1", outbox)
+        self.assertNotIn("private content", outbox)
+        self.assertEqual(self.store.reconcile_notifications(), 0)
+
     def test_private_state_must_be_outside_workspace_and_owner_only(self):
         with self.assertRaisesRegex(DaemonError, "outside the public repository"):
             PrivateTaskStore(self.workspace / "private", workspace_root=self.workspace)
