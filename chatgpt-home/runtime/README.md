@@ -61,7 +61,25 @@ Credential pools and external agent infrastructure are outside Blind Sniper core
 
 Python and temporary shell execution are available in the current ChatGPT session, but they are ephemeral and are not a persistent runner. Complete ChatGPT conversation archive export is not exposed as a native action here; continuity Markdown and Memory summaries must not be described as full transcript export.
 
-GitHub file/branch/PR operations are available. Configured GitHub Actions can run CI on their declared events. There is no verified generic workflow-dispatch action or persistent shell in this ChatGPT session. Independent model-agent invocation and native durable worker recovery remain P0 implementation gaps; do not fill them by delegating to OpenHands or another external agent.
+GitHub file/branch/PR operations are available. Configured GitHub Actions can run CI on their declared events. There is no verified generic workflow-dispatch action or persistent shell in this ChatGPT session. Native model-provider invocation and digest-bound queue dispatch are now implemented in the feature branch, but live provider access and remote cross-run persistence remain unverified. The native executor/tool runtime, persistent browser host and unattended worker remain incomplete; do not fill these gaps by delegating to OpenHands, Forge or another external agent.
+
+## Native model invocation and queue dispatch — 10 November 2026
+
+`../../scripts/blind_sniper_model_worker.py` now contains Blind Sniper's own OpenAI-compatible
+provider transport. Each task receives a fresh bounded context and a distinct run ID. The boundary
+is read-only, applies a provider timeout and bounded retries, and returns a redacted correlated
+receipt. Provider URL/model and optional auth are read from host environment variables only.
+Provider tool calls and write permission profiles fail closed until the native executor is built.
+
+`../../scripts/blind_sniper_agent_runtime.py` connects that boundary to the durable queue:
+digest-bound enqueue/validation, lease claim, heartbeat, model invocation, then completion with a
+result digest or bounded retry. Only the digest is stored in the queue; the private host must retain
+and re-supply the task payload and receipt outside this public repository.
+
+R1 is IMPLEMENTED / LIVE-UNVERIFIED. R2 is PARTIAL: the local lifecycle is tested, while private
+remote cross-run persistence and payload retrieval are not live-verified. R3 is NOT IMPLEMENTED;
+R4 remains PARTIAL; R5 is BLOCKED and its activation gate is closed. No external agent or browser
+adapter is retained in the native execution path.
 
 ## License and provenance
 
@@ -112,13 +130,13 @@ The licensed source imports and native adaptations are now part of this integrat
 `../../scripts/blind_sniper_ledger.py` provides an append-only JSONL event ledger with process locking, fsync, idempotency, sequence validation and a SHA-256 hash chain. The runtime automatically persists TASK_CREATED/TASK_TRANSITIONED snapshots and recovers from the ledger. An optional GitHub Contents API adapter adds file-SHA compare-and-swap, bounded conflict retries, remote recovery reads and lease claim/renew/release. EXECUTING receipts atomically check lease ownership while appending the state transition. Its behavior is unit-tested with a mocked API; no live write has been performed. The current Actions workflow has `contents: read`, so remote writes require a separately authorized host token with Contents write permission. This is not yet an active cross-runner service.
 
 
-## Native core status — 8 November 2026
+## Native core status — 8 November 2026 (historical baseline; superseded by the 10 November P0 update)
 
 Ahmed confirmed **native-first** as the single target architecture. The native roster has ten internal roles: Blind Sniper, researcher, planner, engineer, reviewer, QA verifier, recovery, Watcher, Shadow and release manager. Watcher is the native task-progress observer; Shadow is the native adversarial auditor. Their contracts do not imply separate agent processes are running. Operating profiles and workflow-specific agent assignments are checked in. OpenHands and Forge are not runtime dependencies or accepted worker/browser routes. TinyFish remains excluded.
 
 Workflow routing keywords, priorities and agent assignments now live in `workflows.json`; profile binding is resolved through `profiles.json`. The runtime no longer maintains duplicate workflow-to-profile or workflow-to-agent dictionaries. The registry validator checks workflow agent IDs, profile allowlists, routing rules and default agents.
 
-The runtime remains a planner and guarded state machine, not an autonomous executor. It now has local and remote-CAS task leases, but no heartbeat scheduler, cancellation supervisor or stale-worker sweeper. It does not spawn separate model processes or claim that role contracts have run. Current test and CI evidence is in `chatgpt-home/CURRENT_STATE.md`; implementation limits and next work are in `chatgpt-home/runtime/BUILD_PROGRESS.md`.
+At this historical checkpoint the runtime remained a planner and guarded state machine. The 10 November P0 update adds the native model-provider boundary and queue-to-model dispatch; see the section above and `chatgpt-home/CURRENT_STATE.md` for current capability limits and evidence.
 
 
 ## Native browser adapter — extended CI verified; persistent host pending
