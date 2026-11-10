@@ -262,7 +262,8 @@
         "idempotency",
         "lease_claim_renew_release",
         "local_process_locking",
-        "github_contents_compare_and_swap_for_private_target"
+        "github_contents_compare_and_swap_for_private_target",
+        "lease_bound_browser_action_receipts"
       ],
       "limitations": [
         "Full cancellation, heartbeat supervision, stale-lease reclamation and interruption-safe cross-run worker recovery are not yet verified end to end.",
