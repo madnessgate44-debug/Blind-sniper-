@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "runtime_name": "Blind Sniper",
-  "runtime_model": "ChatGPT host + GitHub-persisted control plane + external execution adapters",
+  "runtime_model": "Blind Sniper native runtime + GitHub control plane + native browser and bounded host execution",
   "snapshot_date": "2026-11-08",
   "evidence_policy": "A capability is operational only when its trigger, permission, execution, output and verification path are proven.",
   "adapters": [
@@ -100,7 +100,7 @@
         "create_and_manage_supported_automations"
       ],
       "limitations": [
-        "Existing scheduled checkpoints are not proof of OpenHands task delivery; task receiver and delivery route must be tested."
+        "Scheduled checkpoints are triggers only; native task receiver, durable queue and execution path must be verified before unattended work is claimed."
       ]
     },
     {
@@ -129,47 +129,6 @@
       ],
       "limitations": [
         "No paid provisioning, deployment, or environment mutation without Owner approval."
-      ]
-    },
-    {
-      "id": "forge_browser_mcp",
-      "kind": "authenticated_browser_and_computer_use",
-      "status": "endpoint_remote_smoke_reported_connector_not_registered",
-      "tools": [],
-      "capabilities": [
-        "authenticated_Streamable_HTTP_MCP_endpoint",
-        "browser_open_view_wait_click_type_press_scroll_extract_query_screenshot_history_close",
-        "read_only_default",
-        "audit_receipts",
-        "credential_redaction"
-      ],
-      "limitations": [
-        "Firstborn PR #148 reports a successful public-HTTPS sandbox round trip and GitHub CI run 42473077287; the sandbox URL is ephemeral and is not a durable host.",
-        "ChatGPT custom connector registration is not present in this session, so these browser tools are not callable from Blind Sniper yet.",
-        "Firstborn PR #149 overlaps PR #148 on browser_wait; reconcile the two open changes before merging."
-      ],
-      "evidence": {
-        "pr147": "https://github.com/madnessgate44-debug/Firstborn/pull/147",
-        "pr148": "https://github.com/madnessgate44-debug/Firstborn/pull/148",
-        "pr149": "https://github.com/madnessgate44-debug/Firstborn/pull/149",
-        "ci_run": 42473077287,
-        "remote_smoke": "reported PASS by OpenHands in Firstborn issue #146 comment 6720609474; not independently invoked from ChatGPT"
-      }
-    },
-    {
-      "id": "openhands_dispatch",
-      "kind": "agent_execution",
-      "status": "partially_verified",
-      "tools": [
-        "GitHub @openhands issue-comment mention"
-      ],
-      "capabilities": [
-        "mention_can_create_session_receipt"
-      ],
-      "limitations": [
-        "GitHub @openhands mention creates a resolver session; T013 produced one task-correlated read-only report on Brain #292 (comment 6720817754, session e341bd8463694d68bd79dc609e408f33).",
-        "Direct OpenHands Cloud API access is not exposed as a callable tool to Blind Sniper in this ChatGPT session.",
-        "One read-only report round trip is proven; code-execution artifact return and two consecutive correlated round trips remain unproven."
       ]
     },
     {
@@ -267,6 +226,48 @@
       "license": "Apache-2.0",
       "version": "0.41.2",
       "upstream": "https://github.com/vercel-labs/agent-browser"
+    },
+    {
+      "id": "native_model_runtime",
+      "kind": "native_model_agent_orchestration",
+      "status": "not_implemented_pending_p0",
+      "tools": [
+        "scripts/blind_sniper_runtime.py",
+        "chatgpt-home/runtime/agents.json"
+      ],
+      "capabilities": [
+        "independent_model_invocation",
+        "fresh_bounded_context",
+        "agent_run_identity",
+        "tool_and_permission_allowlists",
+        "bounded_concurrency",
+        "timeouts_and_retries",
+        "correlated_run_receipts"
+      ],
+      "limitations": [
+        "Current runtime selects agent role contracts but does not spawn independent model processes.",
+        "Implement and test the provider invocation boundary inside Blind Sniper; no external agent runtime is permitted."
+      ]
+    },
+    {
+      "id": "native_task_queue",
+      "kind": "native_durable_task_state_and_recovery",
+      "status": "partial_local_ledger_cross_run_recovery_incomplete",
+      "tools": [
+        "scripts/blind_sniper_ledger.py",
+        "scripts/blind_sniper_runtime.py"
+      ],
+      "capabilities": [
+        "append_only_event_ledger",
+        "idempotency",
+        "lease_claim_renew_release",
+        "local_process_locking",
+        "github_contents_compare_and_swap_for_private_target"
+      ],
+      "limitations": [
+        "Full cancellation, heartbeat supervision, stale-lease reclamation and interruption-safe cross-run worker recovery are not yet verified end to end.",
+        "Never store private task payloads or personal continuity in this public repository."
+      ]
     }
   ],
   "exclusions": [
