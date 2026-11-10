@@ -21,7 +21,8 @@
 - [V] R1/R2 integration: `scripts/blind_sniper_agent_runtime.py` binds digest-only queue enqueue/claim/heartbeat/model invocation/result completion or bounded retry. Task JSON and output receipt are rejected if placed inside this public repository.
 - [U] R1 live provider round trip: NOT VERIFIED; no approved provider configuration or credentials were available to this repository run.
 - [U] R2 remote cross-run queue durability: NOT VERIFIED against the private GitHub CAS target. The queue protocol and dispatch are contract-tested locally; payload retrieval remains host-supplied on retry.
-- [V] External agent/browser adapter modules and their contract tests were removed. Capability/workflow registries no longer advertise them.
+- [V] Registry stays native-only: no external adapter is registered or wired into a profile/workflow. The optional, unregistered modules `scripts/blind_sniper_openhands_cloud.py` (OpenHands Cloud V1) and `scripts/blind_sniper_forge_mcp.py` (Forge Streamable HTTP MCP) remain available for contract tests but disabled by default; enabling either is an Owner decision.
+- [V] Fix: `capability_state()` now treats an explicit `partial_` prefix as PARTIAL even when the status ends in `_unverified`, so honest partial capabilities no longer collapse to UNVERIFIED/BLOCKED.
 - [B] R3 native task-scoped executor/tool registry is NOT IMPLEMENTED. Model-issued tool calls and non-empty tool allowlists are rejected.
 - [V] R4 remains PARTIAL: checked-in `agent_browser_cli` has bounded Chromium CI evidence; persistent browser host and cross-job session recovery are unverified.
 - [B] R5 remains BLOCKED: no unattended poller, native executor, private payload retrieval or notification receiver. Activation gate is hard-closed; no schedule is active.
