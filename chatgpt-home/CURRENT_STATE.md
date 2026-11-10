@@ -3,7 +3,7 @@
 **Snapshot:** 2026-11-10 — post-merge reconciliation after PR #42 and PR #43 merged.
 **Default branch:** `main`
 **Latest code/runtime HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4` (PR #43 runtime hardening merge).
-**Latest full runtime-validation evidence:** PR #43 exact head `dcd26f7a` — OpenHands reported 158 Python tests OK; post-merge `validate-runtime` on `918eb0a` passed (run `129605579888`). The 158-test local result is agent-reported, not a local rerun by ChatGPT.
+**Latest full runtime-validation evidence:** PR #43 exact head `dcd26f7a` — GitHub Actions validate-runtime job `129564554848` logged `Ran 158 tests in 2.319s` and `OK`; post-merge `validate-runtime` on `918eb0a` passed (run `129605579888`).
 **Latest merged main checks:** 7/7 GitHub check runs completed successfully on `918eb0a`: `policy-compliance` (2), `validate-runtime`, `validate-environment`, `build`, `report-build-status`, and `deploy`. PR #43's own head also passed browser-acceptance; its two persistent-host checks were skipped, not failed.
 **Latest docs-state merge:** PR #44 at `3b86f8c9e8de637072f12976eb6906e564c348a5`. PRs #42, #43 and #44 are merged; the live open-PR inventory is empty.
 **Branch protection:** `main` reports `protected=false`; unresolved governance-hardening item.
@@ -121,7 +121,7 @@
 - PR #42 documentation reconciliation merged at `69ff80afd02ca326b2cad588aff3227ac67f53e0`.
 - PR #43 bounded runtime hardening merged at `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`.
 - Post-merge `main` check-runs API returned 7/7 completed successes: policy-compliance (2), validate-runtime, validate-environment, build, report-build-status and deploy. Runs: `129605738187`, `129605649799`, `129605649782`, `129605602051`, `129605580456`, `129605580217`, `129605579888`.
-- PR #43 head CI had 6 successful checks and 2 skipped persistent-host checks; no persistent-host capability is claimed. OpenHands reported 158 local unit tests OK; ChatGPT did not rerun that local command.
+- PR #43 head CI had 6 successful checks and 2 skipped persistent-host checks; no persistent-host capability is claimed. GitHub Actions validate-runtime job `129564554848` confirms 158 tests in 2.319s (`OK`).
 - The corrected PR #42 head passed 5/5 documentation CI checks before merge.
 - Open PR inventory after both merges: empty. Branch protection remains disabled and was explicitly excluded from this work.
 - Durable cross-run queue/worker, heartbeat, cancellation and stale-worker supervision remain unimplemented; BS-RELEASE-001 acceptance remains outstanding. No manual production deployment was performed.
