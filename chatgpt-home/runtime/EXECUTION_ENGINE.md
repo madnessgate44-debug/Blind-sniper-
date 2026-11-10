@@ -168,7 +168,7 @@ Current boundaries:
 - **R1 — IMPLEMENTED / LIVE-UNVERIFIED:** native provider transport, isolated context, identity, timeout, retry, concurrency and redacted receipt contracts; no real provider credentials or round trip verified here.
 - **R2 — PARTIAL:** model dispatch is connected to queue claim/heartbeat/completion/retry; remote cross-run operation still requires the private GitHub CAS store and host-supplied private payload recovery.
 - **R3 — IMPLEMENTED / HOST-UNVERIFIED:** bounded native model tool-call loop and static task-scoped tool registry exist; live provider-host execution is not verified.
-- **R4 — PARTIAL:** checked-in `agent_browser_cli` adapter has bounded Chromium CI evidence; persistent browser host and cross-job session recovery are not verified.
+- **R4 — IMPLEMENTED / PERSISTENT-HOST-UNVERIFIED:** native model tools are connected to the checked-in Chromium adapter under the active queue lease; persistent browser host and cross-job session recovery are not verified.
 - **R5 — BLOCKED:** no unattended poller is activated. The autonomy gate remains closed until a native executor, durable private store, private payload retrieval and notification path are verified.
 
 No OpenHands, Forge, external agent runtime or external browser adapter is part of the execution path.
@@ -196,6 +196,27 @@ unexpired task lease. After execution it appends a terminal `QUEUE_TOOL_COMPLETE
 `QUEUE_TOOL_FAILED` event with a result digest. Replayed call IDs and expired leases fail closed.
 Tool output returned to the model is bounded; receipts contain identifiers, status and digests,
 not raw task payloads.
+
+## Native browser tools
+
+The native tool registry exposes browser operations through the checked-in `BrowserAdapter`, not an
+external browser agent:
+
+- Read/navigation: `browser.navigate`, `browser.snapshot`, `browser.get_url`, `browser.tabs`,
+  `browser.screenshot`.
+- Mutating: `browser.click`, `browser.fill`, `browser.press` are offered only when the task
+  carries `workspace_write`, a host approval reference is present, and the host explicitly sets
+  `BLIND_SNIPER_BROWSER_WRITE_APPROVED=1`.
+- Every browser action is inside the same active queue lease and tool-call reservation. The
+  BrowserAdapter adds a task/run/session/step-correlated browser receipt.
+- The host must configure `BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS`. Browser session state, receipts
+  and screenshots are written outside the public repository workspace.
+- Output is redacted and bounded before it returns to the model. No credentials/cookies are copied
+  into model context by this tool contract.
+
+The browser adapter's Chromium local-fixture acceptance is CI-tested. A persistent browser host,
+authenticated session persistence, and cross-job recovery remain unverified. Browser writes remain
+blocked unless host approval is explicit.
 
 This is contract-tested against deterministic provider responses and a local ledger. A real
 configured model host, private remote CAS tool receipts, and recovery of a tool call interrupted

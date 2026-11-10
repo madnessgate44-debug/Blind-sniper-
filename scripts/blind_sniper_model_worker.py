@@ -44,6 +44,7 @@ class AgentSpec:
     tool_allowlist: tuple[str, ...] = ()
     permission_profile: str = "read_only"
     allowed_paths: tuple[str, ...] = ()
+    browser_approval_reference: str = ""
 
     def __post_init__(self) -> None:
         if not AGENT_ID.match(self.agent_id):
@@ -60,6 +61,8 @@ class AgentSpec:
             raise ModelWorkerError("allowed_paths entries must be unique")
         if any(not isinstance(item, str) or not item.strip() for item in self.allowed_paths):
             raise ModelWorkerError("allowed_paths entries must be non-empty strings")
+        if not isinstance(self.browser_approval_reference, str):
+            raise ModelWorkerError("browser_approval_reference must be a string")
 
 
 @dataclass(frozen=True)

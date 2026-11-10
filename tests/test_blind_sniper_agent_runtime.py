@@ -223,6 +223,26 @@ class DurableModelLifecycleTests(unittest.TestCase):
                 owner_id="runner-1",
             )
 
+    def test_browser_approval_reference_is_bound_into_task_payload_digest(self):
+        def invoker(*, spec, task, timeout_seconds):
+            return {"output_digest": "digest-approval", "output_excerpt": "ok"}
+        dispatch_task(
+            self.queue, ModelWorker(invoker, max_retries=0), self.spec, self.task,
+            owner_id="runner-approval",
+        )
+        changed_spec = AgentSpec(
+            agent_id=self.spec.agent_id,
+            tool_allowlist=self.spec.tool_allowlist,
+            permission_profile=self.spec.permission_profile,
+            allowed_paths=self.spec.allowed_paths,
+            browser_approval_reference="owner-approved-change",
+        )
+        with self.assertRaisesRegex(RuntimeError, "different payload digest"):
+            dispatch_task(
+                self.queue, ModelWorker(invoker, max_retries=0), changed_spec, self.task,
+                owner_id="runner-approval",
+            )
+
     def test_completed_task_cannot_be_invoked_again(self):
         def invoker(*, spec, task, timeout_seconds):
             return {"output_digest": "d", "output_excerpt": "ok"}
@@ -230,7 +250,7 @@ class DurableModelLifecycleTests(unittest.TestCase):
             self.queue, ModelWorker(invoker, max_retries=0), self.spec, self.task,
             owner_id="runner-1",
         )
-        with self.assertRaisesRegex(RuntimeError, "not pending"):
+        with self.assertRaisesRegex(RuntimeError, "not claimable"):
             dispatch_task(
                 self.queue, ModelWorker(invoker, max_retries=0), self.spec, self.task,
                 owner_id="runner-2",

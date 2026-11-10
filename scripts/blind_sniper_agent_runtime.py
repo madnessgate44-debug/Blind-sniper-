@@ -58,6 +58,7 @@ def dispatch_task(
         "permission_profile": spec.permission_profile,
         "tool_allowlist": list(spec.tool_allowlist),
         "allowed_paths": list(spec.allowed_paths),
+        "browser_approval_reference": spec.browser_approval_reference,
     }
     payload_digest = _canonical_digest(envelope)
     current = queue.status(task.task_id)
@@ -69,8 +70,8 @@ def dispatch_task(
     else:
         if current.get("payload_digest") != payload_digest:
             raise AgentRuntimeError("Existing queue task ID is bound to a different payload digest")
-        if current.get("status") != "PENDING":
-            raise AgentRuntimeError(f"Task is not pending (status={current.get('status')})")
+        if current.get("status") not in {"PENDING", "RETRY_SCHEDULED"}:
+            raise AgentRuntimeError(f"Task is not claimable (status={current.get('status')})")
     claim = queue.claim(owner_id=owner_id, lease_seconds=lease_seconds, task_id=task.task_id)
     if not claim:
         raise AgentRuntimeError("No pending task could be claimed")
@@ -151,7 +152,7 @@ def main(argv: list[str] | None = None) -> int:
         data = json.loads(task_path.read_text(encoding="utf-8"))
         if not isinstance(data, dict):
             raise AgentRuntimeError("Task file must contain a JSON object")
-        allowed_keys = {"task_id", "agent_id", "objective", "payload", "tool_allowlist", "permission_profile", "allowed_paths"}
+        allowed_keys = {"task_id", "agent_id", "objective", "payload", "tool_allowlist", "permission_profile", "allowed_paths", "browser_approval_reference"}
         if set(data) - allowed_keys:
             raise AgentRuntimeError(f"Task file contains unsupported fields: {sorted(set(data) - allowed_keys)}")
         task = ModelTask(
@@ -166,6 +167,7 @@ def main(argv: list[str] | None = None) -> int:
             tool_allowlist=tuple(data.get("tool_allowlist", [])),
             permission_profile=str(data.get("permission_profile", "read_only")),
             allowed_paths=tuple(data.get("allowed_paths", [])),
+            browser_approval_reference=str(data.get("browser_approval_reference", "")),
         )
         queue = DurableQueue(configure_ledger(args))
         tool_runtime = NativeToolRuntime(queue)

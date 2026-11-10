@@ -64,7 +64,7 @@ class OrchestrationEngineTests(unittest.TestCase):
         self.assertEqual(plan["execution_readiness"], "PARTIAL")
         self.assertEqual(plan["next_action"], "HOST_ASSISTED_EXECUTION")
         adapter_ids = {item["id"] for item in plan["required_adapters"]}
-        self.assertEqual(adapter_ids, {"agent_browser_cli", "native_task_queue"})
+        self.assertEqual(adapter_ids, {"agent_browser_cli", "native_task_queue", "native_tool_runtime"})
         self.assertFalse(adapter_ids & {"forge_browser_mcp", "openhands_dispatch"})
 
     def test_high_risk_action_requires_owner_approval(self):

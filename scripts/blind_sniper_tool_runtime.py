@@ -18,6 +18,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from blind_sniper_redact import redact, redact_text
+from blind_sniper_browser import BrowserAdapter
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_READ_BYTES = 256_000
@@ -70,6 +71,70 @@ TOOL_DEFINITIONS = {
             },
         },
     },
+    "browser.navigate": {
+        "type": "function",
+        "function": {
+            "name": "browser.navigate",
+            "description": "Navigate the task-scoped native Chromium session to a host-allowlisted HTTP(S) URL.",
+            "parameters": {"type": "object", "properties": {"url": {"type": "string", "minLength": 8, "maxLength": 2048}}, "required": ["url"], "additionalProperties": False},
+        },
+    },
+    "browser.snapshot": {
+        "type": "function",
+        "function": {
+            "name": "browser.snapshot",
+            "description": "Read an accessibility snapshot from the current task-scoped browser page.",
+            "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+    },
+    "browser.get_url": {
+        "type": "function",
+        "function": {
+            "name": "browser.get_url",
+            "description": "Read the current URL of the task-scoped browser session.",
+            "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+    },
+    "browser.tabs": {
+        "type": "function",
+        "function": {
+            "name": "browser.tabs",
+            "description": "List tabs in the current task-scoped browser session.",
+            "parameters": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+    },
+    "browser.click": {
+        "type": "function",
+        "function": {
+            "name": "browser.click",
+            "description": "Click one selector in the task browser; requires host-approved browser write permission.",
+            "parameters": {"type": "object", "properties": {"selector": {"type": "string", "minLength": 1, "maxLength": 256}}, "required": ["selector"], "additionalProperties": False},
+        },
+    },
+    "browser.fill": {
+        "type": "function",
+        "function": {
+            "name": "browser.fill",
+            "description": "Fill one non-sensitive selector in the task browser; requires host-approved browser write permission.",
+            "parameters": {"type": "object", "properties": {"selector": {"type": "string", "minLength": 1, "maxLength": 256}, "value": {"type": "string", "maxLength": 4000}}, "required": ["selector", "value"], "additionalProperties": False},
+        },
+    },
+    "browser.press": {
+        "type": "function",
+        "function": {
+            "name": "browser.press",
+            "description": "Press one supported navigation key in the task browser; requires host-approved browser write permission.",
+            "parameters": {"type": "object", "properties": {"key": {"type": "string", "enum": ["ENTER", "TAB", "ESC", "ESCAPE", "ARROWDOWN", "ARROWUP", "ARROWLEFT", "ARROWRIGHT"]}}, "required": ["key"], "additionalProperties": False},
+        },
+    },
+    "browser.screenshot": {
+        "type": "function",
+        "function": {
+            "name": "browser.screenshot",
+            "description": "Capture a screenshot to the private task browser artifact directory.",
+            "parameters": {"type": "object", "properties": {"filename": {"type": "string", "minLength": 1, "maxLength": 128}}, "required": ["filename"], "additionalProperties": False},
+        },
+    },
 }
 
 COMMANDS = {
@@ -108,6 +173,8 @@ class NativeToolRuntime:
         *,
         workspace_root: Path = ROOT,
         command_timeout: int = MAX_COMMAND_TIMEOUT,
+        browser_state_dir: Path | None = None,
+        browser_adapter_factory: Any = BrowserAdapter,
     ) -> None:
         if not hasattr(queue, "reserve_tool_call") or not hasattr(queue, "complete_tool_call"):
             raise NativeToolError("Native tool runtime requires durable lease-bound tool receipts")
@@ -116,6 +183,14 @@ class NativeToolRuntime:
         self.queue = queue
         self.workspace_root = workspace_root.resolve()
         self.command_timeout = command_timeout
+        self.browser_state_dir = (browser_state_dir or Path(tempfile.gettempdir()) / "blind-sniper-browser-state").resolve()
+        try:
+            self.browser_state_dir.relative_to(self.workspace_root)
+        except ValueError:
+            pass
+        else:
+            raise NativeToolError("Browser state/artifacts must remain outside the public repository workspace")
+        self.browser_adapter_factory = browser_adapter_factory
 
     @staticmethod
     def definitions(allowlist: tuple[str, ...] | list[str]) -> list[dict[str, Any]]:
@@ -134,6 +209,14 @@ class NativeToolRuntime:
                 raise NativeToolError("repo.write_file requires explicit exact allowed_paths")
         if any(name.startswith("repo.") for name in spec.tool_allowlist) and not spec.allowed_paths:
             raise NativeToolError("Repository tools require explicit allowed_paths")
+        browser_write_tools = {"browser.click", "browser.fill", "browser.press"} & set(spec.tool_allowlist)
+        if browser_write_tools:
+            if spec.permission_profile != "workspace_write":
+                raise NativeToolError("Mutating browser tools require workspace_write permission")
+            if not spec.browser_approval_reference.strip():
+                raise NativeToolError("Mutating browser tools require a host approval reference")
+            if os.environ.get("BLIND_SNIPER_BROWSER_WRITE_APPROVED") != "1":
+                raise NativeToolError("Mutating browser tools require host BLIND_SNIPER_BROWSER_WRITE_APPROVED=1")
 
     def _workspace_path(self, raw: str, spec: Any, *, write: bool) -> tuple[Path, str]:
         if not isinstance(raw, str) or not raw.strip() or "\\" in raw:
@@ -249,6 +332,46 @@ class NativeToolRuntime:
                 "timeout_seconds": self.command_timeout,
             }
 
+    def _run_browser(self, name: str, arguments: dict[str, Any], *, spec: Any, task: Any, run_id: str, tool_call_id: str) -> dict[str, Any]:
+        if not os.environ.get("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS", "").strip():
+            raise NativeToolError("Native browser host must configure BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS")
+        if task.lease_seconds <= 10:
+            raise NativeToolError("Native browser action requires more than ten seconds of remaining lease budget")
+        actions = {
+            "browser.navigate": ("open", [arguments.get("url", "")]),
+            "browser.snapshot": ("snapshot", []),
+            "browser.get_url": ("get-url", []),
+            "browser.tabs": ("tabs", []),
+            "browser.screenshot": ("screenshot", [arguments.get("filename", "")]),
+            "browser.click": ("click", [arguments.get("selector", "")]),
+            "browser.fill": ("fill", [arguments.get("selector", ""), arguments.get("value", "")]),
+            "browser.press": ("press", [arguments.get("key", "")]),
+        }
+        action, action_args = actions[name]
+        session_id = "s" + hashlib.sha256(f"{task.task_id}:{run_id}".encode()).hexdigest()[:20]
+        step_id = "tool-" + hashlib.sha256(f"{run_id}:{tool_call_id}".encode()).hexdigest()[:24]
+        adapter = self.browser_adapter_factory(
+            task_id=task.task_id,
+            run_id=run_id,
+            session_id=session_id,
+            state_dir=self.browser_state_dir / task.task_id,
+            timeout=min(45, task.lease_seconds - 10),
+            approval_reference=spec.browser_approval_reference or None,
+        )
+        result = adapter.execute(action, step_id, *action_args)
+        receipt = result.get("receipt", {})
+        output = redact_text(str(result.get("output", "")))[:MAX_TOOL_OUTPUT_CHARS]
+        error = redact(str(result.get("error", "")))[:2000]
+        artifact_paths = receipt.get("artifact_paths", []) if isinstance(receipt, dict) else []
+        return {
+            "action": action,
+            "status": "PASS" if receipt.get("exit_code") == 0 else "FAIL",
+            "output_excerpt": output,
+            "error": error,
+            "artifact_paths": artifact_paths,
+            "browser_receipt_digest": _digest(receipt),
+        }
+
     def execute(
         self, *, name: str, arguments: dict[str, Any], spec: Any, task: Any,
         run_id: str, tool_call_id: str,
@@ -270,13 +393,18 @@ class NativeToolRuntime:
         try:
             if name == "repo.read_file":
                 result = self._read_file(arguments, spec)
+                status = "PASS"
             elif name == "repo.write_file":
                 result = self._write_file(arguments, spec)
+                status = "PASS"
             elif name == "verification.run":
                 result = self._run_verification(arguments)
+                status = "PASS"
+            elif name.startswith("browser."):
+                result = self._run_browser(name, arguments, spec=spec, task=task, run_id=run_id, tool_call_id=tool_call_id)
+                status = "PASS" if result.get("status") == "PASS" else "FAIL"
             else:
                 raise NativeToolError(f"Tool {name!r} is not implemented")
-            status = "PASS"
         except Exception as exc:
             result = {"error": redact(f"{type(exc).__name__}: {exc}")}
             status = "FAIL"
@@ -285,7 +413,7 @@ class NativeToolRuntime:
             task_id=task.task_id, owner_id=owner_id, run_id=run_id,
             tool_call_id=tool_call_id, result_digest=result_digest, status=status,
         )
-        self.queue.heartbeat(task_id=task.task_id, owner_id=owner_id, lease_seconds=900)
+        self.queue.heartbeat(task_id=task.task_id, owner_id=owner_id, lease_seconds=task.lease_seconds)
         return {
             "ok": status == "PASS",
             "result": result,

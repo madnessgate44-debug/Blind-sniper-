@@ -28,7 +28,7 @@ Provide a common boundary between Blind Sniper's native orchestration, task-scop
 | Native model provider | `scripts/blind_sniper_model_worker.py` — OpenAI-compatible HTTPS transport and bounded function-call loop | IMPLEMENTED / live provider host UNVERIFIED |
 | Native tool runtime | `scripts/blind_sniper_tool_runtime.py` — three static task-scoped tools with lease-bound receipts | IMPLEMENTED / host execution UNVERIFIED |
 | Native queue lifecycle | `scripts/blind_sniper_worker.py` + `scripts/blind_sniper_agent_runtime.py` | PARTIAL; private remote cross-run durability and payload recovery unverified |
-| Native browser | `scripts/blind_sniper_browser.py` + lease-gated dispatcher | PARTIAL; persistent host unverified |
+| Native browser | `scripts/blind_sniper_tool_runtime.py` → `scripts/blind_sniper_browser.py` under queue lease | IMPLEMENTED / persistent host unverified |
 | GitHub Actions | Commit-triggered CI and bounded workflows | PARTIAL; ephemeral runner only |
 
 No OpenHands, Forge or external agent/browser adapter participates in the execution path. Provider
