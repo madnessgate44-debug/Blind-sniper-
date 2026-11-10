@@ -2,7 +2,7 @@
 
 **Live snapshot:** 2026-11-10 — BS-RELEASE-001 acceptance assessed NO-GO; assessment merged as PR #45.
 **Default branch:** `main`
-**Current main HEAD:** `9d3ab26a05b6c4588554fc21a0411f9a04277676` (PR #45 acceptance record).
+**Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`; the live state anchor was refreshed immediately afterward.
 **Latest code/runtime HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`; later commits through the assessed baseline `e253c25` were documentation-only.
 **Latest full runtime validation:** run `42748297211`, commit `918eb0a`, job `129605579888`: runtime validator passed; 158 unit tests reported `OK`; both E2E simulation steps ran in a successful job.
 **Browser acceptance:** PR #43 run `42735786150`, exact head `dcd26f7`: two Chromium cycles, 36 correlated receipts; bounded PR-host evidence only.
