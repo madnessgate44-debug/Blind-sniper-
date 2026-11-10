@@ -1,39 +1,46 @@
 # Blind Sniper build progress — current status
 
-**Snapshot:** 2026-11-10 — native model-provider transport and digest-bound queue dispatch implemented on `feat/p0-autonomous-agent-runtime`; PR #48 remains DRAFT.
-**Architecture:** Self-contained. No external agent or external browser handoff.
-**Current head at this update:** `fb4cf73488ed07870567d771e040462309db747d`; exact-head Runtime Registry, Environment Validation, OS Compliance and native browser CI pass.
-**Release:** NO-GO; no merge or deployment.
+**Snapshot:** 2026-11-10 — PR #48 merged to `main` at `852f4e75b2d48f7a28bc52d1b2567ce9b83cc6f2`.
+**Architecture:** Self-contained Blind Sniper. No external agent or browser handoff.
+**Exact merged PR head:** `96550b943580dc7886e8369870261af790323625`.
+**Release:** NO-GO; this implementation merge is not a production deployment.
 
 ## P0 capability status
 
 | Requirement | Current state | Evidence / remaining gate |
 |---|---|---|
-| R1 Independent model agents | IMPLEMENTED / LIVE-UNVERIFIED | Native OpenAI-compatible HTTPS transport, fresh bounded context, distinct run IDs, timeout/retry/concurrency and redacted receipts. Real provider call still needs an approved host configuration. |
-| R2 Durable worker and interruption recovery | PARTIAL | Native digest-only queue now wraps model invocation with claim, heartbeat, completion or bounded retry. Private GitHub CAS cross-run path and private payload retrieval still need live verification. |
-| R3 Native executor and tool runtime | NOT IMPLEMENTED / BLOCKED | Model tool calls and non-empty tool allowlists fail closed. Build the task-scoped native tool registry, policy enforcement and receipts next. |
-| R4 Native browser | PARTIAL | Checked-in `agent_browser_cli` has bounded Chromium CI evidence; persistent host and cross-job session recovery are unverified. |
-| R5 Continuous unattended autonomy | BLOCKED | No executor, private payload retrieval, poller or notification receiver. Activation gate remains closed; no schedule is active. |
+| R1 Independent model agents | IMPLEMENTED / LIVE-UNVERIFIED | Native HTTPS provider transport, fresh bounded context, distinct agent/run IDs, read-only policy, timeouts/retries and redacted receipts. Real provider round trip still needs approved private-host configuration. |
+| R2 Durable worker and interruption recovery | PARTIAL | Digest-only dispatch, exact task-ID claim, heartbeat, expired-lease completion/failure rejection, bounded retry and stale-lease recovery. Private remote CAS cross-run persistence and private payload re-supply remain unverified. |
+| R3 Native executor and tool runtime | NOT IMPLEMENTED / BLOCKED | Build task-scoped allowlisted tools, policy/approval/idempotency enforcement and execution receipts. Model tool calls remain rejected. |
+| R4 Native browser | PARTIAL | Native browser adapter and real Chromium local-fixture acceptance pass; persistent browser host and cross-job session recovery remain unverified. |
+| R5 Continuous unattended autonomy | BLOCKED | No native executor-backed poller, private payload retrieval or notification receiver. Activation gate remains closed; no schedule is active. |
 
-## Changes in this tranche
+## Merged implementation
 
-- `scripts/blind_sniper_model_worker.py`: native provider transport; no OpenHands invoker.
-- `scripts/blind_sniper_agent_runtime.py`: queue-to-model lifecycle integration; private task/receipt path enforcement.
-- `scripts/blind_sniper_autonomy.py`: removes external-provider prerequisite; hard-blocks unattended activation until native executor exists.
-- `scripts/blind_sniper_worker.py` and `scripts/blind_sniper_ledger.py`: existing durable queue and atomic ledger protocol reused.
-- Removed `scripts/blind_sniper_openhands_cloud.py`, `scripts/blind_sniper_forge_mcp.py` and their tests; registry and workflow docs now describe native-only execution.
-- Added `tests/test_blind_sniper_agent_runtime.py`; runtime workflow path filters include the new module and tests.
+- `scripts/blind_sniper_model_worker.py`: native OpenAI-compatible provider transport; no external agent invoker.
+- `scripts/blind_sniper_agent_runtime.py`: exact task-ID queue claim, heartbeat, invocation and completion/retry lifecycle.
+- `scripts/blind_sniper_worker.py`: atomic queue, exact-task claims, expiry-checked completion/failure and stale lease recovery.
+- `scripts/blind_sniper_ledger.py`: append-only hash-chained local ledger and private GitHub Contents CAS adapter.
+- `scripts/blind_sniper_autonomy.py`: bounded pass with hard-closed unattended activation until prerequisites exist.
+- External OpenHands/Forge adapter modules and tests are absent from the merged native runtime. Private task payloads and output receipts remain outside the public repository.
 
-## Verification checkpoint
+## Exact-head verification ledger
 
-- Head `4e4836015a5b051f891aaa934c0aed7fa850bdce`: registry/environment/OS validation passed; 208 tests passed and one readiness-classification test failed. The failure was corrected without weakening the readiness gate.
-- Head `c3005cfacafaddcf1c58083487de6827b580bed0`: Runtime Registry PASS with 209 tests; E2E interruption/recovery and scheduled-jobs simulations PASS; Environment Validation and OS Compliance PASS.
-- Current head `fb4cf73488ed07870567d771e040462309db747d`: Runtime Registry run `42808329545` PASS with 210 tests in 4.157s; Environment Validation `42808329930` PASS; OS Compliance `42808329480` PASS; Native Browser Adapter `42808329898` PASS including real Chromium local-fixture acceptance. Persistent-host jobs are skipped by design.
-- A concurrent branch change briefly restored optional external client files; the files and tests were removed again before the validated head. The active registry and execution path remain native-only; duplicate PR #49 is closed as superseded.
-- Local clone/test attempt was NOT RUN because this execution environment could not resolve `github.com`.
-- Do not claim live model invocation, private cross-run durability, persistent browser hosting or unattended autonomy until separately demonstrated.
+| Action / workflow | Result | Evidence |
+|---|---|---|
+| Runtime Registry: registry validator + skill audit + Python unit suite + two E2E simulations | PASS | Run `42809163809`; 213 tests in 4.534s, `OK`; simulation-only, no live agent spawned |
+| Environment Validation | PASS | Run `42809163814` |
+| Engineering Execution OS Compliance | PASS | Run `42809163824` |
+| Native Browser Adapter: lease-dispatch tests + real Chromium local fixture | PASS | Run `42809163816`; persistent-host jobs skipped by design |
+
+- Source PR head `96550b9`; merged main commit `852f4e7`.
+- No live model provider, private remote CAS round trip, persistent browser host or unattended run was exercised.
+- No paid provisioning, secrets/permission mutation, release or deployment.
+- Next implementation tranche: R3 native task-scoped executor/tool runtime, keeping model tools fail-closed until policy and recovery acceptance tests pass.
 
 ---
+## Historical build record
+
 ## Historical build record
 
 ## Completed
