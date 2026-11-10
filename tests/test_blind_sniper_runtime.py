@@ -31,7 +31,7 @@ class RuntimeRegistryTests(unittest.TestCase):
         self.assertEqual(adapters["ephemeral_execution"]["status"], "available_in_current_session")
         self.assertNotIn("openhands_dispatch", adapters)
         self.assertEqual(adapters["native_model_runtime"]["status"], "implemented_native_provider_and_bounded_tool_runtime_live_provider_unverified")
-        self.assertEqual(adapters["native_tool_runtime"]["status"], "implemented_contract_tested_host_unverified")
+        self.assertEqual(adapters["native_tool_runtime"]["status"], "partial_native_tool_contracts_host_execution_pending")
         self.assertIn("scripts/blind_sniper_agent_runtime.py", adapters["native_model_runtime"]["tools"])
         self.assertIn("native_task_queue", adapters)
         self.assertIn("agent_browser_cli", adapters)
