@@ -147,7 +147,7 @@ The root Engineering Execution OS v2.3, `AUTHORITY_DELEGATION.md` and its synchr
 - Select skills from the native catalog based on the task; read the actual skill before applying it.
 - Check the active session's real tool inventory and schema. A registry entry is not proof that a connector is callable.
 - Use direct GitHub tools when available. Do not use TinyFish.
-- Keep external workers optional. Use OpenHands, Forge or other external execution agents when they materially advance an in-scope task and a real callable tool plus verified result path are available; no repeat Owner approval is needed for this repository-scoped coordination.
+- Do not dispatch to OpenHands, Forge or any external agent/browser runtime. All task orchestration, execution, state, browser operations and verification must remain inside Blind Sniper; use only its native runtime and authorized host tools.
 - If an integration is unavailable, state the exact boundary and continue through verified native alternatives.
 
 ## 9. Continuity and closeout
