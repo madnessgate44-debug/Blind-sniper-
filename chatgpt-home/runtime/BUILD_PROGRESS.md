@@ -1,62 +1,40 @@
 # Blind Sniper build progress — current status
 
-**Snapshot:** 2026-11-10 — post-merge state after PR #42 and PR #43; code/runtime merge `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`.  
-**Default branch:** `main`  
-**Latest code/runtime HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4` (PR #43 bounded runtime hardening).  
-**Latest docs-state merge:** PR #44 at `3b86f8c9e8de637072f12976eb6906e564c348a5`.  
-**Latest full runtime-validation evidence:** PR #43 head `dcd26f7a` — GitHub Actions validate-runtime job `129564554848` logged 158 tests in 2.319s (`OK`); post-merge `validate-runtime` run `129605579888` passed on `918eb0a`.  
-**Open PRs after integration:** none; PR #42, PR #43 and PR #44 are merged.  
-**Architecture:** Native-first; runtime is a planner and guarded task state machine, not a system that spawns separate model processes.
+**Snapshot:** 2026-11-10 — native model-provider transport and digest-bound queue dispatch implemented on `feat/p0-autonomous-agent-runtime`; PR #48 remains DRAFT.
+**Architecture:** Self-contained. No external agent or external browser handoff.
+**Current head at this update:** `fb4cf73488ed07870567d771e040462309db747d`; exact-head Runtime Registry, Environment Validation, OS Compliance and native browser CI pass.
+**Release:** NO-GO; no merge or deployment.
 
-## Current verified system inventory
+## P0 capability status
 
-- Profiles: 6; native agent roles: 10; capability adapters: 13; workflows: 18.
-- Native skills: 14; mirrored OpenHands skills/rules: 33.
-- Latest full runtime-registry + Python test evidence: PR #43 head `dcd26f7a` — GitHub Actions job `129564554848` logged 158 tests in 2.319s (`OK`); post-merge runtime validator run `129605579888` passed. Skill catalog and Codex config checks passed on PR #43 head.
-- PR #34 completed BS-OS-004 D6/D8. PR #35 refreshed the operating instructions and current/build state. PR #36 fixed array secret scanning and test-isolation defects found during review of PR #30/#31.
-- Exact-main checks after PR #36: Runtime Registry `42716156320` PASS (130 tests); Environment Validation `42716156014` PASS; OS Compliance `42716156010` PASS. Its Pages deploy run `42716155494` was cancelled. The subsequent PR #37 main commit `cf350f7` passed Runtime Registry `42716484899`, Environment Validation `42716484975`, OS Compliance `42716484935`, and Pages deployment `42716484749`.
-- PR #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34/#35/#36/#37 are merged. PR #9/#15/#16 are closed as superseded. PR #13 remains a design-only artifact.
+| Requirement | Current state | Evidence / remaining gate |
+|---|---|---|
+| R1 Independent model agents | IMPLEMENTED / LIVE-UNVERIFIED | Native OpenAI-compatible HTTPS transport, fresh bounded context, distinct run IDs, timeout/retry/concurrency and redacted receipts. Real provider call still needs an approved host configuration. |
+| R2 Durable worker and interruption recovery | PARTIAL | Native digest-only queue now wraps model invocation with claim, heartbeat, completion or bounded retry. Private GitHub CAS cross-run path and private payload retrieval still need live verification. |
+| R3 Native executor and tool runtime | NOT IMPLEMENTED / BLOCKED | Model tool calls and non-empty tool allowlists fail closed. Build the task-scoped native tool registry, policy enforcement and receipts next. |
+| R4 Native browser | PARTIAL | Checked-in `agent_browser_cli` has bounded Chromium CI evidence; persistent host and cross-job session recovery are unverified. |
+| R5 Continuous unattended autonomy | BLOCKED | No executor, private payload retrieval, poller or notification receiver. Activation gate remains closed; no schedule is active. |
 
-## Live repository checkpoint — 2026-11-10
+## Changes in this tranche
 
-- Code/runtime HEAD after PR #43 merge: `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`; the later documentation-only merge is PR #44 at `3b86f8c9e8de637072f12976eb6906e564c348a5`.
-- Latest commit removes sparse checkout from the read-only executor checkout so fixtures under `.github/workflows` and `.blind-sniper/tasks` are present for tests. Read-only controls remain `contents: read` and `persist-credentials: false`.
-- The post-merge exact HEAD has 7/7 completed successful check runs: `policy-compliance` (2), `validate-runtime`, `validate-environment`, `build`, `report-build-status`, and `deploy`.
-- Live open-PR query after PR #42 and #43 merged: empty. Branch protection remains disabled and is tracked separately.
-- Durable cross-run worker/queue, heartbeat, cancellation and stale-worker supervision remain unimplemented/unverified; no persistent runner is established.
-- Direct OpenHands Cloud dispatch/result retrieval and direct Forge MCP invocation remain unavailable as callable tools in this ChatGPT session. GitHub issue-comment coordination is the verified fallback, not proof of a direct API session.
+- `scripts/blind_sniper_model_worker.py`: native provider transport; no OpenHands invoker.
+- `scripts/blind_sniper_agent_runtime.py`: queue-to-model lifecycle integration; private task/receipt path enforcement.
+- `scripts/blind_sniper_autonomy.py`: removes external-provider prerequisite; hard-blocks unattended activation until native executor exists.
+- `scripts/blind_sniper_worker.py` and `scripts/blind_sniper_ledger.py`: existing durable queue and atomic ledger protocol reused.
+- Removed `scripts/blind_sniper_openhands_cloud.py`, `scripts/blind_sniper_forge_mcp.py` and their tests; registry and workflow docs now describe native-only execution.
+- Added `tests/test_blind_sniper_agent_runtime.py`; runtime workflow path filters include the new module and tests.
 
-## Post-merge workstream closeout — 2026-11-10
+## Verification checkpoint
 
-- PR #42 merged at `69ff80afd02ca326b2cad588aff3227ac67f53e0`; PR #43 merged at `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`.
-- PR #43 changed the allowlisted executor checkout and compact-state browser reservation guard, with regression tests; no cross-run worker/queue architecture was added.
-- Post-merge `main` checks: 7/7 success, including validate-runtime, validate-environment and deploy. PR #43 head: 6 success, 2 persistent-host checks skipped.
-- No PRs remain open after the two merges. Branch protection remains excluded; BS-RELEASE-001 acceptance remains open.
-
-## Continuity and privacy status
-
-- Private continuity scaffold: `madnessgate44-debug/G/blind-sniper-continuity/` in owner-owned private repository `madnessgate44-debug/G`; repository visibility verified private.
-- Five non-empty files are present: README, MEMORY, PROJECTS, CONVERSATION_CONTINUITY and TRANSCRIPT_INDEX.
-- The scaffold is not a transcript archive. No transcripts are imported. Historical notes are summaries/reconstructions, not verbatim source records.
-- Recurring conversation synchronization and full transcript migration remain BLOCKED: no authorized ChatGPT export/source is available, and scheduled-task creation was blocked by the account's active-task limit. Do not misrepresent a repository integrity check as conversation synchronization.
-
-## Current limitations and remaining work
-
-1. **BS-RELEASE-001:** complete release acceptance before making any production-readiness claim. GitHub Pages deployment is a documentation/site publication, not proof of a production application release.
-2. **Branch protection:** `main` currently reports `protected=false`; no branch-protection write action is exposed in the connected GitHub toolset.
-3. **Executor durability:** bounded per-run execution (Option B) is implemented; durable cross-run queue/worker, heartbeat, cancellation and stale-worker supervision are not established. The Owner's product decision on whether to pursue durable execution remains open.
-4. **External execution:** direct OpenHands Cloud API dispatch/result retrieval and Forge browser MCP invocation are not callable/verified from this ChatGPT session. OpenHands PR activity is verified through GitHub artifacts, not a persistent direct API session.
-5. **Transcript source:** obtain a supported, authorized export or account-history connector before attempting migration; preserve source order, timestamps and identifiers.
+- Head `4e4836015a5b051f891aaa934c0aed7fa850bdce`: registry/environment/OS validation passed; 208 tests passed and one readiness-classification test failed. The failure was corrected without weakening the readiness gate.
+- Head `c3005cfacafaddcf1c58083487de6827b580bed0`: Runtime Registry PASS with 209 tests; E2E interruption/recovery and scheduled-jobs simulations PASS; Environment Validation and OS Compliance PASS.
+- Current head `fb4cf73488ed07870567d771e040462309db747d`: Runtime Registry run `42808329545` PASS with 210 tests in 4.157s; Environment Validation `42808329930` PASS; OS Compliance `42808329480` PASS; Native Browser Adapter `42808329898` PASS including real Chromium local-fixture acceptance. Persistent-host jobs are skipped by design.
+- A concurrent branch change briefly restored optional external client files; the files and tests were removed again before the validated head. The active registry and execution path remain native-only; duplicate PR #49 is closed as superseded.
+- Local clone/test attempt was NOT RUN because this execution environment could not resolve `github.com`.
+- Do not claim live model invocation, private cross-run durability, persistent browser hosting or unattended autonomy until separately demonstrated.
 
 ---
-# Historical implementation log — pre-2026-11-10 (preserved, not current status)
-
-The material below is the earlier 2026-11-08 build log. It is retained for provenance only. Any old branch, PR, test count, limitation or next-step statement below is superseded by the current status above and the live GitHub state.
-# Blind Sniper build progress — 8 November 2026
-
-**Architecture:** Native-first. Blind Sniper's own runtime, policy, workforce contracts, ledger and recovery are core. External agents are optional adapters.
-**Integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`
-**Current state anchor:** `chatgpt-home/CURRENT_STATE.md`
+## Historical build record
 
 ## Completed
 
@@ -141,3 +119,23 @@ Remaining:
 - Authenticated profiles/cookies intentionally unsupported.
 - Independent full-diff review pending.
 - PR #11 remains draft; no merge/deployment target is available.
+
+
+## Owner architecture correction — 2026-11-10
+
+- [V] Owner clarified that Blind Sniper is a self-contained system and must not depend on Forge or OpenHands for browsing, execution, delegation, persistence or recovery.
+- [V] P0 issue #46 was rewritten to require native independent model agents, Blind Sniper-owned durable queue/worker recovery, native executor/tool runtime, native browser capability and safe continuous autonomy.
+- [V] The native browser adapter already has CI-backed Chromium acceptance for bounded navigation/actions, task-lease checks, action receipts and interruption reconciliation. This does not prove a persistent authenticated browser host or cross-job browser-session recovery.
+- [U] Independent model invocations are not implemented; the runtime currently resolves agent contracts rather than spawning separate model executions.
+- [U] Full durable worker cancellation, heartbeat supervision, stale-lease reclamation and interruption-safe cross-run recovery remain incomplete.
+
+
+## Native autonomy checkpoint — 2026-11-10
+
+- [V] Branch `feat/p0-autonomous-agent-runtime` latest implementation commit at checkpoint: `1fad5f8de0316e8b5df7161fa9e53df64384858e` (21 ahead of main, 0 behind before this state-documentation commit).
+- [V] PR #48 is a draft validation PR; it remains unmerged.
+- [V] Runtime CI run `42805873386`: validator PASS; skill catalog audit PASS; 158 unit tests in 2.319s (`OK`); interruption/recovery simulation PASS; scheduled-jobs simulation PASS; artifact `13758272503`.
+- [V] Environment validation `42805873383` and OS compliance `42805873397` both PASS on the same head.
+- [V] The earlier E2E failure `42805773341` was caused by a simulation fixture selecting `task-control-loop`, which correctly fails closed because the native model provider is not configured. The fixture now selects `bounded-verification` for local deterministic work; the subsequent complete runtime workflow passed.
+- [U] These checks verify the current planner, local ledger lifecycle and deterministic simulations; they do not verify independent model-agent invocation, a private cross-run queue worker, a persistent authenticated browser host, or unattended native autonomy.
+- [U] R1 NOT IMPLEMENTED; R2 PARTIAL; R3 PARTIAL; R4 PARTIAL; R5 NOT VERIFIED.

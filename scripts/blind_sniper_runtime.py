@@ -175,7 +175,6 @@ def capability_state(status: str) -> str:
         return "AVAILABLE"
     return "UNVERIFIED"
 
-
 def choose_workflow(task: dict[str, Any], workflows: list[dict[str, Any]]) -> str:
     known = {row.get("id") for row in workflows}
     requested = task.get("workflow")

@@ -1,6 +1,6 @@
 # Blind Sniper — Current Technical State
 
-**Live snapshot:** 2026-11-10 — BS-RELEASE-001 remains **NO-GO**; first private cross-run execution tranche is now implemented and verified.
+**Live snapshot:** 2026-11-10 — BS-RELEASE-001 remains **NO-GO**. Native model-provider transport and queue dispatch are implemented on `feat/p0-autonomous-agent-runtime`; 210 tests and runtime/environment/OS CI pass on current PR head; live provider execution and private cross-run persistence remain unverified.
 **Default branch:** `main`
 **Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`.
 **Latest code/runtime HEAD:** `3b4ef572dc8b6aa819185e08e22a80e4f8cfd9ff` — executor now supports the Owner-authorized private GitHub CAS ledger, run-unique leases, duplicate refusal and lease release.
@@ -9,11 +9,28 @@
 **Private ledger integration:** live append/read-back/idempotency smoke run `42758084356` PASS; private execution run `42758395681` recorded task lifecycle, claim, renewal, transitions, release and correlated receipts. A later independent run `42758616125` refused replay of an existing task ID.
 **Browser acceptance:** PR #43 run `42735786150`, exact head `dcd26f7`: two Chromium cycles, 36 correlated receipts; bounded PR-host evidence only.
 **Release gate:** **NO-GO**. Durable cross-run execution is now partial, not complete: concurrency contention, interruption-safe recovery, cancellation and stale-worker recovery remain unverified; release-specific independent review, operational rollback/monitoring ownership, and exact-target smoke test also remain open. See `chatgpt-home/BS-RELEASE-001_RELEASE_ACCEPTANCE.md`.
-**Open PRs:** none at last live query.
+**Open PRs:** PR #47 (review-only draft) and PR #48 (P0 validation draft); neither is merged.
 **Branch protection:** `main` reports `protected=false`; no settings changed.
 **Authority:** Engineering Execution OS v2.3 and active repository-scoped Owner delegation. Exclusions remain in `chatgpt-home/AUTHORITY_DELEGATION.md`.
 
-> Historical and technical detail below is retained for provenance. Where it conflicts with this live snapshot, this snapshot and live GitHub state take precedence.
+## Active P0 — native autonomous runtime — 2026-11-10
+
+- [V] Work branch: `feat/p0-autonomous-agent-runtime`; base `main` at `bed0df1664be72b060512eea218f7071f9bfa09c`. PR #48 remains DRAFT and unmerged.
+- [V] Owner direction: native-only execution. No Forge/OpenHands agent, API, session, worker, browser or return-path handoff.
+- [V] R1 implementation: `scripts/blind_sniper_model_worker.py` now owns an OpenAI-compatible HTTPS provider transport with fresh bounded context, unique run IDs, host-configured provider/model, optional env-only auth, timeout, retries, concurrency bounds and redacted receipts. Tool calls fail closed until R3 exists.
+- [V] R1/R2 integration: `scripts/blind_sniper_agent_runtime.py` binds digest-only queue enqueue/claim/heartbeat/model invocation/result completion or bounded retry. Task JSON and output receipt are rejected if placed inside this public repository.
+- [U] R1 live provider round trip: NOT VERIFIED; no approved provider configuration or credentials were available to this repository run.
+- [U] R2 remote cross-run queue durability: NOT VERIFIED against the private GitHub CAS target. The queue protocol and dispatch are contract-tested locally; payload retrieval remains host-supplied on retry.
+- [V] The current branch contains no external agent or browser adapter modules; the capability registry and workflows remain native-only.
+- [V] Queue readiness is PARTIAL because the registry status explicitly describes local queue capability and pending remote CAS validation.
+- [B] R3 native task-scoped executor/tool registry is NOT IMPLEMENTED. Model-issued tool calls and non-empty tool allowlists are rejected.
+- [V] R4 remains PARTIAL: checked-in `agent_browser_cli` has bounded Chromium CI evidence; persistent browser host and cross-job session recovery are unverified.
+- [B] R5 remains BLOCKED: no unattended poller, native executor, private payload retrieval or notification receiver. Activation gate is hard-closed; no schedule is active.
+- [V] Corrected queue classification in `c3005cf`; the full suite then passed 209 tests.
+- [V] Current PR head `fb4cf73488ed07870567d771e040462309db747d`: Runtime Registry run `42808329545` PASS, 210 tests in 4.157s (`OK`); interruption/recovery and scheduled-jobs simulations PASS (simulation-only; no live model agent spawned).
+- [V] Exact-head Environment Validation run `42808329930` PASS; Engineering Execution OS Compliance run `42808329480` PASS; Native Browser Adapter run `42808329898` PASS including real Chromium local-fixture acceptance. Persistent-host jobs were skipped, so cross-job browser persistence remains unverified.
+- [V] Concurrent branch drift briefly reintroduced optional client files; those files and their tests were removed again before this validated head. Duplicate PR #49 is closed as superseded.
+- [V] No merge, release or deployment. Release remains NO-GO.
 
 ## Private cross-run execution tranche — 2026-11-10
 

@@ -9,10 +9,15 @@ Every server/connector entry must document: provider, transport, endpoint, authe
 |---|---|---|---|
 | GitHub connector | Repository, issue, PR and Actions API | Connected in ChatGPT | HOST-AVAILABLE |
 | Web search | Public web research | Platform tool | HOST-AVAILABLE; not interactive browser control |
-| Forge HTTP MCP | Browser/computer interaction through Firstborn | PR #147; public HTTPS deployment and ChatGPT connector registration remain open | BLOCKED in this session |
-| OpenHands | Coding execution and specialist agents | GitHub App mention route creates sessions | PARTIAL; task-result retrieval not proven |
+| Forge HTTP MCP (optional, disabled) | Browser/computer interaction | `scripts/blind_sniper_forge_mcp.py` implements the Streamable HTTP MCP client (initialize/tools/list/call); disabled until a durable endpoint + auth exist | BLOCKED; not a dependency |
+| OpenHands Cloud V1 API (optional, disabled) | Create conversation, poll start task, status/messages/artifacts, cancel | `scripts/blind_sniper_openhands_cloud.py` contract-tested with a fake transport; bearer from `OPENHANDS_CLOUD_API_KEY` | PARTIAL; no live round trip; not a dependency |
 | Brain | Durable coordination and handoff | GitHub issue #292 and PR #298 routing fix proposed | PARTIAL; do not treat draft PR as merged |
 | Codex MCP | Future host integration | No Codex host loaded here | NOT CONFIGURED |
+
+Native-first boundary: Blind Sniper's own runtime, queue, executor, browser capability and
+verification are the system of record (see `chatgpt-home/BLIND_SNIPER.md`). The two optional client
+modules above are not wired into any profile or workflow and are not prerequisites for native
+operation; enabling either is an Owner decision.
 
 ## Forge server activation gate
 Do not enable until all are true:

@@ -96,7 +96,10 @@ def main() -> int:
         write_json(task_file, {
             "task_id": task_id,
             "objective": "Run a deterministic local task, prove lease ownership, verify output and recover after interruption.",
-            "workflow": "task-control-loop",
+            # This harness simulates local bounded verification only. It must
+            # not select task-control-loop, whose native model provider is
+            # intentionally BLOCKED until configured.
+            "workflow": "bounded-verification",
             "requested_actions": ["read", "write_file", "run_tests"],
             "repository": "madnessgate44-debug/Blind-sniper-",
             "base_commit": commit_sha,

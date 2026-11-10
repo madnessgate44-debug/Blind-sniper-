@@ -50,7 +50,7 @@ The native roster is exactly these ten checked-in roles:
 
 Workflow routing and agent assignment are defined in `chatgpt-home/runtime/workflows.json`; profile bindings are defined in `profiles.json`. Do not maintain duplicate routing maps in runtime code.
 
-External services or agents may be used only as optional adapters when their real capability, connection, permissions and return path are verified. They are not core roles or prerequisites. Do not assume any external agent has been contacted or executed a task without a correlated receipt and retrieved response.
+Blind Sniper is self-contained: its own runtime, native agent orchestration, task queue, persistence/recovery, executor, browser capability, supervision and verification are the system. Do not delegate core work to Forge, OpenHands, external agent runtimes or external browser agents; do not make their APIs, sessions, workers, tools or return paths prerequisites. Model inference may use a configured provider through Blind Sniper's own provider interface, but task ownership, policy, orchestration, tool execution, state and verification remain inside Blind Sniper. Native role contracts are not proof of separate model processes; verify actual invocation and correlated receipts.
 
 ## 3. Repository and privacy boundary
 
@@ -147,7 +147,7 @@ The root Engineering Execution OS v2.3, `AUTHORITY_DELEGATION.md` and its synchr
 - Select skills from the native catalog based on the task; read the actual skill before applying it.
 - Check the active session's real tool inventory and schema. A registry entry is not proof that a connector is callable.
 - Use direct GitHub tools when available. Do not use TinyFish.
-- Keep external workers optional. Use OpenHands, Forge or other external execution agents when they materially advance an in-scope task and a real callable tool plus verified result path are available; no repeat Owner approval is needed for this repository-scoped coordination.
+- Do not dispatch to OpenHands, Forge or any external agent/browser runtime. All task orchestration, execution, state, browser operations and verification must remain inside Blind Sniper; use only its native runtime and authorized host tools.
 - If an integration is unavailable, state the exact boundary and continue through verified native alternatives.
 
 ## 9. Continuity and closeout

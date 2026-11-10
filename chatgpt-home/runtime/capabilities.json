@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "runtime_name": "Blind Sniper",
-  "runtime_model": "ChatGPT host + GitHub-persisted control plane + external execution adapters",
+  "runtime_model": "Blind Sniper native runtime + GitHub control plane + native browser and bounded host execution",
   "snapshot_date": "2026-11-08",
   "evidence_policy": "A capability is operational only when its trigger, permission, execution, output and verification path are proven.",
   "adapters": [
@@ -100,7 +100,7 @@
         "create_and_manage_supported_automations"
       ],
       "limitations": [
-        "Existing scheduled checkpoints are not proof of OpenHands task delivery; task receiver and delivery route must be tested."
+        "Scheduled checkpoints are triggers only; native task receiver, durable queue and execution path must be verified before unattended work is claimed."
       ]
     },
     {
@@ -132,47 +132,6 @@
       ]
     },
     {
-      "id": "forge_browser_mcp",
-      "kind": "authenticated_browser_and_computer_use",
-      "status": "endpoint_remote_smoke_reported_connector_not_registered",
-      "tools": [],
-      "capabilities": [
-        "authenticated_Streamable_HTTP_MCP_endpoint",
-        "browser_open_view_wait_click_type_press_scroll_extract_query_screenshot_history_close",
-        "read_only_default",
-        "audit_receipts",
-        "credential_redaction"
-      ],
-      "limitations": [
-        "Firstborn PR #148 reports a successful public-HTTPS sandbox round trip and GitHub CI run 42473077287; the sandbox URL is ephemeral and is not a durable host.",
-        "ChatGPT custom connector registration is not present in this session, so these browser tools are not callable from Blind Sniper yet.",
-        "Firstborn PR #149 overlaps PR #148 on browser_wait; reconcile the two open changes before merging."
-      ],
-      "evidence": {
-        "pr147": "https://github.com/madnessgate44-debug/Firstborn/pull/147",
-        "pr148": "https://github.com/madnessgate44-debug/Firstborn/pull/148",
-        "pr149": "https://github.com/madnessgate44-debug/Firstborn/pull/149",
-        "ci_run": 42473077287,
-        "remote_smoke": "reported PASS by OpenHands in Firstborn issue #146 comment 6720609474; not independently invoked from ChatGPT"
-      }
-    },
-    {
-      "id": "openhands_dispatch",
-      "kind": "agent_execution",
-      "status": "partially_verified",
-      "tools": [
-        "GitHub @openhands issue-comment mention"
-      ],
-      "capabilities": [
-        "mention_can_create_session_receipt"
-      ],
-      "limitations": [
-        "GitHub @openhands mention creates a resolver session; T013 produced one task-correlated read-only report on Brain #292 (comment 6720817754, session e341bd8463694d68bd79dc609e408f33).",
-        "Direct OpenHands Cloud API access is not exposed as a callable tool to Blind Sniper in this ChatGPT session.",
-        "One read-only report round trip is proven; code-execution artifact return and two consecutive correlated round trips remain unproven."
-      ]
-    },
-    {
       "id": "persistent_runner",
       "kind": "isolated_code_execution",
       "status": "partial_host_bootstrap_versioned_not_provisioned",
@@ -189,6 +148,35 @@
         "No generic task dispatch runner or persistent interactive workspace is verified.",
         "No OCI VM or self-hosted runner has been provisioned; cross-job session persistence remains unverified."
       ]
+    },
+    {
+      "id": "durable_queue",
+      "kind": "durable_task_queue",
+      "status": "partial_protocol_implemented_remote_unverified",
+      "tools": [
+        "scripts/blind_sniper_worker.py",
+        "scripts/blind_sniper_ledger.py",
+        "scripts/blind_sniper_autonomy.py"
+      ],
+      "capabilities": [
+        "enqueue",
+        "exclusive_claim",
+        "lease_and_heartbeat",
+        "bounded_retry",
+        "cancel",
+        "stale_lease_recovery",
+        "reconciliation_and_health",
+        "guarded_atomic_append"
+      ],
+      "limitations": [
+        "The queue is a protocol over the native append-only ledger (local file lock or private GitHub Contents CAS), not a background daemon.",
+        "Cross-run durability depends on the private GitHub CAS ledger; the remote path is mock-tested, not live-verified here.",
+        "Only payload digests are stored; private task payloads and continuity stay out of the public repository."
+      ],
+      "evidence": {
+        "queue_tests": "tests/test_blind_sniper_worker.py",
+        "autonomy_tests": "tests/test_blind_sniper_autonomy.py"
+      }
     },
     {
       "id": "ephemeral_execution",
@@ -267,6 +255,62 @@
       "license": "Apache-2.0",
       "version": "0.41.2",
       "upstream": "https://github.com/vercel-labs/agent-browser"
+    },
+    {
+      "id": "native_model_runtime",
+      "kind": "native_model_agent_orchestration",
+      "status": "implemented_native_provider_transport_and_queue_dispatch_not_live_verified",
+      "tools": [
+        "scripts/blind_sniper_model_worker.py",
+        "scripts/blind_sniper_agent_runtime.py",
+        "chatgpt-home/runtime/agents.json"
+      ],
+      "capabilities": [
+        "independent_model_invocation_boundary",
+        "fresh_bounded_context",
+        "distinct_agent_and_run_identity",
+        "tool_and_permission_allowlist_enforcement",
+        "bounded_concurrency",
+        "provider_transport_timeout",
+        "bounded_retries",
+        "redacted_correlated_receipts",
+        "durable_queue_claim_and_completion_integration"
+      ],
+      "limitations": [
+        "OpenAI-compatible HTTPS provider transport is implemented inside Blind Sniper; no provider is hard-coded.",
+        "Host must configure BLIND_SNIPER_MODEL_BASE_URL and BLIND_SNIPER_MODEL_NAME; BLIND_SNIPER_MODEL_API_KEY is optional and read only from the environment.",
+        "No live provider credentials or round trip are available in this repository validation; real model invocation remains NOT LIVE-VERIFIED.",
+        "Tool calls and non-empty tool allowlists fail closed until the native executor/tool runtime is connected.",
+        "Queue dispatch stores only a payload digest; task payload and output receipt must be supplied/stored by a private host path."
+      ]
+    },
+    {
+      "id": "native_task_queue",
+      "kind": "native_durable_task_state_and_recovery",
+      "status": "partial_native_model_dispatch_local_ledger_remote_private_cas_pending",
+      "tools": [
+        "scripts/blind_sniper_ledger.py",
+        "scripts/blind_sniper_worker.py",
+        "scripts/blind_sniper_agent_runtime.py"
+      ],
+      "capabilities": [
+        "append_only_event_ledger",
+        "idempotency",
+        "lease_claim_renew_release",
+        "local_process_locking",
+        "github_contents_compare_and_swap_for_private_target",
+        "lease_bound_browser_action_receipts",
+        "native_model_dispatch_claim",
+        "lease_heartbeat_before_and_after_invocation",
+        "result_digest_completion",
+        "bounded_failure_retry"
+      ],
+      "limitations": [
+        "Native model dispatch now enqueues or validates a digest-bound task, claims a lease, heartbeats, invokes one bounded model task and records completion or retry.",
+        "Queue state is durable only to the configured ledger; cross-run durability requires the private GitHub Contents CAS target and a host-provided token.",
+        "The task payload and output artifact remain outside the public repository and must be supplied by the private host on each retry.",
+        "No persistent worker, automatic payload retrieval, or unattended queue poller is established."
+      ]
     }
   ],
   "exclusions": [

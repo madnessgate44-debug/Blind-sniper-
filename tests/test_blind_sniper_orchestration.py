@@ -21,8 +21,10 @@ class OrchestrationEngineTests(unittest.TestCase):
         })
         self.assertEqual(plan["workflow"], "inspect-plan-implement-verify")
         self.assertEqual(plan["profile"], "engineering")
-        self.assertEqual(plan["execution_readiness"], "PARTIAL")
-        self.assertEqual(plan["next_action"], "HOST_ASSISTED_EXECUTION")
+        # The native model provider boundary is deliberately disabled until a
+        # real provider and safe cost boundary are configured.
+        self.assertEqual(plan["execution_readiness"], "BLOCKED")
+        self.assertEqual(plan["next_action"], "BLOCKED_BY_CAPABILITY")
         self.assertTrue(plan["selected_agents"])
         self.assertTrue(all(agent["contract_path"] for agent in plan["selected_agents"]))
         self.assertTrue(all((ROOT / agent["contract_path"]).is_file() for agent in plan["selected_agents"]))
@@ -52,24 +54,24 @@ class OrchestrationEngineTests(unittest.TestCase):
         with self.assertRaises(runtime.RuntimeErrorBase):
             runtime.build_plan({"objective": "Research a topic"})
 
-    def test_unregistered_browser_adapter_blocks_execution(self):
+    def test_native_browser_workflow_is_partial_without_persistent_host(self):
         plan = runtime.build_plan({
             "task_id": "BS-TEST-004",
-            "objective": "Read-only browser task",
-            "workflow": "forge-browser-roundtrip",
+            "objective": "Read-only native browser task",
+            "workflow": "native-browser-interaction",
         })
-        self.assertEqual(plan["execution_readiness"], "BLOCKED")
-        state = runtime.create_task_state(plan)
-        for target in ("INSPECTING", "SPECIFIED", "PLANNED"):
-            state = runtime.transition_task(state, target)
-        with self.assertRaisesRegex(runtime.RuntimeErrorBase, "blocked or unverified"):
-            runtime.transition_task(state, "EXECUTING")
+        self.assertEqual(plan["workflow"], "native-browser-interaction")
+        self.assertEqual(plan["execution_readiness"], "PARTIAL")
+        self.assertEqual(plan["next_action"], "HOST_ASSISTED_EXECUTION")
+        adapter_ids = {item["id"] for item in plan["required_adapters"]}
+        self.assertEqual(adapter_ids, {"agent_browser_cli", "native_task_queue"})
+        self.assertFalse(adapter_ids & {"forge_browser_mcp", "openhands_dispatch"})
 
     def test_high_risk_action_requires_owner_approval(self):
         plan = runtime.build_plan({
             "task_id": "BS-TEST-005",
             "objective": "Owner-directed bounded task",
-            "workflow": "task-control-loop",
+            "workflow": "research-and-synthesis",
             "requested_actions": ["production_deploy"],
         })
         self.assertEqual(plan["approval"]["pending_actions"], ["production_deploy"])
@@ -93,7 +95,7 @@ class OrchestrationEngineTests(unittest.TestCase):
         plan = runtime.build_plan({
             "task_id": "BS-TEST-009",
             "objective": "Owner-directed bounded task",
-            "workflow": "task-control-loop",
+            "workflow": "research-and-synthesis",
             "requested_actions": ["production_deploy"],
             "owner_approval": {"approved_actions": ["production_deploy"]},
             "authority_delegation": {"id": "owner-standing-delegation-2026-11-09", "approved_actions": ["production_deploy"]},
@@ -119,7 +121,7 @@ class OrchestrationEngineTests(unittest.TestCase):
         plan = runtime.build_plan({
             "task_id": "BS-TEST-DELEGATION-001",
             "objective": "Merge and deploy an accepted Blind Sniper repository release",
-            "workflow": "task-control-loop",
+            "workflow": "research-and-synthesis",
             "repository": "madnessgate44-debug/Blind-sniper-",
             "requested_actions": ["merge", "merge_to_main", "default_branch_push", "ci_cd_edit", "production_deploy"],
         })
@@ -241,7 +243,7 @@ class OrchestrationEngineTests(unittest.TestCase):
         plan = runtime.build_plan({
             "task_id": "BS-SEC-002",
             "objective": "Perform protected action",
-            "workflow": "task-control-loop",
+            "workflow": "research-and-synthesis",
             "requested_actions": ["merge_to_main"],
         })
         state = runtime.create_task_state(plan)
@@ -265,7 +267,7 @@ class OrchestrationEngineTests(unittest.TestCase):
         plan = runtime.build_plan({
             "task_id": "BS-SEC-003",
             "objective": "Research and verify a technical question",
-            "workflow": "task-control-loop",
+            "workflow": "research-and-synthesis",
         })
         state = runtime.create_task_state(plan)
         state["implementer_id"] = "engineer"

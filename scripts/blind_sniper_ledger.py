@@ -177,6 +177,43 @@ class TaskLedger:
             finally:
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
+    def append_guarded(
+        self,
+        *,
+        guard,
+        task_id: str,
+        event_type: str,
+        payload: dict[str, Any],
+        idempotency_key: str,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """Atomically evaluate ``guard(rows, now)`` and append only if it returns None.
+
+        The guard runs under the same exclusive file lock as the append, so a
+        read-then-decide-then-append sequence (used by the durable queue) is
+        atomic with respect to other processes sharing the ledger file.
+        """
+        if not task_id.strip() or not event_type.strip() or not idempotency_key.strip():
+            raise LedgerError("task_id, event_type and idempotency_key are required")
+        if not isinstance(payload, dict):
+            raise LedgerError("payload must be an object")
+        instant = now or datetime.now(timezone.utc)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a+", encoding="utf-8") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                rows = self._read_unlocked()
+                error = guard(rows, instant)
+                if error:
+                    raise LedgerError(error)
+                event, _ = self._append_locked(
+                    handle, rows, task_id=task_id, event_type=event_type,
+                    payload=payload, idempotency_key=idempotency_key,
+                )
+                return event
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
     @staticmethod
     def _active_lease(rows: list[dict[str, Any]], task_id: str, now: datetime):
         lease = None
@@ -730,6 +767,45 @@ class GitHubContentsLedger:
                 continue
             return {**event, "commit_sha": commit_sha}
         raise GitHubLedgerError(f"GitHub execution-transition CAS failed after {self.max_retries} attempts")
+
+    def append_guarded(
+        self,
+        *,
+        guard,
+        task_id: str,
+        event_type: str,
+        payload: dict[str, Any],
+        idempotency_key: str,
+        now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """Guard-and-append using GitHub blob-SHA compare-and-swap.
+
+        The guard runs against the freshly read remote ledger inside each CAS
+        attempt; a conflicting writer forces a reload and re-evaluation rather
+        than an overwrite.
+        """
+        for _ in range(self.max_retries):
+            remote_content, remote_sha = self._read_remote()
+            with tempfile.TemporaryDirectory() as tmp:
+                local_path = Path(tmp) / "events.jsonl"
+                local_path.write_bytes(remote_content)
+                local = TaskLedger(local_path)
+                try:
+                    event = local.append_guarded(
+                        guard=guard, task_id=task_id, event_type=event_type,
+                        payload=payload, idempotency_key=idempotency_key, now=now,
+                    )
+                except LedgerError as exc:
+                    raise GitHubLedgerError(str(exc)) from exc
+                updated_content = local_path.read_bytes()
+            commit_sha = self._write_remote_content(
+                content=updated_content, remote_sha=remote_sha,
+                task_id=task_id, event_type=event_type,
+            )
+            if commit_sha is None:
+                continue
+            return {**event, "commit_sha": commit_sha}
+        raise GitHubLedgerError(f"GitHub guarded append CAS failed after {self.max_retries} attempts")
 
     def append(
         self,

@@ -66,10 +66,10 @@
       ],
       "adapters": [
         "github",
-        "openhands_dispatch",
-        "persistent_runner"
+        "native_model_runtime",
+        "native_task_queue"
       ],
-      "status": "partially_operational",
+      "status": "partial_native_model_dispatch_executor_and_persistent_worker_pending",
       "native_contract_path": "chatgpt-home/workflows/task-lifecycle.md",
       "agents": [
         "blind-sniper",
@@ -92,7 +92,8 @@
       ],
       "adapters": [
         "github",
-        "persistent_runner"
+        "ephemeral_execution",
+        "native_model_runtime"
       ],
       "status": "repository_changes_and_PR_available_ci_trigger_dependent",
       "native_contract_path": "chatgpt-home/workflows/task-lifecycle.md",
@@ -194,50 +195,59 @@
       "contract_mode": "native_contract"
     },
     {
-      "id": "openhands-two-way-handoff",
-      "trigger": "GitHub_issue_comment_mention",
+      "id": "native-model-agent-execution",
+      "trigger": "native_task_dispatch",
       "steps": [
-        "post_correlated_task_envelope",
-        "capture_bot_session_receipt",
-        "retrieve_session_result",
-        "verify_artifacts",
-        "post_correlated_ack"
+        "create_unique_agent_task_and_run_ids",
+        "construct_fresh_bounded_context",
+        "invoke_configured_model_provider_inside_blind_sniper",
+        "enforce_agent_tool_and_permission_allowlists",
+        "persist_correlated_run_receipt",
+        "verify_output_and_artifact_provenance"
       ],
       "adapters": [
-        "github",
-        "openhands_dispatch"
+        "native_model_runtime",
+        "native_task_queue"
       ],
-      "status": "partially_verified_session_results_returned_in_brain_comments_direct_chatgpt_api_not_exposed",
-      "native_contract_path": "chatgpt-home/workflows/agent-handoff.md",
+      "status": "implemented_provider_transport_and_queue_dispatch_live_provider_unverified",
       "required_capabilities": {
-        "openhands_dispatch": [
-          "session_result_retrieval"
+        "native_model_runtime": [
+          "independent_model_invocation",
+          "fresh_bounded_context",
+          "correlated_run_receipts"
         ]
       },
-      "contract_mode": "native_contract"
+      "contract_mode": "native_contract",
+      "native_contract_path": "chatgpt-home/workflows/agent-handoff.md"
     },
     {
-      "id": "forge-browser-roundtrip",
-      "trigger": "ChatGPT_browser_task",
+      "id": "native-browser-interaction",
+      "trigger": "native_browser_task",
       "steps": [
-        "authenticate_MCP_endpoint",
-        "register_connector",
-        "discover_tool_allowlist",
-        "execute_read_only_browser_task",
-        "capture_audit_log",
-        "verify_result"
+        "resolve_native_browser_tool_allowlist",
+        "validate_task_and_lease",
+        "execute_bounded_agent_browser_action",
+        "persist_action_receipt_to_native_task_ledger",
+        "verify_observed_page_state_and_artifacts"
       ],
       "adapters": [
-        "forge_browser_mcp"
+        "agent_browser_cli",
+        "native_task_queue"
       ],
-      "status": "blocked_durable_host_and_chatgpt_connector_registration",
+      "status": "native_browser_ci_e2e_passed_persistent_host_not_provisioned",
       "required_capabilities": {
-        "forge_browser_mcp": [
-          "authenticated_browser_interaction"
+        "agent_browser_cli": [
+          "allowlisted_http_navigation",
+          "accessibility_snapshot",
+          "screenshot",
+          "structured_action_receipts"
+        ],
+        "native_task_queue": [
+          "lease_bound_browser_action_receipts"
         ]
       },
       "contract_mode": "registry_only",
-      "registry_only_reason": "Blocked capability record; no durable Forge browser host or registered ChatGPT connector is verified."
+      "registry_only_reason": "Blind Sniper's native agent-browser adapter has CI-backed Chromium E2E evidence; persistent authenticated host and cross-job session recovery remain unverified."
     },
     {
       "id": "persistent-browser-host-acceptance",
@@ -286,20 +296,21 @@
       ],
       "adapters": [
         "automation",
-        "openhands_dispatch",
-        "persistent_runner"
+        "native_model_runtime",
+        "native_task_queue",
+        "durable_queue"
       ],
-      "status": "not_verified_do_not_claim_background_execution",
+      "status": "blocked_native_executor_and_private_payload_retrieval_pending",
       "required_capabilities": {
-        "automation": [
-          "background_execution_receiver"
+        "native_model_runtime": [
+          "independent_model_invocation"
         ],
-        "persistent_runner": [
-          "persistent_runner"
+        "native_task_queue": [
+          "durable_cross_run_queue_and_recovery"
         ]
       },
       "contract_mode": "registry_only",
-      "registry_only_reason": "Capability/status record only; no verified background trigger, scheduler or persistent runner exists."
+      "registry_only_reason": "Queue/lease/heartbeat/recovery protocol implemented and tested; native model invocation is still BLOCKED, and no real background scheduler or persistent runner exists, so the schedule must not be activated until prerequisites are configured."
     },
     {
       "id": "recovery-and-reconciliation",
@@ -316,7 +327,7 @@
       "adapters": [
         "github",
         "files",
-        "openhands_dispatch"
+        "native_task_queue"
       ],
       "status": "available_read_only_recovery_write_gated",
       "native_contract_path": "chatgpt-home/workflows/session-close.md",

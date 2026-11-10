@@ -131,6 +131,49 @@ The hash chain detects edits but is not a signed tamper-proof audit log. GitHub 
 - Browser, persistent background execution and generic shell execution remain unavailable unless a real host adapter is registered and verified.
 - This runtime does not itself perform merge, deployment, secret mutation, permission change, paid provisioning or destructive actions. The conversational host may perform delegated repository actions through its own authorized tools; do not conflate the two execution paths.
 
+## Native model invocation and durable task dispatch
+
+Blind Sniper owns the model invocation boundary in `scripts/blind_sniper_model_worker.py`.
+`NativeModelInvoker` sends one fresh, bounded OpenAI-compatible chat-completions request per
+agent task. It does not create an external agent session, share conversation history, or delegate
+orchestration. The host configures the provider; no vendor or paid service is hard-coded.
+
+Required host environment:
+- `BLIND_SNIPER_MODEL_BASE_URL` — HTTPS OpenAI-compatible API base (loopback HTTP is allowed for local testing).
+- `BLIND_SNIPER_MODEL_NAME` — model identifier.
+- `BLIND_SNIPER_MODEL_API_KEY` — optional provider credential, read only from the environment.
+- `BLIND_SNIPER_MODEL_API_KEY_HEADER` — optional auth header override; defaults to Authorization.
+
+No credentials belong in task files, command arguments, logs, artifacts or this public repository.
+A live provider call is NOT VERIFIED until a host with an approved no-card/no-paid provider
+configuration runs the real boundary and retains a redacted correlated receipt.
+
+`scripts/blind_sniper_agent_runtime.py` connects a single model invocation to
+`DurableQueue`: validate/enqueue a digest-bound task, claim a lease, heartbeat, invoke the model,
+then commit a result digest or schedule a bounded retry. The queue stores only the payload digest;
+the task JSON and output receipt must remain in a private host path and be supplied again on retry.
+The CLI rejects task and receipt paths inside this public repository.
+
+Example (run only on a configured private host):
+
+```bash
+python scripts/blind_sniper_agent_runtime.py \
+  --task-file /private/blind-sniper/tasks/task.json \
+  --output /private/blind-sniper/receipts/task-run.json \
+  --github-ledger --github-owner OWNER --github-repo PRIVATE_REPO \
+  --github-branch main --github-path blind-sniper-continuity/QUEUE.jsonl
+```
+
+Current boundaries:
+- **R1 — IMPLEMENTED / LIVE-UNVERIFIED:** native provider transport, isolated context, identity, timeout, retry, concurrency and redacted receipt contracts; no real provider credentials or round trip verified here.
+- **R2 — PARTIAL:** model dispatch is connected to queue claim/heartbeat/completion/retry; remote cross-run operation still requires the private GitHub CAS store and host-supplied private payload recovery.
+- **R3 — BLOCKED / NOT IMPLEMENTED:** model tool calls and non-empty tool allowlists fail closed until a native task-scoped executor/tool registry exists.
+- **R4 — PARTIAL:** checked-in `agent_browser_cli` adapter has bounded Chromium CI evidence; persistent browser host and cross-job session recovery are not verified.
+- **R5 — BLOCKED:** no unattended poller is activated. The autonomy gate remains closed until a native executor, durable private store, private payload retrieval and notification path are verified.
+
+No OpenHands, Forge, external agent runtime or external browser adapter is part of the execution path.
+A scheduled Actions run is an ephemeral invocation, not a resident worker.
+
 ## Verification
 
 Runtime CI runs:
