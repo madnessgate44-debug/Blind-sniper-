@@ -137,6 +137,52 @@ class NativeToolRuntimeTests(unittest.TestCase):
         self.assertNotEqual(captured["init"]["state_dir"], self.root)
         self.assertEqual(result["receipt"]["tool_name"], "browser.navigate")
 
+    def test_mutating_browser_tools_require_host_approval_reference_and_flag(self):
+        spec = AgentSpec(
+            agent_id="engineer", tool_allowlist=("browser.click",),
+            permission_profile="workspace_write",
+        )
+        with patch.dict("os.environ", {}, clear=True):
+            with self.assertRaisesRegex(NativeToolError, "host approval reference"):
+                self.runtime.validate_spec(spec)
+        approved_spec = AgentSpec(
+            agent_id="engineer", tool_allowlist=("browser.click",),
+            permission_profile="workspace_write",
+            browser_approval_reference="owner-approval-task-1",
+        )
+        with patch.dict("os.environ", {}, clear=True):
+            with self.assertRaisesRegex(NativeToolError, "WRITE_APPROVED"):
+                self.runtime.validate_spec(approved_spec)
+
+    def test_approved_browser_click_passes_host_reference_to_adapter(self):
+        captured = {}
+        class FakeBrowserAdapter:
+            def __init__(self, **kwargs):
+                captured.update(kwargs)
+            def execute(self, action, step_id, *args):
+                captured["action"] = (action, step_id, args)
+                return {"receipt": {"exit_code": 0, "artifact_paths": []}, "output": "clicked", "error": ""}
+        runtime = NativeToolRuntime(
+            self.queue, workspace_root=self.root,
+            browser_adapter_factory=FakeBrowserAdapter,
+        )
+        spec = AgentSpec(
+            agent_id="engineer", tool_allowlist=("browser.click",),
+            permission_profile="workspace_write",
+            browser_approval_reference="owner-approval-task-1",
+        )
+        with patch.dict("os.environ", {
+            "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "example.com",
+            "BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1",
+        }):
+            result = runtime.execute(
+                name="browser.click", arguments={"selector": "button#continue"},
+                spec=spec, task=self.task, run_id="run-browser-approval", tool_call_id="call-click",
+            )
+        self.assertTrue(result["ok"])
+        self.assertEqual(captured["approval_reference"], "owner-approval-task-1")
+        self.assertEqual(captured["action"][0], "click")
+
     def test_browser_tool_fails_closed_without_host_domain_allowlist(self):
         spec = AgentSpec(agent_id="researcher", tool_allowlist=("browser.navigate",))
         with patch.dict("os.environ", {}, clear=True):
