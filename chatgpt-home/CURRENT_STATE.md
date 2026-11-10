@@ -21,15 +21,15 @@
 - [V] R1/R2 integration: `scripts/blind_sniper_agent_runtime.py` binds digest-only queue enqueue/claim/heartbeat/model invocation/result completion or bounded retry. Task JSON and output receipt are rejected if placed inside this public repository.
 - [U] R1 live provider round trip: NOT VERIFIED; no approved provider configuration or credentials were available to this repository run.
 - [U] R2 remote cross-run queue durability: NOT VERIFIED against the private GitHub CAS target. The queue protocol and dispatch are contract-tested locally; payload retrieval remains host-supplied on retry.
-- [V] Registry stays native-only: no external adapter is registered or wired into a profile/workflow. The optional, unregistered modules `scripts/blind_sniper_openhands_cloud.py` (OpenHands Cloud V1) and `scripts/blind_sniper_forge_mcp.py` (Forge Streamable HTTP MCP) remain available for contract tests but disabled by default; enabling either is an Owner decision.
-- [V] Fix: `capability_state()` now treats an explicit `partial_` prefix as PARTIAL even when the status ends in `_unverified`, so honest partial capabilities no longer collapse to UNVERIFIED/BLOCKED.
+- [V] The current branch contains no external agent or browser adapter modules; the capability registry and workflows remain native-only.
+- [V] Queue readiness is PARTIAL because the registry status explicitly describes local queue capability and pending remote CAS validation.
 - [B] R3 native task-scoped executor/tool registry is NOT IMPLEMENTED. Model-issued tool calls and non-empty tool allowlists are rejected.
 - [V] R4 remains PARTIAL: checked-in `agent_browser_cli` has bounded Chromium CI evidence; persistent browser host and cross-job session recovery are unverified.
 - [B] R5 remains BLOCKED: no unattended poller, native executor, private payload retrieval or notification receiver. Activation gate is hard-closed; no schedule is active.
 - [V] Corrected queue classification in `c3005cf`; the full suite then passed 209 tests.
-- [V] Current PR head `3d4b7fc0bc944a1ea11eaa07e0a38931ea1fa0df`: Runtime Registry run `42807947193` PASS, 210 tests in 4.501s (`OK`); E2E interruption/recovery and scheduled-jobs simulations PASS (simulation-only, no model agent spawned).
-- [V] Exact-head Environment Validation run `42807947200` PASS; Engineering Execution OS Compliance run `42807947404` PASS. Push-triggered equivalents `42807938169`, `42807938064`, `42807938089` also PASS.
-- [U] Native Browser Adapter run `42807947135` is still in progress at this update; persistent-host jobs are intentionally skipped.
+- [V] Current PR head `fb4cf73488ed07870567d771e040462309db747d`: Runtime Registry run `42808329545` PASS, 210 tests in 4.157s (`OK`); interruption/recovery and scheduled-jobs simulations PASS (simulation-only; no live model agent spawned).
+- [V] Exact-head Environment Validation run `42808329930` PASS; Engineering Execution OS Compliance run `42808329480` PASS; Native Browser Adapter run `42808329898` PASS including real Chromium local-fixture acceptance. Persistent-host jobs were skipped, so cross-job browser persistence remains unverified.
+- [V] Concurrent branch drift briefly reintroduced optional client files; those files and their tests were removed again before this validated head. Duplicate PR #49 is closed as superseded.
 - [V] No merge, release or deployment. Release remains NO-GO.
 
 ## Private cross-run execution tranche — 2026-11-10
