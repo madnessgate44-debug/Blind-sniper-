@@ -332,7 +332,7 @@ class NativeToolRuntime:
                 "timeout_seconds": self.command_timeout,
             }
 
-    def _run_browser(self, name: str, arguments: dict[str, Any], *, task: Any, run_id: str, tool_call_id: str) -> dict[str, Any]:
+    def _run_browser(self, name: str, arguments: dict[str, Any], *, spec: Any, task: Any, run_id: str, tool_call_id: str) -> dict[str, Any]:
         if not os.environ.get("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS", "").strip():
             raise NativeToolError("Native browser host must configure BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS")
         if task.lease_seconds <= 10:
@@ -393,16 +393,18 @@ class NativeToolRuntime:
         try:
             if name == "repo.read_file":
                 result = self._read_file(arguments, spec)
+                status = "PASS"
             elif name == "repo.write_file":
                 result = self._write_file(arguments, spec)
+                status = "PASS"
             elif name == "verification.run":
                 result = self._run_verification(arguments)
+                status = "PASS"
             elif name.startswith("browser."):
-                result = self._run_browser(name, arguments, task=task, run_id=run_id, tool_call_id=tool_call_id)
+                result = self._run_browser(name, arguments, spec=spec, task=task, run_id=run_id, tool_call_id=tool_call_id)
                 status = "PASS" if result.get("status") == "PASS" else "FAIL"
             else:
                 raise NativeToolError(f"Tool {name!r} is not implemented")
-            status = "PASS"
         except Exception as exc:
             result = {"error": redact(f"{type(exc).__name__}: {exc}")}
             status = "FAIL"
@@ -411,7 +413,7 @@ class NativeToolRuntime:
             task_id=task.task_id, owner_id=owner_id, run_id=run_id,
             tool_call_id=tool_call_id, result_digest=result_digest, status=status,
         )
-        self.queue.heartbeat(task_id=task.task_id, owner_id=owner_id, lease_seconds=900)
+        self.queue.heartbeat(task_id=task.task_id, owner_id=owner_id, lease_seconds=task.lease_seconds)
         return {
             "ok": status == "PASS",
             "result": result,
