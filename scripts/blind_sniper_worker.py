@@ -319,6 +319,8 @@ class DurableQueue:
                 return f"Unknown task {task_id}"
             if state["status"] != "CLAIMED" or state.get("owner_id") != owner_id:
                 return "Completion requires an active lease held by this owner"
+            if not _lease_active(state, _now):
+                return "Completion rejected because the lease has expired"
             return None
 
         return self._append(
@@ -340,6 +342,8 @@ class DurableQueue:
                 return f"Unknown task {task_id}"
             if state["status"] != "CLAIMED" or state.get("owner_id") != owner_id:
                 return "Failure requires an active lease held by this owner"
+            if not _lease_active(state, _now):
+                return "Failure rejected because the lease has expired"
             return None
 
         state = self.status(task_id)
