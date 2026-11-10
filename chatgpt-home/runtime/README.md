@@ -14,6 +14,23 @@ It deliberately distinguishes:
 - **Blocked / unregistered:** implementation exists elsewhere but cannot yet be invoked here.
 - **Reference only:** source skill/agent/hook exists in the mirror but is not natively installed in ChatGPT.
 
+## Native model and tool execution
+
+Blind Sniper owns its OpenAI-compatible provider transport in `scripts/blind_sniper_model_worker.py`
+and its bounded tool registry in `scripts/blind_sniper_tool_runtime.py`. The model receives only
+the tool schemas explicitly allowed by its task contract.
+
+Registered tools are limited to:
+- `repo.read_file` — task-path-scoped UTF-8 reads with redaction and size bounds.
+- `repo.write_file` — exact-path workspace writes under `workspace_write`; policy and workflow files are excluded.
+- `verification.run` — fixed runtime-validator and unit-test commands only.
+
+Every tool call is reserved against the current unexpired durable task lease before side effects and
+receives a terminal ledger receipt. There is no arbitrary shell, unrestricted filesystem, network,
+Forge, OpenHands or external browser tool. R1/R3 are contract-tested; a live configured provider
+host remains unverified. R2 private remote payload recovery is partial, R4 persistent browser hosting
+is unverified, and R5 unattended autonomy remains blocked.
+
 ## Components
 
 The native Blind Sniper pack is maintained alongside this registry: `../ENVIRONMENT_MANIFEST.md`, `../skills/`, `../agents/`, `../workflows/`, `../templates/`, `../tools/TOOL_REGISTRY.md` and `../config/`. Prefer native skills/contracts. The `openhands-library/` mirror is source-preserving reference material only.
