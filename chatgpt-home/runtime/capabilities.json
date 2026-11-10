@@ -287,7 +287,7 @@
     {
       "id": "native_task_queue",
       "kind": "native_durable_task_state_and_recovery",
-      "status": "partial_native_model_dispatch_local_ledger_remote_private_cas_unverified",
+      "status": "partial_native_model_dispatch_local_ledger_remote_private_cas_pending",
       "tools": [
         "scripts/blind_sniper_ledger.py",
         "scripts/blind_sniper_worker.py",
