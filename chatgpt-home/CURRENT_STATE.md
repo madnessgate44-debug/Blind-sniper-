@@ -9,7 +9,7 @@
 **Private ledger integration:** live append/read-back/idempotency smoke run `42758084356` PASS; private execution run `42758395681` recorded task lifecycle, claim, renewal, transitions, release and correlated receipts. A later independent run `42758616125` refused replay of an existing task ID.
 **Browser acceptance:** PR #43 run `42735786150`, exact head `dcd26f7`: two Chromium cycles, 36 correlated receipts; bounded PR-host evidence only.
 **Release gate:** **NO-GO**. Durable cross-run execution is now partial, not complete: concurrency contention, interruption-safe recovery, cancellation and stale-worker recovery remain unverified; release-specific independent review, operational rollback/monitoring ownership, and exact-target smoke test also remain open. See `chatgpt-home/BS-RELEASE-001_RELEASE_ACCEPTANCE.md`.
-**Open PRs:** none at last live query.
+**Open PRs:** PR #47 (review-only draft) and PR #48 (P0 validation draft); neither is merged.
 **Branch protection:** `main` reports `protected=false`; no settings changed.
 **Authority:** Engineering Execution OS v2.3 and active repository-scoped Owner delegation. Exclusions remain in `chatgpt-home/AUTHORITY_DELEGATION.md`.
 
