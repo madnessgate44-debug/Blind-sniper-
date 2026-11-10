@@ -380,6 +380,69 @@ class DurableQueue:
             idempotency_key=f"{task_id}:cancelled", now=instant,
         )
 
+    def reserve_tool_call(
+        self, *, task_id: str, owner_id: str, run_id: str, tool_call_id: str,
+        tool_name: str, arguments_digest: str, now: datetime | None = None,
+    ) -> dict[str, Any]:
+        """Persist a lease-bound tool start before side effects; replay is fail-closed."""
+        instant = now or datetime.now(timezone.utc)
+        if not all(str(value).strip() for value in (task_id, owner_id, run_id, tool_call_id, tool_name, arguments_digest)):
+            raise QueueError("Tool reservation requires task, owner, run, call, tool and argument digest")
+        def guard(rows: list[dict[str, Any]], now_locked: datetime) -> str | None:
+            state = replay_task(rows, task_id)
+            if state is None or state.get("owner_id") != owner_id or not _lease_active(state, now_locked):
+                return "Tool call requires the current unexpired task lease"
+            for row in rows:
+                payload = row.get("payload", {})
+                if (row.get("task_id") == task_id and payload.get("run_id") == run_id
+                    and payload.get("tool_call_id") == tool_call_id
+                    and row.get("event_type") in {"QUEUE_TOOL_STARTED", "QUEUE_TOOL_COMPLETED", "QUEUE_TOOL_FAILED"}):
+                    return "Tool call ID was already reserved; replay is refused"
+            return None
+        return self._append(
+            guard=guard, task_id=task_id, event_type="QUEUE_TOOL_STARTED",
+            payload={"owner_id": owner_id, "run_id": run_id, "tool_call_id": tool_call_id,
+                     "tool_name": tool_name, "arguments_digest": arguments_digest,
+                     "started_at": instant.isoformat()},
+            idempotency_key=f"{task_id}:tool:{run_id}:{tool_call_id}:started", now=instant,
+        )
+
+    def complete_tool_call(
+        self, *, task_id: str, owner_id: str, run_id: str, tool_call_id: str,
+        result_digest: str, status: str = "PASS", now: datetime | None = None,
+    ) -> dict[str, Any]:
+        instant = now or datetime.now(timezone.utc)
+        if status not in {"PASS", "FAIL"} or not result_digest.strip():
+            raise QueueError("Tool completion requires PASS/FAIL and a result digest")
+        def guard(rows: list[dict[str, Any]], now_locked: datetime) -> str | None:
+            state = replay_task(rows, task_id)
+            if state is None or state.get("owner_id") != owner_id or not _lease_active(state, now_locked):
+                return "Tool receipt requires the current unexpired task lease"
+            started = any(
+                row.get("task_id") == task_id and row.get("event_type") == "QUEUE_TOOL_STARTED"
+                and row.get("payload", {}).get("run_id") == run_id
+                and row.get("payload", {}).get("tool_call_id") == tool_call_id
+                and row.get("payload", {}).get("owner_id") == owner_id
+                for row in rows
+            )
+            if not started:
+                return "Tool receipt has no matching reserved start event"
+            terminal = any(
+                row.get("task_id") == task_id and row.get("event_type") in {"QUEUE_TOOL_COMPLETED", "QUEUE_TOOL_FAILED"}
+                and row.get("payload", {}).get("run_id") == run_id
+                and row.get("payload", {}).get("tool_call_id") == tool_call_id
+                for row in rows
+            )
+            if terminal:
+                return "Tool call already has a terminal receipt"
+            return None
+        return self._append(
+            guard=guard, task_id=task_id, event_type="QUEUE_TOOL_COMPLETED" if status == "PASS" else "QUEUE_TOOL_FAILED",
+            payload={"owner_id": owner_id, "run_id": run_id, "tool_call_id": tool_call_id,
+                     "status": status, "result_digest": result_digest, "completed_at": instant.isoformat()},
+            idempotency_key=f"{task_id}:tool:{run_id}:{tool_call_id}:terminal", now=instant,
+        )
+
     def recover_stale(self, *, now: datetime | None = None) -> dict[str, Any]:
         """Requeue or fail every task whose lease expired without completion."""
         instant = now or datetime.now(timezone.utc)
