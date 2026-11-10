@@ -77,16 +77,65 @@ class NativeModelInvokerTests(unittest.TestCase):
             def __exit__(self, *args):
                 self.close()
         with patch("blind_sniper_model_worker.urlopen", return_value=Response(json.dumps(response_body).encode())):
-            with self.assertRaisesRegex(ModelWorkerError, "native executor"):
+            with self.assertRaisesRegex(ModelWorkerError, "outside the task"):
                 invoker(
                     spec=AgentSpec(agent_id="engineer"),
                     task=ModelTask(task_id="TASK-2", agent_id="engineer", objective="x"),
                     timeout_seconds=5,
                 )
 
+    def test_executes_only_allowlisted_native_tool_calls_and_returns_receipts(self):
+        class ToolRuntime:
+            def validate_spec(self, spec):
+                self.asserted = spec.tool_allowlist == ("repo.read_file",)
+            def definitions(self, allowlist):
+                return [{"type": "function", "function": {"name": "repo.read_file"}}]
+            def execute(self, **kwargs):
+                return {
+                    "ok": True, "result": {"content": "value = 1"},
+                    "receipt": {
+                        "task_id": kwargs["task"].task_id, "run_id": kwargs["run_id"],
+                        "tool_call_id": kwargs["tool_call_id"], "tool_name": kwargs["name"],
+                        "status": "PASS", "result_digest": "tool-result-digest",
+                    },
+                }
+        responses = [
+            {"choices": [{"message": {"tool_calls": [{
+                "id": "call-1", "type": "function",
+                "function": {"name": "repo.read_file", "arguments": json.dumps({"path": "src/sample.py"})},
+            }]}, "finish_reason": "tool_calls"}]},
+            {"choices": [{"message": {"content": "Read completed"}, "finish_reason": "stop"}]},
+        ]
+        captured = []
+        class Response(io.BytesIO):
+            status = 200
+            def __enter__(self): return self
+            def __exit__(self, *args): self.close()
+        def fake_urlopen(request, timeout):
+            captured.append(json.loads(request.data.decode("utf-8")))
+            return Response(json.dumps(responses.pop(0)).encode("utf-8"))
+        tools = ToolRuntime()
+        invoker = NativeModelInvoker(
+            base_url="https://provider.example/v1", model="test", tool_runtime=tools,
+        )
+        spec = AgentSpec(
+            agent_id="engineer", tool_allowlist=("repo.read_file",), allowed_paths=("src/",),
+        )
+        task = ModelTask(
+            task_id="TASK-TOOL-1", agent_id="engineer", objective="Read the source",
+            lease_owner_id="worker-1",
+        )
+        with patch("blind_sniper_model_worker.urlopen", side_effect=fake_urlopen):
+            result = invoker(spec=spec, task=task, timeout_seconds=5)
+        self.assertEqual(len(captured), 2)
+        self.assertEqual(captured[0]["tools"][0]["function"]["name"], "repo.read_file")
+        self.assertEqual(captured[1]["messages"][-1]["role"], "tool")
+        self.assertEqual(result["output_text"], "Read completed")
+        self.assertEqual(result["tool_receipts"][0]["tool_call_id"], "call-1")
+
     def test_refuses_write_permission_profile_until_executor_exists(self):
         invoker = NativeModelInvoker(base_url="https://provider.example/v1", model="test")
-        with self.assertRaisesRegex(ModelWorkerError, "read-only"):
+        with self.assertRaisesRegex(ModelWorkerError, "requires at least one"):
             invoker(
                 spec=AgentSpec(agent_id="engineer", permission_profile="workspace_write"),
                 task=ModelTask(task_id="TASK-4", agent_id="engineer", objective="x"),
@@ -95,7 +144,7 @@ class NativeModelInvokerTests(unittest.TestCase):
 
     def test_refuses_nonempty_tool_allowlist_until_executor_exists(self):
         invoker = NativeModelInvoker(base_url="https://provider.example/v1", model="test")
-        with self.assertRaisesRegex(ModelWorkerError, "tool_allowlist must be empty"):
+        with self.assertRaisesRegex(ModelWorkerError, "Native tool runtime is not connected"):
             invoker(
                 spec=AgentSpec(agent_id="engineer", tool_allowlist=("filesystem.read",)),
                 task=ModelTask(task_id="TASK-3", agent_id="engineer", objective="x"),

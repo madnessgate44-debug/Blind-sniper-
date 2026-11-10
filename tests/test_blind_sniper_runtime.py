@@ -30,7 +30,8 @@ class RuntimeRegistryTests(unittest.TestCase):
         self.assertEqual(adapters["chatgpt_history_export"]["status"], "blocked_no_native_export_action")
         self.assertEqual(adapters["ephemeral_execution"]["status"], "available_in_current_session")
         self.assertNotIn("openhands_dispatch", adapters)
-        self.assertEqual(adapters["native_model_runtime"]["status"], "implemented_native_provider_transport_and_queue_dispatch_not_live_verified")
+        self.assertEqual(adapters["native_model_runtime"]["status"], "implemented_native_provider_and_bounded_tool_runtime_live_provider_unverified")
+        self.assertEqual(adapters["native_tool_runtime"]["status"], "implemented_contract_tested_host_unverified")
         self.assertIn("scripts/blind_sniper_agent_runtime.py", adapters["native_model_runtime"]["tools"])
         self.assertIn("native_task_queue", adapters)
         self.assertIn("agent_browser_cli", adapters)
@@ -66,6 +67,7 @@ class RuntimeRegistryTests(unittest.TestCase):
         self.assertEqual(len(workflows["workflows"]), 18)
         workflow_adapters = {w["id"]: set(w.get("adapters", [])) for w in workflows["workflows"]}
         self.assertIn("native_model_runtime", workflow_adapters["native-model-agent-execution"])
+        self.assertIn("native_tool_runtime", workflow_adapters["native-model-agent-execution"])
         self.assertIn("agent_browser_cli", workflow_adapters["native-browser-interaction"])
         self.assertFalse(any({"forge_browser_mcp", "openhands_dispatch"} & used for used in workflow_adapters.values()))
         self.assertEqual(sum(w.get("contract_mode") == "native_contract" for w in workflows["workflows"]), 11)

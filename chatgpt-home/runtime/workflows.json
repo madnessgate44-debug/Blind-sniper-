@@ -67,9 +67,10 @@
       "adapters": [
         "github",
         "native_model_runtime",
-        "native_task_queue"
+        "native_task_queue",
+        "native_tool_runtime"
       ],
-      "status": "partial_native_model_dispatch_exact_task_queue_executor_and_persistent_worker_pending",
+      "status": "partial_native_model_and_tool_dispatch_remote_worker_persistence_pending",
       "native_contract_path": "chatgpt-home/workflows/task-lifecycle.md",
       "agents": [
         "blind-sniper",
@@ -201,20 +202,28 @@
         "create_unique_agent_task_and_run_ids",
         "construct_fresh_bounded_context",
         "invoke_configured_model_provider_inside_blind_sniper",
-        "enforce_agent_tool_and_permission_allowlists",
-        "persist_correlated_run_receipt",
+        "resolve_task_scoped_native_tool_allowlist",
+        "reserve_each_tool_call_against_the_active_lease",
+        "execute_registered_native_tools_with_path_and_permission_policy",
+        "persist_correlated_tool_and_model_receipts",
         "verify_output_and_artifact_provenance"
       ],
       "adapters": [
         "native_model_runtime",
-        "native_task_queue"
+        "native_task_queue",
+        "native_tool_runtime"
       ],
-      "status": "implemented_provider_transport_and_queue_dispatch_live_provider_unverified",
+      "status": "implemented_native_provider_and_bounded_tool_runtime_live_provider_unverified",
       "required_capabilities": {
         "native_model_runtime": [
           "independent_model_invocation",
           "fresh_bounded_context",
           "correlated_run_receipts"
+        ],
+        "native_tool_runtime": [
+          "task_scoped_tool_allowlist",
+          "lease_bound_tool_receipts",
+          "bounded_model_tool_call_loop"
         ]
       },
       "contract_mode": "native_contract",
@@ -300,7 +309,7 @@
         "native_task_queue",
         "durable_queue"
       ],
-      "status": "blocked_native_executor_private_payload_retrieval_and_notification_receiver_pending",
+      "status": "blocked_private_payload_retrieval_persistent_worker_and_notification_receiver_pending",
       "required_capabilities": {
         "native_model_runtime": [
           "independent_model_invocation"
@@ -310,7 +319,7 @@
         ]
       },
       "contract_mode": "registry_only",
-      "registry_only_reason": "Native model-provider transport and digest-bound queue dispatch are implemented, but the native task-scoped executor/tool runtime, private payload retrieval and notification receiver are not. No resident worker or unattended schedule is active; activation remains blocked."
+      "registry_only_reason": "Native model invocation and task-scoped tools are implemented, but private payload retrieval, a persistent/event-driven queue worker and a notification receiver are not. No unattended schedule is active."
     },
     {
       "id": "recovery-and-reconciliation",
