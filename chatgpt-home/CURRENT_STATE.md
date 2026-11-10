@@ -107,7 +107,7 @@
 - PR #37 merged at `cf350f7ee5b25bfd0541549e93538e9186430051`; post-merge Runtime Registry `42716484899`, Environment Validation `42716484975`, OS Compliance `42716484935` and Pages deployment `42716484749` all succeeded. The live open PR set is empty. Main branch protection remains `protected=false`.
 - Private continuity scaffold remains at `madnessgate44-debug/G/blind-sniper-continuity/` (private repository, five non-empty files); it is not a transcript archive. Transcript import and recurring conversation sync remain BLOCKED by the unavailable authorized export/source and scheduled-task limit.
 
-## Live reconciliation — 2026-11-10 (HEAD ada63e11)
+## Historical live reconciliation — 2026-11-10 (pre-PR #42/#43 merge, HEAD ada63e11)
 
 - Live GitHub branch query confirms `main` HEAD is `ada63e11d3047a3560565a4bcaa72c6768e4ae34`; commit message: `fix(executor): full read-only checkout so run-tests can read all fixtures (#41)`.
 - The change removes sparse checkout from `.github/workflows/blind-sniper-executor.yml` because the test suite reads workflow and task fixtures outside the former sparse paths. Read-only checkout remains enforced by `contents: read` and `persist-credentials: false`.
