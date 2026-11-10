@@ -69,6 +69,7 @@ class ModelTask:
     objective: str
     payload: dict[str, Any] = field(default_factory=dict)
     lease_owner_id: str = ""
+    lease_seconds: int = 900
 
     def __post_init__(self) -> None:
         if not TASK_ID.match(self.task_id):
@@ -77,6 +78,8 @@ class ModelTask:
             raise ModelWorkerError("objective is required")
         if not isinstance(self.payload, dict):
             raise ModelWorkerError("payload must be an object")
+        if not 1 <= self.lease_seconds <= 3600:
+            raise ModelWorkerError("lease_seconds must be between 1 and 3600")
 
 
 class NativeModelInvoker:
