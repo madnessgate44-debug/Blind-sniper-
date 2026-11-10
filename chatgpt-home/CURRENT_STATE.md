@@ -1,36 +1,31 @@
 # Blind Sniper — Current Technical State
 
-**Live snapshot:** 2026-11-10 — BS-RELEASE-001 remains **NO-GO**. Native model-provider transport and queue dispatch are implemented on `feat/p0-autonomous-agent-runtime`; 210 tests and runtime/environment/OS CI pass on current PR head; live provider execution and private cross-run persistence remain unverified.
+**Live snapshot:** 2026-11-10 — PR #48 merged to `main` at `852f4e75b2d48f7a28bc52d1b2567ce9b83cc6f2`. Native model invocation and durable-queue integration are merged; exact-head CI passed 213 tests plus environment, OS-compliance and Chromium browser acceptance. BS-RELEASE-001 remains **NO-GO**.
 **Default branch:** `main`
 **Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`.
-**Latest code/runtime HEAD:** `3b4ef572dc8b6aa819185e08e22a80e4f8cfd9ff` — executor now supports the Owner-authorized private GitHub CAS ledger, run-unique leases, duplicate refusal and lease release.
-**Latest full runtime validation:** private executor run `42758395681`, task `BS-B1-VALIDATE-001`: runtime validator PASS on `3b4ef57`.
-**Latest full unit suite:** private executor run `42758698543`, task `BS-B1-UNIT-TESTS-001`: 158 tests in 1.332s; `OK`; exit code 0; receipt and logs retained as artifact `13735839796`.
+**Latest code/runtime HEAD:** `852f4e75b2d48f7a28bc52d1b2567ce9b83cc6f2` — merged native provider transport, exact-task queue dispatch and lease-expiry enforcement.
+**Latest full runtime validation:** Runtime Registry run `42809163809` PASS on PR head `96550b9`; 213 unit tests and both deterministic lifecycle simulations PASS.
+**Latest full unit suite:** Runtime Registry run `42809156797` on `96550b9`: `Ran 213 tests in 4.534s` / `OK`; registry validator, skill catalog audit and E2E simulations PASS.
 **Private ledger integration:** live append/read-back/idempotency smoke run `42758084356` PASS; private execution run `42758395681` recorded task lifecycle, claim, renewal, transitions, release and correlated receipts. A later independent run `42758616125` refused replay of an existing task ID.
-**Browser acceptance:** PR #43 run `42735786150`, exact head `dcd26f7`: two Chromium cycles, 36 correlated receipts; bounded PR-host evidence only.
-**Release gate:** **NO-GO**. Durable cross-run execution is now partial, not complete: concurrency contention, interruption-safe recovery, cancellation and stale-worker recovery remain unverified; release-specific independent review, operational rollback/monitoring ownership, and exact-target smoke test also remain open. See `chatgpt-home/BS-RELEASE-001_RELEASE_ACCEPTANCE.md`.
-**Open PRs:** PR #47 (review-only draft) and PR #48 (P0 validation draft); neither is merged.
+**Browser acceptance:** Native Browser Adapter run `42809163816` on PR head `96550b9`: browser adapter/lease-dispatch tests and real Chromium local-fixture acceptance PASS; persistent-host jobs skipped.
+**Release gate:** **NO-GO**. Native model invocation is not live-provider-verified; private remote CAS cross-run payload recovery remains unverified; native executor/tool runtime is not implemented; persistent browser hosting and unattended autonomy remain blocked. Release-specific independent review, operational rollback/monitoring ownership and exact-target smoke test remain open. See `chatgpt-home/BS-RELEASE-001_RELEASE_ACCEPTANCE.md`.
+**Open PRs:** PR #47 (review-only draft); PR #48 merged; duplicate external-adapter PR #49 closed as superseded.
 **Branch protection:** `main` reports `protected=false`; no settings changed.
 **Authority:** Engineering Execution OS v2.3 and active repository-scoped Owner delegation. Exclusions remain in `chatgpt-home/AUTHORITY_DELEGATION.md`.
 
 ## Active P0 — native autonomous runtime — 2026-11-10
 
-- [V] Work branch: `feat/p0-autonomous-agent-runtime`; base `main` at `bed0df1664be72b060512eea218f7071f9bfa09c`. PR #48 remains DRAFT and unmerged.
-- [V] Owner direction: native-only execution. No Forge/OpenHands agent, API, session, worker, browser or return-path handoff.
-- [V] R1 implementation: `scripts/blind_sniper_model_worker.py` now owns an OpenAI-compatible HTTPS provider transport with fresh bounded context, unique run IDs, host-configured provider/model, optional env-only auth, timeout, retries, concurrency bounds and redacted receipts. Tool calls fail closed until R3 exists.
-- [V] R1/R2 integration: `scripts/blind_sniper_agent_runtime.py` binds digest-only queue enqueue/claim/heartbeat/model invocation/result completion or bounded retry. Task JSON and output receipt are rejected if placed inside this public repository.
-- [U] R1 live provider round trip: NOT VERIFIED; no approved provider configuration or credentials were available to this repository run.
-- [U] R2 remote cross-run queue durability: NOT VERIFIED against the private GitHub CAS target. The queue protocol and dispatch are contract-tested locally; payload retrieval remains host-supplied on retry.
-- [V] The current branch contains no external agent or browser adapter modules; the capability registry and workflows remain native-only.
-- [V] Queue readiness is PARTIAL because the registry status explicitly describes local queue capability and pending remote CAS validation.
-- [B] R3 native task-scoped executor/tool registry is NOT IMPLEMENTED. Model-issued tool calls and non-empty tool allowlists are rejected.
-- [V] R4 remains PARTIAL: checked-in `agent_browser_cli` has bounded Chromium CI evidence; persistent browser host and cross-job session recovery are unverified.
-- [B] R5 remains BLOCKED: no unattended poller, native executor, private payload retrieval or notification receiver. Activation gate is hard-closed; no schedule is active.
-- [V] Corrected queue classification in `c3005cf`; the full suite then passed 209 tests.
-- [V] Current PR head `fb4cf73488ed07870567d771e040462309db747d`: Runtime Registry run `42808329545` PASS, 210 tests in 4.157s (`OK`); interruption/recovery and scheduled-jobs simulations PASS (simulation-only; no live model agent spawned).
-- [V] Exact-head Environment Validation run `42808329930` PASS; Engineering Execution OS Compliance run `42808329480` PASS; Native Browser Adapter run `42808329898` PASS including real Chromium local-fixture acceptance. Persistent-host jobs were skipped, so cross-job browser persistence remains unverified.
-- [V] Concurrent branch drift briefly reintroduced optional client files; those files and their tests were removed again before this validated head. Duplicate PR #49 is closed as superseded.
-- [V] No merge, release or deployment. Release remains NO-GO.
+- [V] PR #48 merged to `main` at `852f4e75b2d48f7a28bc52d1b2567ce9b83cc6f2`; source PR head `96550b943580dc7886e8369870261af790323625`. Main is not deployed by this merge.
+- [V] Owner direction: self-contained Blind Sniper. No Forge/OpenHands agent, API, session, worker, browser or return-path dependency. External adapter modules/tests are absent from the merged native runtime.
+- [V] R1: `scripts/blind_sniper_model_worker.py` owns OpenAI-compatible HTTPS transport, fresh bounded context, agent/run identity, read-only boundary, concurrency/timeouts/retries and redacted receipts. Live provider round trip remains UNVERIFIED; provider/model/auth are host configuration only.
+- [V] R2: `scripts/blind_sniper_agent_runtime.py` binds digest-only enqueue → exact task-ID lease claim → heartbeat → model invocation → result-digest completion or bounded retry. Queue rejects completion/failure after lease expiry and supports stale-lease recovery.
+- [U] R2 remote cross-run durability: private GitHub Contents CAS and private payload retrieval remain NOT LIVE-VERIFIED. Public ledger writes are prohibited; payload/output remain host-private.
+- [B] R3 native task-scoped executor/tool runtime is NOT IMPLEMENTED. Model tool calls and non-read-only permission profiles fail closed.
+- [V] R4 remains PARTIAL: native browser adapter and real Chromium local-fixture acceptance passed; persistent browser host and cross-job session recovery are unverified.
+- [B] R5 remains BLOCKED: no executor-backed queue poller, private payload retrieval or notification receiver. Autonomy activation remains hard-closed; no schedule is active.
+- [V] Exact PR-head verification: Runtime Registry run `42809163809` PASS; 213 tests in 4.534s (`OK`); registry validator, skill audit and interruption/scheduled-job simulations PASS (simulation only). Environment Validation `42809163814` PASS; OS Compliance `42809163824` PASS; Native Browser Adapter `42809163816` PASS including Chromium local-fixture acceptance.
+- [V] Follow-up R2 fixes: exact-task claim and expired-lease completion/failure guards included in source PR head `96550b9`; regression coverage included in the 213-test suite.
+- [V] No external agent handoff, secrets/permissions changes, paid provisioning, release or deployment. Release remains NO-GO.
 
 ## Private cross-run execution tranche — 2026-11-10
 
@@ -60,6 +55,7 @@
 ## Latest merged work
 - Main branch protection: GitHub branch metadata reports `protected=false`. The available GitHub connector exposes read access for branch-protection/ruleset state but no write action to configure it; this remains an unresolved governance-hardening risk. Do not confuse the standing execution delegation with branch protection.
 
+- PR #48 — native model invocation and durable task lifecycle merged to `main` at `852f4e75b2d48f7a28bc52d1b2567ce9b83cc6f2`.
 - PR #18 — native agent OS registry reconciliation (`feat: reconcile native agent OS registries and architecture`) merged into `main` at `c7a50fd9cfeccf67fcda295bccc5def271d81a11`.
 - PR #19 — rebase of the #15/#16 compact-ledger + bounded allowlisted executor onto `main` (`fix(reconcile)`) merged at `287446f110d4c69176901b0b3c6e05cd2c2b966b`.
 - PR #21 — deterministic E2E simulation extracted onto `main` (`feat(e2e)`, supersedes #9) merged at `972b8d69941e22a12926fa888f64ee47d61426db`.
