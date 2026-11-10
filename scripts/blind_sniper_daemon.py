@@ -316,6 +316,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
+        if not 1 <= args.poll_interval <= 300:
+            raise DaemonError("poll_interval must be between 1 and 300")
         if not 30 <= args.timeout_seconds <= 900:
             raise DaemonError("timeout_seconds must be between 30 and 900")
         if not 1 <= args.max_concurrency <= 8:
@@ -328,9 +330,11 @@ def main(argv: list[str] | None = None) -> int:
         if store.ledger_path.exists():
             os.chmod(store.ledger_path, 0o600)
         queue = DurableQueue(ledger)
+        browser_state_dir = _ensure_private_dir(store.state_dir / "browser", workspace_root=workspace_root)
         tool_runtime = NativeToolRuntime(
             queue, workspace_root=workspace_root,
             command_timeout=min(600, args.timeout_seconds),
+            browser_state_dir=browser_state_dir,
         )
         invoker = NativeModelInvoker.from_env(tool_runtime=tool_runtime)
         worker = ModelWorker(
