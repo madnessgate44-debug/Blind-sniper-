@@ -67,6 +67,10 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         os.chmod(path, 0o600)
         return data, path
 
+    def test_local_ledger_is_created_owner_only(self):
+        self.assertTrue(self.store.ledger_path.exists())
+        self.assertEqual(stat.S_IMODE(self.store.ledger_path.stat().st_mode), 0o600)
+
     def test_private_task_is_executed_once_and_receipts_stay_private(self):
         data, _ = self.write_task()
         first = self.daemon.run_once()
