@@ -25,9 +25,36 @@ Provide a common boundary between Blind Sniper orchestration and execution provi
 | Provider | Dispatch | Status | Artifacts | Current state |
 |---|---|---|---|---|
 | GitHub Actions | Commit-triggered workflow; no generic dispatch action currently exposed | Workflow run APIs | Logs/artifacts | PARTIAL |
-| OpenHands | GitHub App mention route | Session API not exposed in this session | Task-specific output pending | PARTIAL |
-| Forge | HTTP MCP design in Firstborn PR #147 | Connector not registered here | Not retrieved through MCP here | BLOCKED |
+| OpenHands Cloud V1 | `scripts/blind_sniper_openhands_cloud.py` (create conversation, poll start task, status/messages/artifacts, cancel) | Bearer `OPENHANDS_CLOUD_API_KEY`; mock-tested | Trajectory download / events | IMPLEMENTED, DISABLED WITHOUT SECRET |
+| Forge MCP | `scripts/blind_sniper_forge_mcp.py` (Streamable HTTP; initialize / tools/list / tools/call) | Bearer `FORGE_MCP_TOKEN`; mock-tested | Audit receipts | IMPLEMENTED, DISABLED WITHOUT TOKEN; direct ChatGPT connector BLOCKED |
+| Model worker | `scripts/blind_sniper_model_worker.py` (independent agent invocations) | `BLIND_SNIPER_MODEL_API_KEY`; mock-tested | Redacted receipts | IMPLEMENTED, DISABLED WITHOUT KEY |
+| Durable queue | `scripts/blind_sniper_queue.py`, `scripts/blind_sniper_worker.py` | Logical persistence over the ledger | Health/digest receipts | IMPLEMENTED, TRIGGER NOT ACTIVATED |
 | Codex CLI | Host invocation | Host runtime required | Local filesystem/worktree | NOT AVAILABLE HERE |
+
+## Continuous-autonomy adapters
+
+Four adapters implement R1–R5. Each is disabled without its secret and is
+contract-tested against an injected fake transport, so no live call is made in
+CI and no cost is assumed.
+
+- **Model worker (R1).** `ModelAgent` carries a distinct `agent_id`, its own
+  system prompt and an enforced tool allowlist. `ModelInvoker.invoke` makes a
+  real separate call with fresh context, bounded timeout, bounded retries and a
+  redacted receipt; `invoke_many` runs a bounded concurrency pool. A requested
+  tool outside the allowlist is refused.
+- **Durable queue (R2).** `DurableQueue` implements enqueue / claim / lease /
+  heartbeat / cancel / recovery / reconciliation over the append-only ledger.
+  Contention is first-writer-wins by event sequence. `recover_stale` reclaims
+  expired leases idempotently. Only a `payload_ref` and `payload_hash` are
+  stored; private payload bodies never enter the ledger. This is *logical*
+  durability (replayed on each invocation), never a resident process.
+- **OpenHands Cloud V1 (R3).** `OpenHandsCloudClient` implements the documented
+  V1 endpoints with bearer auth, redaction and idempotent dispatch. It refuses
+  to act when the secret is absent.
+- **Forge MCP (R4).** `ForgeMCPClient` speaks Streamable HTTP JSON-RPC
+  (initialize / tools/list / tools/call), enforces a tool allowlist, requires an
+  explicit approval reference for browser write tools, and records redacted
+  audit receipts. It does not claim a direct ChatGPT connector.
 
 ## Native browser adapter
 

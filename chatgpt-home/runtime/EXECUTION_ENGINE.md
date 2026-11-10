@@ -155,3 +155,55 @@ The executor accepts only the fixed command IDs `unit-tests` and `runtime-valida
 **Persistence is deliberately per-run and ephemeral.** The local ledger, lease and receipts are created inside one GitHub Actions run and uploaded as a 14-day artifact. They do not provide cross-run exclusion, cross-run deduplication, durable task recovery or a persistent worker. A repeated task ID in a later run is not protected by the prior run's local ledger. The workflow uses `contents: read` with `persist-credentials: false` and a full read-only checkout (no sparse-checkout), so every allowlisted command can read all of the paths its tests require, and it does not write private continuity data to this public repository.
 
 A successful verification run ends in `REVIEWING`, not `CLOSED`. A distinct reviewer must inspect the exact commit and artifact and supply a task-correlated PASS receipt before closure. A green executor job is not an independent review or closure receipt.
+
+
+## Autonomous agent runtime (R1–R5)
+
+This tranche adds the execution layer the planner previously lacked. It is
+implemented and mock-tested; each part is disabled until its secret is provided.
+
+| Module | Requirement | Purpose |
+|---|---|---|
+| `scripts/blind_sniper_model_worker.py` | R1 | Independent model-agent invocation |
+| `scripts/blind_sniper_queue.py` | R2 | Durable queue / lease / heartbeat / recovery |
+| `scripts/blind_sniper_worker.py` | R2, R5 | One bounded worker pass + health/digest receipt |
+| `scripts/blind_sniper_openhands_cloud.py` | R3 | OpenHands Cloud V1 adapter |
+| `scripts/blind_sniper_forge_mcp.py` | R4 | Forge MCP Streamable HTTP client |
+| `scripts/blind_sniper_redaction.py` | R3, R4 | Shared secret redaction |
+| `scripts/blind_sniper_autonomy_status.py` | R5 | Capability/health report (no live call) |
+
+### Model worker (R1)
+
+`ModelAgent(agent_id, system_prompt, allowed_tools)` gives each agent a distinct
+identity, its own context and an enforced tool allowlist. `ModelInvoker.invoke`
+performs one real separate call with bounded timeout and retries and returns a
+redacted receipt; `invoke_many` bounds concurrency. A requested tool outside the
+allowlist raises `ToolNotAllowedError`. Without `BLIND_SNIPER_MODEL_API_KEY` the
+worker returns a `DISABLED` receipt and never calls the transport.
+
+### Durable queue (R2)
+
+`DurableQueue` runs over the append-only ledger (local `TaskLedger` or the
+private `GitHubContentsLedger`). Protocol: `enqueue` → `claim` → `heartbeat` →
+`complete` / `fail` (bounded retry + backoff) / `cancel`, plus `recover_stale`
+and `reconcile`. Claims are first-writer-wins by event sequence, so a losing
+racer observes the winner and reports `claimed: false`. Only a `payload_ref` and
+`payload_hash` are stored; private payload bodies stay outside this repository.
+
+Durability is **logical**: the ledger is replayed on each invocation and a later
+GitHub Actions run observes the same state. This is not a resident process, and
+no ephemeral Actions job is described as persistent.
+
+### Adapters (R3, R4)
+
+`OpenHandsCloudClient` and `ForgeMCPClient` are the R3/R4 adapters described in
+`ADAPTER_CONTRACT.md`. Both are disabled without their secret and both redact
+every request/response. The Forge adapter does not claim a direct ChatGPT
+connector: that path remains BLOCKED because custom connectors are plan-gated.
+
+### Trigger (R5)
+
+`.github/workflows/blind-sniper-autonomy.yml` is `workflow_dispatch` only. No
+`schedule:` trigger is declared. A schedule must not be activated until the
+executor, a durable private data store and the required secrets are genuinely
+configured.

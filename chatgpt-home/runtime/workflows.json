@@ -275,31 +275,42 @@
     },
     {
       "id": "continuous-autonomy",
-      "trigger": "scheduled_or_event_receiver",
+      "trigger": "manual_dispatch_until_executor_and_private_store_configured",
       "steps": [
         "receive_task_event",
         "deduplicate",
-        "dispatch",
-        "retry_with_loop_breaker",
-        "persist_state",
-        "deliver_report"
+        "reclaim_stale_leases",
+        "claim_next_task_under_lease",
+        "heartbeat_lease_during_bounded_execution",
+        "retry_with_bounded_backoff",
+        "persist_state_to_durable_ledger",
+        "emit_health_and_digest_receipt"
       ],
       "adapters": [
+        "durable_queue",
+        "model_worker",
+        "openhands_cloud_v1",
+        "forge_mcp",
         "automation",
-        "openhands_dispatch",
         "persistent_runner"
       ],
-      "status": "not_verified_do_not_claim_background_execution",
+      "status": "executor_and_queue_implemented_mock_tested_trigger_not_activated",
       "required_capabilities": {
         "automation": [
           "background_execution_receiver"
         ],
         "persistent_runner": [
           "persistent_runner"
+        ],
+        "openhands_cloud_v1": [
+          "create_conversation"
+        ],
+        "forge_mcp": [
+          "tools_call"
         ]
       },
       "contract_mode": "registry_only",
-      "registry_only_reason": "Capability/status record only; no verified background trigger, scheduler or persistent runner exists."
+      "registry_only_reason": "Executor, durable queue and adapter logic are implemented and mock-tested, but no schedule or event trigger is activated: it stays manual until the executor, a private data store and the required secrets are genuinely configured."
     },
     {
       "id": "recovery-and-reconciliation",

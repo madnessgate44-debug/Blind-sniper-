@@ -267,6 +267,98 @@
       "license": "Apache-2.0",
       "version": "0.41.2",
       "upstream": "https://github.com/vercel-labs/agent-browser"
+    },
+    {
+      "id": "model_worker",
+      "kind": "independent_model_invocation",
+      "status": "implemented_mock_tested_disabled_without_key",
+      "tools": [
+        "scripts/blind_sniper_model_worker.py"
+      ],
+      "capabilities": [
+        "distinct_agent_ids",
+        "fresh_context_per_call",
+        "enforced_tool_allowlist",
+        "task_correlation_id",
+        "bounded_concurrency",
+        "bounded_timeout_and_retries",
+        "redacted_receipts"
+      ],
+      "limitations": [
+        "Disabled without BLIND_SNIPER_MODEL_API_KEY; no credential is created or stored.",
+        "Unit-tested with an injected fake transport; no live model call is made in CI.",
+        "Each invocation is a real separate model call; it is not a resident process."
+      ]
+    },
+    {
+      "id": "durable_queue",
+      "kind": "durable_task_queue",
+      "status": "implemented_mock_tested_logical_persistence",
+      "tools": [
+        "scripts/blind_sniper_queue.py",
+        "scripts/blind_sniper_worker.py"
+      ],
+      "capabilities": [
+        "enqueue",
+        "claim",
+        "lease",
+        "heartbeat",
+        "cancel",
+        "stale_lease_recovery",
+        "reconciliation",
+        "health_digest",
+        "bounded_retry_backoff"
+      ],
+      "limitations": [
+        "Logical durable persistence over the append-only ledger, not a continuously resident process.",
+        "Cross-run durability requires the private GitHub Contents CAS ledger; the local ledger is workspace-scoped.",
+        "Only payload references and content hashes are stored; private payload bodies stay out of this public repository."
+      ]
+    },
+    {
+      "id": "openhands_cloud_v1",
+      "kind": "external_agent_execution",
+      "status": "implemented_mock_tested_disabled_without_secret",
+      "tools": [
+        "scripts/blind_sniper_openhands_cloud.py"
+      ],
+      "capabilities": [
+        "create_conversation",
+        "poll_start_task",
+        "conversation_status",
+        "conversation_messages",
+        "conversation_artifacts",
+        "cancel_if_supported",
+        "idempotent_dispatch",
+        "secret_redaction"
+      ],
+      "limitations": [
+        "Disabled without OPENHANDS_CLOUD_API_KEY (legacy OPENHANDS_API_KEY fallback); the Owner must add it as a GitHub Actions secret to enable it.",
+        "Bearer-authenticated V1 endpoints are contract-tested against a mock transport; no live API call was made and no quota or cost is assumed.",
+        "Cancellation endpoint support varies by deployment; the adapter reports unsupported rather than claiming success."
+      ]
+    },
+    {
+      "id": "forge_mcp",
+      "kind": "streamable_http_mcp_client",
+      "status": "implemented_mock_tested_disabled_without_token",
+      "tools": [
+        "scripts/blind_sniper_forge_mcp.py"
+      ],
+      "capabilities": [
+        "initialize",
+        "tools_list",
+        "tools_call",
+        "tool_allowlist",
+        "write_action_approval_gate",
+        "audit_receipts",
+        "secret_redaction"
+      ],
+      "limitations": [
+        "Disabled without FORGE_MCP_ENDPOINT and FORGE_MCP_TOKEN; server-to-server only.",
+        "Direct ChatGPT custom MCP connector remains BLOCKED: custom connectors are plan-gated on this account.",
+        "Browser write actions require an explicit host approval reference."
+      ]
     }
   ],
   "exclusions": [
