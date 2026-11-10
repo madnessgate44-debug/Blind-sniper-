@@ -1,6 +1,6 @@
 # Blind Sniper — Current Technical State
 
-**Live snapshot:** 2026-11-10 — BS-RELEASE-001 remains **NO-GO**. Native model-provider transport and queue dispatch are implemented on `feat/p0-autonomous-agent-runtime`; provider execution and private cross-run persistence remain unverified.
+**Live snapshot:** 2026-11-10 — BS-RELEASE-001 remains **NO-GO**. Native model-provider transport and queue dispatch are implemented on `feat/p0-autonomous-agent-runtime`; 210 tests and runtime/environment/OS CI pass on current PR head; live provider execution and private cross-run persistence remain unverified.
 **Default branch:** `main`
 **Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`.
 **Latest code/runtime HEAD:** `3b4ef572dc8b6aa819185e08e22a80e4f8cfd9ff` — executor now supports the Owner-authorized private GitHub CAS ledger, run-unique leases, duplicate refusal and lease release.
@@ -26,8 +26,10 @@
 - [B] R3 native task-scoped executor/tool registry is NOT IMPLEMENTED. Model-issued tool calls and non-empty tool allowlists are rejected.
 - [V] R4 remains PARTIAL: checked-in `agent_browser_cli` has bounded Chromium CI evidence; persistent browser host and cross-job session recovery are unverified.
 - [B] R5 remains BLOCKED: no unattended poller, native executor, private payload retrieval or notification receiver. Activation gate is hard-closed; no schedule is active.
-- [V] First runtime CI on head `4e4836015a5b051f891aaa934c0aed7fa850bdce`: 208 tests passed; one orchestration test failed because queue status classification returned UNVERIFIED instead of PARTIAL. The queue status was corrected in commit `c3005cf`; exact-head CI is running.
-- [V] Environment Validation and Engineering Execution OS Compliance passed on the earlier head `4e48360`; exact-head results for `c3005cf` are pending.
+- [V] Corrected queue classification in `c3005cf`; the full suite then passed 209 tests.
+- [V] Current PR head `3d4b7fc0bc944a1ea11eaa07e0a38931ea1fa0df`: Runtime Registry run `42807947193` PASS, 210 tests in 4.501s (`OK`); E2E interruption/recovery and scheduled-jobs simulations PASS (simulation-only, no model agent spawned).
+- [V] Exact-head Environment Validation run `42807947200` PASS; Engineering Execution OS Compliance run `42807947404` PASS. Push-triggered equivalents `42807938169`, `42807938064`, `42807938089` also PASS.
+- [U] Native Browser Adapter run `42807947135` is still in progress at this update; persistent-host jobs are intentionally skipped.
 - [V] No merge, release or deployment. Release remains NO-GO.
 
 ## Private cross-run execution tranche — 2026-11-10
