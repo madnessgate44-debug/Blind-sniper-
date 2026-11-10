@@ -107,6 +107,46 @@ class NativeToolRuntimeTests(unittest.TestCase):
         self.assertNotIn("shell", run.call_args.kwargs)
         self.assertEqual(run.call_args.args[0][1:], ["scripts/validate_blind_sniper_runtime.py"])
 
+    def test_browser_tools_use_task_scoped_native_adapter_and_queue_receipts(self):
+        captured = {}
+        class FakeBrowserAdapter:
+            def __init__(self, **kwargs):
+                captured["init"] = kwargs
+            def execute(self, action, step_id, *args):
+                captured["action"] = (action, step_id, args)
+                return {
+                    "receipt": {"exit_code": 0, "artifact_paths": []},
+                    "output": "page snapshot",
+                    "error": "",
+                }
+        runtime = NativeToolRuntime(
+            self.queue, workspace_root=self.root,
+            browser_adapter_factory=FakeBrowserAdapter,
+        )
+        spec = AgentSpec(agent_id="researcher", tool_allowlist=("browser.navigate",))
+        with patch.dict("os.environ", {"BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "example.com"}):
+            result = runtime.execute(
+                name="browser.navigate", arguments={"url": "https://example.com/"},
+                spec=spec, task=self.task, run_id="run-browser", tool_call_id="call-browser",
+            )
+        self.assertTrue(result["ok"])
+        self.assertEqual(captured["action"][0], "open")
+        self.assertEqual(captured["action"][2], ("https://example.com/",))
+        self.assertEqual(captured["init"]["task_id"], self.task.task_id)
+        self.assertEqual(captured["init"]["run_id"], "run-browser")
+        self.assertNotEqual(captured["init"]["state_dir"], self.root)
+        self.assertEqual(result["receipt"]["tool_name"], "browser.navigate")
+
+    def test_browser_tool_fails_closed_without_host_domain_allowlist(self):
+        spec = AgentSpec(agent_id="researcher", tool_allowlist=("browser.navigate",))
+        with patch.dict("os.environ", {}, clear=True):
+            result = self.runtime.execute(
+                name="browser.navigate", arguments={"url": "https://example.com/"},
+                spec=spec, task=self.task, run_id="run-browser-2", tool_call_id="call-browser-2",
+            )
+        self.assertFalse(result["ok"])
+        self.assertIn("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS", result["result"]["error"])
+
     def test_unknown_tools_and_commands_fail_closed(self):
         with self.assertRaisesRegex(NativeToolError, "unregistered"):
             NativeToolRuntime.definitions(("shell.exec",))
