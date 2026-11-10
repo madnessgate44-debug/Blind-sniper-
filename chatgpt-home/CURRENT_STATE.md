@@ -13,6 +13,20 @@
 **Branch protection:** `main` reports `protected=false`; no settings changed.
 **Authority:** Engineering Execution OS v2.3 and active repository-scoped Owner delegation. Exclusions remain in `chatgpt-home/AUTHORITY_DELEGATION.md`.
 
+## Active P0 — self-contained autonomy architecture — 2026-11-10
+
+- [V] Owner direction: Blind Sniper is the complete system. Forge and OpenHands are not dependencies, worker routes, browser routes or acceptance criteria.
+- [V] Active implementation branch: `feat/p0-autonomous-agent-runtime`, based on `main` at `bed0df1664be72b060512eea218f7071f9bfa09c`; latest branch commit from this change set: `c9d733da9e18fc99327279991d77f4b22ab29421`. Branch is 15 commits ahead and 0 behind `main`.
+- [V] Issue #46 now specifies native model-agent invocation, Blind Sniper-owned durable worker/queue, native executor/tool runtime, native browser and safe continuous autonomy.
+- [V] Active runtime capability/workflow registries no longer include OpenHands dispatch or Forge browser adapters. Native browser workflow uses the checked-in `agent_browser_cli` adapter.
+- [C] Existing native browser CI records cited in the capability registry include two Chromium cycles, lease-gated actions and correlated receipts (runs `42494894841` and `42496827462`). These historical runs have not been re-run on this branch.
+- [U] R1 remains unimplemented: current runtime selects agent role contracts but does not create independent model executions.
+- [U] R2 remains partial: the ledger supports event persistence and leases, but complete heartbeat, cancellation, stale-worker recovery and cross-run worker resumption are not verified.
+- [U] R3 remains partial: the planner and guarded task lifecycle exist; a general native tool-execution loop is not verified.
+- [C] R4 has CI-backed native browser action evidence; persistent authenticated browser-host recovery is not verified.
+- [U] R5 remains unverified: no complete native trigger → queue → worker → result/report path has passed end to end.
+- [V] These changes update instructions, registries, workflow contracts and regression tests only. No runtime implementation for R1/R2/R3/R5 was added in this change set; tests have not been run on this branch. No PR has been created or merged.
+
 > Historical and technical detail below is retained for provenance. Where it conflicts with this live snapshot, this snapshot and live GitHub state take precedence.
 
 ## Private cross-run execution tranche — 2026-11-10
