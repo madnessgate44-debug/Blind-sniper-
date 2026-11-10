@@ -16,7 +16,7 @@
 ## Active P0 — self-contained autonomy architecture — 2026-11-10
 
 - [V] Owner direction: Blind Sniper is self-contained. Forge/OpenHands, their APIs, sessions, workers and browser routes are excluded.
-- [V] Implementation branch: `feat/p0-autonomous-agent-runtime`; base `main` at `bed0df1664be72b060512eea218f7071f9bfa09c`; latest head `5c8fa87722863df0e28aba6d56e605079b403cb1`; 19 commits ahead, 0 behind.
+- [V] Implementation branch: `feat/p0-autonomous-agent-runtime`; base `main` at `bed0df1664be72b060512eea218f7071f9bfa09c`; current PR head `0256fda6e3f5098104662da26061fc7d85efb839`, 24 commits ahead and 0 behind. Last full runtime CI validation was on parent head `719178fbe858d5a2d3740c8b1d40aa1d37bb56fe`; the only subsequent commit updates this current-state document.
 - [V] Issue #46 defines native model agents, native durable queue/worker recovery, native executor/tool runtime, native browser and safe continuous autonomy.
 - [V] Active registries contain no OpenHands dispatch or Forge browser adapter. The native browser route is `agent_browser_cli`.
 - [V] CI run `42806162980` on exact head `719178fbe858d5a2d3740c8b1d40aa1d37bb56fe`: runtime registry validator PASS; skill catalog audit PASS; 158 unit tests in 2.067s, `OK`; interruption/recovery E2E simulation PASS; scheduled-jobs E2E simulation PASS; artifact `13757958161`.
@@ -27,7 +27,7 @@
 - [U] R3 PARTIAL: planner, guarded lifecycle and allowlisted verification executor exist; a general native agent tool-execution loop is not implemented.
 - [U] R4 PARTIAL: native browser CI has historical Chromium E2E evidence; persistent authenticated browser host and cross-job session recovery are not verified.
 - [U] R5 NOT VERIFIED: scheduled-jobs simulation passed, but no live native queue-poller trigger → durable worker → result/report path has been verified. Do not equate an ephemeral CI run with a resident worker.
-- [V] PR #48 is open as DRAFT against `main`, head `5c8fa877`; no merge or deployment. PR #47 is a separate review-only draft.
+- [V] PR #48 is open as DRAFT against `main`, current head `0256fda6`; no merge or deployment. PR #47 is a separate review-only draft.
 - [V] Current P0 changes include operating docs/registries, regression tests and a deterministic E2E fixture correction. They do not implement R1/R2/R3/R5.
 > Historical and technical detail below is retained for provenance. Where it conflicts with this live snapshot, this snapshot and live GitHub state take precedence.
 
