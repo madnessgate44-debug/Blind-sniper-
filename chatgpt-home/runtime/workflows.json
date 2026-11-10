@@ -297,9 +297,10 @@
       "adapters": [
         "automation",
         "native_model_runtime",
-        "native_task_queue"
+        "native_task_queue",
+        "durable_queue"
       ],
-      "status": "not_verified_do_not_claim_background_execution",
+      "status": "partial_durable_queue_protocol_implemented_no_real_scheduler",
       "required_capabilities": {
         "native_model_runtime": [
           "independent_model_invocation"
@@ -309,7 +310,7 @@
         ]
       },
       "contract_mode": "registry_only",
-      "registry_only_reason": "Native trigger/queue/model executor acceptance is not yet complete; do not claim background execution."
+      "registry_only_reason": "Queue/lease/heartbeat/recovery protocol implemented and tested; native model invocation is still BLOCKED, and no real background scheduler or persistent runner exists, so the schedule must not be activated until prerequisites are configured."
     },
     {
       "id": "recovery-and-reconciliation",

@@ -1,0 +1,90 @@
+name: Blind Sniper Durable Worker
+
+# One bounded queue/worker pass: poll the durable queue, recover stale leases,
+# retry within bounds and emit a health/digest receipt.
+#
+# Manual (workflow_dispatch) only. A schedule must NOT be enabled until the
+# executor, data store and notification prerequisites are genuinely configured;
+# scripts/blind_sniper_autonomy.py enforces that gate and fails loudly otherwise.
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner_id:
+        description: "Worker owner id (A-Za-z0-9._- max 64)"
+        required: true
+        type: string
+        default: "gha-worker"
+      max_tasks:
+        description: "Maximum tasks to drain in this pass (1-100)"
+        required: true
+        type: string
+        default: "5"
+
+permissions:
+  contents: read
+
+jobs:
+  protocol-tests:
+    name: Verify durable queue protocol
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run durable queue and autonomy contract tests
+        run: |
+          python -m unittest discover -s tests -p 'test_blind_sniper_worker.py' -v
+          python -m unittest discover -s tests -p 'test_blind_sniper_autonomy.py' -v
+          python -m unittest discover -s tests -p 'test_blind_sniper_model_worker.py' -v
+
+  worker-pass:
+    name: One bounded worker pass
+    needs: protocol-tests
+    # Only runs when the Owner has explicitly enabled unattended activation and
+    # the prerequisites exist. Otherwise the pass is skipped, never faked.
+    if: vars.BLIND_SNIPER_AUTONOMY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Confirm activation prerequisites
+        run: |
+          python scripts/blind_sniper_autonomy.py \
+            --owner-id "${{ inputs.owner_id }}" \
+            --check-activation-only \
+            --github-ledger \
+            --github-owner "${{ vars.BLIND_SNIPER_LEDGER_OWNER }}" \
+            --github-repo "${{ vars.BLIND_SNIPER_LEDGER_REPO }}" \
+            --github-branch "${{ vars.BLIND_SNIPER_LEDGER_BRANCH }}"
+      - name: Run one bounded worker pass
+        env:
+          GITHUB_TOKEN: ${{ secrets.BLIND_SNIPER_LEDGER_TOKEN }}
+          OPENHANDS_CLOUD_API_KEY: ${{ secrets.OPENHANDS_CLOUD_API_KEY }}
+          BLIND_SNIPER_NOTIFY_DIGEST: ${{ vars.BLIND_SNIPER_NOTIFY_DIGEST }}
+        run: |
+          python scripts/blind_sniper_autonomy.py \
+            --owner-id "${{ inputs.owner_id }}" \
+            --max-tasks "${{ inputs.max_tasks }}" \
+            --output-dir artifacts/blind-sniper-autonomy \
+            --github-ledger \
+            --github-owner "${{ vars.BLIND_SNIPER_LEDGER_OWNER }}" \
+            --github-repo "${{ vars.BLIND_SNIPER_LEDGER_REPO }}" \
+            --github-branch "${{ vars.BLIND_SNIPER_LEDGER_BRANCH }}"
+      - name: Upload health and digest receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blind-sniper-autonomy-${{ github.run_id }}
+          path: artifacts/blind-sniper-autonomy/
+          if-no-files-found: warn
+          retention-days: 14

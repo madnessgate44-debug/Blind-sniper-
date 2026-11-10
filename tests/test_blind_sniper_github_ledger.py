@@ -260,6 +260,29 @@ class GitHubContentsLedgerTests(unittest.TestCase):
         self.assertEqual(event["event_type"], "TASK_TRANSITIONED")
         self.assertEqual(event["commit_sha"], "c" * 40)
 
+    def test_remote_guarded_append_is_atomic_and_rejects_when_guard_fails(self):
+        self.ledger.append(task_id="BS-GH-012", event_type="QUEUE_TASK_ENQUEUED",
+                           payload={"kind": "k"}, idempotency_key="twelve:enqueue")
+
+        def refuse(rows, now):
+            return "already enqueued"
+
+        with self.assertRaises(GitHubLedgerError):
+            self.ledger.append_guarded(
+                guard=refuse, task_id="BS-GH-012", event_type="QUEUE_TASK_ENQUEUED",
+                payload={"kind": "k"}, idempotency_key="twelve:dupe",
+            )
+
+        def allow(rows, now):
+            return None
+
+        event = self.ledger.append_guarded(
+            guard=allow, task_id="BS-GH-012", event_type="QUEUE_TASK_CLAIMED",
+            payload={"owner_id": "remote-runner-a"}, idempotency_key="twelve:claim",
+        )
+        self.assertEqual(event["event_type"], "QUEUE_TASK_CLAIMED")
+        self.assertEqual(event["commit_sha"], "c" * 40)
+
 
 if __name__ == "__main__":
     unittest.main()

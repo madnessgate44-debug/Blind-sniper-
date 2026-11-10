@@ -131,6 +131,45 @@ The hash chain detects edits but is not a signed tamper-proof audit log. GitHub 
 - Browser, persistent background execution and generic shell execution remain unavailable unless a real host adapter is registered and verified.
 - This runtime does not itself perform merge, deployment, secret mutation, permission change, paid provisioning or destructive actions. The conversational host may perform delegated repository actions through its own authorized tools; do not conflate the two execution paths.
 
+## Autonomous execution tranche (R1–R5)
+
+The registry planner above is unchanged. This tranche adds separate, independently invoked
+execution components. Blind Sniper stays native-first and self-contained: the durable queue, the
+model-worker contract and the autonomy runner are native, while the OpenHands and Forge clients are
+**optional adapters, not dependencies** — they are not wired into any profile or workflow and stay
+disabled until the Owner configures them. None of the components claims a live external integration
+until a real round trip is recorded.
+
+- **R1 — model workers.** `scripts/blind_sniper_model_worker.py` runs separate model agents with
+  distinct agent IDs, a mandatory fresh context, explicit tool/permission allowlists, correlated
+  task IDs, bounded concurrency, a per-attempt timeout, bounded retries and one redacted receipt
+  per task. The injected invoker is the execution boundary; `OpenHandsCloudInvoker` is an optional
+  backend (one fresh conversation per task) that must be explicitly configured. A selected agent
+  contract is not execution — a receipt exists only after the invoker returns.
+- **R2 — durable queue.** `scripts/blind_sniper_worker.py` implements
+  enqueue/claim/lease/heartbeat/cancel/recovery/reconciliation over the native ledger via the new
+  atomic `append_guarded` primitive. It is durable across runs when the ledger is the private
+  GitHub Contents CAS store. It is a protocol, not a persistent process; an ephemeral Actions job
+  is never called a persistent worker. Only payload digests are stored.
+- **R3 — OpenHands Cloud V1 (optional).** `scripts/blind_sniper_openhands_cloud.py` (see
+  `ADAPTER_CONTRACT.md`). PARTIAL until a live authenticated round trip is proven.
+- **R4 — Forge MCP (optional).** `scripts/blind_sniper_forge_mcp.py` (see `ADAPTER_CONTRACT.md`).
+  BLOCKED until a durable endpoint and auth are configured.
+- **R5 — continuous autonomy.** `scripts/blind_sniper_autonomy.py` runs one bounded pass and gates
+  unattended activation behind an explicit prerequisite check. No scheduler is created and no
+  schedule is activated. `scripts/blind_sniper_redact.py` is the shared redaction helper.
+
+Run the new tests with:
+
+```bash
+python -m unittest discover -s tests -p 'test_blind_sniper_worker.py' -v
+python -m unittest discover -s tests -p 'test_blind_sniper_model_worker.py' -v
+python -m unittest discover -s tests -p 'test_blind_sniper_autonomy.py' -v
+python -m unittest discover -s tests -p 'test_blind_sniper_openhands_cloud.py' -v
+python -m unittest discover -s tests -p 'test_blind_sniper_forge_mcp.py' -v
+```
+
+
 ## Verification
 
 Runtime CI runs:

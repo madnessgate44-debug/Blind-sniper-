@@ -49,7 +49,38 @@
 5. **Transcript source:** obtain a supported, authorized export or account-history connector before attempting migration; preserve source order, timestamps and identifiers.
 
 ---
-# Historical implementation log — pre-2026-11-10 (preserved, not current status)
+## Autonomous execution tranche (R1–R5) — 2026-11-10
+
+Branch `feat/p0-autonomous-agent-runtime` (issue #46). Smallest complete safe tranche; contract-tested
+only, no live external round trip. Native-first: the queue, model-worker contract and autonomy runner
+are native; the OpenHands and Forge clients are **optional adapters, not dependencies** and stay
+disabled unless the Owner configures them.
+
+New scripts:
+- `scripts/blind_sniper_redact.py` — shared deterministic secret redaction.
+- `scripts/blind_sniper_openhands_cloud.py` — OpenHands Cloud V1 client, optional (R3).
+- `scripts/blind_sniper_forge_mcp.py` — Forge Streamable HTTP MCP client, optional, disabled by default (R4).
+- `scripts/blind_sniper_worker.py` — durable queue/lease/heartbeat/recovery/reconciliation (R2).
+- `scripts/blind_sniper_model_worker.py` — independent model worker contract (R1).
+- `scripts/blind_sniper_autonomy.py` — bounded autonomy pass + activation gate (R5).
+
+Ledger: added `TaskLedger.append_guarded` and `GitHubContentsLedger.append_guarded` (atomic
+guard-and-append under the file lock / blob-SHA CAS).
+
+Workflow: `.github/workflows/blind-sniper-worker.yml` (`workflow_dispatch` only, gated behind
+`vars.BLIND_SNIPER_AUTONOMY_ENABLED`; no `schedule:`). New tests wired into
+`.github/workflows/blind-sniper-runtime.yml` path filters.
+
+New tests (all deterministic, no network): `tests/test_blind_sniper_redact.py`,
+`tests/test_blind_sniper_openhands_cloud.py`, `tests/test_blind_sniper_forge_mcp.py`,
+`tests/test_blind_sniper_worker.py`, `tests/test_blind_sniper_model_worker.py`,
+`tests/test_blind_sniper_autonomy.py`, `tests/test_blind_sniper_worker_workflow.py`.
+
+Explicit limits: no live OpenHands Cloud conversation, no live Forge MCP call, no cross-run
+durability against the real private ledger, and no background scheduler. OpenHands Cloud and the
+queue remote path are PARTIAL; Forge MCP is BLOCKED.
+
+
 
 The material below is the earlier 2026-11-08 build log. It is retained for provenance only. Any old branch, PR, test count, limitation or next-step statement below is superseded by the current status above and the live GitHub state.
 # Blind Sniper build progress — 8 November 2026

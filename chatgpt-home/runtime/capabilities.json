@@ -150,6 +150,93 @@
       ]
     },
     {
+      "id": "openhands_cloud_api",
+      "kind": "agent_execution_api",
+      "status": "partial_contract_implemented_no_live_round_trip",
+      "tools": [
+        "scripts/blind_sniper_openhands_cloud.py",
+        "scripts/blind_sniper_model_worker.py"
+      ],
+      "capabilities": [
+        "create_conversation",
+        "poll_start_task",
+        "conversation_status",
+        "messages_and_events",
+        "best_effort_cancel",
+        "bearer_auth_from_env",
+        "secret_redaction",
+        "idempotent_start"
+      ],
+      "limitations": [
+        "Optional adapter, not a dependency: not wired into any profile or workflow and not invoked by the native runtime. Blind Sniper stays native-first; enabling this is an Owner decision.",
+        "Implements the documented V1 surface with bearer auth read from OPENHANDS_CLOUD_API_KEY; the token is never printed, logged or committed.",
+        "Contract-tested with a fake HTTP transport only; no live authenticated round trip has been performed, so the adapter remains PARTIAL.",
+        "Cancellation is best-effort: the endpoint returns supported=false on 404/405/501."
+      ],
+      "evidence": {
+        "contract_tests": "tests/test_blind_sniper_openhands_cloud.py",
+        "model_worker_tests": "tests/test_blind_sniper_model_worker.py"
+      },
+      "dependency_class": "optional_not_required"
+    },
+    {
+      "id": "durable_queue",
+      "kind": "durable_task_queue",
+      "status": "partial_protocol_implemented_remote_unverified",
+      "tools": [
+        "scripts/blind_sniper_worker.py",
+        "scripts/blind_sniper_ledger.py",
+        "scripts/blind_sniper_autonomy.py"
+      ],
+      "capabilities": [
+        "enqueue",
+        "exclusive_claim",
+        "lease_and_heartbeat",
+        "bounded_retry",
+        "cancel",
+        "stale_lease_recovery",
+        "reconciliation_and_health",
+        "guarded_atomic_append"
+      ],
+      "limitations": [
+        "The queue is a protocol over the native append-only ledger (local file lock or private GitHub Contents CAS), not a background daemon.",
+        "Cross-run durability depends on the private GitHub CAS ledger; the remote path is mock-tested, not live-verified here.",
+        "Only payload digests are stored; private task payloads and continuity stay out of the public repository."
+      ],
+      "evidence": {
+        "queue_tests": "tests/test_blind_sniper_worker.py",
+        "autonomy_tests": "tests/test_blind_sniper_autonomy.py"
+      }
+    },
+    {
+      "id": "forge_mcp_client",
+      "kind": "authenticated_mcp_client",
+      "status": "blocked_no_durable_endpoint_or_auth",
+      "tools": [
+        "scripts/blind_sniper_forge_mcp.py"
+      ],
+      "capabilities": [
+        "streamable_http_mcp_transport",
+        "initialize",
+        "tools_list",
+        "tools_call",
+        "tool_allowlist",
+        "browser_write_approval_gate",
+        "audit_receipts",
+        "secret_redaction"
+      ],
+      "limitations": [
+        "Optional adapter, not a dependency: not wired into any profile or workflow and not invoked by the native runtime. Blind Sniper stays native-first; enabling this is an Owner decision.",
+        "Implements the MCP Streamable HTTP protocol (JSON-RPC 2.0) but stays disabled unless a durable HTTPS endpoint and auth token are configured.",
+        "Refuses ephemeral sandbox hosts by default; browser write tools require an explicit host approval reference.",
+        "No direct ChatGPT connector is registered; contract-tested only, so this remains BLOCKED until a real round trip is proven."
+      ],
+      "evidence": {
+        "contract_tests": "tests/test_blind_sniper_forge_mcp.py"
+      },
+      "dependency_class": "optional_not_required"
+    },
+    {
       "id": "ephemeral_execution",
       "kind": "session_scoped_code_execution",
       "status": "available_in_current_session",

@@ -1,6 +1,6 @@
 # Blind Sniper — Current Technical State
 
-**Live snapshot:** 2026-11-10 — BS-RELEASE-001 remains **NO-GO**; first private cross-run execution tranche is now implemented and verified.
+**Live snapshot:** 2026-11-10 — BS-RELEASE-001 remains **NO-GO**; the R1–R5 autonomous execution tranche is implemented and contract-tested on branch `feat/p0-autonomous-agent-runtime` (issue #46); external integrations remain PARTIAL/BLOCKED pending a live round trip.
 **Default branch:** `main`
 **Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`.
 **Latest code/runtime HEAD:** `3b4ef572dc8b6aa819185e08e22a80e4f8cfd9ff` — executor now supports the Owner-authorized private GitHub CAS ledger, run-unique leases, duplicate refusal and lease release.
@@ -13,23 +13,23 @@
 **Branch protection:** `main` reports `protected=false`; no settings changed.
 **Authority:** Engineering Execution OS v2.3 and active repository-scoped Owner delegation. Exclusions remain in `chatgpt-home/AUTHORITY_DELEGATION.md`.
 
-## Active P0 — self-contained autonomy architecture — 2026-11-10
+## Active P0 — autonomous agent runtime — 2026-11-10
 
-- [V] Owner direction: Blind Sniper is self-contained. Forge/OpenHands, their APIs, sessions, workers and browser routes are excluded.
-- [V] Implementation branch: `feat/p0-autonomous-agent-runtime`; base `main` at `bed0df1664be72b060512eea218f7071f9bfa09c`; ahead of `main` with no divergence; see live PR #48 for the exact current head. Last full runtime CI validation was on `719178fbe858d5a2d3740c8b1d40aa1d37bb56fe`; all commits after that validation are documentation-only state/progress synchronization.
-- [V] Issue #46 defines native model agents, native durable queue/worker recovery, native executor/tool runtime, native browser and safe continuous autonomy.
-- [V] Active registries contain no OpenHands dispatch or Forge browser adapter. The native browser route is `agent_browser_cli`.
-- [V] CI run `42806162980` on exact head `719178fbe858d5a2d3740c8b1d40aa1d37bb56fe`: runtime registry validator PASS; skill catalog audit PASS; 158 unit tests in 2.067s, `OK`; interruption/recovery E2E simulation PASS; scheduled-jobs E2E simulation PASS; artifact `13757958161`.
-- [V] Environment validation run `42806162970` PASS; Engineering Execution OS compliance run `42806162985` PASS.
-- [V] Earlier CI run `42805773341` failed after validator and 158 unit tests passed because the local E2E fixture selected `task-control-loop`, whose native model adapter is intentionally BLOCKED until configured. The fixture now selects `bounded-verification`; the subsequent exact-head run passed all configured steps.
-- [U] R1 NOT IMPLEMENTED/BLOCKED: role contracts exist, but no independent model invocation boundary is implemented or configured.
-- [U] R2 PARTIAL: local ledger persistence, claims, lease renewal/release, idempotency and local expiry/reclaim simulation exist; cross-run worker supervision, heartbeat/cancellation command and private durable queue execution remain unverified.
-- [U] R3 PARTIAL: planner, guarded lifecycle and allowlisted verification executor exist; a general native agent tool-execution loop is not implemented.
-- [U] R4 PARTIAL: native browser CI has historical Chromium E2E evidence; persistent authenticated browser host and cross-job session recovery are not verified.
-- [U] R5 NOT VERIFIED: scheduled-jobs simulation passed, but no live native queue-poller trigger → durable worker → result/report path has been verified. Do not equate an ephemeral CI run with a resident worker.
-- [V] PR #48 is open as DRAFT against `main`; no merge or deployment. PR #47 is a separate review-only draft.
-- [V] Current P0 changes include operating docs/registries, regression tests and a deterministic E2E fixture correction. They do not implement R1/R2/R3/R5.
-> Historical and technical detail below is retained for provenance. Where it conflicts with this live snapshot, this snapshot and live GitHub state take precedence.
+- [V] Branch `feat/p0-autonomous-agent-runtime`, base `main` at `bed0df1664be72b060512eea218f7071f9bfa09c`. PR #48 is open as DRAFT; no merge or deployment.
+- [V] Issue #46 requires autonomous model agents, a durable worker, an OpenHands V1 adapter and a Forge MCP adapter, each contract-tested with no external round trip claimed.
+- [R] Architecture conflict (Owner decision needed): the issue's latest comment asks for OpenHands + Forge adapters, while a concurrent session set a "self-contained / native-only" direction that excludes them. Reconciliation taken here: native paths stay primary and the external adapters are optional and disabled; they are not wired into any profile or workflow, so no runtime dependency on Forge/OpenHands is introduced.
+- [V] Registries keep the native browser route `agent_browser_cli` and add three optional adapters: `openhands_cloud_api` (PARTIAL), `durable_queue` (PARTIAL), `forge_mcp_client` (BLOCKED).
+- [V] Local verification on this head: runtime registry validator PASS; 224 unit tests `OK`; environment validation PASS; Engineering Execution OS compliance PASS.
+- [V] R1 IMPLEMENTED (contract-tested, native-first): `scripts/blind_sniper_model_worker.py` runs separate model agents with distinct agent IDs, a mandatory fresh context, explicit tool/permission allowlists, correlated task IDs, bounded concurrency, a per-attempt timeout, bounded retries and one redacted receipt per task. Tests: `tests/test_blind_sniper_model_worker.py`. A selected role contract alone is still not execution.
+- [V] R2 IMPLEMENTED (contract-tested): `scripts/blind_sniper_worker.py` adds enqueue/claim/lease/heartbeat/cancel/recovery/reconciliation over the native ledger via the new atomic `append_guarded` primitive; payload digests only. Cross-run durability depends on the private GitHub CAS ledger and is mock-tested, not live-verified. Tests: `tests/test_blind_sniper_worker.py`.
+- [V] R3 IMPLEMENTED as an OPTIONAL adapter (PARTIAL): `scripts/blind_sniper_openhands_cloud.py` implements the documented V1 surface with bearer auth from `OPENHANDS_CLOUD_API_KEY` and redaction. Not a dependency; no live round trip. Tests: `tests/test_blind_sniper_openhands_cloud.py`.
+- [V] R4 IMPLEMENTED as an OPTIONAL adapter (BLOCKED): `scripts/blind_sniper_forge_mcp.py` implements the Streamable HTTP MCP transport with a tool allowlist and browser-write approval gate; disabled unless a durable endpoint + auth exist. Tests: `tests/test_blind_sniper_forge_mcp.py`.
+- [V] R5 IMPLEMENTED (contract-tested): `scripts/blind_sniper_autonomy.py` performs one bounded pass (recover → drain → health → digest) and gates unattended activation behind a prerequisite check; `.github/workflows/blind-sniper-worker.yml` is `workflow_dispatch` only with no `schedule:` trigger. No live queue-poller → worker → report path is verified; an ephemeral CI run is not a resident worker. Tests: `tests/test_blind_sniper_autonomy.py`, `tests/test_blind_sniper_worker_workflow.py`.
+- [V] Shared redaction helper `scripts/blind_sniper_redact.py`; tests `tests/test_blind_sniper_redact.py`.
+- [U] Not verified: any live OpenHands Cloud conversation, any live Forge MCP call, cross-run durability against the real private ledger, and any real background scheduler (none exists).
+- [R] Concurrent-session direction recorded: Blind Sniper is self-contained; Forge/OpenHands APIs, sessions, workers and browser routes are excluded. This tranche keeps native paths primary and the external clients optional/disabled to respect that direction while still satisfying issue #46's adapter request.
+- [V] Concurrent-session baseline CI (pre-tranche): run `42806162980` on head `719178fbe858d5a2d3740c8b1d40aa1d37bb56fe` passed runtime registry validator, skill catalog audit and 158 unit tests (`OK`), plus interruption/recovery and scheduled-jobs simulations; environment validation run `42806162970` PASS; Engineering Execution OS compliance run `42806162985` PASS. Commits after that validation are documentation-only.
+
 
 ## Private cross-run execution tranche — 2026-11-10
 
