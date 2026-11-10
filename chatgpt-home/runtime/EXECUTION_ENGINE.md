@@ -169,7 +169,7 @@ Current boundaries:
 - **R2 — PARTIAL:** model dispatch is connected to queue claim/heartbeat/completion/retry; remote cross-run operation still requires the private GitHub CAS store and host-supplied private payload recovery.
 - **R3 — IMPLEMENTED / HOST-UNVERIFIED:** bounded native model tool-call loop and static task-scoped tool registry exist; live provider-host execution is not verified.
 - **R4 — IMPLEMENTED / PERSISTENT-HOST-UNVERIFIED:** native model tools are connected to the checked-in Chromium adapter under the active queue lease; persistent browser host and cross-job session recovery are not verified.
-- **R5 — BLOCKED:** no unattended poller is activated. The autonomy gate remains closed until a native executor, durable private store, private payload retrieval and notification path are verified.
+- **R5 — PARTIAL / HOST-ACTIVATION-UNVERIFIED:** a persistent native private-task poller, stale-lease recovery, health file and metadata-only notification outbox are implemented; no approved host service has been started.
 
 No OpenHands, Forge, external agent runtime or external browser adapter is part of the execution path.
 A scheduled Actions run is an ephemeral invocation, not a resident worker.
@@ -222,6 +222,56 @@ This is contract-tested against deterministic provider responses and a local led
 configured model host, private remote CAS tool receipts, and recovery of a tool call interrupted
 between its start and terminal event remain host-level acceptance work. An interrupted start is
 never silently replayed.
+
+## Persistent native worker daemon
+
+`scripts/blind_sniper_daemon.py` is the native long-running worker. It is a host process, not a
+GitHub Actions schedule or an external agent. It:
+
+1. Reads task JSON only from an owner-only private `<state-dir>/tasks/` directory outside the
+   public repository.
+2. Recovers expired queue leases before scanning.
+3. Enqueues/claims the exact task ID and invokes the existing native model/tool runtime.
+4. Writes complete task receipts to an owner-only private `receipts/` directory.
+5. Writes a metadata-only `notifications.jsonl` outbox and a private `health.json` checkpoint.
+6. Handles SIGTERM/SIGINT by stopping after the current bounded task.
+
+The local append-only ledger is stored under the same private state directory and survives process
+restarts on that host. Private remote CAS/cross-host recovery remains a separate unverified gate.
+The notification outbox is not a delivery service; a host-side consumer is still required.
+
+### Host setup
+
+The service template is `deploy/blind-sniper-worker.service.example`. It expects the repository
+checkout at `/opt/blind-sniper`, a service account named `blind-sniper`, and an owner-only state
+directory at `/var/lib/blind-sniper`. The host administrator must provision those directories and
+an environment file at `/etc/blind-sniper/worker.env`; no credentials or service account are
+created by this repository.
+
+Required host environment:
+- `BLIND_SNIPER_MODEL_BASE_URL`
+- `BLIND_SNIPER_MODEL_NAME`
+- `BLIND_SNIPER_MODEL_API_KEY` (optional; environment only)
+- `BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS` (only if browser tools are allowlisted)
+- `BLIND_SNIPER_BROWSER_WRITE_APPROVED=1` only when the task carries an explicit approval
+  reference and mutating browser actions are intentionally enabled.
+
+Private task files must be named `<task_id>.json`, mode `0600`, and contain only the task envelope
+fields accepted by `blind_sniper_agent_runtime.py`. The daemon refuses task files, receipts, ledger
+or browser state inside the public repository workspace.
+
+Manual one-cycle validation:
+
+```bash
+python scripts/blind_sniper_daemon.py \
+  --state-dir /var/lib/blind-sniper \
+  --owner-id native-worker \
+  --once
+```
+
+Continuous mode is started by the host service manager using the supplied unit template. This
+branch does not install, enable or start that service. Until an approved host runs it with a real
+provider configuration, R1/R5 remain host-unverified; no unattended autonomy is claimed.
 
 ## Verification
 
