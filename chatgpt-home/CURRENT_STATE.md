@@ -15,18 +15,20 @@
 
 ## Active P0 — self-contained autonomy architecture — 2026-11-10
 
-- [V] Owner direction: Blind Sniper is the complete system. Forge and OpenHands are not dependencies, worker routes, browser routes or acceptance criteria.
-- [V] Active implementation branch: `feat/p0-autonomous-agent-runtime`, based on `main` at `bed0df1664be72b060512eea218f7071f9bfa09c`; latest branch commit from this change set: `c9d733da9e18fc99327279991d77f4b22ab29421`. Branch is 15 commits ahead and 0 behind `main`.
-- [V] Issue #46 now specifies native model-agent invocation, Blind Sniper-owned durable worker/queue, native executor/tool runtime, native browser and safe continuous autonomy.
-- [V] Active runtime capability/workflow registries no longer include OpenHands dispatch or Forge browser adapters. Native browser workflow uses the checked-in `agent_browser_cli` adapter.
-- [C] Existing native browser CI records cited in the capability registry include two Chromium cycles, lease-gated actions and correlated receipts (runs `42494894841` and `42496827462`). These historical runs have not been re-run on this branch.
-- [U] R1 remains unimplemented: current runtime selects agent role contracts but does not create independent model executions.
-- [U] R2 remains partial: the ledger supports event persistence and leases, but complete heartbeat, cancellation, stale-worker recovery and cross-run worker resumption are not verified.
-- [U] R3 remains partial: the planner and guarded task lifecycle exist; a general native tool-execution loop is not verified.
-- [C] R4 has CI-backed native browser action evidence; persistent authenticated browser-host recovery is not verified.
-- [U] R5 remains unverified: no complete native trigger → queue → worker → result/report path has passed end to end.
-- [V] These changes update instructions, registries, workflow contracts and regression tests only. No runtime implementation for R1/R2/R3/R5 was added in this change set; tests have not been run on this branch. No PR has been created or merged.
-
+- [V] Owner direction: Blind Sniper is self-contained. Forge/OpenHands, their APIs, sessions, workers and browser routes are excluded.
+- [V] Implementation branch: `feat/p0-autonomous-agent-runtime`; base `main` at `bed0df1664be72b060512eea218f7071f9bfa09c`; latest head `5c8fa87722863df0e28aba6d56e605079b403cb1`; 19 commits ahead, 0 behind.
+- [V] Issue #46 defines native model agents, native durable queue/worker recovery, native executor/tool runtime, native browser and safe continuous autonomy.
+- [V] Active registries contain no OpenHands dispatch or Forge browser adapter. The native browser route is `agent_browser_cli`.
+- [V] CI run `42805873386` on exact head `5c8fa877`: runtime registry validator PASS; skill catalog audit PASS; 158 unit tests in 2.319s, `OK`; interruption/recovery E2E simulation PASS; scheduled-jobs E2E simulation PASS; artifact `13758272503`.
+- [V] Environment validation run `42805873383` PASS; Engineering Execution OS compliance run `42805873397` PASS.
+- [V] Earlier CI run `42805773341` failed after validator and 158 unit tests passed because the local E2E fixture selected `task-control-loop`, whose native model adapter is intentionally BLOCKED until configured. The fixture now selects `bounded-verification`; the subsequent exact-head run passed all configured steps.
+- [U] R1 NOT IMPLEMENTED/BLOCKED: role contracts exist, but no independent model invocation boundary is implemented or configured.
+- [U] R2 PARTIAL: local ledger persistence, claims, lease renewal/release, idempotency and local expiry/reclaim simulation exist; cross-run worker supervision, heartbeat/cancellation command and private durable queue execution remain unverified.
+- [U] R3 PARTIAL: planner, guarded lifecycle and allowlisted verification executor exist; a general native agent tool-execution loop is not implemented.
+- [U] R4 PARTIAL: native browser CI has historical Chromium E2E evidence; persistent authenticated browser host and cross-job session recovery are not verified.
+- [U] R5 NOT VERIFIED: scheduled-jobs simulation passed, but no live native queue-poller trigger → durable worker → result/report path has been verified. Do not equate an ephemeral CI run with a resident worker.
+- [V] PR #48 is open as DRAFT against `main`, head `5c8fa877`; no merge or deployment. PR #47 is a separate review-only draft.
+- [V] Current P0 changes include operating docs/registries, regression tests and a deterministic E2E fixture correction. They do not implement R1/R2/R3/R5.
 > Historical and technical detail below is retained for provenance. Where it conflicts with this live snapshot, this snapshot and live GitHub state take precedence.
 
 ## Private cross-run execution tranche — 2026-11-10
