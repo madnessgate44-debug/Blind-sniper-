@@ -1,8 +1,8 @@
 # Blind Sniper build progress — current status
 
-**Snapshot:** 2026-11-10 — PR #50 merged to `main` at `07f79d21552c9cd12d2f18de8fdbdc76f28051e4`.
+**Snapshot:** 2026-11-10 — PR #51 merged to `main` at `99b5efc761c8b53054f3fa3d091e3aeafd43c224`.
 **Architecture:** Self-contained Blind Sniper. No external agent or browser handoff.
-**Exact source PR head:** `169d476536ccefa73c54f40e863358c29b067f9c`.
+**Exact source PR head:** `e610c3a31418e10bc8498c574b8719ae72335355`.
 **Release:** NO-GO; this implementation merge is not a production deployment.
 
 ## P0 capability status
@@ -11,32 +11,36 @@
 |---|---|---|
 | R1 Independent model agents | IMPLEMENTED / LIVE-UNVERIFIED | Native HTTPS provider transport, fresh bounded context, distinct agent/run IDs, bounded retries and redacted receipts. Real provider round trip still needs approved private-host configuration. |
 | R2 Durable worker and interruption recovery | PARTIAL | Digest-only dispatch, exact task-ID claim, heartbeat, expiry-checked completion/failure, bounded retry and stale-lease recovery. Private remote CAS cross-run persistence and private payload re-supply remain unverified. |
-| R3 Native executor and tool runtime | IMPLEMENTED / HOST-UNVERIFIED | Bounded provider tool-call loop; `repo.read_file`, path-scoped `repo.write_file`, and fixed `verification.run`; lease-bound start/terminal receipts and replay refusal. Live provider-host execution remains unverified. |
-| R4 Native browser | PARTIAL | Native browser adapter and real Chromium local-fixture acceptance pass; persistent browser host and cross-job session recovery remain unverified. |
-| R5 Continuous unattended autonomy | BLOCKED | No native executor-backed poller, private payload retrieval or notification receiver. Activation gate remains closed; no schedule is active. |
+| R3 Native executor and tool runtime | IMPLEMENTED / HOST-UNVERIFIED | Bounded provider tool-call loop; `repo.read_file`, path-scoped `repo.write_file`, fixed `verification.run`; lease-bound receipts and replay refusal. Live provider-host execution remains unverified. |
+| R4 Native browser | IMPLEMENTED / PERSISTENT-HOST-UNVERIFIED | Model-connected task-scoped Chromium tools; mutating browser actions require explicit host approval. Two local-fixture Chromium cycles passed; persistent browser host and cross-job recovery remain unverified. |
+| R5 Continuous unattended autonomy | NOT IMPLEMENTED / BLOCKED | Native persistent worker/poller, private task payload retrieval and notification/health receiver remain to be built. No schedule is active. |
 
 ## Merged implementation
 
-- `scripts/blind_sniper_model_worker.py`: native OpenAI-compatible provider transport plus bounded function-tool loop; no external agent invoker.
-- `scripts/blind_sniper_tool_runtime.py`: static task-scoped native tool registry and executor; no arbitrary shell, unrestricted filesystem, network or external agent tools.
-- `scripts/blind_sniper_agent_runtime.py`: exact task-ID queue claim, lease propagation, model/tool invocation and completion/retry lifecycle.
+- `scripts/blind_sniper_model_worker.py`: native OpenAI-compatible provider transport plus bounded function-tool loop.
+- `scripts/blind_sniper_tool_runtime.py`: static task-scoped repo, verification and browser tools; no arbitrary shell or unrestricted network.
+- `scripts/blind_sniper_agent_runtime.py`: exact task-ID queue claim, lease propagation, model/tool invocation and completion/retry lifecycle; approval references are included in the task digest.
 - `scripts/blind_sniper_worker.py`: atomic queue, exact-task claims, expiry-checked completion/failure, stale lease recovery and durable tool-call receipts.
+- `scripts/blind_sniper_browser.py`: checked-in native Chromium adapter, invoked directly under queue lease; browser state/artifacts remain outside the public repo.
 - Private task payloads and output receipts remain outside the public repository.
 
 ## Exact-head verification ledger
 
 | Action / workflow | Result | Evidence |
 |---|---|---|
-| Runtime Registry: registry validator + skill audit + Python unit suite + two E2E simulations | PASS | Run `42810704087`; 222 tests in 4.130s, `OK`; simulations are SIMULATION_ONLY |
-| Environment Validation | PASS | Run `42810703918` |
-| Engineering Execution OS Compliance | PASS | Run `42810703910` |
+| Runtime Registry: registry validator + skill audit + Python unit suite + two E2E simulations | PASS | Run `42812345706`; 227 tests in 3.637s, `OK`; simulations are SIMULATION_ONLY |
+| Environment Validation | PASS | Run `42812345701` |
+| Engineering Execution OS Compliance | PASS | Run `42812345761` |
+| Native Browser Adapter: Chromium local-fixture acceptance | PASS | Run `42812345721`; 2 cycles, 36 correlated receipts, interruption/no-replay/reconciliation |
 
-- Source PR head `169d476`; merged main commit `07f79d2`.
-- No live model provider, private remote CAS cross-run, persistent browser host or unattended run was exercised.
+- Source PR head `e610c3a`; merged main commit `99b5efc`.
+- No live model provider, private remote CAS cross-run, persistent browser host or unattended daemon was exercised.
 - No paid provisioning, secrets/permission mutation, release or deployment.
-- Next tranche: native browser tool exposure and durable host-side worker/payload recovery, then continuous unattended autonomy.
+- Next tranche: native private-host worker/poller and recovery/notification outbox (R5), then verify on an approved host without enabling an unattended schedule prematurely.
 
 ---
+## Historical build record
+
 ## Historical build record
 
 ## Historical build record
