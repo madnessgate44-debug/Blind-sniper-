@@ -41,9 +41,12 @@ def activation_check(*, github_ledger: bool, ledger_path: str, token_env: str) -
         data_store = bool(os.environ.get(token_env, ""))
     else:
         data_store = Path(ledger_path).exists() or Path(ledger_path).parent.exists()
-    executor = bool(os.environ.get("OPENHANDS_CLOUD_API_KEY", ""))
+    provider = bool(os.environ.get("BLIND_SNIPER_MODEL_BASE_URL", "").strip() and os.environ.get("BLIND_SNIPER_MODEL_NAME", "").strip())
+    # Deliberately false until a task-scoped native executor/tool registry is implemented.
+    executor = False
     prerequisites = {
         "data_store_configured": data_store,
+        "native_model_provider_configured": provider,
         "executor_configured": executor,
         "notification_route_configured": bool(os.environ.get("BLIND_SNIPER_NOTIFY_DIGEST", "")),
     }
