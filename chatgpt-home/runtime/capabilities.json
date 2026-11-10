@@ -212,7 +212,7 @@
     {
       "id": "agent_browser_cli",
       "kind": "ephemeral_browser_execution",
-      "status": "partial_extended_native_actions_e2e_passed_persistent_host_not_provisioned",
+      "status": "partial_native_model_tool_bridge_ephemeral_chromium_passed_persistent_host_unverified",
       "tools": [
         "scripts/blind_sniper_browser.py",
         "scripts/blind_sniper_browser_dispatch.py",
@@ -239,7 +239,10 @@
         "workspace_contained_file_download",
         "pdf_export",
         "persistent_browser_daemon_across_jobs_pending_host_test",
-        "session_recovery_after_runner_job_boundary_pending_host_test"
+        "session_recovery_after_runner_job_boundary_pending_host_test",
+        "native_model_tool_runtime_bridge",
+        "task_scoped_browser_tool_allowlist",
+        "host_approved_model_browser_mutations"
       ],
       "limitations": [
         "Atomic local-lock/GitHub-CAS reservation, concurrent duplicate exclusion, replay blocking and correlated receipts passed browser workflow run 42494894841; real Chromium completed two consecutive native-dispatch cycles with interruption reconciliation.",
@@ -250,7 +253,8 @@
         "An Oracle Always Free ARM64 self-hosted-runner bootstrap is versioned, but no OCI tenancy/VM was provisioned and persistent cross-job browser recovery is not verified.",
         "Authenticated profiles, cookie transfer and credential-state persistence remain intentionally unsupported.",
         "Extended tabs/frames, approved upload, bounded download and PDF export passed two consecutive real Chromium cycles in browser workflow run 42496827462.",
-        "Oracle Always Free ARM64 bootstrap is versioned but not provisioned; no cross-job browser-daemon recovery is verified, and Oracle may reclaim low-utilization Always Free VMs."
+        "Oracle Always Free ARM64 bootstrap is versioned but not provisioned; no cross-job browser-daemon recovery is verified, and Oracle may reclaim low-utilization Always Free VMs.",
+        "The native model tool runtime exposes navigation, snapshot, URL, tabs and screenshot tools; click/fill/press are exposed only with host approval reference and the explicit browser-write host flag."
       ],
       "license": "Apache-2.0",
       "version": "0.41.2",
@@ -302,13 +306,19 @@
         "path_allowlist_enforcement",
         "lease_bound_tool_receipts",
         "bounded_tool_call_loop",
-        "tool_call_replay_blocking"
+        "tool_call_replay_blocking",
+        "native_browser_navigation",
+        "native_browser_snapshot",
+        "native_browser_tabs",
+        "native_browser_screenshot",
+        "host_approved_browser_mutations"
       ],
       "limitations": [
-        "Only repo.read_file, repo.write_file and verification.run are registered; no shell, arbitrary command, network, external agent or external browser tool exists.",
-        "Workspace writes require workspace_write permission and exact allowed_paths; policy/authority files and GitHub workflow configuration are not writable through model tools.",
-        "Tool calls are reserved before side effects and receipts are committed to the active task ledger; interrupted starts fail closed against replay.",
-        "A live provider-host execution is not verified; contract tests use deterministic fake provider responses and the local ledger."
+        "Registered tools: repo.read_file, repo.write_file, verification.run, browser.navigate, browser.snapshot, browser.get_url, browser.tabs, browser.screenshot, browser.click, browser.fill and browser.press.",
+        "Browser actions execute through the checked-in BrowserAdapter under the active queue lease; browser state and artifacts are stored outside the public repository.",
+        "Browser navigation requires BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS. Mutating browser tools additionally require workspace_write, a host approval reference and BLIND_SNIPER_BROWSER_WRITE_APPROVED=1.",
+        "No arbitrary shell, unrestricted filesystem, arbitrary network or external agent/browser tools are exposed.",
+        "A live configured provider/browser host run and persistent cross-job browser session recovery remain unverified."
       ]
     },
     {
