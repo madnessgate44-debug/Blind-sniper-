@@ -13,13 +13,12 @@ import os
 import subprocess
 import sys
 import tempfile
-import uuid
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 from blind_sniper_redact import redact, redact_text
-from blind_sniper_browser_dispatch import BrowserDispatchError, dispatch_browser_action
+from blind_sniper_browser import BrowserAdapter
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_READ_BYTES = 256_000
@@ -151,7 +150,7 @@ class NativeToolRuntime:
         workspace_root: Path = ROOT,
         command_timeout: int = MAX_COMMAND_TIMEOUT,
         browser_state_dir: Path | None = None,
-        browser_dispatcher: Any = dispatch_browser_action,
+        browser_adapter_factory: Any = BrowserAdapter,
     ) -> None:
         if not hasattr(queue, "reserve_tool_call") or not hasattr(queue, "complete_tool_call"):
             raise NativeToolError("Native tool runtime requires durable lease-bound tool receipts")
@@ -167,7 +166,7 @@ class NativeToolRuntime:
             pass
         else:
             raise NativeToolError("Browser state/artifacts must remain outside the public repository workspace")
-        self.browser_dispatcher = browser_dispatcher
+        self.browser_adapter_factory = browser_adapter_factory
 
     @staticmethod
     def definitions(allowlist: tuple[str, ...] | list[str]) -> list[dict[str, Any]]:
@@ -304,6 +303,8 @@ class NativeToolRuntime:
     def _run_browser(self, name: str, arguments: dict[str, Any], *, task: Any, run_id: str, tool_call_id: str) -> dict[str, Any]:
         if not os.environ.get("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS", "").strip():
             raise NativeToolError("Native browser host must configure BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS")
+        if task.lease_seconds <= 10:
+            raise NativeToolError("Native browser action requires more than ten seconds of remaining lease budget")
         actions = {
             "browser.navigate": ("open", [arguments.get("url", "")]),
             "browser.snapshot": ("snapshot", []),
@@ -314,18 +315,14 @@ class NativeToolRuntime:
         action, action_args = actions[name]
         session_id = "s" + hashlib.sha256(f"{task.task_id}:{run_id}".encode()).hexdigest()[:20]
         step_id = "tool-" + hashlib.sha256(f"{run_id}:{tool_call_id}".encode()).hexdigest()[:24]
-        result = self.browser_dispatcher(
-            ledger=self.queue.ledger,
+        adapter = self.browser_adapter_factory(
             task_id=task.task_id,
-            owner_id=task.lease_owner_id,
             run_id=run_id,
             session_id=session_id,
-            step_id=step_id,
-            action=action,
-            action_args=action_args,
             state_dir=self.browser_state_dir / task.task_id,
             timeout=min(45, task.lease_seconds - 10),
         )
+        result = adapter.execute(action, step_id, *action_args)
         receipt = result.get("receipt", {})
         output = redact_text(str(result.get("output", "")))[:MAX_TOOL_OUTPUT_CHARS]
         error = redact(str(result.get("error", "")))[:2000]
