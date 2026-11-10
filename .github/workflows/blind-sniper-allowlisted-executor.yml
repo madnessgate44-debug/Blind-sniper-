@@ -18,24 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout named branch
+      - name: Checkout named branch (read-only, full tree)
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
           fetch-depth: 1
           persist-credentials: false
-          sparse-checkout: |
-            .blind-sniper/tasks/
-            .github/workflows/
-            scripts/
-            tests/
-            chatgpt-home/runtime/
-            chatgpt-home/skills/
-            chatgpt-home/agents/
-            chatgpt-home/workflows/
-            chatgpt-home/templates/
-            chatgpt-home/openhands-library/.agents/skills/
-          sparse-checkout-cone-mode: true
 
       - name: Set up Python
         uses: actions/setup-python@v5

@@ -155,6 +155,37 @@ class BrowserDispatchLeaseTests(unittest.TestCase):
             self.dispatch()
         self.assertEqual(FakeAdapter.calls, [])
 
+    def test_compact_executing_task_dispatches_through_authoritative_state(self):
+        # Regression: the native runtime persists compact state (snapshot/delta),
+        # not a legacy full "state" snapshot. Dispatch must still succeed.
+        import blind_sniper_runtime as runtime
+        compact_ledger = TaskLedger(Path(self.temp.name) / "compact-events.jsonl")
+        task_id = "BS-DISPATCH-COMPACT"
+        now = datetime.now(timezone.utc)
+        plan = runtime.build_plan({"task_id": task_id, "objective": "Research a technical question"})
+        state = runtime.create_task_state(plan)
+        runtime.persist_task_state(compact_ledger, state, event_type="TASK_CREATED", idempotency_key="c:created")
+        for status in ("INSPECTING", "SPECIFIED", "PLANNED"):
+            state = runtime.transition_task(state, status)
+            runtime.persist_task_state(compact_ledger, state, event_type="TASK_TRANSITIONED", idempotency_key=f"c:{status}")
+        compact_ledger.claim_task(task_id=task_id, owner_id=self.owner_id, lease_seconds=300, idempotency_key="c:claim", now=now)
+        state = runtime.transition_task(state, "EXECUTING")
+        state["implementer_id"] = self.owner_id
+        compact_ledger.append_transition_if_lease(
+            task_id=task_id, owner_id=self.owner_id,
+            payload=runtime.build_state_event_payload(compact_ledger, state),
+            idempotency_key="c:exec", now=now,
+        )
+        FakeAdapter.calls = []
+        result = dispatch_browser_action(
+            ledger=compact_ledger, task_id=task_id, owner_id=self.owner_id,
+            run_id="run-1", session_id="session-1", step_id="step-1",
+            action="snapshot", action_args=[], state_dir=self.temp.name,
+            timeout=20, adapter_factory=FakeAdapter,
+        )
+        self.assertEqual(result["receipt"]["step_id"], "step-1")
+        self.assertEqual(len(FakeAdapter.calls), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
