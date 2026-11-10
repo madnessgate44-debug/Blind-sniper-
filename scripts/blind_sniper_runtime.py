@@ -167,9 +167,14 @@ def capability_state(status: str) -> str:
     value = status.lower()
     if "not_registered" in value or value.startswith("blocked") or "blocked_" in value:
         return "BLOCKED"
+    # An explicit "partial_..." prefix means the capability is usable but
+    # incomplete; a trailing qualifier such as "..._unverified" must not demote
+    # it to fully UNVERIFIED.
+    if value.startswith("partial"):
+        return "PARTIAL"
     if "unverified" in value or "not_verified" in value:
         return "UNVERIFIED"
-    if "partial" in value or "reported" in value or "receiver_unverified" in value:
+    if "reported" in value or "receiver_unverified" in value:
         return "PARTIAL"
     if value == "available_in_current_session":
         return "AVAILABLE"
