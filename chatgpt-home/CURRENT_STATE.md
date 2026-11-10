@@ -1,14 +1,18 @@
 # Blind Sniper — Current Technical State
 
-**Snapshot:** 2026-11-10 — post-merge reconciliation after PR #42 and PR #43 merged.
+**Live snapshot:** 2026-11-10 — BS-RELEASE-001 acceptance assessed NO-GO; assessment merged as PR #45.
 **Default branch:** `main`
-**Latest code/runtime HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4` (PR #43 runtime hardening merge).
-**Latest full runtime-validation evidence:** PR #43 exact head `dcd26f7a` — GitHub Actions validate-runtime job `129564554848` logged `Ran 158 tests in 2.319s` and `OK`; post-merge `validate-runtime` on `918eb0a` passed (run `129605579888`).
-**Latest merged main checks:** 7/7 GitHub check runs completed successfully on `918eb0a`: `policy-compliance` (2), `validate-runtime`, `validate-environment`, `build`, `report-build-status`, and `deploy`. PR #43's own head also passed browser-acceptance; its two persistent-host checks were skipped, not failed.
-**Latest docs-state merge:** PR #44 at `3b86f8c9e8de637072f12976eb6906e564c348a5`. PRs #42, #43 and #44 are merged; the live open-PR inventory is empty.
-**Branch protection:** `main` reports `protected=false`; unresolved governance-hardening item.
-**Authority:** Engineering Execution OS v2.3 plus active standing Owner delegation, recorded in `chatgpt-home/AUTHORITY_DELEGATION.md` and mirrored in `chatgpt-home/runtime/authority.json`.
-**Audit artifact:** `chatgpt-home/AGENT_OS_INTEGRATION_AUDIT.md` (BS-OS-001 static audit) and `chatgpt-home/BS-COMPLETION_AUDIT_AND_OPENAI_REVIEW.md` (completion audit).
+**Current main HEAD:** `9d3ab26a05b6c4588554fc21a0411f9a04277676` (PR #45 acceptance record).
+**Latest code/runtime HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`; later commits through the assessed baseline `e253c25` were documentation-only.
+**Latest full runtime validation:** run `42748297211`, commit `918eb0a`, job `129605579888`: runtime validator passed; 158 unit tests reported `OK`; both E2E simulation steps ran in a successful job.
+**Browser acceptance:** PR #43 run `42735786150`, exact head `dcd26f7`: two Chromium cycles, 36 correlated receipts; bounded PR-host evidence only.
+**PR #45:** merged at `9d3ab26`; exact-head documentation checks 4/4 passed. Post-merge main checks: 4/5 passed at snapshot time; GitHub Pages deploy was still in progress.
+**Release gate:** **NO-GO**. Durable cross-run worker/leases/recovery, live private-ledger writes, release-specific independent review, operational rollback/monitoring ownership, and exact-target smoke test remain unverified or incomplete. See `chatgpt-home/BS-RELEASE-001_RELEASE_ACCEPTANCE.md`.
+**Open PRs:** none at last live query.
+**Branch protection:** `main` reports `protected=false`; no settings changed.
+**Authority:** Engineering Execution OS v2.3 and active repository-scoped Owner delegation. Exclusions remain in `chatgpt-home/AUTHORITY_DELEGATION.md`.
+
+> Historical and technical detail below is retained for provenance. Where it conflicts with this live snapshot, this snapshot and live GitHub state take precedence.
 
 ## Current authority and operating contract
 - Blind Sniper is the repository's technical lead and execution operator through its ChatGPT conversational interface.
