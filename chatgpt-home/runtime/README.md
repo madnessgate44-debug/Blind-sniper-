@@ -26,10 +26,7 @@ Registered tools are limited to:
 - `verification.run` — fixed runtime-validator and unit-test commands only.
 
 Every tool call is reserved against the current unexpired durable task lease before side effects and
-receives a terminal ledger receipt. There is no arbitrary shell, unrestricted filesystem, network,
-Forge, OpenHands or external browser tool. R1/R3 are contract-tested; a live configured provider
-host remains unverified. R2 private remote payload recovery is partial, R4 persistent browser hosting
-is unverified, and R5 unattended autonomy remains blocked.
+receives a terminal ledger receipt. There is no arbitrary shell, unrestricted filesystem, arbitrary network, Forge, OpenHands or external browser tool. The model can use the checked-in native Chromium adapter through lease-bound browser tools; navigation is domain-allowlisted and click/fill/press require host approval. Browser state and artifacts remain outside the public repository. R1/R3/R4 are contract-tested; a live configured provider host remains unverified. R2 private remote payload recovery is partial, persistent browser hosting is unverified, and R5 unattended autonomy remains blocked.
 
 ## Components
 
