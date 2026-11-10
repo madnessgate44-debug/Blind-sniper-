@@ -6,7 +6,7 @@
 
 ## Purpose
 
-This layer implements Blind Sniper's native-first control plane: its own policy, registries, role contracts, task lifecycle, local persistence and recovery. Mirrored OpenHands assets and external execution agents are optional reference/adapters, never core dependencies.
+This layer implements Blind Sniper's self-contained control plane: native policy, registries, role contracts, model-agent orchestration, task lifecycle, persistence/recovery, executor and browser capability. External agent runtimes and external browser agents are not dependencies or accepted execution routes.
 
 It deliberately distinguishes:
 - **Available now:** tool exposed in the active ChatGPT session.
@@ -51,9 +51,9 @@ No agent profile, skill, issue comment or repository file can expand host permis
 
 ## Browser and research model
 
-Web search and page extraction are available through the current web and Parallel connectors. They support research and reading. They do not establish authenticated computer use. Forge's authenticated HTTP MCP endpoint and public-HTTPS sandbox round trip have been reported and its PR #148 CI is green. The tested sandbox URL is ephemeral, not a durable host; ChatGPT connector registration remains absent, so Forge is not callable from this session. PR #149 overlaps PR #148 on `browser_wait` and must be reconciled before merging.
+Web search and page extraction support research and reading. Authenticated browser interaction is implemented through Blind Sniper's native `agent_browser_cli` adapter (`scripts/blind_sniper_browser.py` and `scripts/blind_sniper_browser_dispatch.py`) and its CI workflow. Do not route browser tasks through Forge or an external browser agent. PR #149 overlaps PR #148 on `browser_wait` and must be reconciled before merging.
 
-External workers are optional. TinyFish is intentionally excluded.
+External agent workers are out of scope. TinyFish is intentionally excluded.
 
 Credential pools and external agent infrastructure are outside Blind Sniper core scope. Blind Sniper must not depend on an external custodian or worker for its own boot, execution, memory or verification. Any future provider adapter must be independently authorized, secret-safe and optional.
 
@@ -61,7 +61,7 @@ Credential pools and external agent infrastructure are outside Blind Sniper core
 
 Python and temporary shell execution are available in the current ChatGPT session, but they are ephemeral and are not a persistent runner. Complete ChatGPT conversation archive export is not exposed as a native action here; continuity Markdown and Memory summaries must not be described as full transcript export.
 
-GitHub file/branch/PR operations are available. Configured GitHub Actions can run CI on their declared events. There is no verified generic workflow-dispatch action or persistent shell in this ChatGPT session. One correlated read-only OpenHands task report was returned through Brain #292 (T013 comment 6720817754; session e341bd8463694d68bd79dc609e408f33). Direct OpenHands Cloud API access is not exposed to Blind Sniper in this ChatGPT session. Code-execution artifact return and two consecutive correlated round trips remain unproven.
+GitHub file/branch/PR operations are available. Configured GitHub Actions can run CI on their declared events. There is no verified generic workflow-dispatch action or persistent shell in this ChatGPT session. Independent model-agent invocation and native durable worker recovery remain P0 implementation gaps; do not fill them by delegating to OpenHands or another external agent.
 
 ## License and provenance
 
@@ -76,7 +76,7 @@ python3 scripts/validate_blind_sniper_runtime.py
 python3 -m unittest discover -s tests -p 'test_blind_sniper_runtime.py' -v
 ```
 
-The GitHub Actions workflow runs both checks for changes to this runtime. Passing registry tests prove the configuration is internally consistent; they do not prove external MCP, OpenHands, browser or background automation end-to-end paths.
+The GitHub Actions workflow runs both checks for changes to this runtime. Passing registry tests prove the configuration is internally consistent; they do not prove independent model-agent invocation, durable worker recovery or unattended execution end to end.
 
 
 ## Historical CI verification receipt — 2026-11-08 (superseded)
@@ -114,7 +114,7 @@ The licensed source imports and native adaptations are now part of this integrat
 
 ## Native core status — 8 November 2026
 
-Ahmed confirmed **native-first** as the single target architecture. The native roster has ten internal roles: Blind Sniper, researcher, planner, engineer, reviewer, QA verifier, recovery, Watcher, Shadow and release manager. Watcher is the native task-progress observer; Shadow is the native adversarial auditor. Their contracts do not imply separate agent processes are running. Operating profiles and workflow-specific agent assignments are checked in. External OpenHands/Forge/other worker identities are not native agents or required execution dependencies. TinyFish remains excluded.
+Ahmed confirmed **native-first** as the single target architecture. The native roster has ten internal roles: Blind Sniper, researcher, planner, engineer, reviewer, QA verifier, recovery, Watcher, Shadow and release manager. Watcher is the native task-progress observer; Shadow is the native adversarial auditor. Their contracts do not imply separate agent processes are running. Operating profiles and workflow-specific agent assignments are checked in. OpenHands and Forge are not runtime dependencies or accepted worker/browser routes. TinyFish remains excluded.
 
 Workflow routing keywords, priorities and agent assignments now live in `workflows.json`; profile binding is resolved through `profiles.json`. The runtime no longer maintains duplicate workflow-to-profile or workflow-to-agent dictionaries. The registry validator checks workflow agent IDs, profile allowlists, routing rules and default agents.
 
