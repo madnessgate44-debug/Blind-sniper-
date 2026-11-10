@@ -6,7 +6,7 @@
 **Latest docs-state merge:** PR #44 at `3b86f8c9e8de637072f12976eb6906e564c348a5`.  
 **Latest full runtime-validation evidence:** PR #43 head `dcd26f7a` — GitHub Actions validate-runtime job `129564554848` logged 158 tests in 2.319s (`OK`); post-merge `validate-runtime` run `129605579888` passed on `918eb0a`.  
 **Open PRs after integration:** none; PR #42, PR #43 and PR #44 are merged.  
-**Architecture:** Native-first; runtime is a planner and guarded task state machine, not a system that spawns separate model processes.
+**Architecture:** Self-contained native Blind Sniper. Runtime is currently a planner and guarded task state machine; independent model-process invocation remains unimplemented.
 
 ## Current verified system inventory
 
@@ -24,7 +24,7 @@
 - The post-merge exact HEAD has 7/7 completed successful check runs: `policy-compliance` (2), `validate-runtime`, `validate-environment`, `build`, `report-build-status`, and `deploy`.
 - Live open-PR query after PR #42 and #43 merged: empty. Branch protection remains disabled and is tracked separately.
 - Durable cross-run worker/queue, heartbeat, cancellation and stale-worker supervision remain unimplemented/unverified; no persistent runner is established.
-- Direct OpenHands Cloud dispatch/result retrieval and direct Forge MCP invocation remain unavailable as callable tools in this ChatGPT session. GitHub issue-comment coordination is the verified fallback, not proof of a direct API session.
+- OpenHands and Forge are explicitly out of scope as runtime dependencies. The active P0 is native model-agent invocation, durable queue/worker recovery, native executor integration, native browser operation and continuous autonomy.
 
 ## Post-merge workstream closeout — 2026-11-10
 
@@ -45,7 +45,7 @@
 1. **BS-RELEASE-001:** complete release acceptance before making any production-readiness claim. GitHub Pages deployment is a documentation/site publication, not proof of a production application release.
 2. **Branch protection:** `main` currently reports `protected=false`; no branch-protection write action is exposed in the connected GitHub toolset.
 3. **Executor durability:** bounded per-run execution (Option B) is implemented; durable cross-run queue/worker, heartbeat, cancellation and stale-worker supervision are not established. The Owner's product decision on whether to pursue durable execution remains open.
-4. **External execution:** direct OpenHands Cloud API dispatch/result retrieval and Forge browser MCP invocation are not callable/verified from this ChatGPT session. OpenHands PR activity is verified through GitHub artifacts, not a persistent direct API session.
+4. **Native autonomy:** independent model invocation, full cross-run worker recovery, cancellation/heartbeat/stale-lease supervision and unattended trigger-to-result verification remain P0 gaps. Native browser CI acceptance exists, but persistent authenticated browser-host recovery is not verified.
 5. **Transcript source:** obtain a supported, authorized export or account-history connector before attempting migration; preserve source order, timestamps and identifiers.
 
 ---
@@ -54,7 +54,7 @@
 The material below is the earlier 2026-11-08 build log. It is retained for provenance only. Any old branch, PR, test count, limitation or next-step statement below is superseded by the current status above and the live GitHub state.
 # Blind Sniper build progress — 8 November 2026
 
-**Architecture:** Native-first. Blind Sniper's own runtime, policy, workforce contracts, ledger and recovery are core. External agents are optional adapters.
+**Architecture:** Self-contained. Blind Sniper's own runtime, policy, agent orchestration, ledger, executor, browser and recovery are core; external agent and browser runtimes are excluded.
 **Integration branch:** `feat/blind-sniper-orchestration-integration-2026-11-08`
 **Current state anchor:** `chatgpt-home/CURRENT_STATE.md`
 
@@ -141,3 +141,12 @@ Remaining:
 - Authenticated profiles/cookies intentionally unsupported.
 - Independent full-diff review pending.
 - PR #11 remains draft; no merge/deployment target is available.
+
+
+## Owner architecture correction — 2026-11-10
+
+- [V] Owner clarified that Blind Sniper is a self-contained system and must not depend on Forge or OpenHands for browsing, execution, delegation, persistence or recovery.
+- [V] P0 issue #46 was rewritten to require native independent model agents, Blind Sniper-owned durable queue/worker recovery, native executor/tool runtime, native browser capability and safe continuous autonomy.
+- [V] The native browser adapter already has CI-backed Chromium acceptance for bounded navigation/actions, task-lease checks, action receipts and interruption reconciliation. This does not prove a persistent authenticated browser host or cross-job browser-session recovery.
+- [U] Independent model invocations are not implemented; the runtime currently resolves agent contracts rather than spawning separate model executions.
+- [U] Full durable worker cancellation, heartbeat supervision, stale-lease reclamation and interruption-safe cross-run recovery remain incomplete.
