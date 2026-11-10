@@ -1,31 +1,42 @@
 # Blind Sniper — Current Session Checkpoint
 
-- **Session:** 2026-11-08
-- **Branch:** main
-- **Boot status:** COMPLETE — controlling files and all seven continuity files fetched with non-empty content and blob SHAs.
-- **Primary operating file:** `chatgpt-home/BLIND_SNIPER.md`
-- **Open historical-memory limitation:** Raw ChatGPT account-wide transcript archive is not connected or imported. Curated continuity summaries are available; verbatim historical conversation retrieval remains BLOCKED pending an authorized export or connector.
+- **Session date:** 2026-11-10
+- **Repository:** `madnessgate44-debug/Blind-sniper-` (public)
+- **Branch inspected:** `main`
+- **Live HEAD:** `ada63e11d3047a3560565a4bcaa72c6768e4ae34`
+- **Boot status:** PARTIAL — current public technical controls were retrieved; private continuity contents were not accessed in this session.
+- **Primary operating file:** `chatgpt-home/BLIND_SNIPER.md` v3.2.
+- **Controlling policy:** root `AGENTS.md`, root `ENGINEERING_EXECUTION_OS.md` v2.3, `chatgpt-home/AUTHORITY_DELEGATION.md`, and `chatgpt-home/BLIND_SNIPER.md`.
+- **Privacy boundary:** this public checkpoint contains technical repository state only. Do not copy private memory, personal context, raw transcripts, credentials or private attachments here.
 
-## Controlling files
-| Path | Blob SHA |
+## Live GitHub evidence
+
+| Check | Result |
 |---|---|
-| `AGENTS.md` | `91d63a56818ebf5d757ac7cda0e0786fff88b058` |
-| `ENGINEERING_EXECUTION_OS.md` | `7c339a090eaf23fc1e4f9112f72a4ba28f2bfe1c` |
+| Default branch | `main` |
+| HEAD | `ada63e11d3047a3560565a4bcaa72c6768e4ae34` |
+| Open pull requests | 0 |
+| HEAD check runs | 7/7 completed successfully |
+| Main branch protection | Disabled; separately tracked |
+| OpenHands direct API from this session | Not available |
+| Verified coordination fallback | Brain issue #292 GitHub comments |
 
-## Seven-file continuity retrieval
-| Path | Blob SHA | Result |
-|---|---|---|
-| `chatgpt-home/README.md` | `bd334d463647baf877081ea62d4f27361494e791` | PASS |
-| `chatgpt-home/OPERATING_PROFILE.md` | `d024a92c471f29a8b68bf33f9eaeccadc374d3fb` | PASS |
-| `chatgpt-home/MEMORY.md` | `26b415e075b69e5f4af177b0dfcc844f1598bb7c` | PASS |
-| `chatgpt-home/PROJECTS.md` | `97e848953da5ead22656f0a684438f3d73077536` | PASS |
-| `chatgpt-home/CONVERSATION_CONTINUITY.md` | `2f0beee7297c045a0f53f9ac06f694181a8efbcd` | PASS |
-| `chatgpt-home/SKILLS_CATALOG.md` | `5589a1b2e768f7629648df090dc2c023e862c980` | PASS |
-| `chatgpt-home/SYNC_PROTOCOL.md` | `1ed3ee1814dc3de5f628a1697f04eea215b57145` | PASS |
+## Current work split
 
-## Current task
-[COMPLETED] Canonical entrypoint implemented and re-fetched. Commits: `0326a359`, `b258396f`, `6a30f195`, `61d30447`, `7541c489`, `3b1bf638`. Continuity closeout appended in commit `4777cf503ffc6d12778de866c4f175fdb526348f`.
+- **Blind Sniper / ChatGPT:** reconcile technical state and checkpoint; define bounded work packages; coordinate through verified GitHub paths; verify returned evidence and report blockers.
+- **OpenHands:** engineering implementation, tests, verification, PR preparation and execution receipts for the assigned runtime-hardening task.
+- **Independent review:** distinct reviewer where required; do not treat implementer self-review as independent approval.
 
-## Open blockers
-- Authorized ChatGPT data export/archive or account-history connector not yet available for full verbatim history migration.
-- Dedicated Brain/OpenHands MCP transport not exposed in the inspected session tool inventory; use only verified GitHub coordination paths until bridge is established.
+## Current blockers and limits
+
+- Durable cross-run queue/worker, heartbeat, cancellation and stale-worker supervision are not established.
+- Persistent host/background execution is not verified.
+- Direct OpenHands Cloud API dispatch/result retrieval and direct Forge MCP invocation are not callable from this session.
+- Full ChatGPT transcript export/import remains blocked pending an authorized source.
+- Private continuity store is documented as existing in owner-controlled private storage, but its contents were not read or revalidated during this session.
+
+## Evidence discipline
+
+- The latest runtime test-count evidence remains 130 tests on baseline `031b245bca32fbe91abae1f96e9e394efe50f959`.
+- Newer HEAD `ada63e11` has 7/7 successful GitHub check runs; do not claim the same exact test count unless the corresponding workflow log is inspected.
+- This checkpoint is a technical session summary, not a transcript archive or proof of unattended execution.
