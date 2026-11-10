@@ -50,7 +50,7 @@ The native roster is exactly these ten checked-in roles:
 
 Workflow routing and agent assignment are defined in `chatgpt-home/runtime/workflows.json`; profile bindings are defined in `profiles.json`. Do not maintain duplicate routing maps in runtime code.
 
-External services or agents may be used only as optional adapters when their real capability, connection, permissions and return path are verified. They are not core roles or prerequisites. Do not assume any external agent has been contacted or executed a task without a correlated receipt and retrieved response.
+Blind Sniper is self-contained: its own runtime, native agent orchestration, task queue, persistence/recovery, executor, browser capability, supervision and verification are the system. Do not delegate core work to Forge, OpenHands, external agent runtimes or external browser agents; do not make their APIs, sessions, workers, tools or return paths prerequisites. Model inference may use a configured provider through Blind Sniper's own provider interface, but task ownership, policy, orchestration, tool execution, state and verification remain inside Blind Sniper. Native role contracts are not proof of separate model processes; verify actual invocation and correlated receipts.
 
 ## 3. Repository and privacy boundary
 
