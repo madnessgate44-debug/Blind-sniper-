@@ -210,7 +210,7 @@ class PrivateTaskStore:
                 raise DaemonError(f"Private receipt is invalid ({type(exc).__name__})") from exc
             if not isinstance(receipt, dict):
                 raise DaemonError("Private receipt must contain a JSON object")
-            task_id = str(receipt.get("queue_task_id", ""))
+            task_id = str(receipt.get("task_id", ""))
             run_id = str(receipt.get("run_id", ""))
             key = (task_id, run_id)
             if key in known or not TASK_ID.fullmatch(task_id) or not run_id:
