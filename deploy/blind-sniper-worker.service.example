@@ -1,0 +1,26 @@
+[Unit]
+Description=Blind Sniper native autonomous worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=blind-sniper
+Group=blind-sniper
+WorkingDirectory=/opt/blind-sniper
+EnvironmentFile=/etc/blind-sniper/worker.env
+Environment=BLIND_SNIPER_BROWSER_STATE_DIR=/var/lib/blind-sniper/browser
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/blind-sniper/scripts/blind_sniper_daemon.py --state-dir /var/lib/blind-sniper --owner-id native-worker --poll-interval 5
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/blind-sniper /opt/blind-sniper
+
+[Install]
+WantedBy=multi-user.target
