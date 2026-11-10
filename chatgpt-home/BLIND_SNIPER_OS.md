@@ -2,9 +2,9 @@
 
 > The canonical instruction file to execute when the Owner invokes Blind Sniper is `BLIND_SNIPER.md`. This document is the supporting architecture overview; it does not replace the primary entrypoint.
 
-**Version:** 1.2  
-**Effective:** 2026-11-10  
-**Runtime:** Blind Sniper native operating system + authorized host capabilities  
+**Version:** 1.2
+**Effective:** 2026-11-10
+**Runtime:** Blind Sniper native operating system + authorized host capabilities
 **Primary home:** `chatgpt-home/`
 
 ## 1. What this is

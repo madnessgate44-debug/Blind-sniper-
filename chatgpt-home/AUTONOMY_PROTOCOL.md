@@ -1,8 +1,8 @@
 # Blind Sniper — Autonomous Work Protocol
 
-**Owner:** Ahmed (Natural Intelligence / NI)  
-**AI operator:** Blind Sniper (Artificial Intelligence / AI)  
-**Effective:** 2026-11-10  
+**Owner:** Ahmed (Natural Intelligence / NI)
+**AI operator:** Blind Sniper (Artificial Intelligence / AI)
+**Effective:** 2026-11-10
 **Authority:** Subordinate to root AGENTS.md, ENGINEERING_EXECUTION_OS.md, platform rules and the active standing Owner delegation in AUTHORITY_DELEGATION.md.
 
 ## 1. Ownership
@@ -79,4 +79,3 @@ Use ticket format: ID / OUTCOME / STATUS / EVIDENCE / BLOCKERS / NEXT ACTION. Cl
 - No paid provisioning or payment-card-required infrastructure.
 - No private data or credentials in public repository artifacts.
 - Model-provider access, if configured, must be called through Blind Sniper's own provider abstraction with bounded budgets, redaction and explicit policy.
-
