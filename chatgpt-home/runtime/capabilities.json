@@ -212,7 +212,7 @@
     {
       "id": "agent_browser_cli",
       "kind": "ephemeral_browser_execution",
-      "status": "partial_native_model_tool_bridge_persistent_host_pending",
+      "status": "partial_native_browser_tool_bridge_persistent_host_pending",
       "tools": [
         "scripts/blind_sniper_browser.py",
         "scripts/blind_sniper_browser_dispatch.py",
