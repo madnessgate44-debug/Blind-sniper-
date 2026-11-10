@@ -4,8 +4,8 @@
 **Default branch:** `main`
 **Live main HEAD:** `ada63e11d3047a3560565a4bcaa72c6768e4ae34` (executor workflow full-checkout fix).
 **Latest full runtime-validation baseline:** `031b245bca32fbe91abae1f96e9e394efe50f959` — 130 Python tests OK; runtime registry and skill catalog validation PASS.
-**Latest live HEAD checks:** 7/7 GitHub check runs completed successfully, including Runtime Registry, Environment Validation, OS Compliance, bounded executor, receipt publication and Pages deployment. This does not claim a fresh 130-test count on `ada63e11`.
-**Open PRs:** 0 (live GitHub query).
+**Latest live HEAD checks:** 8/8 GitHub check runs completed successfully: `policy-compliance` (2), `validate-runtime`, `build`, `Execute allowlisted command`, `report-build-status`, `deploy`, and `Publish receipt to receipts/main`. This exact-HEAD set does not include Environment Validation or OS Compliance. No fresh 130-test count is claimed for `ada63e11`.
+**Open PRs at this refresh:** #42 (this documentation reconciliation) and #43 (bounded runtime hardening); both were open when this snapshot was corrected. Re-query before later merge/closure decisions.
 **Branch protection:** `main` reports `protected=false`; unresolved governance-hardening item.
 **Authority:** Engineering Execution OS v2.3 plus active standing Owner delegation, recorded in `chatgpt-home/AUTHORITY_DELEGATION.md` and mirrored in `chatgpt-home/runtime/authority.json`.
 **Audit artifact:** `chatgpt-home/AGENT_OS_INTEGRATION_AUDIT.md` (BS-OS-001 static audit) and `chatgpt-home/BS-COMPLETION_AUDIT_AND_OPENAI_REVIEW.md` (completion audit).
@@ -111,8 +111,8 @@
 
 - Live GitHub branch query confirms `main` HEAD is `ada63e11d3047a3560565a4bcaa72c6768e4ae34`; commit message: `fix(executor): full read-only checkout so run-tests can read all fixtures (#41)`.
 - The change removes sparse checkout from `.github/workflows/blind-sniper-executor.yml` because the test suite reads workflow and task fixtures outside the former sparse paths. Read-only checkout remains enforced by `contents: read` and `persist-credentials: false`.
-- Commit check-runs query: 7 total, all completed with conclusion `success`. Runtime Registry, Environment Validation, OS Compliance, Build, executor command, receipt publication and Pages deploy are included. No new exact test-count claim is made for this HEAD.
-- Live open-PR query returned an empty list. Main remains unprotected (`protected=false`).
+- Commit check-runs query: 8 total, all completed with conclusion `success`: `policy-compliance` (2), `validate-runtime`, `build`, `Execute allowlisted command`, `report-build-status`, `deploy`, and `Publish receipt to receipts/main`. Environment Validation and OS Compliance are not present on this exact HEAD. No new exact test-count claim is made for this HEAD.
+- Live open-PR query at this correction lists PRs #42 and #43. Main remains unprotected (`protected=false`).
 - The prior header and historical verification entries that cited `cf350f7` are superseded by this live checkpoint; historical entries remain for provenance.
 - This state refresh does not change runtime code, branch protection, permissions, secrets, or private continuity.
 
