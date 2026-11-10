@@ -71,7 +71,7 @@ class OrchestrationEngineTests(unittest.TestCase):
         plan = runtime.build_plan({
             "task_id": "BS-TEST-005",
             "objective": "Owner-directed bounded task",
-            "workflow": "task-control-loop",
+            "workflow": "research-and-synthesis",
             "requested_actions": ["production_deploy"],
         })
         self.assertEqual(plan["approval"]["pending_actions"], ["production_deploy"])
@@ -95,7 +95,7 @@ class OrchestrationEngineTests(unittest.TestCase):
         plan = runtime.build_plan({
             "task_id": "BS-TEST-009",
             "objective": "Owner-directed bounded task",
-            "workflow": "task-control-loop",
+            "workflow": "research-and-synthesis",
             "requested_actions": ["production_deploy"],
             "owner_approval": {"approved_actions": ["production_deploy"]},
             "authority_delegation": {"id": "owner-standing-delegation-2026-11-09", "approved_actions": ["production_deploy"]},
@@ -121,7 +121,7 @@ class OrchestrationEngineTests(unittest.TestCase):
         plan = runtime.build_plan({
             "task_id": "BS-TEST-DELEGATION-001",
             "objective": "Merge and deploy an accepted Blind Sniper repository release",
-            "workflow": "task-control-loop",
+            "workflow": "research-and-synthesis",
             "repository": "madnessgate44-debug/Blind-sniper-",
             "requested_actions": ["merge", "merge_to_main", "default_branch_push", "ci_cd_edit", "production_deploy"],
         })
@@ -243,7 +243,7 @@ class OrchestrationEngineTests(unittest.TestCase):
         plan = runtime.build_plan({
             "task_id": "BS-SEC-002",
             "objective": "Perform protected action",
-            "workflow": "task-control-loop",
+            "workflow": "research-and-synthesis",
             "requested_actions": ["merge_to_main"],
         })
         state = runtime.create_task_state(plan)
@@ -267,7 +267,7 @@ class OrchestrationEngineTests(unittest.TestCase):
         plan = runtime.build_plan({
             "task_id": "BS-SEC-003",
             "objective": "Research and verify a technical question",
-            "workflow": "task-control-loop",
+            "workflow": "research-and-synthesis",
         })
         state = runtime.create_task_state(plan)
         state["implementer_id"] = "engineer"
