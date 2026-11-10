@@ -127,6 +127,8 @@ class NativeModelInvoker:
         )
 
     def __call__(self, *, spec: AgentSpec, task: ModelTask, timeout_seconds: int) -> dict[str, Any]:
+        if spec.permission_profile != "read_only":
+            raise ModelWorkerError("Native model invocation is read-only until the native executor is connected")
         if spec.tool_allowlist:
             raise ModelWorkerError(
                 "Native tool execution is not enabled; agent tool_allowlist must be empty until the native executor is connected"
