@@ -247,7 +247,7 @@
         "native_task_queue",
         "native_tool_runtime"
       ],
-      "status": "implemented_native_model_browser_tools_ephemeral_host_persistent_host_unverified",
+      "status": "partial_native_browser_tool_bridge_persistent_host_pending",
       "required_capabilities": {
         "agent_browser_cli": [
           "allowlisted_http_navigation",
