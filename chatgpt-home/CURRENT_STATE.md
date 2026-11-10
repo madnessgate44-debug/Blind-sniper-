@@ -1,18 +1,31 @@
 # Blind Sniper — Current Technical State
 
-**Live snapshot:** 2026-11-10 — BS-RELEASE-001 acceptance assessed NO-GO; assessment merged as PR #45.
+**Live snapshot:** 2026-11-10 — BS-RELEASE-001 remains **NO-GO**; first private cross-run execution tranche is now implemented and verified.
 **Default branch:** `main`
-**Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`; the live state anchor was refreshed immediately afterward.
-**Latest code/runtime HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`; later commits through the assessed baseline `e253c25` were documentation-only.
-**Latest full runtime validation:** run `42748297211`, commit `918eb0a`, job `129605579888`: runtime validator passed; 158 unit tests reported `OK`; both E2E simulation steps ran in a successful job.
+**Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`.
+**Latest code/runtime HEAD:** `3b4ef572dc8b6aa819185e08e22a80e4f8cfd9ff` — executor now supports the Owner-authorized private GitHub CAS ledger, run-unique leases, duplicate refusal and lease release.
+**Latest full runtime validation:** private executor run `42758395681`, task `BS-B1-VALIDATE-001`: runtime validator PASS on `3b4ef57`.
+**Latest full unit suite:** private executor run `42758698543`, task `BS-B1-UNIT-TESTS-001`: 158 tests in 1.332s; `OK`; exit code 0; receipt and logs retained as artifact `13735839796`.
+**Private ledger integration:** live append/read-back/idempotency smoke run `42758084356` PASS; private execution run `42758395681` recorded task lifecycle, claim, renewal, transitions, release and correlated receipts. A later independent run `42758616125` refused replay of an existing task ID.
 **Browser acceptance:** PR #43 run `42735786150`, exact head `dcd26f7`: two Chromium cycles, 36 correlated receipts; bounded PR-host evidence only.
-**PR #45:** merged at `9d3ab26`; exact-head documentation checks 4/4 passed. Post-merge main checks: 4/5 passed at snapshot time; GitHub Pages deploy was still in progress.
-**Release gate:** **NO-GO**. Durable cross-run worker/leases/recovery, live private-ledger writes, release-specific independent review, operational rollback/monitoring ownership, and exact-target smoke test remain unverified or incomplete. See `chatgpt-home/BS-RELEASE-001_RELEASE_ACCEPTANCE.md`.
+**Release gate:** **NO-GO**. Durable cross-run execution is now partial, not complete: concurrency contention, interruption-safe recovery, cancellation and stale-worker recovery remain unverified; release-specific independent review, operational rollback/monitoring ownership, and exact-target smoke test also remain open. See `chatgpt-home/BS-RELEASE-001_RELEASE_ACCEPTANCE.md`.
 **Open PRs:** none at last live query.
 **Branch protection:** `main` reports `protected=false`; no settings changed.
 **Authority:** Engineering Execution OS v2.3 and active repository-scoped Owner delegation. Exclusions remain in `chatgpt-home/AUTHORITY_DELEGATION.md`.
 
 > Historical and technical detail below is retained for provenance. Where it conflicts with this live snapshot, this snapshot and live GitHub state take precedence.
+
+## Private cross-run execution tranche — 2026-11-10
+
+- [V] A private GitHub Contents CAS ledger is active under an Owner-authorized private continuity target. The target identity and private ledger contents are intentionally not copied into this public repository.
+- [V] The private ledger smoke workflow run `42758084356` appended one event, read it back, verified the event hash, and confirmed same-run idempotent replay without a duplicate event.
+- [V] Executor code commit `3b4ef572dc8b6aa819185e08e22a80e4f8cfd9ff` adds private-ledger configuration, run-specific lease owner IDs, existing-task refusal, and lease release after execution.
+- [V] Private runner run `42758395681` executed two bounded runtime-validator tasks against the exact Blind Sniper commit `3b4ef57`; both reached REVIEWING, released their leases, and wrote correlated receipts.
+- [V] Independent later workflow run `42758616125` attempted to replay task `BS-B1-VALIDATE-002`; the executor refused it as a duplicate. The workflow classified that refusal as a safe policy outcome and completed successfully.
+- [V] Full unit-test task `BS-B1-UNIT-TESTS-001`, run `42758698543`, passed 158 tests in 1.332s (`OK`, exit 0); artifact `13735839796` contains the executor log and receipt.
+- [U] Not yet verified: simultaneous claim contention, stale-lease recovery/resumption after interruption, explicit cancellation, periodic heartbeat during long commands, and independent concurrent runner stress.
+- [V] The first private-executor attempt `42758335261` failed because the push payload lacked the expected changed-file list. Request discovery was corrected to use the checked-out commit diff; subsequent runs passed.
+- [V] A duplicate-refusal test run `42758561928` initially returned workflow failure while safely refusing the duplicate. The runner now classifies this expected refusal as `DUPLICATE_REFUSED`; run `42758616125` passed after that correction.
 
 ## Current authority and operating contract
 - Blind Sniper is the repository's technical lead and execution operator through its ChatGPT conversational interface.
