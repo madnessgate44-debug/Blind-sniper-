@@ -259,7 +259,7 @@
     {
       "id": "native_model_runtime",
       "kind": "native_model_agent_orchestration",
-      "status": "implemented_native_provider_transport_and_queue_dispatch_not_live_verified",
+      "status": "implemented_native_provider_and_bounded_tool_runtime_live_provider_unverified",
       "tools": [
         "scripts/blind_sniper_model_worker.py",
         "scripts/blind_sniper_agent_runtime.py",
