@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "runtime_name": "Blind Sniper",
   "runtime_model": "Blind Sniper native runtime + GitHub control plane + native browser and bounded host execution",
-  "snapshot_date": "2026-11-08",
+  "snapshot_date": "2026-11-10",
   "evidence_policy": "A capability is operational only when its trigger, permission, execution, output and verification path are proven.",
   "adapters": [
     {
@@ -303,13 +303,17 @@
         "native_model_dispatch_claim",
         "lease_heartbeat_before_and_after_invocation",
         "result_digest_completion",
-        "bounded_failure_retry"
+        "bounded_failure_retry",
+        "exact_task_id_claim",
+        "expired_lease_completion_and_failure_guard",
+        "stale_lease_recovery"
       ],
       "limitations": [
-        "Native model dispatch now enqueues or validates a digest-bound task, claims a lease, heartbeats, invokes one bounded model task and records completion or retry.",
-        "Queue state is durable only to the configured ledger; cross-run durability requires the private GitHub Contents CAS target and a host-provided token.",
+        "Native model dispatch enqueues or validates a digest-bound task, claims that exact task ID, heartbeats, invokes one bounded model task and records completion or bounded retry.",
+        "Completion and failure are rejected after lease expiry; stale lease recovery must run before a replacement claim.",
+        "Queue state is durable only to the configured ledger; cross-run durability requires a private GitHub Contents CAS target and a host-provided token.",
         "The task payload and output artifact remain outside the public repository and must be supplied by the private host on each retry.",
-        "No persistent worker, automatic payload retrieval, or unattended queue poller is established."
+        "No persistent worker, automatic private payload retrieval, or unattended queue poller is established."
       ]
     }
   ],
