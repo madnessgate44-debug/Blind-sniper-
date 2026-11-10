@@ -4,7 +4,7 @@
 **Default branch:** `main`  
 **Latest code/runtime HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4` (PR #43 bounded runtime hardening).  
 **Latest docs-state merge:** PR #44 at `3b86f8c9e8de637072f12976eb6906e564c348a5`.  
-**Latest full runtime-validation evidence:** PR #43 head `dcd26f7a` — OpenHands reported 158 Python tests OK; post-merge `validate-runtime` run `129605579888` passed on `918eb0a`. ChatGPT did not rerun the local suite.  
+**Latest full runtime-validation evidence:** PR #43 head `dcd26f7a` — GitHub Actions validate-runtime job `129564554848` logged 158 tests in 2.319s (`OK`); post-merge `validate-runtime` run `129605579888` passed on `918eb0a`.  
 **Open PRs after integration:** none; PR #42, PR #43 and PR #44 are merged.  
 **Architecture:** Native-first; runtime is a planner and guarded task state machine, not a system that spawns separate model processes.
 
@@ -12,7 +12,7 @@
 
 - Profiles: 6; native agent roles: 10; capability adapters: 13; workflows: 18.
 - Native skills: 14; mirrored OpenHands skills/rules: 33.
-- Latest full runtime-registry + Python test evidence: PR #43 head `dcd26f7a` — 158 tests OK as reported by OpenHands; post-merge runtime validator run `129605579888` passed. Skill catalog and Codex config checks passed on PR #43 head per OpenHands' execution receipt.
+- Latest full runtime-registry + Python test evidence: PR #43 head `dcd26f7a` — GitHub Actions job `129564554848` logged 158 tests in 2.319s (`OK`); post-merge runtime validator run `129605579888` passed. Skill catalog and Codex config checks passed on PR #43 head.
 - PR #34 completed BS-OS-004 D6/D8. PR #35 refreshed the operating instructions and current/build state. PR #36 fixed array secret scanning and test-isolation defects found during review of PR #30/#31.
 - Exact-main checks after PR #36: Runtime Registry `42716156320` PASS (130 tests); Environment Validation `42716156014` PASS; OS Compliance `42716156010` PASS. Its Pages deploy run `42716155494` was cancelled. The subsequent PR #37 main commit `cf350f7` passed Runtime Registry `42716484899`, Environment Validation `42716484975`, OS Compliance `42716484935`, and Pages deployment `42716484749`.
 - PR #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34/#35/#36/#37 are merged. PR #9/#15/#16 are closed as superseded. PR #13 remains a design-only artifact.
