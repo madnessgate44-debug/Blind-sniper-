@@ -1,10 +1,10 @@
 # Blind Sniper build progress — current status
 
-**Snapshot:** 2026-11-10  
+**Snapshot:** 2026-11-10 — live state rechecked at `ada63e11d3047a3560565a4bcaa72c6768e4ae34`.  
 **Default branch:** `main`  
-**Latest code/runtime commit:** `031b245bca32fbe91abae1f96e9e394efe50f959` (PR #36 merge)  
-**Latest docs-state commit:** `cf350f7ee5b25bfd0541549e93538e9186430051` (PR #37 merge)  
-**Open PRs on the `031b245` main baseline:** 0; this PR is the current documentation refresh.  
+**Live main HEAD:** `ada63e11d3047a3560565a4bcaa72c6768e4ae34` (executor full-checkout fix, PR #41).  
+**Latest full runtime-validation baseline:** `031b245bca32fbe91abae1f96e9e394efe50f959` (130 tests OK); do not attribute this exact count to the newer HEAD without a fresh log.  
+**Open PRs at this refresh:** #42 (documentation reconciliation) and #43 (runtime hardening); both open when this correction was made. Re-query before merge/closure decisions.  
 **Architecture:** Native-first; runtime is a planner and guarded task state machine, not a system that spawns separate model processes.
 
 ## Current verified system inventory
@@ -15,6 +15,15 @@
 - PR #34 completed BS-OS-004 D6/D8. PR #35 refreshed the operating instructions and current/build state. PR #36 fixed array secret scanning and test-isolation defects found during review of PR #30/#31.
 - Exact-main checks after PR #36: Runtime Registry `42716156320` PASS (130 tests); Environment Validation `42716156014` PASS; OS Compliance `42716156010` PASS. Its Pages deploy run `42716155494` was cancelled. The subsequent PR #37 main commit `cf350f7` passed Runtime Registry `42716484899`, Environment Validation `42716484975`, OS Compliance `42716484935`, and Pages deployment `42716484749`.
 - PR #18/#19/#21/#22/#25/#26/#28/#29/#30/#31/#32/#33/#34/#35/#36/#37 are merged. PR #9/#15/#16 are closed as superseded. PR #13 remains a design-only artifact.
+
+## Live repository checkpoint — 2026-11-10
+
+- `main` HEAD: `ada63e11d3047a3560565a4bcaa72c6768e4ae34`.
+- Latest commit removes sparse checkout from the read-only executor checkout so fixtures under `.github/workflows` and `.blind-sniper/tasks` are present for tests. Read-only controls remain `contents: read` and `persist-credentials: false`.
+- The exact HEAD has 8/8 completed successful check runs: `policy-compliance` (2), `validate-runtime`, `build`, `Execute allowlisted command`, `report-build-status`, `deploy`, and `Publish receipt to receipts/main`. Environment Validation and OS Compliance are not in this exact-HEAD set.
+- Live open-PR query at this correction: #42 and #43 are open. Branch protection remains disabled and is tracked separately.
+- Durable cross-run worker/queue, heartbeat, cancellation and stale-worker supervision remain unimplemented/unverified; no persistent runner is established.
+- Direct OpenHands Cloud dispatch/result retrieval and direct Forge MCP invocation remain unavailable as callable tools in this ChatGPT session. GitHub issue-comment coordination is the verified fallback, not proof of a direct API session.
 
 ## Continuity and privacy status
 
