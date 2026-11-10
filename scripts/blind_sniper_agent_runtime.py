@@ -70,8 +70,8 @@ def dispatch_task(
     else:
         if current.get("payload_digest") != payload_digest:
             raise AgentRuntimeError("Existing queue task ID is bound to a different payload digest")
-        if current.get("status") != "PENDING":
-            raise AgentRuntimeError(f"Task is not pending (status={current.get('status')})")
+        if current.get("status") not in {"PENDING", "RETRY_SCHEDULED"}:
+            raise AgentRuntimeError(f"Task is not claimable (status={current.get('status')})")
     claim = queue.claim(owner_id=owner_id, lease_seconds=lease_seconds, task_id=task.task_id)
     if not claim:
         raise AgentRuntimeError("No pending task could be claimed")
