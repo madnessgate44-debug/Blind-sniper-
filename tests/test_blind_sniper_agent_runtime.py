@@ -138,6 +138,20 @@ class DurableModelLifecycleTests(unittest.TestCase):
              "QUEUE_TASK_HEARTBEAT", "QUEUE_TASK_COMPLETED"],
         )
 
+    def test_dispatch_claims_its_own_task_when_older_work_is_pending(self):
+        self.queue.enqueue(
+            task_id="OLDER-PENDING", kind="native_model_agent", payload_digest="older-digest",
+        )
+        def invoker(*, spec, task, timeout_seconds):
+            return {"run_id": "run-target", "output_digest": "target-result", "output_excerpt": "ok"}
+        receipt = dispatch_task(
+            self.queue, ModelWorker(invoker, max_retries=0), self.spec, self.task,
+            owner_id="runner-target",
+        )
+        self.assertEqual(receipt["queue_status"], "COMPLETED")
+        self.assertEqual(self.queue.status(self.task.task_id)["status"], "COMPLETED")
+        self.assertEqual(self.queue.status("OLDER-PENDING")["status"], "PENDING")
+
     def test_failed_model_run_returns_task_to_pending_for_bounded_retry(self):
         def invoker(*, spec, task, timeout_seconds):
             raise RuntimeError("provider unavailable")
