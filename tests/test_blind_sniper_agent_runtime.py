@@ -84,6 +84,15 @@ class NativeModelInvokerTests(unittest.TestCase):
                     timeout_seconds=5,
                 )
 
+    def test_refuses_write_permission_profile_until_executor_exists(self):
+        invoker = NativeModelInvoker(base_url="https://provider.example/v1", model="test")
+        with self.assertRaisesRegex(ModelWorkerError, "read-only"):
+            invoker(
+                spec=AgentSpec(agent_id="engineer", permission_profile="workspace_write"),
+                task=ModelTask(task_id="TASK-4", agent_id="engineer", objective="x"),
+                timeout_seconds=5,
+            )
+
     def test_refuses_nonempty_tool_allowlist_until_executor_exists(self):
         invoker = NativeModelInvoker(base_url="https://provider.example/v1", model="test")
         with self.assertRaisesRegex(ModelWorkerError, "tool_allowlist must be empty"):
