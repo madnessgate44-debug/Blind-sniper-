@@ -274,14 +274,41 @@
         "provider_transport_timeout",
         "bounded_retries",
         "redacted_correlated_receipts",
-        "durable_queue_claim_and_completion_integration"
+        "durable_queue_claim_and_completion_integration",
+        "bounded_model_tool_call_loop",
+        "task_scoped_tool_allowlist",
+        "correlated_tool_receipts"
       ],
       "limitations": [
-        "OpenAI-compatible HTTPS provider transport is implemented inside Blind Sniper; no provider is hard-coded.",
+        "OpenAI-compatible HTTPS provider transport and a bounded model tool-call loop are implemented inside Blind Sniper; no provider is hard-coded.",
         "Host must configure BLIND_SNIPER_MODEL_BASE_URL and BLIND_SNIPER_MODEL_NAME; BLIND_SNIPER_MODEL_API_KEY is optional and read only from the environment.",
-        "No live provider credentials or round trip are available in this repository validation; real model invocation remains NOT LIVE-VERIFIED.",
-        "Tool calls and non-empty tool allowlists fail closed until the native executor/tool runtime is connected.",
+        "No live provider credentials or round trip are available in repository CI; real model invocation remains NOT LIVE-VERIFIED.",
+        "Tool calls are limited to the registered native tool runtime and the task-scoped allowlist; unregistered tools and unapproved paths fail closed.",
         "Queue dispatch stores only a payload digest; task payload and output receipt must be supplied/stored by a private host path."
+      ]
+    },
+    {
+      "id": "native_tool_runtime",
+      "kind": "task_scoped_native_tool_execution",
+      "status": "implemented_contract_tested_host_unverified",
+      "tools": [
+        "scripts/blind_sniper_tool_runtime.py",
+        "scripts/blind_sniper_worker.py"
+      ],
+      "capabilities": [
+        "repo_read_file",
+        "task_scoped_workspace_write",
+        "fixed_verification_commands",
+        "path_allowlist_enforcement",
+        "lease_bound_tool_receipts",
+        "bounded_tool_call_loop",
+        "tool_call_replay_blocking"
+      ],
+      "limitations": [
+        "Only repo.read_file, repo.write_file and verification.run are registered; no shell, arbitrary command, network, external agent or external browser tool exists.",
+        "Workspace writes require workspace_write permission and exact allowed_paths; policy/authority files and GitHub workflow configuration are not writable through model tools.",
+        "Tool calls are reserved before side effects and receipts are committed to the active task ledger; interrupted starts fail closed against replay.",
+        "A live provider-host execution is not verified; contract tests use deterministic fake provider responses and the local ledger."
       ]
     },
     {
