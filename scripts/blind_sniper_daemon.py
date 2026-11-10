@@ -114,6 +114,14 @@ class PrivateTaskStore:
         self.receipt_dir = _ensure_private_dir(self.state_dir / "receipts", workspace_root=self.workspace_root)
         self.ledger_dir = _ensure_private_dir(self.state_dir / "ledger", workspace_root=self.workspace_root)
         self.ledger_path = self.ledger_dir / "events.jsonl"
+        if self.ledger_path.exists():
+            _ensure_private_file(self.ledger_path, max_bytes=1024 * 1024 * 1024)
+        else:
+            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+            if hasattr(os, "O_NOFOLLOW"):
+                flags |= os.O_NOFOLLOW
+            fd = os.open(self.ledger_path, flags, 0o600)
+            os.close(fd)
         self.health_path = self.state_dir / "health.json"
         self.notification_path = self.state_dir / "notifications.jsonl"
 
