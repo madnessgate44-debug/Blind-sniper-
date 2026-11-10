@@ -75,7 +75,7 @@ def dispatch_task(
     if not claim:
         raise AgentRuntimeError("No pending task could be claimed")
     queue.heartbeat(task_id=task.task_id, owner_id=owner_id, lease_seconds=lease_seconds)
-    result = worker.run([spec], [replace(task, lease_owner_id=owner_id)])
+    result = worker.run([spec], [replace(task, lease_owner_id=owner_id, lease_seconds=lease_seconds)])
     receipt = result["receipts"][0]
     receipt["queue_attempt"] = claim["attempt"]
     receipt["lease_owner"] = owner_id
