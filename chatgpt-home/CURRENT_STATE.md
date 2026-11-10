@@ -16,7 +16,7 @@
 ## Active P0 — self-contained autonomy architecture — 2026-11-10
 
 - [V] Owner direction: Blind Sniper is self-contained. Forge/OpenHands, their APIs, sessions, workers and browser routes are excluded.
-- [V] Implementation branch: `feat/p0-autonomous-agent-runtime`; base `main` at `bed0df1664be72b060512eea218f7071f9bfa09c`; 25 commits ahead and 0 behind at this checkpoint. Last full runtime CI validation was on `719178fbe858d5a2d3740c8b1d40aa1d37bb56fe`; all commits after that validation are documentation-only state/progress synchronization.
+- [V] Implementation branch: `feat/p0-autonomous-agent-runtime`; base `main` at `bed0df1664be72b060512eea218f7071f9bfa09c`; ahead of `main` with no divergence; see live PR #48 for the exact current head. Last full runtime CI validation was on `719178fbe858d5a2d3740c8b1d40aa1d37bb56fe`; all commits after that validation are documentation-only state/progress synchronization.
 - [V] Issue #46 defines native model agents, native durable queue/worker recovery, native executor/tool runtime, native browser and safe continuous autonomy.
 - [V] Active registries contain no OpenHands dispatch or Forge browser adapter. The native browser route is `agent_browser_cli`.
 - [V] CI run `42806162980` on exact head `719178fbe858d5a2d3740c8b1d40aa1d37bb56fe`: runtime registry validator PASS; skill catalog audit PASS; 158 unit tests in 2.067s, `OK`; interruption/recovery E2E simulation PASS; scheduled-jobs E2E simulation PASS; artifact `13757958161`.
