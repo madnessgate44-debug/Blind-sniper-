@@ -3,7 +3,8 @@
 - **Session date:** 2026-11-10
 - **Repository:** `madnessgate44-debug/Blind-sniper-` (public)
 - **Branch inspected:** `main`
-- **Live HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`
+- **Code/runtime HEAD:** `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4`
+- **Latest docs-state merge:** PR #44 at `3b86f8c9e8de637072f12976eb6906e564c348a5`.
 - **Boot status:** PARTIAL — current public technical controls were retrieved; private continuity contents were not accessed in this session.
 - **Primary operating file:** `chatgpt-home/BLIND_SNIPER.md` v3.2.
 - **Controlling policy:** root `AGENTS.md`, root `ENGINEERING_EXECUTION_OS.md` v2.3, `chatgpt-home/AUTHORITY_DELEGATION.md`, and `chatgpt-home/BLIND_SNIPER.md`.
@@ -14,8 +15,8 @@
 | Check | Result |
 |---|---|
 | Default branch | `main` |
-| HEAD | `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4` |
-| Open pull requests | None after PR #42 and #43 merged; PR #44 is this post-merge state refresh |
+| Code/runtime HEAD | `918eb0a6819341960c7450aec8b6e2ccc8d1f3d4` |
+| Open pull requests | None; PRs #42, #43 and #44 are merged |
 | HEAD check runs | 7/7 completed successfully; exact contexts listed in CURRENT_STATE.md |
 | Main branch protection | Disabled; separately tracked |
 | OpenHands direct API from this session | Not available |
