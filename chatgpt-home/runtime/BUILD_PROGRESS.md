@@ -1,44 +1,44 @@
 # Blind Sniper build progress — current status
 
-**Snapshot:** 2026-11-10 — PR #48 merged to `main` at `852f4e75b2d48f7a28bc52d1b2567ce9b83cc6f2`.
+**Snapshot:** 2026-11-10 — PR #50 merged to `main` at `07f79d21552c9cd12d2f18de8fdbdc76f28051e4`.
 **Architecture:** Self-contained Blind Sniper. No external agent or browser handoff.
-**Exact merged PR head:** `96550b943580dc7886e8369870261af790323625`.
+**Exact source PR head:** `169d476536ccefa73c54f40e863358c29b067f9c`.
 **Release:** NO-GO; this implementation merge is not a production deployment.
 
 ## P0 capability status
 
 | Requirement | Current state | Evidence / remaining gate |
 |---|---|---|
-| R1 Independent model agents | IMPLEMENTED / LIVE-UNVERIFIED | Native HTTPS provider transport, fresh bounded context, distinct agent/run IDs, read-only policy, timeouts/retries and redacted receipts. Real provider round trip still needs approved private-host configuration. |
-| R2 Durable worker and interruption recovery | PARTIAL | Digest-only dispatch, exact task-ID claim, heartbeat, expired-lease completion/failure rejection, bounded retry and stale-lease recovery. Private remote CAS cross-run persistence and private payload re-supply remain unverified. |
-| R3 Native executor and tool runtime | NOT IMPLEMENTED / BLOCKED | Build task-scoped allowlisted tools, policy/approval/idempotency enforcement and execution receipts. Model tool calls remain rejected. |
+| R1 Independent model agents | IMPLEMENTED / LIVE-UNVERIFIED | Native HTTPS provider transport, fresh bounded context, distinct agent/run IDs, bounded retries and redacted receipts. Real provider round trip still needs approved private-host configuration. |
+| R2 Durable worker and interruption recovery | PARTIAL | Digest-only dispatch, exact task-ID claim, heartbeat, expiry-checked completion/failure, bounded retry and stale-lease recovery. Private remote CAS cross-run persistence and private payload re-supply remain unverified. |
+| R3 Native executor and tool runtime | IMPLEMENTED / HOST-UNVERIFIED | Bounded provider tool-call loop; `repo.read_file`, path-scoped `repo.write_file`, and fixed `verification.run`; lease-bound start/terminal receipts and replay refusal. Live provider-host execution remains unverified. |
 | R4 Native browser | PARTIAL | Native browser adapter and real Chromium local-fixture acceptance pass; persistent browser host and cross-job session recovery remain unverified. |
 | R5 Continuous unattended autonomy | BLOCKED | No native executor-backed poller, private payload retrieval or notification receiver. Activation gate remains closed; no schedule is active. |
 
 ## Merged implementation
 
-- `scripts/blind_sniper_model_worker.py`: native OpenAI-compatible provider transport; no external agent invoker.
-- `scripts/blind_sniper_agent_runtime.py`: exact task-ID queue claim, heartbeat, invocation and completion/retry lifecycle.
-- `scripts/blind_sniper_worker.py`: atomic queue, exact-task claims, expiry-checked completion/failure and stale lease recovery.
-- `scripts/blind_sniper_ledger.py`: append-only hash-chained local ledger and private GitHub Contents CAS adapter.
-- `scripts/blind_sniper_autonomy.py`: bounded pass with hard-closed unattended activation until prerequisites exist.
-- External OpenHands/Forge adapter modules and tests are absent from the merged native runtime. Private task payloads and output receipts remain outside the public repository.
+- `scripts/blind_sniper_model_worker.py`: native OpenAI-compatible provider transport plus bounded function-tool loop; no external agent invoker.
+- `scripts/blind_sniper_tool_runtime.py`: static task-scoped native tool registry and executor; no arbitrary shell, unrestricted filesystem, network or external agent tools.
+- `scripts/blind_sniper_agent_runtime.py`: exact task-ID queue claim, lease propagation, model/tool invocation and completion/retry lifecycle.
+- `scripts/blind_sniper_worker.py`: atomic queue, exact-task claims, expiry-checked completion/failure, stale lease recovery and durable tool-call receipts.
+- Private task payloads and output receipts remain outside the public repository.
 
 ## Exact-head verification ledger
 
 | Action / workflow | Result | Evidence |
 |---|---|---|
-| Runtime Registry: registry validator + skill audit + Python unit suite + two E2E simulations | PASS | Run `42809163809`; 213 tests in 4.534s, `OK`; simulation-only, no live agent spawned |
-| Environment Validation | PASS | Run `42809163814` |
-| Engineering Execution OS Compliance | PASS | Run `42809163824` |
-| Native Browser Adapter: lease-dispatch tests + real Chromium local fixture | PASS | Run `42809163816`; persistent-host jobs skipped by design |
+| Runtime Registry: registry validator + skill audit + Python unit suite + two E2E simulations | PASS | Run `42810704087`; 222 tests in 4.130s, `OK`; simulations are SIMULATION_ONLY |
+| Environment Validation | PASS | Run `42810703918` |
+| Engineering Execution OS Compliance | PASS | Run `42810703910` |
 
-- Source PR head `96550b9`; merged main commit `852f4e7`.
-- No live model provider, private remote CAS round trip, persistent browser host or unattended run was exercised.
+- Source PR head `169d476`; merged main commit `07f79d2`.
+- No live model provider, private remote CAS cross-run, persistent browser host or unattended run was exercised.
 - No paid provisioning, secrets/permission mutation, release or deployment.
-- Next implementation tranche: R3 native task-scoped executor/tool runtime, keeping model tools fail-closed until policy and recovery acceptance tests pass.
+- Next tranche: native browser tool exposure and durable host-side worker/payload recovery, then continuous unattended autonomy.
 
 ---
+## Historical build record
+
 ## Historical build record
 
 ## Historical build record
