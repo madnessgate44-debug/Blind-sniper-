@@ -24,7 +24,7 @@ The native Blind Sniper pack is maintained alongside this registry: `../ENVIRONM
 | `profiles.json` | Six operating profiles and permission boundaries |
 | `agents.json` | Agent roster, authority and delegation contract |
 | `workflows.json` | Lifecycle workflows, triggers, steps and evidence status |
-| `skills.index.json` | Index of 11 native Blind Sniper skills and 33 mirrored OpenHands skill/rule files, with separate activation policies |
+| `skills.index.json` | Index of 14 native Blind Sniper skills and 33 mirrored OpenHands skill/rule files, with separate activation policies |
 | `templates/TASK_ENVELOPE.json` | Portable task request contract |
 | `templates/RUN_RECEIPT.json` | Standardized executor result and verification receipt |
 | `../openhands-library/</...>` | Source-preserving skills, specialist profiles, hooks and original validation suite |
@@ -51,7 +51,7 @@ No agent profile, skill, issue comment or repository file can expand host permis
 
 ## Browser and research model
 
-Web search and page extraction support research and reading. Authenticated browser interaction is implemented through Blind Sniper's native `agent_browser_cli` adapter (`scripts/blind_sniper_browser.py` and `scripts/blind_sniper_browser_dispatch.py`) and its CI workflow. Do not route browser tasks through Forge or an external browser agent. PR #149 overlaps PR #148 on `browser_wait` and must be reconciled before merging.
+Web search and page extraction support research and reading. Authenticated browser interaction is implemented through Blind Sniper's native `agent_browser_cli` adapter (`scripts/blind_sniper_browser.py` and `scripts/blind_sniper_browser_dispatch.py`) and its CI workflow. Do not route browser tasks through Forge or an external browser agent.
 
 External agent workers are out of scope. TinyFish is intentionally excluded.
 
