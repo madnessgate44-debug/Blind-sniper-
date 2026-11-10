@@ -58,6 +58,23 @@ class DurableQueueTests(unittest.TestCase):
         state = self.queue.status("T1")
         self.assertEqual(state["status"], "CLAIMED")
 
+    def test_expired_lease_cannot_complete_or_fail(self):
+        self.queue.enqueue(task_id="T-EXPIRED", kind="model_task", payload_digest="d1", now=T0)
+        self.queue.claim(owner_id="w1", lease_seconds=60, now=T0)
+        expired_at = T0 + timedelta(seconds=61)
+        with self.assertRaisesRegex(QueueError, "lease has expired"):
+            self.queue.complete(
+                task_id="T-EXPIRED", owner_id="w1", result_digest="result", now=expired_at,
+            )
+        with self.assertRaisesRegex(QueueError, "lease has expired"):
+            self.queue.fail(
+                task_id="T-EXPIRED", owner_id="w1", error="late failure", now=expired_at,
+            )
+        self.assertEqual(self.queue.status("T-EXPIRED")["status"], "CLAIMED")
+        recovery = self.queue.recover_stale(now=expired_at)
+        self.assertEqual(recovery["recovered"], ["T-EXPIRED"])
+        self.assertEqual(self.queue.status("T-EXPIRED")["status"], "PENDING")
+
     def test_heartbeat_requires_current_owner(self):
         self.queue.enqueue(task_id="T1", kind="model_task", payload_digest="d1", now=T0)
         self.queue.claim(owner_id="w1", lease_seconds=60, now=T0)
