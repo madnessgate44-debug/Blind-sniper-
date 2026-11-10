@@ -27,7 +27,7 @@ T0 = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
 class ActivationGateTests(unittest.TestCase):
     def test_schedule_blocked_without_prerequisites(self):
         env = {k: v for k, v in os.environ.items() if k not in (
-            "OPENHANDS_CLOUD_API_KEY", "BLIND_SNIPER_NOTIFY_DIGEST", "GITHUB_TOKEN")}
+            "BLIND_SNIPER_MODEL_BASE_URL", "BLIND_SNIPER_MODEL_NAME", "BLIND_SNIPER_NOTIFY_DIGEST", "GITHUB_TOKEN")}
         with patch.dict(os.environ, env, clear=True):
             check = autonomy.activation_check(
                 github_ledger=True, ledger_path="/nonexistent/queue.jsonl", token_env="GITHUB_TOKEN",
@@ -35,19 +35,22 @@ class ActivationGateTests(unittest.TestCase):
         self.assertFalse(check["activation_allowed"])
         self.assertFalse(check["prerequisites"]["executor_configured"])
 
-    def test_schedule_allowed_only_when_every_prerequisite_is_true(self):
+    def test_schedule_stays_blocked_until_native_executor_exists(self):
         with patch.dict(os.environ, {
-            "OPENHANDS_CLOUD_API_KEY": "x", "BLIND_SNIPER_NOTIFY_DIGEST": "slack",
+            "BLIND_SNIPER_MODEL_BASE_URL": "https://provider.example/v1",
+            "BLIND_SNIPER_MODEL_NAME": "free-model", "BLIND_SNIPER_NOTIFY_DIGEST": "configured",
         }, clear=False):
             check = autonomy.activation_check(
                 github_ledger=False, ledger_path=str(Path(tempfile.gettempdir()) / "q.jsonl"),
                 token_env="GITHUB_TOKEN",
             )
-        self.assertTrue(check["activation_allowed"])
+        self.assertTrue(check["prerequisites"]["native_model_provider_configured"])
+        self.assertFalse(check["prerequisites"]["executor_configured"])
+        self.assertFalse(check["activation_allowed"])
 
     def test_main_refuses_unattended_run_when_blocked(self):
         env = {k: v for k, v in os.environ.items() if k not in (
-            "OPENHANDS_CLOUD_API_KEY", "BLIND_SNIPER_NOTIFY_DIGEST")}
+            "BLIND_SNIPER_MODEL_BASE_URL", "BLIND_SNIPER_MODEL_NAME", "BLIND_SNIPER_NOTIFY_DIGEST")}
         with patch.dict(os.environ, env, clear=True):
             code = autonomy.main(["--owner-id", "runner-1", "--ledger", "/nonexistent/dir/q.jsonl"])
         self.assertEqual(code, 2)
