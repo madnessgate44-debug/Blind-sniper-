@@ -77,7 +77,7 @@ class NativeToolRuntimeTests(unittest.TestCase):
 
     def test_write_file_rejects_policy_and_workflow_paths(self):
         spec = AgentSpec(agent_id="engineer", tool_allowlist=("repo.write_file",),
-                         permission_profile="workspace_write", allowed_paths=(".github/workflows/",))
+                         permission_profile="workspace_write", allowed_paths=(".github/workflows/test.yml",))
         with self.assertRaisesRegex(NativeToolError, "not writable"):
             self.runtime._workspace_path(".github/workflows/test.yml", spec, write=True)
 
