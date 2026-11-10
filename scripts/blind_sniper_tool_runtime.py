@@ -183,7 +183,9 @@ class NativeToolRuntime:
         self.queue = queue
         self.workspace_root = workspace_root.resolve()
         self.command_timeout = command_timeout
-        self.browser_state_dir = (browser_state_dir or Path(tempfile.gettempdir()) / "blind-sniper-browser-state").resolve()
+        configured_browser_state = os.environ.get("BLIND_SNIPER_BROWSER_STATE_DIR", "").strip()
+        default_browser_state = Path(configured_browser_state) if configured_browser_state else Path(tempfile.gettempdir()) / "blind-sniper-browser-state"
+        self.browser_state_dir = (browser_state_dir or default_browser_state).resolve()
         try:
             self.browser_state_dir.relative_to(self.workspace_root)
         except ValueError:
