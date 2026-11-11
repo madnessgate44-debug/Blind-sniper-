@@ -389,6 +389,7 @@ class BlindSniperDaemon:
                     agent_id=data["agent_id"],
                     objective=data["objective"],
                     payload=data.get("payload", {}),
+                    lease_seconds=self.lease_seconds,
                 )
                 receipt = dispatch_task(
                     self.queue, self.worker, spec, task,
@@ -475,7 +476,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         invoker = NativeModelInvoker.from_env(tool_runtime=tool_runtime)
         worker = ModelWorker(
-            invoker, max_concurrency=args.max_concurrency, max_retries=args.model_retries,
+            invoker, max_concurrency=args.max_concurrency,
+            timeout_seconds=args.timeout_seconds, max_retries=args.model_retries,
         )
         lease_seconds = min(3600, max(60, (args.timeout_seconds * 2) + 60))
         daemon = BlindSniperDaemon(
