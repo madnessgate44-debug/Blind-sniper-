@@ -5,6 +5,13 @@
 **Latest merged source PR head:** `7133e3a56039152f4c28b9b19f23d82b94df98b1`. **Merge commit:** `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f`.
 **Release:** NO-GO; this implementation merge is not a production deployment.
 
+## GitHub + Vercel host adapter — 2026-11-11
+
+- [V] The existing Vercel `Forge` team is on Hobby; no `blind-sniper` project was found. No paid provisioning or secret mutation was performed.
+- [V] Branch `feat/vercel-native-host-adapter-2026-11-11` adds a read-only Python Function at `GET /api/health`, a 10-second function bound, and contract tests. The endpoint explicitly reports `task_execution_enabled=false` and `worker=not_activated`.
+- [V] `chatgpt-home/runtime/VERCEL_HOSTING.md` records platform boundaries and activation gates. No Vercel cron is configured; Hobby cron is daily-only, so bounded GitHub Actions runs remain the trigger path.
+- [U] Vercel project creation, first deployment, live endpoint smoke test, private durable task intake and model invocation remain NOT VERIFIED.
+
 ## P0 capability status
 
 | Requirement | Current state | Evidence / remaining gate |
