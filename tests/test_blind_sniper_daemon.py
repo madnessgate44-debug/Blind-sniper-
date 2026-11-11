@@ -116,7 +116,7 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         )
         health = self.daemon.run_once()
         self.assertEqual(health["counts"]["recovered_stale_leases"], 1)
-        self.assertEqual(health["counts"]["completed"], 1)
+        self.assertEqual(health["counts"]["completed"], 1, health)
         self.assertEqual(self.queue.status(data["task_id"])["status"], "COMPLETED")
 
     def test_notification_outbox_reconciles_from_private_receipts(self):
@@ -167,7 +167,7 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         )
         data, _ = self.write_task("DAEMON-HOST-POLICY")
         health = daemon.run_once()
-        self.assertEqual(health["counts"]["completed"], 1)
+        self.assertEqual(health["counts"]["completed"], 1, health)
         self.assertEqual(self.invocations, 1)
         self.assertEqual(self.queue.status(data["task_id"])["status"], "COMPLETED")
 
@@ -194,7 +194,7 @@ class PrivateNativeDaemonTests(unittest.TestCase):
             "allowed_paths": ("README.md",),
             "browser_approval_reference": "not-enough",
         }
-        with self.assertRaisesRegex(DaemonError, "missing host approval"):
+        with self.assertRaisesRegex(DaemonError, "Host execution policy is invalid"):
             BlindSniperDaemon(
                 queue=self.queue, worker=self.worker, owner_id="host-worker-browser",
                 store=self.store, host_policy=policy,
@@ -215,6 +215,12 @@ class PrivateNativeDaemonTests(unittest.TestCase):
 
     def test_task_file_name_must_match_task_id_and_unknown_fields_are_rejected(self):
         data, path = self.write_task("DAEMON-NAME-1")
+        data.pop("permission_profile", None)
+        data.pop("tool_allowlist", None)
+        data.pop("allowed_paths", None)
+        data.pop("browser_approval_reference", None)
+        path.write_text(json.dumps(data), encoding="utf-8")
+        os.chmod(path, 0o600)
         mismatch = self.store.task_dir / "OTHER-NAME.json"
         mismatch.write_text(json.dumps(data), encoding="utf-8")
         os.chmod(mismatch, 0o600)
