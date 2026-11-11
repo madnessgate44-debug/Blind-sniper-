@@ -1,8 +1,8 @@
 # Blind Sniper build progress — current status
 
-**Snapshot:** 2026-11-11 — PR #51 is latest merged implementation (`99b5efc`); PR #52 is open/draft at `896c044`, adding the native private-host worker daemon.
+**Snapshot:** 2026-11-11 — PR #51 is latest merged implementation (`99b5efc`); PR #52 is open/draft at `e0f6708`, adding the native private-host worker daemon.
 **Architecture:** Self-contained Blind Sniper. No external agent or browser handoff.
-**Latest merged source PR head:** `e610c3a31418e10bc8498c574b8719ae72335355`. **Current daemon PR head:** `896c0441cb774b7b7bd94e6a8dbbef88f8c0855a`.
+**Latest merged source PR head:** `e610c3a31418e10bc8498c574b8719ae72335355`. **Current daemon PR head:** `e0f67087ade563da3c7bbde6f80c1378fe322564`.
 **Release:** NO-GO; this implementation merge is not a production deployment.
 
 ## P0 capability status
@@ -32,12 +32,12 @@
 
 | Action / workflow | Result | Evidence |
 |---|---|---|
-| Runtime Registry: registry validator + skill audit + Python unit suite + two E2E simulations | PASS | Run `42929073302`; 243 tests in 4.676s, `OK`; both simulations are SIMULATION_ONLY and report `actual_agent_spawned=false` |
-| Environment Validation | PASS | Run `42929073606` |
-| Engineering Execution OS Compliance | PASS | Run `42929073222` |
-| Native Browser Adapter: Chromium local-fixture acceptance | PASS | Run `42929073319`; 2 cycles, 36 correlated receipts, interruption/no-replay/reconciliation |
+| Runtime Registry: registry validator + skill audit + Python unit suite + two E2E simulations | PASS | Run `42929365733`; 243 tests in 4.552s, `OK`; both simulations are SIMULATION_ONLY and report `actual_agent_spawned=false` |
+| Environment Validation | PASS | Run `42929365823` |
+| Engineering Execution OS Compliance | PASS | Run `42929365666` |
+| Native Browser Adapter: Chromium local-fixture acceptance | PASS | Run `42929365720`; 2 cycles, 36 correlated receipts, interruption/no-replay/reconciliation |
 
-- PR #52 head `896c044`; latest merged main commit remains `99b5efc` (PR #52 is not merged).
+- PR #52 head `e0f6708`; latest merged main commit remains `99b5efc` (PR #52 is not merged).
 - No live model provider, private remote CAS cross-run, persistent browser host or unattended daemon was exercised. PR #52's daemon code is not active until an approved host provisions its private state directory and starts the systemd service.
 - No paid provisioning, secrets/permission mutation, release or deployment.
 - Next tranche: approved-host bootstrap and one bounded live provider/queue/browser acceptance cycle; then add a verified notification receiver and remote cross-host CAS/payload recovery. Do not enable unattended production autonomy until those gates pass.
