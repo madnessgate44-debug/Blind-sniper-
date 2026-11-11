@@ -10,7 +10,8 @@
 - [V] The existing Vercel `Forge` team is on Hobby; no `blind-sniper` project was found. No paid provisioning or secret mutation was performed.
 - [V] Branch `feat/vercel-native-host-adapter-2026-11-11` adds a read-only Python Function at `GET /api/health`, a 10-second function bound, and contract tests. The endpoint explicitly reports `task_execution_enabled=false` and `worker=not_activated`.
 - [V] `chatgpt-home/runtime/VERCEL_HOSTING.md` records platform boundaries and activation gates. No Vercel cron is configured; Hobby cron is daily-only, so bounded GitHub Actions runs remain the trigger path.
-- [U] Vercel project creation, first deployment, live endpoint smoke test, private durable task intake and model invocation remain NOT VERIFIED.
+- [V] Initial production deployment `dpl_EGGaeyihnJZzC77nFobr7Rw19Vt9` failed with `PYTHON_ENTRYPOINT_NOT_FOUND`; Vercel's build log explicitly requested `[tool.vercel].entrypoint = "api.health:handler"`. A separate fix branch now adds that declaration and a config regression test. Preview deployment `dpl_CQxsSfoDp4eHFpTq168ua9gEgJre` then built successfully (Vercel status success).
+- [U] Live endpoint smoke test, private durable task intake and model invocation remain NOT VERIFIED.
 
 ## P0 capability status
 
