@@ -1,6 +1,6 @@
 # Blind Sniper — GitHub and Vercel hosting boundary
 
-**Status:** Initial Vercel HTTP host adapter; task execution is deliberately disabled.
+**Status:** Vercel HTTP host deployed and health-smoke-tested; task execution is deliberately disabled.
 
 ## Platform responsibilities
 
@@ -11,9 +11,9 @@
 
 ## Initial deployment
 
-`api/health.py` exposes a read-only `GET /api/health` endpoint. It reports the Vercel HTTP component only and explicitly reports `task_execution_enabled: false`. It does not read secrets, enqueue tasks, invoke models, mutate GitHub, or expose private state.
+`api/health.py` exposes a read-only `GET /api/health` endpoint. Production project: `blind-sniper-runtime` (`prj_AJpyM5PkAxfmeb4KQCZ7hlBgMZEi`), deployment `dpl_8sqaQgcJdP9c9JznCZ32YYh7KL9W`, alias `https://blind-sniper-runtime.vercel.app`, region `fra1`. Live smoke result: HTTP 200 with JSON status `ok`, `worker=not_activated` and `task_execution_enabled=false`. The route does not read secrets, enqueue tasks, invoke models, mutate GitHub, or expose private state.
 
-`pyproject.toml` explicitly selects `api.health:handler` as the Python runtime entrypoint; this is required because the repository contains multiple Python scripts and Vercel's auto-discovery did not select the function. `vercel.json` limits this health function to 10 seconds. No cron schedule is configured. The Vercel Hobby plan is limited to daily cron execution and has bounded function duration; it is therefore not the high-frequency worker scheduler. GitHub Actions remains the preferred trigger for bounded execution. Do not claim continuous residency.
+`pyproject.toml` explicitly selects `api.health:handler` as the Python runtime entrypoint; this is required because the repository contains multiple Python scripts and Vercel's auto-discovery did not select the function. `vercel.json` limits this health function to 10 seconds. Project deployment SSO protection is disabled because this endpoint contains only non-sensitive health metadata; do not add private endpoints without first implementing authentication and access controls. No cron schedule is configured. The Vercel Hobby plan is limited to daily cron execution and has bounded function duration; it is therefore not the high-frequency worker scheduler. GitHub Actions remains the preferred trigger for bounded execution. Do not claim continuous residency.
 
 ## Activation gates — intentionally closed
 
