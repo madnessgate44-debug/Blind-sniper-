@@ -153,7 +153,7 @@ def _atomic_private_json(path: Path, value: dict[str, Any]) -> None:
         os.fchmod(fd, 0o600)
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             json.dump(value, handle, ensure_ascii=False, sort_keys=True)
-            handle.write("\\n")
+            handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temp_name, path)
