@@ -242,6 +242,10 @@ class PrivateTaskStore:
         }
         if not TASK_ID.fullmatch(safe["task_id"]):
             raise DaemonError("Notification task_id is invalid")
+        if self.notification_path.exists():
+            _ensure_private_file(self.notification_path, max_bytes=64 * 1024 * 1024)
+        else:
+            _reject_symlink_components(self.notification_path)
         flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
         if hasattr(os, "O_NOFOLLOW"):
             flags |= os.O_NOFOLLOW
