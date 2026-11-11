@@ -1,7 +1,7 @@
 name: Blind Sniper Durable Worker
 
-# One bounded queue/worker pass: poll the durable queue, recover stale leases,
-# retry within bounds and emit a health/digest receipt.
+# One bounded recovery/health pass: recover stale leases and emit a digest.
+# It does not claim or execute pending tasks; the native persistent daemon owns execution.
 #
 # Manual (workflow_dispatch) only. A schedule must NOT be enabled until the
 # executor, data store and notification prerequisites are genuinely configured;
@@ -16,7 +16,7 @@ on:
         type: string
         default: "gha-worker"
       max_tasks:
-        description: "Maximum tasks to drain in this pass (1-100)"
+        description: "Bound for an executor-enabled pass; current runner does not execute tasks (1-100)"
         required: true
         type: string
         default: "5"
@@ -43,7 +43,7 @@ jobs:
           python -m unittest discover -s tests -p 'test_blind_sniper_model_worker.py' -v
 
   worker-pass:
-    name: One bounded worker pass
+    name: One bounded recovery and health pass
     needs: protocol-tests
     # Only runs when the Owner has explicitly enabled unattended activation and
     # the prerequisites exist. Otherwise the pass is skipped, never faked.
@@ -69,7 +69,6 @@ jobs:
       - name: Run one bounded worker pass
         env:
           GITHUB_TOKEN: ${{ secrets.BLIND_SNIPER_LEDGER_TOKEN }}
-          OPENHANDS_CLOUD_API_KEY: ${{ secrets.OPENHANDS_CLOUD_API_KEY }}
           BLIND_SNIPER_NOTIFY_DIGEST: ${{ vars.BLIND_SNIPER_NOTIFY_DIGEST }}
         run: |
           python scripts/blind_sniper_autonomy.py \
