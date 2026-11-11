@@ -8,7 +8,7 @@
 
 ## PR #57 — R2 multi-process acceptance and R5 fail-closed runner — 2026-11-11
 
-- [V] Active branch `feat/p0-r2-multiprocess-recovery-2026-11-11`, HEAD `c49d0ad2e427ad32caec9575f626177cd45eb2f6`; PR #57 open, unmerged.
+- [V] Active branch `feat/p0-r2-multiprocess-recovery-2026-11-11`; latest exact-head CI-verified commit `32fb485ed3a48fe0679b5d3e6781bbbdce0ad302`; PR #57 open, unmerged. Later commits only synchronize technical state notes.
 - [V] Three independent-process tests pass: exactly one worker wins a competing claim; one duplicate enqueue is refused; an interrupted worker is recovered by a new process and stale completion is rejected.
 - [V] R5 runner no longer consumes task attempts without a native executor. It recovers stale leases and emits aggregate-only health/digest artifacts; private task IDs are excluded. Notification delivery is NOT_CONFIGURED.
 - [V] Removed the obsolete OpenHands secret reference from the worker workflow; no external agent runtime, schedule, secret or permission change.
