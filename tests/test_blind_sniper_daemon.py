@@ -15,10 +15,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from blind_sniper_agent_runtime import _canonical_digest
+from blind_sniper_agent_runtime import _canonical_digest, dispatch_task
 from blind_sniper_daemon import BlindSniperDaemon, DaemonError, PrivateTaskStore, host_execution_policy_from_env
 from blind_sniper_ledger import TaskLedger
-from blind_sniper_model_worker import ModelWorker
+from blind_sniper_model_worker import AgentSpec, ModelTask, ModelWorker
 from blind_sniper_tool_runtime import NativeToolRuntime
 from blind_sniper_worker import DurableQueue
 
@@ -116,20 +116,56 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         self.assertEqual(health["counts"]["completed"], 1, health)
         self.assertEqual(self.queue.status(data["task_id"])["status"], "COMPLETED")
 
-    def test_notification_outbox_reconciles_from_private_receipts(self):
-        receipt = {
-            "task_id": "DAEMON-RECON-1", "run_id": "reconcile-run",
-            "queue_status": "COMPLETED", "output_digest": "receipt-digest",
-            "output_text": "private content that must not enter outbox",
-        }
-        self.store.write_receipt("DAEMON-RECON-1", receipt)
-        repaired = self.store.reconcile_notifications()
+    def test_notification_outbox_recovers_after_queue_completion(self):
+        data, _ = self.write_task("DAEMON-RECON-1")
+        state_during_receipt = []
+
+        def persist_before_terminal(receipt):
+            self.store.write_receipt(data["task_id"], receipt)
+            state_during_receipt.append(self.queue.status(data["task_id"])["status"])
+
+        receipt = dispatch_task(
+            self.queue, self.worker,
+            AgentSpec(agent_id="researcher"),
+            ModelTask(
+                task_id=data["task_id"], agent_id=data["agent_id"],
+                objective=data["objective"], payload=data["payload"],
+            ),
+            owner_id="host-worker-reconcile", lease_seconds=120,
+            receipt_sink=persist_before_terminal,
+        )
+        self.assertEqual(state_during_receipt, ["CLAIMED"])
+        self.assertEqual(receipt["queue_status"], "COMPLETED")
+        self.assertEqual(self.queue.status(data["task_id"])["status"], "COMPLETED")
+        repaired = self.store.reconcile_notifications(self.queue)
         self.assertEqual(repaired, 1)
         outbox = self.store.notification_path.read_text(encoding="utf-8")
-        self.assertIn("receipt-digest", outbox)
+        self.assertIn("digest-1", outbox)
         self.assertIn("DAEMON-RECON-1", outbox)
-        self.assertNotIn("private content", outbox)
-        self.assertEqual(self.store.reconcile_notifications(), 0)
+        self.assertNotIn("private result text", outbox)
+        self.assertEqual(self.store.reconcile_notifications(self.queue), 0)
+
+    def test_result_ready_receipt_is_not_notified_before_terminal_queue_state(self):
+        data, _ = self.write_task("DAEMON-PRETERMINAL-1")
+
+        def persist_then_interrupt(receipt):
+            self.store.write_receipt(data["task_id"], receipt)
+            raise RuntimeError("simulated process interruption before queue completion")
+
+        with self.assertRaisesRegex(RuntimeError, "simulated process interruption"):
+            dispatch_task(
+                self.queue, self.worker,
+                AgentSpec(agent_id="researcher"),
+                ModelTask(
+                    task_id=data["task_id"], agent_id=data["agent_id"],
+                    objective=data["objective"], payload=data["payload"],
+                ),
+                owner_id="host-worker-interrupted", lease_seconds=120,
+                receipt_sink=persist_then_interrupt,
+            )
+        self.assertEqual(self.queue.status(data["task_id"])["status"], "CLAIMED")
+        self.assertEqual(self.store.reconcile_notifications(self.queue), 0)
+        self.assertFalse(self.store.notification_path.exists())
 
     def test_corrupt_outbox_marks_worker_degraded_and_still_writes_health(self):
         self.store.notification_path.write_text("{broken json\\n", encoding="utf-8")
