@@ -46,7 +46,8 @@ class WorkerWorkflowContractTests(unittest.TestCase):
         # Secrets are passed via env and never echoed.
         self.assertNotIn("echo $", self.text)
         referenced = set(re.findall(r"secrets\.([A-Za-z0-9_]+)", self.text))
-        self.assertTrue(referenced.issubset({"BLIND_SNIPER_LEDGER_TOKEN", "OPENHANDS_CLOUD_API_KEY"}))
+        self.assertEqual(referenced, {"BLIND_SNIPER_LEDGER_TOKEN"})
+        self.assertNotIn("OPENHANDS", self.text)
 
 
 if __name__ == "__main__":
