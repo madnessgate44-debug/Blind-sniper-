@@ -8,6 +8,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -95,6 +96,48 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         self.assertEqual(self.invocations, 1)
         self.assertEqual(len(self.store.notification_path.read_text(encoding="utf-8").splitlines()), 1)
 
+    def test_daemon_runs_multiple_tasks_concurrently_within_worker_limit(self):
+        barrier = threading.Barrier(2, timeout=4)
+        lock = threading.Lock()
+        active = 0
+        maximum_active = 0
+        calls = []
+
+        def concurrent_invoker(*, spec, task, timeout_seconds):
+            nonlocal active, maximum_active
+            with lock:
+                active += 1
+                maximum_active = max(maximum_active, active)
+                calls.append(task.task_id)
+            try:
+                barrier.wait()
+            finally:
+                with lock:
+                    active -= 1
+            return {
+                "run_id": f"parallel-{task.task_id}",
+                "output_digest": f"digest-{task.task_id}",
+                "output_excerpt": "completed",
+                "output_text": "completed",
+                "tool_receipts": [],
+            }
+
+        worker = ModelWorker(
+            concurrent_invoker, max_concurrency=2, timeout_seconds=8, max_retries=0,
+        )
+        daemon = BlindSniperDaemon(
+            queue=self.queue, worker=worker, owner_id="host-worker-parallel",
+            store=self.store, lease_seconds=120, max_tasks_per_cycle=2,
+        )
+        self.write_task("DAEMON-PARALLEL-1")
+        self.write_task("DAEMON-PARALLEL-2")
+        health = daemon.run_once()
+        self.assertEqual(health["status"], "HEALTHY", health)
+        self.assertEqual(health["counts"]["completed"], 2, health)
+        self.assertEqual(health["counts"]["attempted"], 2, health)
+        self.assertEqual(set(calls), {"DAEMON-PARALLEL-1", "DAEMON-PARALLEL-2"})
+        self.assertEqual(maximum_active, 2)
+
     def test_daemon_recovers_a_stale_lease_before_dispatching_task(self):
         data, _ = self.write_task("DAEMON-STALE-1")
         envelope = {
@@ -115,6 +158,22 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         self.assertEqual(health["counts"]["recovered_stale_leases"], 1)
         self.assertEqual(health["counts"]["completed"], 1, health)
         self.assertEqual(self.queue.status(data["task_id"])["status"], "COMPLETED")
+
+    def test_notification_outbox_deduplicates_concurrent_task_run_receipts(self):
+        event = {
+            "event": "task.completed",
+            "task_id": "DAEMON-NOTIFY-DEDUP",
+            "run_id": "notify-run-1",
+            "status": "COMPLETED",
+            "result_digest": "digest-1",
+        }
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            list(pool.map(lambda _index: self.store.append_notification(event), range(8)))
+        rows = self.store.notification_path.read_text(encoding="utf-8").splitlines()
+        self.assertEqual(len(rows), 1)
+        saved = json.loads(rows[0])
+        self.assertEqual(saved["task_id"], event["task_id"])
+        self.assertEqual(saved["run_id"], event["run_id"])
 
     def test_notification_outbox_recovers_after_queue_completion(self):
         data, _ = self.write_task("DAEMON-RECON-1")

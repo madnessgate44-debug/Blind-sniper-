@@ -1,5 +1,16 @@
 # Blind Sniper build progress — current status
 
+## PR #56 — bounded daemon concurrency and receipt idempotency — 2026-11-11
+
+- [V] Draft PR #56: https://github.com/madnessgate44-debug/Blind-sniper-/pull/56; branch `feat/p0-daemon-concurrency-2026-11-11`; implementation head `ce031a6281b9c6357f7f8ecc492578ae54b6f092` (before this state-note commit), based on `main` `e7c6cdf`.
+- [V] The daemon now runs up to the configured worker concurrency per poll cycle, never exceeding the configured per-cycle task cap. Each task still uses the native exact-task claim, lease and correlated receipt path.
+- [V] The private notification outbox now serializes append/read/dedup under an OS file lock and refuses duplicate `(task_id, run_id)` records; corrupt JSON remains a hard failure.
+- [V] Regression tests: two barrier-synchronized task invocations complete concurrently at a measured maximum of 2; eight concurrent duplicate outbox appends leave one row.
+- [V] Runtime Registry PR runs `42980055291` and `42980130999` both PASS, each with 249 unit tests (4.398s / 4.242s), registry validation, skill audit and both deterministic E2E simulations. Policy Compliance `42980055420` and `42980130924` PASS. Vercel preview check PASS.
+- [V] Runtime Registry push path filters now cover `blind_sniper_agent_runtime.py`, `blind_sniper_daemon.py`, `blind_sniper_tool_runtime.py` and their tests.
+- [U] This is not a live provider or host acceptance test. It does not establish multi-process daemon contention, private remote CAS payload recovery, persistent browser state, a resident host service, or notification delivery.
+- [V] No merge, release, production deployment, schedule activation, secret mutation, permission change, paid provisioning or external-agent dependency was introduced. PR remains draft pending further acceptance work.
+
 **Snapshot:** 2026-11-11 — PR #52 merged to `main` at `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f` (source head `7133e3a`); native worker daemon code is merged but not host-activated.
 **Architecture:** Self-contained Blind Sniper. No external agent or browser handoff.
 **Latest merged source PR head:** `7133e3a56039152f4c28b9b19f23d82b94df98b1`. **Merge commit:** `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f`.
