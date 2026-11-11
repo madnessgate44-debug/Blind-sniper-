@@ -1,5 +1,18 @@
 # Blind Sniper — Current Technical State
 
+## PR #56 — bounded native daemon concurrency — 2026-11-11
+
+- [V] Work is on `feat/p0-daemon-concurrency-2026-11-11`, based directly on current `main` at `e7c6cdfabbbcced131d65c31cca6639d8f027940`. The former `feat/p0-autonomous-agent-runtime` branch is the already-merged source of PR #48 and is not reused.
+- [V] Draft PR #56: https://github.com/madnessgate44-debug/Blind-sniper-/pull/56. Exact implementation head before this state-note commit: `ce031a6281b9c6357f7f8ecc492578ae54b6f092`; three implementation commits, three changed files. Not merged.
+- [V] `scripts/blind_sniper_daemon.py` now dispatches up to `ModelWorker.max_concurrency` private task files concurrently, bounded by `max_tasks_per_cycle`; exact-task queue claims remain authoritative and a lost claim is counted as contention when another owner holds or has terminalized the task.
+- [V] Notification outbox writes now use an exclusive file lock and idempotency key `(task_id, run_id)`; malformed outbox data still fails closed. Run IDs are validated before append.
+- [V] New daemon tests prove two task invocations overlap at concurrency 2 and eight concurrent duplicate writes produce one outbox record.
+- [V] Runtime Registry runs `42980055291` and `42980130999` both completed successfully on the implementation head. Each ran 249 unit tests (4.398s and 4.242s); both new regression tests were reported `ok`. Registry validation, skill audit, interruption/recovery simulation and scheduled-jobs simulation steps all passed. Policy Compliance runs `42980055420` and `42980130924` passed. Vercel preview check passed; no production deployment was initiated by this work.
+- [V] The main-push Runtime Registry path filter now includes native agent-runtime, daemon and tool-runtime scripts and their tests, so those changes trigger the full suite after merge.
+- [U] These tests prove bounded concurrency within one daemon process and thread-safe outbox deduplication on the Linux CI runner; they do not prove multi-process daemon contention, private remote CAS payload recovery, or independent workflow-run queue recovery.
+- [U] R1 remains live-provider-unverified; R2 remote cross-run payload recovery remains unverified; R3 live provider/host execution remains unverified; R4 persistent authenticated browser hosting remains unverified; R5 host activation and notification delivery remain unverified. No model provider, persistent host, notification receiver, schedule, secret, paid resource or external agent was activated.
+- [V] PR #56 remains draft and unmerged. Release remains NO-GO.
+
 **Live snapshot:** 2026-11-11 — PR #52 merged to `main` at `48dd744`; Vercel host adapter PR #53 and entrypoint fix PR #55 merged; production health endpoint deployed and HTTP 200 smoke-tested. BS-RELEASE-001 remains **NO-GO**.
 **Default branch:** `main`
 **Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`.
