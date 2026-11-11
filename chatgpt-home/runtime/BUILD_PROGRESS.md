@@ -1,20 +1,19 @@
 # Blind Sniper build progress — current status
 
-## PR #56 — bounded daemon concurrency and receipt idempotency — 2026-11-11
+## PR #56 — bounded daemon concurrency — MERGED 2026-11-11
 
-- [V] Draft PR #56: https://github.com/madnessgate44-debug/Blind-sniper-/pull/56; branch `feat/p0-daemon-concurrency-2026-11-11`; implementation head `ce031a6281b9c6357f7f8ecc492578ae54b6f092` (before this state-note commit), based on `main` `e7c6cdf`.
-- [V] The daemon now runs up to the configured worker concurrency per poll cycle, never exceeding the configured per-cycle task cap. Each task still uses the native exact-task claim, lease and correlated receipt path.
-- [V] The private notification outbox now serializes append/read/dedup under an OS file lock and refuses duplicate `(task_id, run_id)` records; corrupt JSON remains a hard failure.
-- [V] Regression tests: two barrier-synchronized task invocations complete concurrently at a measured maximum of 2; eight concurrent duplicate outbox appends leave one row.
-- [V] Runtime Registry PR runs `42980055291` and `42980130999` both PASS, each with 249 unit tests (4.398s / 4.242s), registry validation, skill audit and both deterministic E2E simulations. Policy Compliance `42980055420` and `42980130924` PASS. Vercel preview check PASS.
-- [V] Runtime Registry push path filters now cover `blind_sniper_agent_runtime.py`, `blind_sniper_daemon.py`, `blind_sniper_tool_runtime.py` and their tests.
-- [U] This is not a live provider or host acceptance test. It does not establish multi-process daemon contention, private remote CAS payload recovery, persistent browser state, a resident host service, or notification delivery.
-- [V] No merge, release, production deployment, schedule activation, secret mutation, permission change, paid provisioning or external-agent dependency was introduced. PR remains draft pending further acceptance work.
+- [V] Source head `7953e8399b1bc3cc0c53b8a306af9c5c84ae00e2` merged to `main` at `eacfb1091a4e22000125fcec79fe5f25994f5963`.
+- [V] Daemon dispatch is bounded by worker concurrency and per-cycle task limits; notification outbox writes are process-locked and deduplicated by task/run identity.
+- [V] Exact-head Runtime Registry runs `42980352513` and `42980348236` each passed 249 tests; OS Compliance and Environment Validation passed. E2E simulations remained SIMULATION_ONLY.
 
-**Snapshot:** 2026-11-11 — PR #52 merged to `main` at `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f` (source head `7133e3a`); native worker daemon code is merged but not host-activated.
-**Architecture:** Self-contained Blind Sniper. No external agent or browser handoff.
-**Latest merged source PR head:** `7133e3a56039152f4c28b9b19f23d82b94df98b1`. **Merge commit:** `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f`.
-**Release:** NO-GO; this implementation merge is not a production deployment.
+## PR #57 — R2 multi-process acceptance and R5 fail-closed runner — 2026-11-11
+
+- [V] Active branch `feat/p0-r2-multiprocess-recovery-2026-11-11`, HEAD `f36cf8cf7b7abcf094847e44e838637ef6df8247`; PR #57 open, unmerged.
+- [V] Three independent-process tests pass: exactly one worker wins a competing claim; one duplicate enqueue is refused; an interrupted worker is recovered by a new process and stale completion is rejected.
+- [V] R5 runner no longer consumes task attempts without a native executor. It recovers stale leases and emits aggregate-only health/digest artifacts; private task IDs are excluded. Notification delivery is NOT_CONFIGURED.
+- [V] Removed the obsolete OpenHands secret reference from the worker workflow; no external agent runtime, schedule, secret or permission change.
+- [V] Runtime Registry run `43007033797`: `Ran 252 tests in 5.299s` / `OK`; registry validation, skill audit and both deterministic E2E simulations passed. Both simulations explicitly report `actual_agent_spawned=false` / `SIMULATION_ONLY`. OS Compliance run `43007033932` PASS; Vercel preview check PASS.
+- [U] Private remote CAS cross-run payload recovery, live provider execution, persistent daemon activation and notification delivery remain unverified. R2 and R5 remain PARTIAL; release remains NO-GO.
 
 ## GitHub + Vercel host adapter — 2026-11-11
 
