@@ -232,13 +232,13 @@ GitHub Actions schedule or an external agent. It:
    public repository.
 2. Recovers expired queue leases before scanning.
 3. Enqueues/claims the exact task ID and invokes the existing native model/tool runtime.
-4. Writes complete task receipts to an owner-only private `receipts/` directory.
-5. Writes a metadata-only `notifications.jsonl` outbox and a private `health.json` checkpoint.
+4. Persists each full model result to an owner-only private receipt before the queue terminal transition; recovery reconciles only receipts whose task attempt matches the authoritative terminal queue state.
+5. Writes a metadata-only `notifications.jsonl` outbox and a private `health.json` checkpoint; an interrupted outbox append is rebuilt from the private receipt.
 6. Handles SIGTERM/SIGINT by stopping after the current bounded task.
 
 The local append-only ledger is stored under the same private state directory and survives process
 restarts on that host. Private remote CAS/cross-host recovery remains a separate unverified gate.
-The notification outbox is not a delivery service; a host-side consumer is still required.
+The notification outbox is not a delivery service; a host-side consumer is still required. A pre-terminal receipt is not reported as complete unless the matching queue attempt is terminal, preventing stale-attempt receipts from being announced.
 
 ### Host setup
 
