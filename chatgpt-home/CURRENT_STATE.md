@@ -3,7 +3,7 @@
 ## PR #57 — R2 multi-process acceptance and R5 fail-closed runner — 2026-11-11
 
 - [V] PR #56 merged to `main` at `eacfb1091a4e22000125fcec79fe5f25994f5963`; source head `7953e8399b1bc3cc0c53b8a306af9c5c84ae00e2`.
-- [V] Active branch: `feat/p0-r2-multiprocess-recovery-2026-11-11`; latest exact-head CI-verified commit `32fb485ed3a48fe0679b5d3e6781bbbdce0ad302`. PR #57 is open and ready for review; base `main` at `eacfb1091a4e22000125fcec79fe5f25994f5963`. Subsequent commits, if any, are state-note synchronization only.
+- [V] Active branch: `feat/p0-r2-multiprocess-recovery-2026-11-11`; latest exact-head CI-verified code/test commit `dff07bb755f3fcb8a02e22ea0de664ed62f544b7`. PR #57 is open and ready for review; base `main` at `eacfb1091a4e22000125fcec79fe5f25994f5963`. Subsequent commits, if any, are state-note synchronization only.
 - [V] R2 independent-process acceptance: two-process exclusive claim, duplicate enqueue refusal, interrupted-worker recovery/reclaim and stale-owner completion rejection all PASS in Runtime Registry run `43007169781`; full suite `Ran 252 tests in 5.297s` / `OK`.
 - [V] Runtime registry validation, skill audit, interruption/recovery simulation and scheduled-jobs simulation passed in run `43007169781`; simulations explicitly report `actual_agent_spawned=false` and `execution_mode=SIMULATION_ONLY`. OS Compliance run `43007169875` PASS; Environment Validation run `43007169757` PASS; Vercel preview check PASS.
 - [V] R5 safety: the ephemeral Actions runner recovers stale leases and writes aggregate-only health/digest artifacts; it does not claim pending tasks without a wired native executor. Public artifacts contain counts, not private task IDs. Notification delivery is explicitly NOT_CONFIGURED.
