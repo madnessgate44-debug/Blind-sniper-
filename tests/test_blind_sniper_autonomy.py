@@ -78,15 +78,20 @@ class RunOnceTests(unittest.TestCase):
         self.assertTrue((self.out / "autonomy-digest.json").is_file())
         self.assertTrue((self.out / "autonomy-health.json").is_file())
         self.assertEqual(digest["kind"], "autonomy_digest")
-        self.assertIn("T1", digest["recovered_stale"])
+        self.assertEqual(digest["recovered_stale_count"], 1)
         # No executor is wired into this ephemeral runner: pending work stays untouched.
         self.assertEqual(digest["execution_status"], "BLOCKED_NO_EXECUTOR")
         self.assertEqual(digest["tasks_started"], 0)
         self.assertEqual(digest["drained"], [])
         self.assertEqual(digest["pending_count"], 2)
+        self.assertEqual(digest["reconciliation"]["pending_count"], 2)
+        self.assertEqual(digest["reconciliation"]["stale_claim_count"], 0)
         self.assertEqual(self.queue.status("T2")["status"], "PENDING")
         self.assertEqual(self.queue.status("T2")["attempt"], 0)
         self.assertEqual(digest["notification_delivery_status"], "NOT_CONFIGURED")
+        serialized = (self.out / "autonomy-digest.json").read_text(encoding="utf-8")
+        self.assertNotIn("T1", serialized)
+        self.assertNotIn("T2", serialized)
 
     def test_health_receipt_is_written(self):
         self.queue.enqueue(task_id="T1", kind="k", payload_digest="d1", now=T0)
