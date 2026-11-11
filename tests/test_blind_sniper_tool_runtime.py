@@ -17,7 +17,7 @@ from blind_sniper_model_worker import AgentSpec, ModelTask
 from blind_sniper_tool_runtime import NativeToolError, NativeToolRuntime
 from blind_sniper_worker import DurableQueue, QueueError
 
-NOW = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
+NOW = datetime.now(timezone.utc)
 
 
 class NativeToolRuntimeTests(unittest.TestCase):
@@ -29,7 +29,7 @@ class NativeToolRuntimeTests(unittest.TestCase):
         (self.root / "src" / "sample.py").write_text("value = 1\n", encoding="utf-8")
         self.queue = DurableQueue(TaskLedger(self.root / "ledger.jsonl"))
         self.queue.enqueue(task_id="TOOL-TASK-1", kind="native_model_agent", payload_digest="task-digest", now=NOW)
-        self.queue.claim(owner_id="worker-1", task_id="TOOL-TASK-1", lease_seconds=900, now=NOW)
+        self.queue.claim(owner_id="worker-1", task_id="TOOL-TASK-1", lease_seconds=3600, now=NOW)
         self.task = ModelTask(
             task_id="TOOL-TASK-1", agent_id="engineer", objective="inspect or edit",
             payload={}, lease_owner_id="worker-1",

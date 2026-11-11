@@ -29,6 +29,7 @@ Provide a common boundary between Blind Sniper's native orchestration, task-scop
 | Native tool runtime | `scripts/blind_sniper_tool_runtime.py` — three static task-scoped tools with lease-bound receipts | IMPLEMENTED / host execution UNVERIFIED |
 | Native queue lifecycle | `scripts/blind_sniper_worker.py` + `scripts/blind_sniper_agent_runtime.py` | PARTIAL; private remote cross-run durability and payload recovery unverified |
 | Native browser | `scripts/blind_sniper_tool_runtime.py` → `scripts/blind_sniper_browser.py` under queue lease | IMPLEMENTED / persistent host unverified |
+| Native worker daemon | `scripts/blind_sniper_daemon.py` — private task-file poller, local durable ledger, health and notification outbox | PARTIAL / host activation unverified |
 | GitHub Actions | Commit-triggered CI and bounded workflows | PARTIAL; ephemeral runner only |
 
 No OpenHands, Forge or external agent/browser adapter participates in the execution path. Provider

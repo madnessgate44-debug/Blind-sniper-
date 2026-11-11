@@ -26,7 +26,26 @@ Registered tools are limited to:
 - `verification.run` — fixed runtime-validator and unit-test commands only.
 
 Every tool call is reserved against the current unexpired durable task lease before side effects and
-receives a terminal ledger receipt. There is no arbitrary shell, unrestricted filesystem, arbitrary network, Forge, OpenHands or external browser tool. The model can use the checked-in native Chromium adapter through lease-bound browser tools; navigation is domain-allowlisted and click/fill/press require host approval. Browser state and artifacts remain outside the public repository. R1/R3/R4 are contract-tested; a live configured provider host remains unverified. R2 private remote payload recovery is partial, persistent browser hosting is unverified, and R5 unattended autonomy remains blocked.
+receives a terminal ledger receipt. There is no arbitrary shell, unrestricted filesystem, arbitrary network, Forge, OpenHands or external browser tool. The model can use the checked-in native Chromium adapter through lease-bound browser tools; navigation is domain-allowlisted and click/fill/press require host approval. Browser state and artifacts remain outside the public repository. R1/R3/R4 are contract-tested; a live configured provider host remains unverified. R2 same-host durable worker and interruption reconciliation are implemented, while private remote cross-host payload recovery remains unverified. Persistent browser hosting is unverified. R5 is PARTIAL: daemon code exists but no approved host service is active.
+
+## Persistent native worker
+
+`scripts/blind_sniper_daemon.py` provides a persistent single-host poller. It scans owner-only
+private task JSON files, recovers stale leases, runs the native model/tool runtime, writes private
+receipts and health, and appends a metadata-only notification outbox. Full model receipts are persisted before terminal queue transitions and reconciled against the exact terminal attempt after interruption. It is not run by GitHub
+Actions and this repository does not start or enable the service.
+
+Task envelopes contain only `task_id`, `agent_id`, `objective` and optional `payload`.
+Permission profile, native tool allowlist, path scope and browser approval reference are loaded
+from trusted host environment variables (`BLIND_SNIPER_DAEMON_*`), never from task input. The
+default host policy is read-only with no tools. Agent identities are checked against the native
+`agents.json` roster.
+
+The systemd example is `deploy/blind-sniper-worker.service.example`. Host setup requires a
+persistent owner-only state directory, an approved model provider configuration, and a service
+manager. The local ledger survives process restarts on that host; remote cross-host CAS and
+notification delivery remain unverified. R5 is PARTIAL until a real host service is run and
+monitored.
 
 ## Components
 

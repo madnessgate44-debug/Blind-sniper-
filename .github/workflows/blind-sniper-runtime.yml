@@ -5,6 +5,7 @@ on:
   pull_request:
     paths:
       - "chatgpt-home/runtime/**"
+      - "deploy/blind-sniper-worker.service.example"
       - "scripts/validate_blind_sniper_runtime.py"
       - "scripts/blind_sniper_runtime.py"
       - "scripts/blind_sniper_ledger.py"
@@ -29,12 +30,14 @@ on:
       - "scripts/blind_sniper_worker.py"
       - "scripts/blind_sniper_model_worker.py"
       - "scripts/blind_sniper_agent_runtime.py"
+      - "scripts/blind_sniper_daemon.py"
       - "scripts/blind_sniper_tool_runtime.py"
       - "scripts/blind_sniper_autonomy.py"
       - "tests/test_blind_sniper_redact.py"
       - "tests/test_blind_sniper_worker.py"
       - "tests/test_blind_sniper_model_worker.py"
       - "tests/test_blind_sniper_agent_runtime.py"
+      - "tests/test_blind_sniper_daemon.py"
       - "tests/test_blind_sniper_tool_runtime.py"
       - "tests/test_blind_sniper_autonomy.py"
       - ".github/workflows/blind-sniper-worker.yml"

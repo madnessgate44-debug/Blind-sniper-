@@ -14,7 +14,7 @@ import os
 import sys
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -42,6 +42,7 @@ def dispatch_task(
     *,
     owner_id: str,
     lease_seconds: int = 900,
+    receipt_sink: Callable[[dict[str, Any]], None] | None = None,
 ) -> dict[str, Any]:
     """Enqueue (if new), claim, invoke and commit one correlated model task."""
     if not owner_id.strip():
@@ -81,6 +82,13 @@ def dispatch_task(
     receipt["queue_attempt"] = claim["attempt"]
     receipt["lease_owner"] = owner_id
     receipt["payload_digest"] = payload_digest
+    receipt["queue_task_id"] = task.task_id
+    # Persist the full private model result before the queue can become terminal.
+    # If the process stops after queue.complete/fail but before notification
+    # delivery, the daemon reconciles this receipt against the queue attempt.
+    receipt["queue_status"] = "RESULT_READY"
+    if receipt_sink is not None:
+        receipt_sink(dict(receipt))
     if receipt["status"] == "PASS":
         # A post-invocation heartbeat proves the lease is still held before
         # accepting the result. Completion then atomically consumes that lease.
@@ -96,7 +104,6 @@ def dispatch_task(
             error=str(receipt.get("error", "native model invocation failed"))[:1000],
         )
         receipt["queue_status"] = queue.status(task.task_id)["status"]
-    receipt["queue_task_id"] = task.task_id
     return receipt
 
 
