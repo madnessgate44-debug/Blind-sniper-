@@ -1,16 +1,11 @@
 #!/usr/bin/env python3
-"""Continuous-autonomy runner: event polling, recovery, retries, health, digest.
+"""Safe bounded recovery/health pass for Blind Sniper's durable queue.
 
-This is a bounded, single-invocation runner. Each call performs one pass:
-
-1. Poll the durable queue for claimable tasks and drain up to ``--max-tasks``.
-2. Recover stale leases (heartbeat expired without completion).
-3. Emit a health report and a notification/digest receipt.
-
-A scheduled trigger must NOT be activated unless the executor, data store and
-secret prerequisites are genuinely configured. ``activation_check`` encodes that
-gate; the runner refuses to run unattended when a prerequisite is missing and
-never claims that a background process or scheduler exists.
+This Actions entrypoint is not the native task executor. It may recover stale
+leases and emit metadata-only health/digest artifacts, but it MUST NOT claim
+pending work or simulate execution. Task execution belongs to the native daemon
+on an approved persistent host. No schedule may be enabled until a real
+executor, private store, provider and notification delivery route are verified.
 """
 from __future__ import annotations
 
@@ -42,13 +37,14 @@ def activation_check(*, github_ledger: bool, ledger_path: str, token_env: str) -
     else:
         data_store = Path(ledger_path).exists() or Path(ledger_path).parent.exists()
     provider = bool(os.environ.get("BLIND_SNIPER_MODEL_BASE_URL", "").strip() and os.environ.get("BLIND_SNIPER_MODEL_NAME", "").strip())
-    # Deliberately false until a task-scoped native executor/tool registry is implemented.
+    # The native daemon is not wired into this ephemeral Actions entrypoint.
     executor = False
     prerequisites = {
         "data_store_configured": data_store,
         "native_model_provider_configured": provider,
         "executor_configured": executor,
-        "notification_route_configured": bool(os.environ.get("BLIND_SNIPER_NOTIFY_DIGEST", "")),
+        # A metadata outbox is not a delivery route. No native delivery adapter exists here.
+        "notification_route_configured": False,
     }
     return {
         "activation_allowed": all(prerequisites.values()),
@@ -84,30 +80,28 @@ def run_once(
     queue: DurableQueue, *, owner_id: str, max_tasks: int, output_dir: Path,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """One bounded pass: recover stale leases, then drain claimable tasks."""
+    """One bounded pass: recover stale leases and report without claiming tasks."""
+    if not 1 <= max_tasks <= 100:
+        raise AutonomyError("max_tasks must be between 1 and 100")
     instant = now or datetime.now(timezone.utc)
     recovery = queue.recover_stale(now=instant)
-    drained: list[dict[str, Any]] = []
-    for _ in range(max_tasks):
-        claim = queue.claim(owner_id=owner_id, lease_seconds=300, now=instant)
-        if not claim:
-            break
-        task_id = claim["task_id"]
-        # This runner has no executor wired in unattended mode; a claimed task is
-        # released back for a real executor and recorded as a scheduled retry.
-        queue.fail(task_id=task_id, owner_id=owner_id, error="no_executor_wired_in_this_pass", now=instant)
-        drained.append({"task_id": task_id, "attempt": claim["attempt"]})
     health = queue.health(now=instant)
     reconciliation = queue.reconcile(now=instant)
     digest = {
         "schema_version": "1.0.0",
         "kind": "autonomy_digest",
         "at": instant.isoformat(),
+        "execution_status": "BLOCKED_NO_EXECUTOR",
+        "execution_note": "This ephemeral runner has no native task executor wired; pending tasks were not claimed.",
+        "max_tasks_limit": max_tasks,
+        "tasks_started": 0,
         "recovered_stale": recovery["recovered"],
         "failed_exhausted": recovery["failed"],
-        "drained": drained,
+        "drained": [],
+        "pending_count": len(reconciliation["pending"]),
         "health": health,
         "reconciliation": reconciliation,
+        "notification_delivery_status": "NOT_CONFIGURED",
         "digest_sha256": _digest(json.dumps(health, sort_keys=True)),
     }
     write_json(output_dir / "autonomy-digest.json", digest)
