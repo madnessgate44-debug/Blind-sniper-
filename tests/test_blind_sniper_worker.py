@@ -48,6 +48,16 @@ def _run_queue_process(ledger_path, action, owner_id, now_iso, start_event, resu
                 owner_id=owner_id, lease_seconds=60, task_id="T-MULTIPROCESS", now=instant,
             )
             result_queue.put({"action": action, "owner_id": owner_id, "recovery": recovery, "claim": claim})
+        elif action == "heartbeat":
+            event = queue.heartbeat(
+                task_id="T-MULTIPROCESS", owner_id=owner_id, lease_seconds=60, now=instant,
+            )
+            result_queue.put({"action": action, "owner_id": owner_id, "event": event})
+        elif action == "cancel":
+            event = queue.cancel(
+                task_id="T-MULTIPROCESS", reason="independent-process cancellation", now=instant,
+            )
+            result_queue.put({"action": action, "owner_id": owner_id, "event": event})
         else:
             raise AssertionError(f"Unsupported queue process action: {action}")
     except Exception as exc:
@@ -272,6 +282,38 @@ class DurableQueueTests(unittest.TestCase):
         self.assertEqual(len(rejected), 1, results)
         self.assertIn("already enqueued", rejected[0].get("error", ""))
         self.assertEqual(len(self.ledger.events("T-MULTIPROCESS-DUP")), 1)
+
+    def test_heartbeat_from_independent_process_extends_lease_for_other_workers(self):
+        self.queue.enqueue(task_id="T-MULTIPROCESS", kind="model_task", payload_digest="digest-mp", now=T0)
+        first = self._run_processes([("claim", "heartbeat-owner", T0)])[0]
+        self.assertIsNotNone(first.get("claim"), first)
+        heartbeat_at = T0 + timedelta(seconds=50)
+        heartbeat = self._run_processes([("heartbeat", "heartbeat-owner", heartbeat_at)])[0]
+        self.assertNotIn("error", heartbeat, heartbeat)
+        state = self.queue.status("T-MULTIPROCESS")
+        self.assertEqual(state["owner_id"], "heartbeat-owner")
+        self.assertEqual(state["heartbeat_at"], heartbeat_at.isoformat())
+        self.assertIsNone(self.queue.claim(
+            owner_id="late-worker", lease_seconds=60, task_id="T-MULTIPROCESS",
+            now=T0 + timedelta(seconds=100),
+        ))
+
+    def test_cancellation_from_independent_process_prevents_reclaim_and_completion(self):
+        self.queue.enqueue(task_id="T-MULTIPROCESS", kind="model_task", payload_digest="digest-mp", now=T0)
+        first = self._run_processes([("claim", "cancelled-worker", T0)])[0]
+        self.assertIsNotNone(first.get("claim"), first)
+        cancelled = self._run_processes([("cancel", "owner-control", T0 + timedelta(seconds=1))])[0]
+        self.assertNotIn("error", cancelled, cancelled)
+        self.assertEqual(self.queue.status("T-MULTIPROCESS")["status"], "CANCELLED")
+        self.assertIsNone(self.queue.claim(
+            owner_id="replacement-worker", lease_seconds=60, task_id="T-MULTIPROCESS",
+            now=T0 + timedelta(seconds=2),
+        ))
+        with self.assertRaisesRegex(QueueError, "active lease"):
+            self.queue.complete(
+                task_id="T-MULTIPROCESS", owner_id="cancelled-worker",
+                result_digest="late-result", now=T0 + timedelta(seconds=2),
+            )
 
     def test_queue_state_survives_reopening_the_ledger(self):
         self.queue.enqueue(task_id="T1", kind="k", payload_digest="d1", now=T0)
