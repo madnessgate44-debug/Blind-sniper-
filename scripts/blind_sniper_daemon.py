@@ -8,6 +8,7 @@ notification outbox. It is never started by GitHub Actions.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
 import os
 import re
@@ -19,6 +20,7 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
@@ -242,28 +244,51 @@ class PrivateTaskStore:
         }
         if not TASK_ID.fullmatch(safe["task_id"]):
             raise DaemonError("Notification task_id is invalid")
+        if not re.fullmatch(r"[A-Za-z0-9_.:-]{1,128}", safe["run_id"]):
+            raise DaemonError("Notification run_id is invalid")
         if self.notification_path.exists():
             _ensure_private_file(self.notification_path, max_bytes=64 * 1024 * 1024)
         else:
             _reject_symlink_components(self.notification_path)
-        flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
+        flags = os.O_RDWR | os.O_CREAT | os.O_APPEND
         if hasattr(os, "O_NOFOLLOW"):
             flags |= os.O_NOFOLLOW
         if hasattr(os, "O_NONBLOCK"):
             flags |= os.O_NONBLOCK
         fd = os.open(self.notification_path, flags, 0o600)
-        info = os.fstat(fd)
-        if not stat.S_ISREG(info.st_mode):
-            os.close(fd)
-            raise DaemonError("Notification outbox must be a regular file")
-        if info.st_size > 64 * 1024 * 1024:
-            os.close(fd)
-            raise DaemonError("Notification outbox exceeds the 64 MiB limit")
-        os.fchmod(fd, 0o600)
-        with os.fdopen(fd, "a", encoding="utf-8") as handle:
-            handle.write(json.dumps(safe, sort_keys=True) + "\n")
-            handle.flush()
-            os.fsync(handle.fileno())
+        try:
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode):
+                raise DaemonError("Notification outbox must be a regular file")
+            os.fchmod(fd, 0o600)
+            with os.fdopen(fd, "a+", encoding="utf-8") as handle:
+                fd = -1
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+                try:
+                    handle.seek(0)
+                    for line in handle:
+                        try:
+                            existing = json.loads(line)
+                        except json.JSONDecodeError as exc:
+                            raise DaemonError("Notification outbox is corrupt; refusing to append") from exc
+                        if (
+                            isinstance(existing, dict)
+                            and str(existing.get("task_id", "")) == safe["task_id"]
+                            and str(existing.get("run_id", "")) == safe["run_id"]
+                        ):
+                            return
+                    handle.seek(0, os.SEEK_END)
+                    encoded = json.dumps(safe, sort_keys=True) + "\n"
+                    if os.fstat(handle.fileno()).st_size + len(encoded.encode("utf-8")) > 64 * 1024 * 1024:
+                        raise DaemonError("Notification outbox exceeds the 64 MiB limit")
+                    handle.write(encoded)
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                finally:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            if fd >= 0:
+                os.close(fd)
 
     def reconcile_notifications(self, queue: DurableQueue) -> int:
         """Rebuild missing metadata-only outbox entries from private durable receipts."""
@@ -344,6 +369,60 @@ class BlindSniperDaemon:
         self.allowed_agent_ids = allowed_agent_ids
         self._last_success_at: str | None = None
 
+    def _dispatch_task_file(self, data: dict[str, Any]) -> str:
+        task_id = data["task_id"]
+        current = self.queue.status(task_id)
+        if current and (
+            current.get("status") in TERMINAL_STATUSES
+            or current.get("status") == "CLAIMED"
+        ):
+            return "SKIPPED"
+        spec = AgentSpec(
+            agent_id=data["agent_id"],
+            tool_allowlist=self.host_policy["tool_allowlist"],
+            permission_profile=self.host_policy["permission_profile"],
+            allowed_paths=self.host_policy["allowed_paths"],
+            browser_approval_reference=self.host_policy["browser_approval_reference"],
+        )
+        task = ModelTask(
+            task_id=task_id,
+            agent_id=data["agent_id"],
+            objective=data["objective"],
+            payload=data.get("payload", {}),
+            lease_seconds=self.lease_seconds,
+        )
+        try:
+            receipt = dispatch_task(
+                self.queue, self.worker, spec, task,
+                owner_id=self.owner_id, lease_seconds=self.lease_seconds,
+                receipt_sink=lambda item: self.store.write_receipt(task_id, item),
+            )
+        except Exception:
+            # Another daemon may win the exact-task claim between the status
+            # read and dispatch. Treat that race as contention, not a task error.
+            current = self.queue.status(task_id)
+            if current and (
+                current.get("status") in TERMINAL_STATUSES
+                or (
+                    current.get("status") == "CLAIMED"
+                    and current.get("owner_id") != self.owner_id
+                )
+            ):
+                return "SKIPPED"
+            raise
+        status = receipt.get("queue_status", "")
+        if status == "COMPLETED":
+            event = "task.completed"
+        elif status == "FAILED":
+            event = "task.failed"
+        else:
+            event = "task.retry_scheduled"
+        self.store.append_notification({
+            "event": event, "task_id": task_id, "run_id": receipt.get("run_id", ""),
+            "status": status, "result_digest": receipt.get("output_digest", ""),
+        })
+        return status
+
     def run_once(self) -> dict[str, Any]:
         counts = {
             "scanned": 0, "completed": 0, "retry_scheduled": 0, "failed": 0,
@@ -361,58 +440,48 @@ class BlindSniperDaemon:
             counts["errors"] += 1
             last_error_type = type(exc).__name__
             files = []
+
+        candidates: list[dict[str, Any]] = []
         for path in files:
             try:
                 data = self.store.read_task(path)
-                task_id = data["task_id"]
                 if self.allowed_agent_ids is not None and data["agent_id"] not in self.allowed_agent_ids:
                     raise DaemonError("Task agent_id is not registered in the native agent roster")
-                current = self.queue.status(task_id)
-                if current and current.get("status") in TERMINAL_STATUSES:
+                current = self.queue.status(data["task_id"])
+                if current and (
+                    current.get("status") in TERMINAL_STATUSES
+                    or current.get("status") == "CLAIMED"
+                ):
                     counts["skipped"] += 1
                     continue
-                if current and current.get("status") == "CLAIMED":
-                    counts["skipped"] += 1
-                    continue
-                if counts["attempted"] >= self.max_tasks_per_cycle:
+                if len(candidates) >= self.max_tasks_per_cycle:
                     break
-                counts["attempted"] += 1
-                spec = AgentSpec(
-                    agent_id=data["agent_id"],
-                    tool_allowlist=self.host_policy["tool_allowlist"],
-                    permission_profile=self.host_policy["permission_profile"],
-                    allowed_paths=self.host_policy["allowed_paths"],
-                    browser_approval_reference=self.host_policy["browser_approval_reference"],
-                )
-                task = ModelTask(
-                    task_id=task_id,
-                    agent_id=data["agent_id"],
-                    objective=data["objective"],
-                    payload=data.get("payload", {}),
-                    lease_seconds=self.lease_seconds,
-                )
-                receipt = dispatch_task(
-                    self.queue, self.worker, spec, task,
-                    owner_id=self.owner_id, lease_seconds=self.lease_seconds,
-                    receipt_sink=lambda item: self.store.write_receipt(task_id, item),
-                )
-                status = receipt.get("queue_status", "")
-                if status == "COMPLETED":
-                    counts["completed"] += 1
-                    event = "task.completed"
-                elif status == "FAILED":
-                    counts["failed"] += 1
-                    event = "task.failed"
-                else:
-                    counts["retry_scheduled"] += 1
-                    event = "task.retry_scheduled"
-                self.store.append_notification({
-                    "event": event, "task_id": task_id, "run_id": receipt.get("run_id", ""),
-                    "status": status, "result_digest": receipt.get("output_digest", ""),
-                })
+                candidates.append(data)
             except Exception as exc:
                 counts["errors"] += 1
                 last_error_type = type(exc).__name__
+
+        counts["attempted"] = len(candidates)
+        if candidates:
+            worker_count = min(self.worker.max_concurrency, len(candidates))
+            with ThreadPoolExecutor(max_workers=worker_count) as pool:
+                futures = [pool.submit(self._dispatch_task_file, data) for data in candidates]
+                for future in as_completed(futures):
+                    try:
+                        status = future.result()
+                    except Exception as exc:
+                        counts["errors"] += 1
+                        last_error_type = type(exc).__name__
+                        continue
+                    if status == "SKIPPED":
+                        counts["skipped"] += 1
+                    elif status == "COMPLETED":
+                        counts["completed"] += 1
+                    elif status == "FAILED":
+                        counts["failed"] += 1
+                    else:
+                        counts["retry_scheduled"] += 1
+
         now = datetime.now(timezone.utc).isoformat()
         if counts["errors"] == 0:
             self._last_success_at = now
