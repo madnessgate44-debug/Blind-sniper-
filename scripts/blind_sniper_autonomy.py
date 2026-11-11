@@ -85,8 +85,23 @@ def run_once(
         raise AutonomyError("max_tasks must be between 1 and 100")
     instant = now or datetime.now(timezone.utc)
     recovery = queue.recover_stale(now=instant)
-    health = queue.health(now=instant)
-    reconciliation = queue.reconcile(now=instant)
+    raw_health = queue.health(now=instant)
+    raw_reconciliation = queue.reconcile(now=instant)
+    # This output is uploaded as a GitHub Actions artifact in a public repository.
+    # Publish aggregate counts only; never expose private task IDs or payload metadata.
+    health = {
+        "total": raw_health["total"],
+        "counts": raw_health["counts"],
+        "stale_count": len(raw_health["stale_claims"]),
+        "healthy": raw_health["healthy"],
+    }
+    reconciliation = {
+        "pending_count": len(raw_reconciliation["pending"]),
+        "active_claim_count": len(raw_reconciliation["active_claims"]),
+        "stale_claim_count": len(raw_reconciliation["stale_claims"]),
+        "terminal_count": len(raw_reconciliation["terminal"]),
+        "requires_recovery": raw_reconciliation["requires_recovery"],
+    }
     digest = {
         "schema_version": "1.0.0",
         "kind": "autonomy_digest",
@@ -95,10 +110,10 @@ def run_once(
         "execution_note": "This ephemeral runner has no native task executor wired; pending tasks were not claimed.",
         "max_tasks_limit": max_tasks,
         "tasks_started": 0,
-        "recovered_stale": recovery["recovered"],
-        "failed_exhausted": recovery["failed"],
+        "recovered_stale_count": len(recovery["recovered"]),
+        "failed_exhausted_count": len(recovery["failed"]),
         "drained": [],
-        "pending_count": len(reconciliation["pending"]),
+        "pending_count": reconciliation["pending_count"],
         "health": health,
         "reconciliation": reconciliation,
         "notification_delivery_status": "NOT_CONFIGURED",
