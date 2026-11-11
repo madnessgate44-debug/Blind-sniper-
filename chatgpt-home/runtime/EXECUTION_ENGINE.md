@@ -306,3 +306,10 @@ The executor accepts only the fixed command IDs `unit-tests` and `runtime-valida
 **Persistence is deliberately per-run and ephemeral.** The local ledger, lease and receipts are created inside one GitHub Actions run and uploaded as a 14-day artifact. They do not provide cross-run exclusion, cross-run deduplication, durable task recovery or a persistent worker. A repeated task ID in a later run is not protected by the prior run's local ledger. The workflow uses `contents: read` with `persist-credentials: false` and a full read-only checkout (no sparse-checkout), so every allowlisted command can read all of the paths its tests require, and it does not write private continuity data to this public repository.
 
 A successful verification run ends in `REVIEWING`, not `CLOSED`. A distinct reviewer must inspect the exact commit and artifact and supply a task-correlated PASS receipt before closure. A green executor job is not an independent review or closure receipt.
+
+
+## GitHub + Vercel hosting adapter
+
+The initial Vercel host surface is `api/health.py`, exposed as `GET /api/health`. It is a read-only Python Function with a 10-second maximum duration. It reports only the HTTP component and deliberately returns `task_execution_enabled=false`; it does not enqueue work, read secrets, call the model provider, or write to the private ledger.
+
+GitHub Actions remains the bounded execution runner and verification surface. Vercel Functions are request-scoped and are not a persistent daemon. The Hobby team's cron schedule is daily-only, so do not use it for high-frequency queue polling. Do not activate any task route or schedule until private durable payload storage, an existing least-privilege runtime credential, real provider configuration, and one end-to-end recovery test are verified. See `chatgpt-home/runtime/VERCEL_HOSTING.md`.
