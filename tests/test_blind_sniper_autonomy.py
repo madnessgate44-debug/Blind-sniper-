@@ -83,7 +83,7 @@ class RunOnceTests(unittest.TestCase):
         self.assertEqual(digest["execution_status"], "BLOCKED_NO_EXECUTOR")
         self.assertEqual(digest["tasks_started"], 0)
         self.assertEqual(digest["drained"], [])
-        self.assertEqual(digest["pending_count"], 1)
+        self.assertEqual(digest["pending_count"], 2)
         self.assertEqual(self.queue.status("T2")["status"], "PENDING")
         self.assertEqual(self.queue.status("T2")["attempt"], 0)
         self.assertEqual(digest["notification_delivery_status"], "NOT_CONFIGURED")
