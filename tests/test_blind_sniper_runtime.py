@@ -74,6 +74,8 @@ class RuntimeRegistryTests(unittest.TestCase):
         self.assertIn("native_tool_runtime", workflow_adapters["native-browser-interaction"])
         self.assertIn("agent_browser_cli", workflow_adapters["native-browser-interaction"])
         self.assertIn("native_worker_daemon", workflow_adapters["continuous-autonomy"])
+        autonomy = next(w for w in workflows["workflows"] if w["id"] == "continuous-autonomy")
+        self.assertIn("persist_private_result_receipt_before_terminal_transition_then_metadata_only_outbox", autonomy["steps"])
         self.assertFalse(any({"forge_browser_mcp", "openhands_dispatch"} & used for used in workflow_adapters.values()))
         self.assertEqual(sum(w.get("contract_mode") == "native_contract" for w in workflows["workflows"]), 11)
         self.assertEqual(sum(w.get("contract_mode") == "registry_only" for w in workflows["workflows"]), 7)
