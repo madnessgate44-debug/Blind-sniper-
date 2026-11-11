@@ -305,7 +305,7 @@
         "scan_private_task_files_without_publishing_payloads",
         "enqueue_and_claim_exact_task_id",
         "invoke_native_model_and_task_scoped_tools",
-        "persist_private_receipt_and_metadata_only_notification_outbox",
+        "persist_private_result_receipt_before_terminal_transition_then_metadata_only_outbox",
         "write_health_checkpoint",
         "wait_for_next_poll_or_graceful_shutdown"
       ],
