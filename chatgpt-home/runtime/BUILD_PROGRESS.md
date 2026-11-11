@@ -1,6 +1,6 @@
 # Blind Sniper build progress — current status
 
-**Snapshot:** 2026-11-10 — PR #51 merged to `main` at `99b5efc761c8b53054f3fa3d091e3aeafd43c224`.
+**Snapshot:** 2026-11-11 — PR #51 is latest merged implementation (`99b5efc`); PR #52 is open/draft at `e30d317`, adding the native private-host worker daemon.
 **Architecture:** Self-contained Blind Sniper. No external agent or browser handoff.
 **Exact source PR head:** `e610c3a31418e10bc8498c574b8719ae72335355`.
 **Release:** NO-GO; this implementation merge is not a production deployment.
@@ -24,19 +24,22 @@
 - `scripts/blind_sniper_browser.py`: checked-in native Chromium adapter, invoked directly under queue lease; browser state/artifacts remain outside the public repo.
 - Private task payloads and output receipts remain outside the public repository.
 
+- `scripts/blind_sniper_daemon.py`: persistent single-host poller; owner-only task files, stale-lease recovery, native model/tool dispatch, private receipts, health and notification outbox. Privileges come only from host environment policy; task files cannot select tools or permissions. Native agent IDs are checked against `agents.json`.
+- `deploy/blind-sniper-worker.service.example`: hardened systemd template; not installed or started by CI.
+
 ## Exact-head verification ledger
 
 | Action / workflow | Result | Evidence |
 |---|---|---|
-| Runtime Registry: registry validator + skill audit + Python unit suite + two E2E simulations | PASS | Run `42812345706`; 227 tests in 3.637s, `OK`; simulations are SIMULATION_ONLY |
-| Environment Validation | PASS | Run `42812345701` |
-| Engineering Execution OS Compliance | PASS | Run `42812345761` |
-| Native Browser Adapter: Chromium local-fixture acceptance | PASS | Run `42812345721`; 2 cycles, 36 correlated receipts, interruption/no-replay/reconciliation |
+| Runtime Registry: registry validator + skill audit + Python unit suite + two E2E simulations | PASS | Run `42928364819`; 240 tests in 4.605s, `OK`; both simulations are SIMULATION_ONLY and report `actual_agent_spawned=false` |
+| Environment Validation | PASS | Run `42928364815` |
+| Engineering Execution OS Compliance | PASS | Run `42928365325` |
+| Native Browser Adapter: Chromium local-fixture acceptance | PASS | Run `42928364857`; 2 cycles, 36 correlated receipts, interruption/no-replay/reconciliation |
 
-- Source PR head `e610c3a`; merged main commit `99b5efc`.
-- No live model provider, private remote CAS cross-run, persistent browser host or unattended daemon was exercised.
+- PR #52 head `e30d317`; latest merged main commit remains `99b5efc` (PR #52 is not merged).
+- No live model provider, private remote CAS cross-run, persistent browser host or unattended daemon was exercised. PR #52's daemon code is not active until an approved host provisions its private state directory and starts the systemd service.
 - No paid provisioning, secrets/permission mutation, release or deployment.
-- Next tranche: native private-host worker/poller and recovery/notification outbox (R5), then verify on an approved host without enabling an unattended schedule prematurely.
+- Next tranche: approved-host bootstrap and one bounded live provider/queue/browser acceptance cycle; then add a verified notification receiver and remote cross-host CAS/payload recovery. Do not enable unattended production autonomy until those gates pass.
 
 ---
 ## Historical build record
