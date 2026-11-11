@@ -102,6 +102,66 @@ def host_execution_policy_from_env() -> dict[str, Any]:
     })
 
 
+def _reject_symlink_components(path: Path) -> None:
+    absolute = path.absolute()
+    cursor = Path(absolute.anchor)
+    for part in absolute.parts[1:]:
+        cursor = cursor / part
+        if cursor.is_symlink():
+            raise DaemonError(f"Symlink path component is forbidden: {cursor}")
+
+
+def _ensure_private_dir(path: Path, *, workspace_root: Path) -> Path:
+    _reject_symlink_components(path)
+    resolved = path.resolve()
+    try:
+        resolved.relative_to(workspace_root.resolve())
+    except ValueError:
+        pass
+    else:
+        raise DaemonError("Private worker state must be outside the public repository workspace")
+    if not resolved.exists():
+        resolved.mkdir(parents=True, mode=0o700, exist_ok=True)
+        os.chmod(resolved, 0o700)
+    if not resolved.is_dir():
+        raise DaemonError("Private worker state path must be a directory")
+    mode = stat.S_IMODE(resolved.stat().st_mode)
+    if mode & 0o077:
+        raise DaemonError("Private worker directories must have owner-only permissions (0700)")
+    return resolved
+
+
+def _ensure_private_file(path: Path, *, max_bytes: int) -> os.stat_result:
+    _reject_symlink_components(path)
+    try:
+        info = path.lstat()
+    except FileNotFoundError as exc:
+        raise DaemonError(f"Private task file does not exist: {path.name}") from exc
+    if not stat.S_ISREG(info.st_mode):
+        raise DaemonError("Private task and receipt paths must be regular files")
+    if stat.S_IMODE(info.st_mode) & 0o077:
+        raise DaemonError("Private task and receipt files must have owner-only permissions (0600)")
+    if info.st_size > max_bytes:
+        raise DaemonError(f"Private file exceeds the {max_bytes}-byte limit")
+    return info
+
+
+def _atomic_private_json(path: Path, value: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(prefix=".blind-sniper-", dir=str(path.parent))
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(value, handle, ensure_ascii=False, sort_keys=True)
+            handle.write("\\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_name, path)
+    finally:
+        if os.path.exists(temp_name):
+            os.unlink(temp_name)
+
+
 class PrivateTaskStore:
     """Owner-only task, receipt, health and notification files outside the repo."""
 
