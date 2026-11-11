@@ -8,11 +8,11 @@
 
 ## PR #57 — R2 multi-process acceptance and R5 fail-closed runner — 2026-11-11
 
-- [V] Active branch `feat/p0-r2-multiprocess-recovery-2026-11-11`, HEAD `f36cf8cf7b7abcf094847e44e838637ef6df8247`; PR #57 open, unmerged.
+- [V] Active branch `feat/p0-r2-multiprocess-recovery-2026-11-11`, HEAD `c49d0ad2e427ad32caec9575f626177cd45eb2f6`; PR #57 open, unmerged.
 - [V] Three independent-process tests pass: exactly one worker wins a competing claim; one duplicate enqueue is refused; an interrupted worker is recovered by a new process and stale completion is rejected.
 - [V] R5 runner no longer consumes task attempts without a native executor. It recovers stale leases and emits aggregate-only health/digest artifacts; private task IDs are excluded. Notification delivery is NOT_CONFIGURED.
 - [V] Removed the obsolete OpenHands secret reference from the worker workflow; no external agent runtime, schedule, secret or permission change.
-- [V] Runtime Registry run `43007033797`: `Ran 252 tests in 5.299s` / `OK`; registry validation, skill audit and both deterministic E2E simulations passed. Both simulations explicitly report `actual_agent_spawned=false` / `SIMULATION_ONLY`. OS Compliance run `43007033932` PASS; Vercel preview check PASS.
+- [V] Runtime Registry run `43007169781`: `Ran 252 tests in 5.297s` / `OK`; registry validation, skill audit and both deterministic E2E simulations passed. Both simulations explicitly report `actual_agent_spawned=false` / `SIMULATION_ONLY`. OS Compliance run `43007169875` PASS; Environment Validation run `43007169757` PASS; Vercel preview check PASS.
 - [U] Private remote CAS cross-run payload recovery, live provider execution, persistent daemon activation and notification delivery remain unverified. R2 and R5 remain PARTIAL; release remains NO-GO.
 
 ## GitHub + Vercel host adapter — 2026-11-11
