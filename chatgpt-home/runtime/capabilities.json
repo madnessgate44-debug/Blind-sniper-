@@ -371,7 +371,8 @@
         "health_file",
         "notification_outbox",
         "graceful_sigterm_shutdown",
-        "systemd_service_template"
+        "systemd_service_template",
+        "preterminal_private_result_receipt_and_terminal_attempt_reconciliation"
       ],
       "limitations": [
         "The daemon is code-complete for a single persistent host but has not been started or verified on an approved host.",
