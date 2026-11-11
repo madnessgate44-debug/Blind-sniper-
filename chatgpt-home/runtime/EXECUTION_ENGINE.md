@@ -310,6 +310,6 @@ A successful verification run ends in `REVIEWING`, not `CLOSED`. A distinct revi
 
 ## GitHub + Vercel hosting adapter
 
-The initial Vercel host surface is `api/health.py`, exposed as `GET /api/health`. It is a read-only Python Function with a 10-second maximum duration. It reports only the HTTP component and deliberately returns `task_execution_enabled=false`; it does not enqueue work, read secrets, call the model provider, or write to the private ledger.
+The initial Vercel host surface is `api/health.py`, exposed as `GET /api/health`. It is a read-only Python Function selected explicitly by `pyproject.toml` (`[tool.vercel].entrypoint = "api.health:handler"`) with a 10-second maximum duration. It reports only the HTTP component and deliberately returns `task_execution_enabled=false`; it does not enqueue work, read secrets, call the model provider, or write to the private ledger.
 
 GitHub Actions remains the bounded execution runner and verification surface. Vercel Functions are request-scoped and are not a persistent daemon. The Hobby team's cron schedule is daily-only, so do not use it for high-frequency queue polling. Do not activate any task route or schedule until private durable payload storage, an existing least-privilege runtime credential, real provider configuration, and one end-to-end recovery test are verified. See `chatgpt-home/runtime/VERCEL_HOSTING.md`.
