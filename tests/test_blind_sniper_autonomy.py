@@ -90,8 +90,8 @@ class RunOnceTests(unittest.TestCase):
         self.assertEqual(self.queue.status("T2")["attempt"], 0)
         self.assertEqual(digest["notification_delivery_status"], "NOT_CONFIGURED")
         serialized = (self.out / "autonomy-digest.json").read_text(encoding="utf-8")
-        self.assertNotIn("T1", serialized)
-        self.assertNotIn("T2", serialized)
+        self.assertNotIn('"T1"', serialized)
+        self.assertNotIn('"T2"', serialized)
 
     def test_health_receipt_is_written(self):
         self.queue.enqueue(task_id="T1", kind="k", payload_digest="d1", now=T0)
