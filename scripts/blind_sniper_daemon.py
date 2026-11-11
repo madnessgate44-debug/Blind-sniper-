@@ -245,15 +245,21 @@ class PrivateTaskStore:
         flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND
         if hasattr(os, "O_NOFOLLOW"):
             flags |= os.O_NOFOLLOW
+        if hasattr(os, "O_NONBLOCK"):
+            flags |= os.O_NONBLOCK
         fd = os.open(self.notification_path, flags, 0o600)
-        try:
-            os.fchmod(fd, 0o600)
-            with os.fdopen(fd, "a", encoding="utf-8") as handle:
-                handle.write(json.dumps(safe, sort_keys=True) + "\n")
-                handle.flush()
-                os.fsync(handle.fileno())
-        except Exception:
-            raise
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode):
+            os.close(fd)
+            raise DaemonError("Notification outbox must be a regular file")
+        if info.st_size > 64 * 1024 * 1024:
+            os.close(fd)
+            raise DaemonError("Notification outbox exceeds the 64 MiB limit")
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(safe, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
 
     def reconcile_notifications(self) -> int:
         """Rebuild missing metadata-only outbox entries from private durable receipts."""
@@ -327,14 +333,22 @@ class BlindSniperDaemon:
         self._last_success_at: str | None = None
 
     def run_once(self) -> dict[str, Any]:
-        counts = {"scanned": 0, "completed": 0, "retry_scheduled": 0, "failed": 0, "skipped": 0, "errors": 0}
+        counts = {
+            "scanned": 0, "completed": 0, "retry_scheduled": 0, "failed": 0,
+            "skipped": 0, "errors": 0, "recovered_stale_leases": 0,
+            "notifications_reconciled": 0, "attempted": 0,
+        }
         last_error_type = None
-        recovered = self.queue.recover_stale()
-        counts["recovered_stale_leases"] = len(recovered.get("recovered", []))
-        counts["notifications_reconciled"] = self.store.reconcile_notifications()
-        files = self.store.task_files()
-        counts["scanned"] = len(files)
-        counts["attempted"] = 0
+        try:
+            recovered = self.queue.recover_stale()
+            counts["recovered_stale_leases"] = len(recovered.get("recovered", []))
+            counts["notifications_reconciled"] = self.store.reconcile_notifications()
+            files = self.store.task_files()
+            counts["scanned"] = len(files)
+        except Exception as exc:
+            counts["errors"] += 1
+            last_error_type = type(exc).__name__
+            files = []
         for path in files:
             try:
                 data = self.store.read_task(path)
@@ -386,12 +400,14 @@ class BlindSniperDaemon:
             except Exception as exc:
                 counts["errors"] += 1
                 last_error_type = type(exc).__name__
-        self._last_success_at = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(timezone.utc).isoformat()
+        if counts["errors"] == 0:
+            self._last_success_at = now
         health = {
             "schema_version": 1,
             "status": "DEGRADED" if counts["errors"] else "HEALTHY",
             "owner_id": self.owner_id,
-            "updated_at": self._last_success_at,
+            "updated_at": now,
             "last_success_at": self._last_success_at,
             "last_error_type": last_error_type,
             "counts": counts,
