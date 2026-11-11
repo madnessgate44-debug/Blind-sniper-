@@ -25,7 +25,7 @@ SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
-from blind_sniper_agent_runtime import AgentRuntimeError, dispatch_task
+from blind_sniper_agent_runtime import dispatch_task
 from blind_sniper_ledger import TaskLedger
 from blind_sniper_model_worker import AgentSpec, ModelTask, ModelWorker, NativeModelInvoker
 from blind_sniper_tool_runtime import NativeToolRuntime
@@ -35,13 +35,45 @@ from blind_sniper_worker import DurableQueue, TERMINAL_STATUSES
 TASK_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 MAX_TASK_FILE_BYTES = 2 * 1024 * 1024
 ALLOWED_TASK_KEYS = {
-    "task_id", "agent_id", "objective", "payload", "tool_allowlist",
-    "permission_profile", "allowed_paths", "browser_approval_reference",
+    "task_id", "agent_id", "objective", "payload",
 }
 
 
 class DaemonError(RuntimeError):
     """Private worker configuration, task-store or lifecycle failure."""
+
+
+def host_execution_policy_from_env() -> dict[str, Any]:
+    """Load execution privileges exclusively from trusted host configuration."""
+    profile = os.environ.get("BLIND_SNIPER_DAEMON_PERMISSION_PROFILE", "read_only").strip()
+    tools = tuple(
+        item.strip() for item in os.environ.get("BLIND_SNIPER_DAEMON_TOOL_ALLOWLIST", "").split(",")
+        if item.strip()
+    )
+    paths = tuple(
+        item.strip() for item in os.environ.get("BLIND_SNIPER_DAEMON_ALLOWED_PATHS", "").split(os.pathsep)
+        if item.strip()
+    )
+    approval = os.environ.get("BLIND_SNIPER_DAEMON_BROWSER_APPROVAL_REFERENCE", "").strip()
+    if profile not in {"read_only", "workspace_write"}:
+        raise DaemonError("Host daemon permission profile must be read_only or workspace_write")
+    if len(set(tools)) != len(tools) or len(set(paths)) != len(paths):
+        raise DaemonError("Host daemon tool and path allowlists must not contain duplicates")
+    if profile == "workspace_write" and (not tools or not paths):
+        raise DaemonError("Host workspace_write policy requires explicit tools and allowed paths")
+    if "repo.write_file" in tools and profile != "workspace_write":
+        raise DaemonError("Host repo.write_file policy requires workspace_write")
+    if {"browser.click", "browser.fill", "browser.press"} & set(tools):
+        if profile != "workspace_write" or not approval:
+            raise DaemonError("Host mutating browser policy requires workspace_write and an approval reference")
+        if os.environ.get("BLIND_SNIPER_BROWSER_WRITE_APPROVED") != "1":
+            raise DaemonError("Host mutating browser policy requires BLIND_SNIPER_BROWSER_WRITE_APPROVED=1")
+    return {
+        "permission_profile": profile,
+        "tool_allowlist": tools,
+        "allowed_paths": paths,
+        "browser_approval_reference": approval,
+    }
 
 
 def _reject_symlink_components(path: Path) -> None:
@@ -249,6 +281,7 @@ class BlindSniperDaemon:
         store: PrivateTaskStore,
         lease_seconds: int = 900,
         max_tasks_per_cycle: int = 10,
+        host_policy: dict[str, Any] | None = None,
     ) -> None:
         if not owner_id.strip():
             raise DaemonError("owner_id is required")
@@ -262,6 +295,33 @@ class BlindSniperDaemon:
         self.store = store
         self.lease_seconds = lease_seconds
         self.max_tasks_per_cycle = max_tasks_per_cycle
+        policy = host_policy or {
+            "permission_profile": "read_only",
+            "tool_allowlist": (),
+            "allowed_paths": (),
+            "browser_approval_reference": "",
+        }
+        profile = policy.get("permission_profile", "read_only")
+        tools = tuple(policy.get("tool_allowlist", ()))
+        paths = tuple(policy.get("allowed_paths", ()))
+        approval = policy.get("browser_approval_reference", "")
+        if profile not in {"read_only", "workspace_write"}:
+            raise DaemonError("Daemon host policy has an unsupported permission profile")
+        if len(set(tools)) != len(tools) or len(set(paths)) != len(paths):
+            raise DaemonError("Daemon host policy contains duplicate allowlist entries")
+        if profile == "workspace_write" and (not tools or not paths):
+            raise DaemonError("Daemon workspace_write policy requires explicit tools and allowed paths")
+        if "repo.write_file" in tools and profile != "workspace_write":
+            raise DaemonError("Daemon repo.write_file policy requires workspace_write")
+        if {"browser.click", "browser.fill", "browser.press"} & set(tools):
+            if profile != "workspace_write" or not approval or os.environ.get("BLIND_SNIPER_BROWSER_WRITE_APPROVED") != "1":
+                raise DaemonError("Daemon mutating browser policy is missing host approval")
+        self.host_policy = {
+            "permission_profile": profile,
+            "tool_allowlist": tools,
+            "allowed_paths": paths,
+            "browser_approval_reference": approval,
+        }
         self._last_success_at: str | None = None
 
     def run_once(self) -> dict[str, Any]:
@@ -289,10 +349,10 @@ class BlindSniperDaemon:
                 counts["attempted"] += 1
                 spec = AgentSpec(
                     agent_id=data["agent_id"],
-                    tool_allowlist=tuple(data.get("tool_allowlist", [])),
-                    permission_profile=str(data.get("permission_profile", "read_only")),
-                    allowed_paths=tuple(data.get("allowed_paths", [])),
-                    browser_approval_reference=data.get("browser_approval_reference", ""),
+                    tool_allowlist=self.host_policy["tool_allowlist"],
+                    permission_profile=self.host_policy["permission_profile"],
+                    allowed_paths=self.host_policy["allowed_paths"],
+                    browser_approval_reference=self.host_policy["browser_approval_reference"],
                 )
                 task = ModelTask(
                     task_id=task_id,
@@ -389,6 +449,7 @@ def main(argv: list[str] | None = None) -> int:
         daemon = BlindSniperDaemon(
             queue=queue, worker=worker, owner_id=args.owner_id, store=store,
             lease_seconds=lease_seconds, max_tasks_per_cycle=args.max_tasks_per_cycle,
+            host_policy=host_execution_policy_from_env(),
         )
         if args.once:
             print(json.dumps(daemon.run_once(), sort_keys=True))
