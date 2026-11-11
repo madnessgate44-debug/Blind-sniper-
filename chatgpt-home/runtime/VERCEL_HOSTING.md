@@ -13,7 +13,7 @@
 
 `api/health.py` exposes a read-only `GET /api/health` endpoint. It reports the Vercel HTTP component only and explicitly reports `task_execution_enabled: false`. It does not read secrets, enqueue tasks, invoke models, mutate GitHub, or expose private state.
 
-`vercel.json` limits this health function to 10 seconds. No cron schedule is configured. The Vercel Hobby plan is limited to daily cron execution and has bounded function duration; it is therefore not the high-frequency worker scheduler. GitHub Actions remains the preferred trigger for bounded execution. Do not claim continuous residency.
+`pyproject.toml` explicitly selects `api.health:handler` as the Python runtime entrypoint; this is required because the repository contains multiple Python scripts and Vercel's auto-discovery did not select the function. `vercel.json` limits this health function to 10 seconds. No cron schedule is configured. The Vercel Hobby plan is limited to daily cron execution and has bounded function duration; it is therefore not the high-frequency worker scheduler. GitHub Actions remains the preferred trigger for bounded execution. Do not claim continuous residency.
 
 ## Activation gates — intentionally closed
 
