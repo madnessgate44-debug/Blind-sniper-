@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from blind_sniper_agent_runtime import _canonical_digest
-from blind_sniper_daemon import BlindSniperDaemon, DaemonError, PrivateTaskStore
+from blind_sniper_daemon import BlindSniperDaemon, DaemonError, PrivateTaskStore, host_execution_policy_from_env
 from blind_sniper_ledger import TaskLedger
 from blind_sniper_model_worker import ModelWorker
 from blind_sniper_tool_runtime import NativeToolRuntime
@@ -141,6 +141,60 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         os.chmod(public_state, 0o755)
         with self.assertRaisesRegex(DaemonError, "owner-only"):
             PrivateTaskStore(public_state, workspace_root=self.workspace)
+
+    def test_task_file_cannot_grant_itself_tools_or_permissions(self):
+        data, path = self.write_task("DAEMON-PRIV-ESCALATION")
+        data["permission_profile"] = "workspace_write"
+        data["tool_allowlist"] = ["repo.write_file"]
+        data["allowed_paths"] = ["README.md"]
+        data["browser_approval_reference"] = "task-invented-approval"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        os.chmod(path, 0o600)
+        with self.assertRaisesRegex(DaemonError, "unsupported fields"):
+            self.store.read_task(path)
+
+    def test_daemon_uses_only_host_supplied_execution_policy(self):
+        policy = {
+            "permission_profile": "read_only",
+            "tool_allowlist": ("repo.read_file",),
+            "allowed_paths": ("README.md",),
+            "browser_approval_reference": "",
+        }
+        daemon = BlindSniperDaemon(
+            queue=self.queue, worker=self.worker, owner_id="host-worker-policy",
+            store=self.store, host_policy=policy,
+        )
+        data, _ = self.write_task("DAEMON-HOST-POLICY")
+        health = daemon.run_once()
+        self.assertEqual(health["counts"]["completed"], 1)
+        self.assertEqual(self.invocations, 1)
+        self.assertEqual(self.queue.status(data["task_id"])["status"], "COMPLETED")
+
+    def test_host_policy_rejects_unapproved_browser_mutations(self):
+        policy = {
+            "permission_profile": "workspace_write",
+            "tool_allowlist": ("browser.click",),
+            "allowed_paths": ("README.md",),
+            "browser_approval_reference": "not-enough",
+        }
+        with self.assertRaisesRegex(DaemonError, "missing host approval"):
+            BlindSniperDaemon(
+                queue=self.queue, worker=self.worker, owner_id="host-worker-browser",
+                store=self.store, host_policy=policy,
+            )
+
+    def test_environment_policy_defaults_to_read_only_and_no_tools(self):
+        for name in (
+            "BLIND_SNIPER_DAEMON_PERMISSION_PROFILE",
+            "BLIND_SNIPER_DAEMON_TOOL_ALLOWLIST",
+            "BLIND_SNIPER_DAEMON_ALLOWED_PATHS",
+            "BLIND_SNIPER_DAEMON_BROWSER_APPROVAL_REFERENCE",
+        ):
+            os.environ.pop(name, None)
+        policy = host_execution_policy_from_env()
+        self.assertEqual(policy["permission_profile"], "read_only")
+        self.assertEqual(policy["tool_allowlist"], ())
+        self.assertEqual(policy["allowed_paths"], ())
 
     def test_task_file_requires_owner_only_permissions(self):
         _, path = self.write_task("DAEMON-OPEN-FILE")
