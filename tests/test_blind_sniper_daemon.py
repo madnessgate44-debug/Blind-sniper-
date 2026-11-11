@@ -131,6 +131,24 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         self.assertNotIn("private content", outbox)
         self.assertEqual(self.store.reconcile_notifications(), 0)
 
+    def test_corrupt_outbox_marks_worker_degraded_and_still_writes_health(self):
+        self.store.notification_path.write_text("{broken json\\n", encoding="utf-8")
+        os.chmod(self.store.notification_path, 0o600)
+        health = self.daemon.run_once()
+        self.assertEqual(health["status"], "DEGRADED")
+        self.assertEqual(health["counts"]["errors"], 1)
+        self.assertEqual(health["last_error_type"], "DaemonError")
+        self.assertIsNone(health["last_success_at"])
+        self.assertTrue(self.store.health_path.exists())
+
+    def test_notification_outbox_rejects_non_regular_file_without_blocking(self):
+        os.mkfifo(self.store.notification_path)
+        with self.assertRaisesRegex(DaemonError, "regular file"):
+            self.store.append_notification({
+                "task_id": "DAEMON-FIFO-1", "run_id": "fifo-run",
+                "status": "COMPLETED",
+            })
+
     def test_private_state_must_be_outside_workspace_and_owner_only(self):
         with self.assertRaisesRegex(DaemonError, "outside the public repository"):
             PrivateTaskStore(self.workspace / "private", workspace_root=self.workspace)
