@@ -59,9 +59,6 @@ class PrivateNativeDaemonTests(unittest.TestCase):
             "agent_id": "researcher",
             "objective": "Run the private task",
             "payload": payload or {"private_note": "keep outside the public repository"},
-            "tool_allowlist": [],
-            "permission_profile": "read_only",
-            "allowed_paths": [],
         }
         path = self.store.task_dir / f"{task_id}.json"
         path.write_text(json.dumps(data), encoding="utf-8")
