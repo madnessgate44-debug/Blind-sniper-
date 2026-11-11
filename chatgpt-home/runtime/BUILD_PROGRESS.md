@@ -8,8 +8,8 @@
 
 ## PR #57 — R2 multi-process acceptance and R5 fail-closed runner — 2026-11-11
 
-- [V] Active branch `feat/p0-r2-multiprocess-recovery-2026-11-11`; latest exact-head CI-verified commit `32fb485ed3a48fe0679b5d3e6781bbbdce0ad302`; PR #57 open, unmerged. Later commits only synchronize technical state notes.
-- [V] Three independent-process tests pass: exactly one worker wins a competing claim; one duplicate enqueue is refused; an interrupted worker is recovered by a new process and stale completion is rejected.
+- [V] Active branch `feat/p0-r2-multiprocess-recovery-2026-11-11`; latest exact-head CI-verified code/test commit `dff07bb755f3fcb8a02e22ea0de664ed62f544b7`; PR #57 open, unmerged. Later commits only synchronize technical state notes.
+- [V] Five independent-process tests pass: exactly one worker wins a competing claim; a separate process renews the lease; a separate process cancels and prevents stale completion/reclaim; duplicate enqueue is refused; an interrupted worker is recovered by a new process and stale completion is rejected.
 - [V] R5 runner no longer consumes task attempts without a native executor. It recovers stale leases and emits aggregate-only health/digest artifacts; private task IDs are excluded. Notification delivery is NOT_CONFIGURED.
 - [V] Removed the obsolete OpenHands secret reference from the worker workflow; no external agent runtime, schedule, secret or permission change.
 - [V] Runtime Registry run `43007169781`: `Ran 252 tests in 5.297s` / `OK`; registry validation, skill audit and both deterministic E2E simulations passed. Both simulations explicitly report `actual_agent_spawned=false` / `SIMULATION_ONLY`. OS Compliance run `43007169875` PASS; Environment Validation run `43007169757` PASS; Vercel preview check PASS.
