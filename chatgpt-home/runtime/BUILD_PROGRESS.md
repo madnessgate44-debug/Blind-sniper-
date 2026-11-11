@@ -1,8 +1,8 @@
 # Blind Sniper build progress — current status
 
-**Snapshot:** 2026-11-11 — PR #51 is latest merged implementation (`99b5efc`); PR #52 is open/draft; validated daemon implementation head is `f680b24`, adding the native private-host worker daemon.
+**Snapshot:** 2026-11-11 — PR #52 merged to `main` at `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f` (source head `7133e3a`); native worker daemon code is merged but not host-activated.
 **Architecture:** Self-contained Blind Sniper. No external agent or browser handoff.
-**Latest merged source PR head:** `e610c3a31418e10bc8498c574b8719ae72335355`. **Validated daemon implementation head:** `f680b246f80c59277be4300940b2511c23feee27`.
+**Latest merged source PR head:** `7133e3a56039152f4c28b9b19f23d82b94df98b1`. **Merge commit:** `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f`.
 **Release:** NO-GO; this implementation merge is not a production deployment.
 
 ## P0 capability status
@@ -13,7 +13,7 @@
 | R2 Durable worker and interruption recovery | PARTIAL | Digest-only dispatch, exact task-ID claim, heartbeat, expiry-checked completion/failure, bounded retry and stale-lease recovery. Private remote CAS cross-run persistence and private payload re-supply remain unverified. |
 | R3 Native executor and tool runtime | IMPLEMENTED / HOST-UNVERIFIED | Bounded provider tool-call loop; `repo.read_file`, path-scoped `repo.write_file`, fixed `verification.run`; lease-bound receipts and replay refusal. Live provider-host execution remains unverified. |
 | R4 Native browser | IMPLEMENTED / PERSISTENT-HOST-UNVERIFIED | Model-connected task-scoped Chromium tools; mutating browser actions require explicit host approval. Two local-fixture Chromium cycles passed; persistent browser host and cross-job recovery remain unverified. |
-| R5 Continuous unattended autonomy | NOT IMPLEMENTED / BLOCKED | Native persistent worker/poller, private task payload retrieval and notification/health receiver remain to be built. No schedule is active. |
+| R5 Continuous unattended autonomy | PARTIAL / HOST-ACTIVATION-UNVERIFIED | Persistent native poller, private local task ingestion, same-host ledger, stale-lease recovery, pre-terminal result receipts, health and metadata-only notification outbox are implemented. No approved host service/provider is active; notification delivery and cross-host CAS/payload recovery remain unverified. |
 
 ## Merged implementation
 
@@ -32,13 +32,13 @@
 
 | Action / workflow | Result | Evidence |
 |---|---|---|
-| Runtime Registry: registry validator + skill audit + Python unit suite + two E2E simulations | PASS | Run `42929591398`; 243 tests in 4.605s, `OK`; both simulations are SIMULATION_ONLY and report `actual_agent_spawned=false` |
-| Environment Validation | PASS | Run `42929591214` |
-| Engineering Execution OS Compliance | PASS | Run `42929591191` |
+| Runtime Registry: registry validator + skill audit + Python unit suite + two E2E simulations | PASS | Run `42930131150`; 243 tests in 4.495s, `OK`; both simulations are SIMULATION_ONLY and report `actual_agent_spawned=false` |
+| Environment Validation | PASS | Run `42930130203` |
+| Engineering Execution OS Compliance | PASS | Run `42930130069` |
 | Native Browser Adapter: Chromium local-fixture acceptance | PASS | Run `42929591208`; 2 cycles, 36 correlated receipts, interruption/no-replay/reconciliation |
 
-- PR #52 validated implementation head `f680b24`; latest merged main commit remains `99b5efc` (PR #52 is not merged).
-- No live model provider, private remote CAS cross-run, persistent browser host or unattended daemon was exercised. PR #52's daemon code is not active until an approved host provisions its private state directory and starts the systemd service.
+- PR #52 source head `7133e3a` merged to `main` at `48dd744`.
+- No live model provider, private remote CAS cross-run, persistent browser host or unattended daemon was exercised. The merged daemon is not active until an approved host provisions its private state directory and starts the systemd service.
 - No paid provisioning, secrets/permission mutation, release or deployment.
 - Next tranche: approved-host bootstrap and one bounded live provider/queue/browser acceptance cycle; then add a verified notification receiver and remote cross-host CAS/payload recovery. Do not enable unattended production autonomy until those gates pass.
 
