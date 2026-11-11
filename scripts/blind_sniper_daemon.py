@@ -265,7 +265,7 @@ class PrivateTaskStore:
             handle.flush()
             os.fsync(handle.fileno())
 
-    def reconcile_notifications(self) -> int:
+    def reconcile_notifications(self, queue: DurableQueue) -> int:
         """Rebuild missing metadata-only outbox entries from private durable receipts."""
         known: set[tuple[str, str]] = set()
         if self.notification_path.exists():
@@ -286,13 +286,21 @@ class PrivateTaskStore:
                 raise DaemonError(f"Private receipt is invalid ({type(exc).__name__})") from exc
             if not isinstance(receipt, dict):
                 raise DaemonError("Private receipt must contain a JSON object")
-            task_id = str(receipt.get("task_id", ""))
+            task_id = str(receipt.get("queue_task_id", receipt.get("task_id", "")))
             run_id = str(receipt.get("run_id", ""))
             key = (task_id, run_id)
             if key in known or not TASK_ID.fullmatch(task_id) or not run_id:
                 continue
-            status = str(receipt.get("queue_status", ""))
-            event_name = "task.completed" if status == "COMPLETED" else "task.failed" if status == "FAILED" else "task.retry_scheduled"
+            attempt = receipt.get("queue_attempt")
+            current = queue.status(task_id)
+            if (
+                isinstance(attempt, bool) or not isinstance(attempt, int)
+                or not current or current.get("status") not in TERMINAL_STATUSES
+                or current.get("attempt") != attempt
+            ):
+                continue
+            status = str(current["status"])
+            event_name = "task.completed" if status == "COMPLETED" else "task.failed" if status == "FAILED" else "task.cancelled"
             self.append_notification({
                 "event": event_name, "task_id": task_id, "run_id": run_id,
                 "status": status, "result_digest": receipt.get("output_digest", ""),
@@ -346,7 +354,7 @@ class BlindSniperDaemon:
         try:
             recovered = self.queue.recover_stale()
             counts["recovered_stale_leases"] = len(recovered.get("recovered", []))
-            counts["notifications_reconciled"] = self.store.reconcile_notifications()
+            counts["notifications_reconciled"] = self.store.reconcile_notifications(self.queue)
             files = self.store.task_files()
             counts["scanned"] = len(files)
         except Exception as exc:
@@ -385,6 +393,7 @@ class BlindSniperDaemon:
                 receipt = dispatch_task(
                     self.queue, self.worker, spec, task,
                     owner_id=self.owner_id, lease_seconds=self.lease_seconds,
+                    receipt_sink=lambda item: self.store.write_receipt(task_id, item),
                 )
                 status = receipt.get("queue_status", "")
                 if status == "COMPLETED":
@@ -396,7 +405,6 @@ class BlindSniperDaemon:
                 else:
                     counts["retry_scheduled"] += 1
                     event = "task.retry_scheduled"
-                self.store.write_receipt(task_id, receipt)
                 self.store.append_notification({
                     "event": event, "task_id": task_id, "run_id": receipt.get("run_id", ""),
                     "status": status, "result_digest": receipt.get("output_digest", ""),
