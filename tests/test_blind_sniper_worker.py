@@ -267,9 +267,10 @@ class DurableQueueTests(unittest.TestCase):
             ("enqueue", "enqueue-a", T0),
             ("enqueue", "enqueue-b", T0),
         ])
-        self.assertFalse([item for item in results if "error" in item], results)
         self.assertEqual(sum(1 for item in results if item.get("accepted")), 1, results)
-        self.assertEqual(sum(1 for item in results if item.get("accepted") is False), 1, results)
+        rejected = [item for item in results if item.get("accepted") is False]
+        self.assertEqual(len(rejected), 1, results)
+        self.assertIn("already enqueued", rejected[0].get("error", ""))
         self.assertEqual(len(self.ledger.events("T-MULTIPROCESS-DUP")), 1)
 
     def test_queue_state_survives_reopening_the_ledger(self):
