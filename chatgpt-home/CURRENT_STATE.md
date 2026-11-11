@@ -3,7 +3,7 @@
 **Live snapshot:** 2026-11-11 — PR #52 merged to `main` at `48dd744`; Vercel host adapter PR #53 and entrypoint fix PR #55 merged; production health endpoint deployed and HTTP 200 smoke-tested. BS-RELEASE-001 remains **NO-GO**.
 **Default branch:** `main`
 **Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`.
-**Latest main HEAD:** `c1055af3d9d4b60bd1fcc9725cdcafd4dd144e62` — adds Vercel Python entrypoint configuration and host health endpoint; task execution remains disabled.
+**Latest application/runtime code HEAD:** `c1055af3d9d4b60bd1fcc9725cdcafd4dd144e62` — adds Vercel Python entrypoint configuration and host health endpoint; subsequent `main` commits only synchronized technical state documentation. Task execution remains disabled.
 **Latest full runtime validation:** Main Runtime Registry run `42930131150` PASS on merge commit `48dd744`; 243 unit tests and both deterministic lifecycle simulations PASS.
 **Latest full unit suite:** Main Runtime Registry run `42930131150`: `Ran 243 tests in 4.495s` / `OK`; registry validator, skill catalog audit and both deterministic E2E simulations PASS (simulation-only, no agent spawned).
 **Private ledger integration:** live append/read-back/idempotency smoke run `42758084356` PASS; private execution run `42758395681` recorded task lifecycle, claim, renewal, transitions, release and correlated receipts. A later independent run `42758616125` refused replay of an existing task ID.
