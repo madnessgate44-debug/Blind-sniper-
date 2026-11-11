@@ -8,6 +8,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -170,6 +171,22 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         self.assertEqual(self.invocations, 1)
         self.assertEqual(self.queue.status(data["task_id"])["status"], "COMPLETED")
 
+    def test_unregistered_agent_identity_is_rejected_before_invocation(self):
+        daemon = BlindSniperDaemon(
+            queue=self.queue, worker=self.worker, owner_id="host-worker-roster",
+            store=self.store, allowed_agent_ids=frozenset({"researcher"}),
+        )
+        self.write_task("DAEMON-UNKNOWN-AGENT")
+        path = self.store.task_dir / "DAEMON-UNKNOWN-AGENT.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["agent_id"] = "invented-agent"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        os.chmod(path, 0o600)
+        health = daemon.run_once()
+        self.assertEqual(health["status"], "DEGRADED")
+        self.assertEqual(health["counts"]["errors"], 1)
+        self.assertEqual(self.invocations, 0)
+
     def test_host_policy_rejects_unapproved_browser_mutations(self):
         policy = {
             "permission_profile": "workspace_write",
@@ -184,14 +201,8 @@ class PrivateNativeDaemonTests(unittest.TestCase):
             )
 
     def test_environment_policy_defaults_to_read_only_and_no_tools(self):
-        for name in (
-            "BLIND_SNIPER_DAEMON_PERMISSION_PROFILE",
-            "BLIND_SNIPER_DAEMON_TOOL_ALLOWLIST",
-            "BLIND_SNIPER_DAEMON_ALLOWED_PATHS",
-            "BLIND_SNIPER_DAEMON_BROWSER_APPROVAL_REFERENCE",
-        ):
-            os.environ.pop(name, None)
-        policy = host_execution_policy_from_env()
+        with patch.dict(os.environ, {}, clear=True):
+            policy = host_execution_policy_from_env()
         self.assertEqual(policy["permission_profile"], "read_only")
         self.assertEqual(policy["tool_allowlist"], ())
         self.assertEqual(policy["allowed_paths"], ())
