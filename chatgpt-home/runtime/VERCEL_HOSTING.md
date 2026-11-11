@@ -1,0 +1,32 @@
+# Blind Sniper — GitHub and Vercel hosting boundary
+
+**Status:** Initial Vercel HTTP host adapter; task execution is deliberately disabled.
+
+## Platform responsibilities
+
+- **GitHub repository:** canonical public source, code review and release history. Never store private task payloads, credentials, user data or execution receipts here.
+- **GitHub Actions:** bounded, event-driven Python execution and verification. Scheduled workflows are short-lived jobs, not resident workers. The existing native executor and private GitHub Contents CAS ledger remain the execution foundation.
+- **Vercel Functions:** hosted HTTP ingress and lightweight API endpoints. Python Functions run as bounded serverless invocations; they are not an always-on daemon.
+- **Private continuity repository:** task payloads, durable receipts and cross-run CAS state remain in the already owner-approved private store. This public repository must not contain those records.
+
+## Initial deployment
+
+`api/health.py` exposes a read-only `GET /api/health` endpoint. It reports the Vercel HTTP component only and explicitly reports `task_execution_enabled: false`. It does not read secrets, enqueue tasks, invoke models, mutate GitHub, or expose private state.
+
+`vercel.json` limits this health function to 10 seconds. No cron schedule is configured. The Vercel Hobby plan is limited to daily cron execution and has bounded function duration; it is therefore not the high-frequency worker scheduler. GitHub Actions remains the preferred trigger for bounded execution. Do not claim continuous residency.
+
+## Activation gates — intentionally closed
+
+Do not enable task intake or execution until all are verified:
+
+1. A private durable task/payload store is configured and its repository metadata is confirmed private at runtime.
+2. A least-privilege credential is already available to the runtime through the platform's secret manager; do not create, print, rotate or mutate credentials as part of this adapter.
+3. The native model provider is configured and a real bounded model round trip succeeds.
+4. The executor uses the existing native agent/tool allowlists, task leases, idempotency and correlated receipts.
+5. A single end-to-end task is executed through the real trigger, with logs, state transitions and recovery evidence inspected.
+
+No authenticated browser session is persisted by this Vercel adapter. Browser work remains a separate bounded native-browser acceptance gate.
+
+## Plan and compliance constraints
+
+The discovered Vercel team is on Hobby. Keep use within free limits and personal/non-commercial restrictions; do not upgrade, provision paid resources or introduce billing. Confirm current plan limits before adding schedules or long-running work. A successful Vercel deployment proves only that the HTTP function is hosted, not that Blind Sniper autonomy is active.
