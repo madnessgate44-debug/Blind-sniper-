@@ -100,7 +100,7 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         envelope = {
             "task_id": data["task_id"], "agent_id": data["agent_id"],
             "objective": data["objective"], "payload": data["payload"],
-            "permission_profile": data["permission_profile"], "tool_allowlist": [],
+            "permission_profile": "read_only", "tool_allowlist": [],
             "allowed_paths": [], "browser_approval_reference": "",
         }
         old = datetime.now(timezone.utc) - timedelta(minutes=10)
