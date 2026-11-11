@@ -7,6 +7,7 @@ No network and no background process is involved.
 """
 from __future__ import annotations
 
+import multiprocessing
 import sys
 import tempfile
 import unittest
@@ -19,6 +20,38 @@ from blind_sniper_ledger import TaskLedger
 from blind_sniper_worker import DurableQueue, QueueError
 
 T0 = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
+
+
+def _run_queue_process(ledger_path, action, owner_id, now_iso, start_event, result_queue):
+    """Independent worker process used to exercise real file-lock contention."""
+    start_event.wait(timeout=10)
+    queue = DurableQueue(TaskLedger(ledger_path))
+    instant = datetime.fromisoformat(now_iso)
+    try:
+        if action == "claim":
+            claim = queue.claim(
+                owner_id=owner_id, lease_seconds=60, task_id="T-MULTIPROCESS", now=instant,
+            )
+            result_queue.put({"action": action, "owner_id": owner_id, "claim": claim})
+        elif action == "enqueue":
+            try:
+                queue.enqueue(
+                    task_id="T-MULTIPROCESS-DUP", kind="model_task",
+                    payload_digest="digest-same", now=instant,
+                )
+                result_queue.put({"action": action, "owner_id": owner_id, "accepted": True})
+            except QueueError as exc:
+                result_queue.put({"action": action, "owner_id": owner_id, "accepted": False, "error": str(exc)})
+        elif action == "recover_and_claim":
+            recovery = queue.recover_stale(now=instant)
+            claim = queue.claim(
+                owner_id=owner_id, lease_seconds=60, task_id="T-MULTIPROCESS", now=instant,
+            )
+            result_queue.put({"action": action, "owner_id": owner_id, "recovery": recovery, "claim": claim})
+        else:
+            raise AssertionError(f"Unsupported queue process action: {action}")
+    except Exception as exc:
+        result_queue.put({"action": action, "owner_id": owner_id, "error": f"{type(exc).__name__}: {exc}"})
 
 
 class DurableQueueTests(unittest.TestCase):
@@ -175,6 +208,69 @@ class DurableQueueTests(unittest.TestCase):
         self.queue.enqueue(task_id="T2", kind="k", payload_digest="d2", now=T0 + timedelta(seconds=1))
         first = self.queue.claim(owner_id="w1", lease_seconds=60, now=T0 + timedelta(seconds=2))
         self.assertEqual(first["task_id"], "T1")
+
+    def _run_processes(self, actions):
+        context = multiprocessing.get_context("spawn")
+        start_event = context.Event()
+        result_queue = context.Queue()
+        processes = [
+            context.Process(
+                target=_run_queue_process,
+                args=(str(self.ledger.path), action, owner, now.isoformat(), start_event, result_queue),
+            )
+            for action, owner, now in actions
+        ]
+        for process in processes:
+            process.start()
+        start_event.set()
+        results = [result_queue.get(timeout=15) for _ in processes]
+        for process in processes:
+            process.join(timeout=15)
+            self.assertFalse(process.is_alive(), "queue worker process did not exit")
+            self.assertEqual(process.exitcode, 0)
+        return results
+
+    def test_two_independent_processes_contend_for_one_task_exactly_once(self):
+        self.queue.enqueue(task_id="T-MULTIPROCESS", kind="model_task", payload_digest="digest-mp", now=T0)
+        results = self._run_processes([
+            ("claim", "process-a", T0),
+            ("claim", "process-b", T0),
+        ])
+        self.assertFalse([item for item in results if "error" in item], results)
+        winners = [item for item in results if item.get("claim") is not None]
+        losers = [item for item in results if item.get("claim") is None]
+        self.assertEqual(len(winners), 1, results)
+        self.assertEqual(len(losers), 1, results)
+        state = self.queue.status("T-MULTIPROCESS")
+        self.assertEqual(state["status"], "CLAIMED")
+        self.assertEqual(state["owner_id"], winners[0]["owner_id"])
+        self.assertEqual(state["attempt"], 1)
+
+    def test_interrupted_worker_is_recovered_by_new_process_and_stale_completion_refused(self):
+        self.queue.enqueue(task_id="T-MULTIPROCESS", kind="model_task", payload_digest="digest-mp", now=T0)
+        first = self._run_processes([("claim", "interrupted-worker", T0)])[0]
+        self.assertIsNotNone(first.get("claim"), first)
+        recovered_at = T0 + timedelta(seconds=120)
+        replacement = self._run_processes([("recover_and_claim", "replacement-worker", recovered_at)])[0]
+        self.assertEqual(replacement["recovery"]["recovered"], ["T-MULTIPROCESS"])
+        self.assertEqual(replacement["claim"]["attempt"], 2)
+        self.assertEqual(replacement["claim"]["owner_id"], "replacement-worker")
+        with self.assertRaisesRegex(QueueError, "active lease"):
+            self.queue.complete(
+                task_id="T-MULTIPROCESS", owner_id="interrupted-worker",
+                result_digest="stale-result", now=recovered_at + timedelta(seconds=1),
+            )
+        self.assertEqual(self.queue.status("T-MULTIPROCESS")["owner_id"], "replacement-worker")
+
+    def test_duplicate_enqueue_race_across_independent_processes_is_refused(self):
+        results = self._run_processes([
+            ("enqueue", "enqueue-a", T0),
+            ("enqueue", "enqueue-b", T0),
+        ])
+        self.assertFalse([item for item in results if "error" in item], results)
+        self.assertEqual(sum(1 for item in results if item.get("accepted")), 1, results)
+        self.assertEqual(sum(1 for item in results if item.get("accepted") is False), 1, results)
+        self.assertEqual(len(self.ledger.events("T-MULTIPROCESS-DUP")), 1)
 
     def test_queue_state_survives_reopening_the_ledger(self):
         self.queue.enqueue(task_id="T1", kind="k", payload_digest="d1", now=T0)
