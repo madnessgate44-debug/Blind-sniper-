@@ -43,6 +43,43 @@ class DaemonError(RuntimeError):
     """Private worker configuration, task-store or lifecycle failure."""
 
 
+def validate_host_policy(policy: dict[str, Any]) -> dict[str, Any]:
+    profile = policy.get("permission_profile", "read_only")
+    tools = tuple(policy.get("tool_allowlist", ()))
+    paths = tuple(policy.get("allowed_paths", ()))
+    approval = policy.get("browser_approval_reference", "")
+    try:
+        spec = AgentSpec(
+            agent_id="blind-sniper",
+            permission_profile=profile,
+            tool_allowlist=tools,
+            allowed_paths=paths,
+            browser_approval_reference=approval,
+        )
+        NativeToolRuntime.validate_spec(spec)
+    except Exception as exc:
+        raise DaemonError(f"Host execution policy is invalid ({type(exc).__name__})") from exc
+    return {
+        "permission_profile": profile,
+        "tool_allowlist": tools,
+        "allowed_paths": paths,
+        "browser_approval_reference": approval,
+    }
+
+
+def load_native_agent_ids(workspace_root: Path) -> frozenset[str]:
+    registry_path = workspace_root / "chatgpt-home" / "runtime" / "agents.json"
+    try:
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        agents = registry["agents"]
+        agent_ids = frozenset(item["id"] for item in agents)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise DaemonError("Native agent registry is unavailable or invalid") from exc
+    if not agent_ids or any(not isinstance(item, str) or not item for item in agent_ids):
+        raise DaemonError("Native agent registry contains invalid identities")
+    return agent_ids
+
+
 def host_execution_policy_from_env() -> dict[str, Any]:
     """Load execution privileges exclusively from trusted host configuration."""
     profile = os.environ.get("BLIND_SNIPER_DAEMON_PERMISSION_PROFILE", "read_only").strip()
@@ -55,85 +92,14 @@ def host_execution_policy_from_env() -> dict[str, Any]:
         if item.strip()
     )
     approval = os.environ.get("BLIND_SNIPER_DAEMON_BROWSER_APPROVAL_REFERENCE", "").strip()
-    if profile not in {"read_only", "workspace_write"}:
-        raise DaemonError("Host daemon permission profile must be read_only or workspace_write")
     if len(set(tools)) != len(tools) or len(set(paths)) != len(paths):
         raise DaemonError("Host daemon tool and path allowlists must not contain duplicates")
-    if profile == "workspace_write" and (not tools or not paths):
-        raise DaemonError("Host workspace_write policy requires explicit tools and allowed paths")
-    if "repo.write_file" in tools and profile != "workspace_write":
-        raise DaemonError("Host repo.write_file policy requires workspace_write")
-    if {"browser.click", "browser.fill", "browser.press"} & set(tools):
-        if profile != "workspace_write" or not approval:
-            raise DaemonError("Host mutating browser policy requires workspace_write and an approval reference")
-        if os.environ.get("BLIND_SNIPER_BROWSER_WRITE_APPROVED") != "1":
-            raise DaemonError("Host mutating browser policy requires BLIND_SNIPER_BROWSER_WRITE_APPROVED=1")
-    return {
+    return validate_host_policy({
         "permission_profile": profile,
         "tool_allowlist": tools,
         "allowed_paths": paths,
         "browser_approval_reference": approval,
-    }
-
-
-def _reject_symlink_components(path: Path) -> None:
-    absolute = path.absolute()
-    cursor = Path(absolute.anchor)
-    for part in absolute.parts[1:]:
-        cursor = cursor / part
-        if cursor.is_symlink():
-            raise DaemonError(f"Symlink path component is forbidden: {cursor}")
-
-
-def _ensure_private_dir(path: Path, *, workspace_root: Path) -> Path:
-    _reject_symlink_components(path)
-    resolved = path.resolve()
-    try:
-        resolved.relative_to(workspace_root.resolve())
-    except ValueError:
-        pass
-    else:
-        raise DaemonError("Private worker state must be outside the public repository workspace")
-    if not resolved.exists():
-        resolved.mkdir(parents=True, mode=0o700, exist_ok=True)
-        os.chmod(resolved, 0o700)
-    if not resolved.is_dir():
-        raise DaemonError("Private worker state path must be a directory")
-    mode = stat.S_IMODE(resolved.stat().st_mode)
-    if mode & 0o077:
-        raise DaemonError("Private worker directories must have owner-only permissions (0700)")
-    return resolved
-
-
-def _ensure_private_file(path: Path, *, max_bytes: int) -> os.stat_result:
-    _reject_symlink_components(path)
-    try:
-        info = path.lstat()
-    except FileNotFoundError as exc:
-        raise DaemonError(f"Private task file does not exist: {path.name}") from exc
-    if not stat.S_ISREG(info.st_mode):
-        raise DaemonError("Private task and receipt paths must be regular files")
-    if stat.S_IMODE(info.st_mode) & 0o077:
-        raise DaemonError("Private task and receipt files must have owner-only permissions (0600)")
-    if info.st_size > max_bytes:
-        raise DaemonError(f"Private file exceeds the {max_bytes}-byte limit")
-    return info
-
-
-def _atomic_private_json(path: Path, value: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, mode=0o700, exist_ok=True)
-    fd, temp_name = tempfile.mkstemp(prefix=".blind-sniper-", dir=str(path.parent))
-    try:
-        os.fchmod(fd, 0o600)
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            json.dump(value, handle, ensure_ascii=False, sort_keys=True)
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temp_name, path)
-    finally:
-        if os.path.exists(temp_name):
-            os.unlink(temp_name)
+    })
 
 
 class PrivateTaskStore:
@@ -282,6 +248,7 @@ class BlindSniperDaemon:
         lease_seconds: int = 900,
         max_tasks_per_cycle: int = 10,
         host_policy: dict[str, Any] | None = None,
+        allowed_agent_ids: frozenset[str] | None = None,
     ) -> None:
         if not owner_id.strip():
             raise DaemonError("owner_id is required")
@@ -295,33 +262,8 @@ class BlindSniperDaemon:
         self.store = store
         self.lease_seconds = lease_seconds
         self.max_tasks_per_cycle = max_tasks_per_cycle
-        policy = host_policy or {
-            "permission_profile": "read_only",
-            "tool_allowlist": (),
-            "allowed_paths": (),
-            "browser_approval_reference": "",
-        }
-        profile = policy.get("permission_profile", "read_only")
-        tools = tuple(policy.get("tool_allowlist", ()))
-        paths = tuple(policy.get("allowed_paths", ()))
-        approval = policy.get("browser_approval_reference", "")
-        if profile not in {"read_only", "workspace_write"}:
-            raise DaemonError("Daemon host policy has an unsupported permission profile")
-        if len(set(tools)) != len(tools) or len(set(paths)) != len(paths):
-            raise DaemonError("Daemon host policy contains duplicate allowlist entries")
-        if profile == "workspace_write" and (not tools or not paths):
-            raise DaemonError("Daemon workspace_write policy requires explicit tools and allowed paths")
-        if "repo.write_file" in tools and profile != "workspace_write":
-            raise DaemonError("Daemon repo.write_file policy requires workspace_write")
-        if {"browser.click", "browser.fill", "browser.press"} & set(tools):
-            if profile != "workspace_write" or not approval or os.environ.get("BLIND_SNIPER_BROWSER_WRITE_APPROVED") != "1":
-                raise DaemonError("Daemon mutating browser policy is missing host approval")
-        self.host_policy = {
-            "permission_profile": profile,
-            "tool_allowlist": tools,
-            "allowed_paths": paths,
-            "browser_approval_reference": approval,
-        }
+        self.host_policy = validate_host_policy(host_policy or {})
+        self.allowed_agent_ids = allowed_agent_ids
         self._last_success_at: str | None = None
 
     def run_once(self) -> dict[str, Any]:
@@ -337,6 +279,8 @@ class BlindSniperDaemon:
             try:
                 data = self.store.read_task(path)
                 task_id = data["task_id"]
+                if self.allowed_agent_ids is not None and data["agent_id"] not in self.allowed_agent_ids:
+                    raise DaemonError("Task agent_id is not registered in the native agent roster")
                 current = self.queue.status(task_id)
                 if current and current.get("status") in TERMINAL_STATUSES:
                     counts["skipped"] += 1
@@ -450,6 +394,7 @@ def main(argv: list[str] | None = None) -> int:
             queue=queue, worker=worker, owner_id=args.owner_id, store=store,
             lease_seconds=lease_seconds, max_tasks_per_cycle=args.max_tasks_per_cycle,
             host_policy=host_execution_policy_from_env(),
+            allowed_agent_ids=load_native_agent_ids(workspace_root),
         )
         if args.once:
             print(json.dumps(daemon.run_once(), sort_keys=True))
