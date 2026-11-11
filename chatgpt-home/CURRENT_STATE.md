@@ -1,16 +1,16 @@
 # Blind Sniper — Current Technical State
 
-**Live snapshot:** 2026-11-11 — PR #52 merged to `main` at `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f`; Vercel host adapter is in `feat/vercel-native-host-adapter-2026-11-11` (read-only health endpoint; not yet merged/deployed). BS-RELEASE-001 remains **NO-GO**.
+**Live snapshot:** 2026-11-11 — PR #52 merged to `main` at `48dd744`; Vercel host adapter PR #53 and entrypoint fix PR #55 merged; production health endpoint deployed and HTTP 200 smoke-tested. BS-RELEASE-001 remains **NO-GO**.
 **Default branch:** `main`
 **Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`.
-**Latest merged code/runtime HEAD:** `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f`. Current Vercel adapter branch adds `api/health.py`, `vercel.json` and read-only host documentation; task execution remains disabled.
+**Latest main HEAD:** `c1055af3d9d4b60bd1fcc9725cdcafd4dd144e62` — adds Vercel Python entrypoint configuration and host health endpoint; task execution remains disabled.
 **Latest full runtime validation:** Main Runtime Registry run `42930131150` PASS on merge commit `48dd744`; 243 unit tests and both deterministic lifecycle simulations PASS.
 **Latest full unit suite:** Main Runtime Registry run `42930131150`: `Ran 243 tests in 4.495s` / `OK`; registry validator, skill catalog audit and both deterministic E2E simulations PASS (simulation-only, no agent spawned).
 **Private ledger integration:** live append/read-back/idempotency smoke run `42758084356` PASS; private execution run `42758395681` recorded task lifecycle, claim, renewal, transitions, release and correlated receipts. A later independent run `42758616125` refused replay of an existing task ID.
 **Browser acceptance:** Native Browser Adapter run `42929591208` on PR #52 implementation head `f680b24`: two native Chromium local-fixture cycles, 36 correlated receipts, interruption/no-replay/reconciliation PASS; persistent-host jobs skipped.
-**Vercel hosting:** [V] Existing Forge team is Hobby; no Blind Sniper project existed at inspection. The adapter branch defines a read-only Python Function health route; project creation/deployment is pending merge. Hobby is not approved for commercial production use.
+**Vercel hosting:** [V] Project `blind-sniper-runtime` (`prj_AJpyM5PkAxfmeb4KQCZ7hlBgMZEi`) is linked to this GitHub repo in the Forge Hobby team. Production deployment `dpl_8sqaQgcJdP9c9JznCZ32YYh7KL9W` is READY at `https://blind-sniper-runtime.vercel.app`; `GET /api/health` returned HTTP 200 with worker not activated and task execution disabled. Hobby is not approved for commercial production use.
 **Release gate:** **NO-GO**. Native model invocation is not live-provider-verified; private remote CAS cross-run payload recovery remains unverified; native tool runtime is contract-tested but not host/live-provider-verified; persistent browser hosting and unattended autonomy remain host-unverified. Release-specific independent review, operational rollback/monitoring ownership and exact-target smoke test remain open. See `chatgpt-home/BS-RELEASE-001_RELEASE_ACCEPTANCE.md`.
-**Open PRs:** PR #47 (review-only draft); PR #48, #50, #51 and #52 merged; duplicate external-adapter PR #49 closed as superseded.
+**Open PRs:** PR #47 (review-only draft); PR #48, #50, #51, #52, #53 and #55 merged; PR #54 closed as superseded; duplicate external-adapter PR #49 closed as superseded.
 **Branch protection:** `main` reports `protected=false`; no settings changed.
 **Authority:** Engineering Execution OS v2.3 and active repository-scoped Owner delegation. Exclusions remain in `chatgpt-home/AUTHORITY_DELEGATION.md`.
 
