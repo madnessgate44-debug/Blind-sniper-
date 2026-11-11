@@ -2,7 +2,7 @@
 
 Deterministic: uses the real local ledger, no network, no background process.
 Proves the activation gate refuses to enable a schedule without prerequisites,
-that one bounded pass recovers stale leases and drains claimable tasks, and that
+that one bounded pass recovers stale leases without claiming pending tasks, and that
 a digest/health receipt is produced.
 """
 from __future__ import annotations
@@ -34,6 +34,7 @@ class ActivationGateTests(unittest.TestCase):
             )
         self.assertFalse(check["activation_allowed"])
         self.assertFalse(check["prerequisites"]["executor_configured"])
+        self.assertFalse(check["prerequisites"]["notification_route_configured"])
 
     def test_schedule_stays_blocked_until_native_executor_exists(self):
         with patch.dict(os.environ, {
@@ -46,6 +47,7 @@ class ActivationGateTests(unittest.TestCase):
             )
         self.assertTrue(check["prerequisites"]["native_model_provider_configured"])
         self.assertFalse(check["prerequisites"]["executor_configured"])
+        self.assertFalse(check["prerequisites"]["notification_route_configured"])
         self.assertFalse(check["activation_allowed"])
 
     def test_main_refuses_unattended_run_when_blocked(self):
@@ -63,7 +65,7 @@ class RunOnceTests(unittest.TestCase):
         self.queue = DurableQueue(TaskLedger(Path(self.tmp.name) / "queue.jsonl"))
         self.out = Path(self.tmp.name) / "out"
 
-    def test_one_pass_recovers_stale_and_drains_claims(self):
+    def test_one_pass_recovers_stale_without_claiming_pending_tasks(self):
         self.queue.enqueue(task_id="T1", kind="k", payload_digest="d1", max_attempts=3, now=T0)
         self.queue.enqueue(task_id="T2", kind="k", payload_digest="d2", max_attempts=3, now=T0)
         # Leave T1 as a stale claim by claiming with a tiny lease at T0.
@@ -77,8 +79,14 @@ class RunOnceTests(unittest.TestCase):
         self.assertTrue((self.out / "autonomy-health.json").is_file())
         self.assertEqual(digest["kind"], "autonomy_digest")
         self.assertIn("T1", digest["recovered_stale"])
-        # T2 was drained (claimed then released back via bounded failure).
-        self.assertTrue(digest["drained"])
+        # No executor is wired into this ephemeral runner: pending work stays untouched.
+        self.assertEqual(digest["execution_status"], "BLOCKED_NO_EXECUTOR")
+        self.assertEqual(digest["tasks_started"], 0)
+        self.assertEqual(digest["drained"], [])
+        self.assertEqual(digest["pending_count"], 1)
+        self.assertEqual(self.queue.status("T2")["status"], "PENDING")
+        self.assertEqual(self.queue.status("T2")["attempt"], 0)
+        self.assertEqual(digest["notification_delivery_status"], "NOT_CONFIGURED")
 
     def test_health_receipt_is_written(self):
         self.queue.enqueue(task_id="T1", kind="k", payload_digest="d1", now=T0)
