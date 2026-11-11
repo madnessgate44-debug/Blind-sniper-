@@ -253,12 +253,21 @@ Required host environment:
 - `BLIND_SNIPER_MODEL_NAME`
 - `BLIND_SNIPER_MODEL_API_KEY` (optional; environment only)
 - `BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS` (only if browser tools are allowlisted)
-- `BLIND_SNIPER_BROWSER_WRITE_APPROVED=1` only when the task carries an explicit approval
-  reference and mutating browser actions are intentionally enabled.
+- `BLIND_SNIPER_DAEMON_PERMISSION_PROFILE` (defaults to `read_only`)
+- `BLIND_SNIPER_DAEMON_TOOL_ALLOWLIST` (comma-separated native tool names; defaults to empty)
+- `BLIND_SNIPER_DAEMON_ALLOWED_PATHS` (host-authorized paths separated by the platform path separator)
+- `BLIND_SNIPER_DAEMON_BROWSER_APPROVAL_REFERENCE` (host-supplied reference for approved browser mutations)
+- `BLIND_SNIPER_BROWSER_WRITE_APPROVED=1` only when the host intentionally enables mutating browser tools.
 
-Private task files must be named `<task_id>.json`, mode `0600`, and contain only the task envelope
-fields accepted by `blind_sniper_agent_runtime.py`. The daemon refuses task files, receipts, ledger
-or browser state inside the public repository workspace.
+Execution privileges are read only from trusted host environment configuration. A task file cannot
+select a permission profile, tool allowlist, writable path or browser approval reference. Host
+policy is validated against the native tool registry at startup; invalid combinations fail closed.
+With no host policy configuration, the daemon starts read-only with no tools.
+
+Private task files must be named `<task_id>.json`, mode `0600`, and contain exactly the bounded
+task fields `task_id`, `agent_id`, `objective` and optional object `payload`. Agent identities
+must belong to the checked-in `chatgpt-home/runtime/agents.json` roster. The daemon refuses task
+files, receipts, ledger or browser state inside the public repository workspace.
 
 Manual one-cycle validation:
 
