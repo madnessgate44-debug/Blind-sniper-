@@ -4,7 +4,7 @@
 **Default branch:** `main`
 **Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`.
 **Latest code/runtime HEAD:** `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f` — adds the persistent native worker daemon, host-only execution policy, private pre-terminal receipts and interruption-safe outbox reconciliation.
-**Latest full runtime validation:** Runtime Registry run `42810704087` PASS on PR #50 head `169d476`; 222 unit tests and both deterministic lifecycle simulations PASS.
+**Latest full runtime validation:** Main Runtime Registry run `42930131150` PASS on merge commit `48dd744`; 243 unit tests and both deterministic lifecycle simulations PASS.
 **Latest full unit suite:** Main Runtime Registry run `42930131150`: `Ran 243 tests in 4.495s` / `OK`; registry validator, skill catalog audit and both deterministic E2E simulations PASS (simulation-only, no agent spawned).
 **Private ledger integration:** live append/read-back/idempotency smoke run `42758084356` PASS; private execution run `42758395681` recorded task lifecycle, claim, renewal, transitions, release and correlated receipts. A later independent run `42758616125` refused replay of an existing task ID.
 **Browser acceptance:** Native Browser Adapter run `42929591208` on PR #52 implementation head `f680b24`: two native Chromium local-fixture cycles, 36 correlated receipts, interruption/no-replay/reconciliation PASS; persistent-host jobs skipped.
