@@ -1,21 +1,21 @@
 # Blind Sniper build progress — current status
 
-## PR #56 — bounded daemon concurrency and receipt idempotency — 2026-11-11
+## PR #56 — bounded daemon concurrency — MERGED 2026-11-11
 
-- [V] Draft PR #56: https://github.com/madnessgate44-debug/Blind-sniper-/pull/56; branch `feat/p0-daemon-concurrency-2026-11-11`; implementation head `ce031a6281b9c6357f7f8ecc492578ae54b6f092` (before this state-note commit), based on `main` `e7c6cdf`.
-- [V] The daemon now runs up to the configured worker concurrency per poll cycle, never exceeding the configured per-cycle task cap. Each task still uses the native exact-task claim, lease and correlated receipt path.
-- [V] The private notification outbox now serializes append/read/dedup under an OS file lock and refuses duplicate `(task_id, run_id)` records; corrupt JSON remains a hard failure.
-- [V] Regression tests: two barrier-synchronized task invocations complete concurrently at a measured maximum of 2; eight concurrent duplicate outbox appends leave one row.
-- [V] Runtime Registry PR runs `42980055291` and `42980130999` both PASS, each with 249 unit tests (4.398s / 4.242s), registry validation, skill audit and both deterministic E2E simulations. Policy Compliance `42980055420` and `42980130924` PASS. Vercel preview check PASS.
-- [V] Runtime Registry push path filters now cover `blind_sniper_agent_runtime.py`, `blind_sniper_daemon.py`, `blind_sniper_tool_runtime.py` and their tests.
-- [U] This is not a live provider or host acceptance test. It does not establish multi-process daemon contention, private remote CAS payload recovery, persistent browser state, a resident host service, or notification delivery.
-- [V] No merge, release, production deployment, schedule activation, secret mutation, permission change, paid provisioning or external-agent dependency was introduced. PR remains draft pending further acceptance work.
+- [V] Source head `7953e8399b1bc3cc0c53b8a306af9c5c84ae00e2` merged to `main` at `eacfb1091a4e22000125fcec79fe5f25994f5963`.
+- [V] Daemon dispatch is bounded by worker concurrency and per-cycle task limits; notification outbox writes are process-locked and deduplicated by task/run identity.
+- [V] Exact-head Runtime Registry runs `42980352513` and `42980348236` each passed 249 tests; OS Compliance and Environment Validation passed. E2E simulations remained SIMULATION_ONLY.
 
-**Snapshot:** 2026-11-11 — PR #52 merged to `main` at `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f` (source head `7133e3a`); native worker daemon code is merged but not host-activated.
-**Architecture:** Self-contained Blind Sniper. No external agent or browser handoff.
-**Latest merged source PR head:** `7133e3a56039152f4c28b9b19f23d82b94df98b1`. **Merge commit:** `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f`.
-**Release:** NO-GO; this implementation merge is not a production deployment.
+## PR #57 — R2 multi-process and remote-clock acceptance — 2026-11-12
 
+- [V] Active branch `feat/p0-r2-multiprocess-recovery-2026-11-11`; runtime/code-test commit `c6270e44a2c6b1f5855fc1112e563bc5b97d73ce`; PR #57 open and unmerged.
+- [V] Five independent-process tests pass: exclusive claim contention; second-process heartbeat; second-process cancellation with stale completion/reclaim blocked; interrupted-worker stale recovery and attempt-2 reclaim; duplicate enqueue refusal.
+- [V] Fixed remote clock authority: GitHub Contents CAS queue operations now use the GitHub `Date` header rather than runner-local wall clocks for queue timestamps, lease validation, health and stale recovery. Browser reservation and guarded append use the current server time; missing Date fails closed.
+- [V] Four deterministic fake-transport tests cover guarded append clock skew, queue claim/completion clock skew, stale recovery with a skewed caller clock, and browser reservation clock skew.
+- [V] Runtime Registry run `43174162100`: `Ran 258 tests in 5.831s` / `OK`; registry validation, skill audit and both E2E simulations passed. Simulations explicitly report `actual_agent_spawned=false` / `SIMULATION_ONLY`.
+- [V] Environment Validation `43174161957` PASS; OS Compliance `43174162026` PASS; Native Browser Adapter `43174161996` PASS (19 policy tests, 9 lease-dispatch tests, two Chromium local-fixture cycles, 36 correlated receipts). Persistent-host jobs were skipped.
+- [V] R5 Actions runner remains recovery/health only and never claims pending work without a native executor. Public artifacts remain aggregate-only; notification delivery is `NOT_CONFIGURED`; no schedule is enabled.
+- [U] Fake-transport tests do not prove live private remote CAS, cross-run private payload recovery, live model-provider execution, persistent daemon/browser hosting or notification delivery. R2/R5 remain PARTIAL; release remains NO-GO.
 ## GitHub + Vercel host adapter — 2026-11-11
 
 - [V] The existing Vercel `Forge` team is on Hobby; no `blind-sniper` project was found. No paid provisioning or secret mutation was performed.

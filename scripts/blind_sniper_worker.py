@@ -135,6 +135,16 @@ class DurableQueue:
         self.ledger = ledger
         self.max_claim_retries = max_claim_retries
 
+    def _now(self, supplied: datetime | None) -> datetime:
+        """Use the remote ledger's clock when available; keep local test clocks injectable."""
+        server_clock = getattr(self.ledger, "server_now", None)
+        if callable(server_clock):
+            try:
+                return server_clock()
+            except LedgerError as exc:
+                raise QueueError(str(exc)) from exc
+        return supplied or datetime.now(timezone.utc)
+
     def _append(self, **kwargs: Any) -> dict[str, Any]:
         """append_guarded with LedgerError translated to the queue's own error type."""
         try:
@@ -164,7 +174,7 @@ class DurableQueue:
         return values
 
     def health(self, now: datetime | None = None) -> dict[str, Any]:
-        instant = now or datetime.now(timezone.utc)
+        instant = self._now(now)
         states = [state for state in self._states().values() if state]
         counts: dict[str, int] = {}
         for state in states:
@@ -200,7 +210,7 @@ class DurableQueue:
             raise QueueError("payload_digest is required (store the digest, never the payload)")
         if not isinstance(max_attempts, int) or max_attempts < 1:
             raise QueueError("max_attempts must be a positive integer")
-        instant = now or datetime.now(timezone.utc)
+        instant = self._now(now)
 
         def guard(rows: list[dict[str, Any]], _now: datetime) -> str | None:
             if replay_task(rows, task_id) is not None:
@@ -231,7 +241,7 @@ class DurableQueue:
             raise QueueError("task_id must be non-empty when supplied")
         if not 1 <= lease_seconds <= MAX_LEASE_SECONDS:
             raise QueueError(f"lease_seconds must be between 1 and {MAX_LEASE_SECONDS}")
-        instant = now or datetime.now(timezone.utc)
+        instant = self._now(now)
         for _ in range(self.max_claim_retries):
             states = self._states()
             candidates = [
@@ -289,7 +299,7 @@ class DurableQueue:
     ) -> dict[str, Any]:
         if not 1 <= lease_seconds <= MAX_LEASE_SECONDS:
             raise QueueError(f"lease_seconds must be between 1 and {MAX_LEASE_SECONDS}")
-        instant = now or datetime.now(timezone.utc)
+        instant = self._now(now)
         expiry = (instant + timedelta(seconds=lease_seconds)).isoformat()
         payload = {"owner_id": owner_id, "lease_expires_at": expiry, "heartbeat_at": instant.isoformat()}
 
@@ -311,7 +321,7 @@ class DurableQueue:
     def complete(
         self, *, task_id: str, owner_id: str, result_digest: str, now: datetime | None = None,
     ) -> dict[str, Any]:
-        instant = now or datetime.now(timezone.utc)
+        instant = self._now(now)
 
         def guard(rows: list[dict[str, Any]], _now: datetime) -> str | None:
             state = replay_task(rows, task_id)
@@ -334,7 +344,7 @@ class DurableQueue:
         self, *, task_id: str, owner_id: str, error: str, now: datetime | None = None,
     ) -> dict[str, Any]:
         """Record a failure; requeue for a bounded retry or mark FAILED."""
-        instant = now or datetime.now(timezone.utc)
+        instant = self._now(now)
 
         def guard(rows: list[dict[str, Any]], _now: datetime) -> str | None:
             state = replay_task(rows, task_id)
@@ -364,7 +374,7 @@ class DurableQueue:
         )
 
     def cancel(self, *, task_id: str, reason: str, now: datetime | None = None) -> dict[str, Any]:
-        instant = now or datetime.now(timezone.utc)
+        instant = self._now(now)
 
         def guard(rows: list[dict[str, Any]], _now: datetime) -> str | None:
             state = replay_task(rows, task_id)
@@ -385,7 +395,7 @@ class DurableQueue:
         tool_name: str, arguments_digest: str, now: datetime | None = None,
     ) -> dict[str, Any]:
         """Persist a lease-bound tool start before side effects; replay is fail-closed."""
-        instant = now or datetime.now(timezone.utc)
+        instant = self._now(now)
         if not all(str(value).strip() for value in (task_id, owner_id, run_id, tool_call_id, tool_name, arguments_digest)):
             raise QueueError("Tool reservation requires task, owner, run, call, tool and argument digest")
         def guard(rows: list[dict[str, Any]], now_locked: datetime) -> str | None:
@@ -411,7 +421,7 @@ class DurableQueue:
         self, *, task_id: str, owner_id: str, run_id: str, tool_call_id: str,
         result_digest: str, status: str = "PASS", now: datetime | None = None,
     ) -> dict[str, Any]:
-        instant = now or datetime.now(timezone.utc)
+        instant = self._now(now)
         if status not in {"PASS", "FAIL"} or not result_digest.strip():
             raise QueueError("Tool completion requires PASS/FAIL and a result digest")
         def guard(rows: list[dict[str, Any]], now_locked: datetime) -> str | None:
@@ -445,7 +455,7 @@ class DurableQueue:
 
     def recover_stale(self, *, now: datetime | None = None) -> dict[str, Any]:
         """Requeue or fail every task whose lease expired without completion."""
-        instant = now or datetime.now(timezone.utc)
+        instant = self._now(now)
         states = self._states()
         stale = [state for state in states.values() if state and self._is_stale(state, instant)]
         stale.sort(key=lambda state: (state["enqueued_at"] or "", state["task_id"]))
@@ -484,7 +494,7 @@ class DurableQueue:
 
     def reconcile(self, *, now: datetime | None = None) -> dict[str, Any]:
         """Read-only reconciliation report: pending, active, stale and terminal."""
-        instant = now or datetime.now(timezone.utc)
+        instant = self._now(now)
         states = [state for state in self._states().values() if state]
         pending = [state["task_id"] for state in states if state["status"] == "PENDING"]
         active = [state["task_id"] for state in states if _lease_active(state, instant)]
