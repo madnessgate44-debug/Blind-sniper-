@@ -1,29 +1,28 @@
 # Blind Sniper — Current Technical State
 
-## PR #56 — bounded native daemon concurrency — 2026-11-11
+## State reconciliation — 2026-11-12
 
-- [V] Work is on `feat/p0-daemon-concurrency-2026-11-11`, based directly on current `main` at `e7c6cdfabbbcced131d65c31cca6639d8f027940`. The former `feat/p0-autonomous-agent-runtime` branch is the already-merged source of PR #48 and is not reused.
-- [V] Draft PR #56: https://github.com/madnessgate44-debug/Blind-sniper-/pull/56. Exact implementation head before this state-note commit: `ce031a6281b9c6357f7f8ecc492578ae54b6f092`; three implementation commits, three changed files. Not merged.
-- [V] `scripts/blind_sniper_daemon.py` now dispatches up to `ModelWorker.max_concurrency` private task files concurrently, bounded by `max_tasks_per_cycle`; exact-task queue claims remain authoritative and a lost claim is counted as contention when another owner holds or has terminalized the task.
-- [V] Notification outbox writes now use an exclusive file lock and idempotency key `(task_id, run_id)`; malformed outbox data still fails closed. Run IDs are validated before append.
-- [V] New daemon tests prove two task invocations overlap at concurrency 2 and eight concurrent duplicate writes produce one outbox record.
-- [V] Runtime Registry runs `42980055291` and `42980130999` both completed successfully on the implementation head. Each ran 249 unit tests (4.398s and 4.242s); both new regression tests were reported `ok`. Registry validation, skill audit, interruption/recovery simulation and scheduled-jobs simulation steps all passed. Policy Compliance runs `42980055420` and `42980130924` passed. Vercel preview check passed; no production deployment was initiated by this work.
-- [V] The main-push Runtime Registry path filter now includes native agent-runtime, daemon and tool-runtime scripts and their tests, so those changes trigger the full suite after merge.
-- [U] These tests prove bounded concurrency within one daemon process and thread-safe outbox deduplication on the Linux CI runner; they do not prove multi-process daemon contention, private remote CAS payload recovery, or independent workflow-run queue recovery.
-- [U] R1 remains live-provider-unverified; R2 remote cross-run payload recovery remains unverified; R3 live provider/host execution remains unverified; R4 persistent authenticated browser hosting remains unverified; R5 host activation and notification delivery remain unverified. No model provider, persistent host, notification receiver, schedule, secret, paid resource or external agent was activated.
-- [V] PR #56 remains draft and unmerged. Release remains NO-GO.
+- [V] Default branch `main` HEAD is `eacfb1091a4e22000125fcec79fe5f25994f5963`.
+- [V] PR #56 is **MERGED**, not draft: source head `7953e8399b1bc3cc0c53b8a306af9c5c84ae00e2`, merge commit `eacfb1091a4e22000125fcec79fe5f25994f5963`. It adds bounded per-cycle daemon concurrency and idempotent, file-locked notification outbox writes.
+- [V] PR #57 is OPEN and unmerged at `fc42b5aaf5b8edaeb284f8cc4cebe2df2a8d2648`; code/test head `c6270e44a2c6b1f5855fc1112e563bc5b97d73ce`. It adds independent-process queue tests, remote-clock handling and a fail-closed ephemeral runner.
+- [V] PR #57 evidence: Runtime Registry `43174162100` PASS (258 tests); Environment Validation `43174161957` PASS; OS Compliance `43174162026` PASS; Browser Adapter `43174161996` PASS (local-fixture only); Vercel preview PASS.
+- [V] Both lifecycle E2E simulations explicitly report `actual_agent_spawned=false` and `execution_mode=SIMULATION_ONLY`. These are not live model-agent executions.
+- [V] PR #47 remains OPEN as a review-only Shadow report; it does not close implementation requirements. Issue #46 remains OPEN.
+- [U] Live provider invocation, private remote CAS/payload recovery across workflow runs, resident worker activation, persistent browser hosting and notification delivery remain unverified. No paid host or provider was activated.
+- [V] The production health endpoint is a health-only adapter; it reports `task_execution_enabled=false` and `worker=not_activated`. Native task execution is not live.
+- [V] Release remains **NO-GO**.
 
 **Live snapshot:** 2026-11-11 — PR #52 merged to `main` at `48dd744`; Vercel host adapter PR #53 and entrypoint fix PR #55 merged; production health endpoint deployed and HTTP 200 smoke-tested. BS-RELEASE-001 remains **NO-GO**.
 **Default branch:** `main`
 **Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`.
-**Latest application/runtime code HEAD:** `c1055af3d9d4b60bd1fcc9725cdcafd4dd144e62` — adds Vercel Python entrypoint configuration and host health endpoint; subsequent `main` commits only synchronized technical state documentation. Task execution remains disabled.
+**Latest application/runtime code HEAD:** `eacfb1091a4e22000125fcec79fe5f25994f5963` — PR #56 merged bounded daemon concurrency and notification-outbox idempotency. Task execution remains disabled.
 **Latest full runtime validation:** Main Runtime Registry run `42930131150` PASS on merge commit `48dd744`; 243 unit tests and both deterministic lifecycle simulations PASS.
 **Latest full unit suite:** Main Runtime Registry run `42930131150`: `Ran 243 tests in 4.495s` / `OK`; registry validator, skill catalog audit and both deterministic E2E simulations PASS (simulation-only, no agent spawned).
 **Private ledger integration:** live append/read-back/idempotency smoke run `42758084356` PASS; private execution run `42758395681` recorded task lifecycle, claim, renewal, transitions, release and correlated receipts. A later independent run `42758616125` refused replay of an existing task ID.
 **Browser acceptance:** Native Browser Adapter run `42929591208` on PR #52 implementation head `f680b24`: two native Chromium local-fixture cycles, 36 correlated receipts, interruption/no-replay/reconciliation PASS; persistent-host jobs skipped.
 **Vercel hosting:** [V] Project `blind-sniper-runtime` (`prj_AJpyM5PkAxfmeb4KQCZ7hlBgMZEi`) is linked to this GitHub repo in the Forge Hobby team. Latest Git-linked production deployment `dpl_HVwBwRYfa9CRcziujcyzZAiX6zPS` is READY from main commit `284b80b`; `https://blind-sniper-runtime.vercel.app/api/health` returned HTTP 200 with worker not activated and task execution disabled. Main pushes automatically trigger Vercel production builds. Hobby is not approved for commercial production use.
 **Release gate:** **NO-GO**. Native model invocation is not live-provider-verified; private remote CAS cross-run payload recovery remains unverified; native tool runtime is contract-tested but not host/live-provider-verified; persistent browser hosting and unattended autonomy remain host-unverified. Release-specific independent review, operational rollback/monitoring ownership and exact-target smoke test remain open. See `chatgpt-home/BS-RELEASE-001_RELEASE_ACCEPTANCE.md`.
-**Open PRs:** PR #47 (review-only draft); PR #48, #50, #51, #52, #53 and #55 merged; PR #54 closed as superseded; duplicate external-adapter PR #49 closed as superseded.
+**Open PRs:** PR #47 (review-only); PR #57 (R2/R5 queue and fail-closed runner work). PR #48, #50, #51, #52, #53, #55 and #56 merged; PR #54 closed as superseded; duplicate external-adapter PR #49 closed as superseded.
 **Branch protection:** `main` reports `protected=false`; no settings changed.
 **Authority:** Engineering Execution OS v2.3 and active repository-scoped Owner delegation. Exclusions remain in `chatgpt-home/AUTHORITY_DELEGATION.md`.
 
