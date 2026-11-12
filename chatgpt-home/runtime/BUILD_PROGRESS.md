@@ -1,15 +1,20 @@
 # Blind Sniper build progress — current status
 
-## PR #56 — bounded daemon concurrency and receipt idempotency — 2026-11-11
+## PR #56 — merged bounded daemon concurrency and receipt idempotency — 2026-11-12
 
-- [V] Draft PR #56: https://github.com/madnessgate44-debug/Blind-sniper-/pull/56; branch `feat/p0-daemon-concurrency-2026-11-11`; implementation head `ce031a6281b9c6357f7f8ecc492578ae54b6f092` (before this state-note commit), based on `main` `e7c6cdf`.
-- [V] The daemon now runs up to the configured worker concurrency per poll cycle, never exceeding the configured per-cycle task cap. Each task still uses the native exact-task claim, lease and correlated receipt path.
-- [V] The private notification outbox now serializes append/read/dedup under an OS file lock and refuses duplicate `(task_id, run_id)` records; corrupt JSON remains a hard failure.
-- [V] Regression tests: two barrier-synchronized task invocations complete concurrently at a measured maximum of 2; eight concurrent duplicate outbox appends leave one row.
-- [V] Runtime Registry PR runs `42980055291` and `42980130999` both PASS, each with 249 unit tests (4.398s / 4.242s), registry validation, skill audit and both deterministic E2E simulations. Policy Compliance `42980055420` and `42980130924` PASS. Vercel preview check PASS.
-- [V] Runtime Registry push path filters now cover `blind_sniper_agent_runtime.py`, `blind_sniper_daemon.py`, `blind_sniper_tool_runtime.py` and their tests.
-- [U] This is not a live provider or host acceptance test. It does not establish multi-process daemon contention, private remote CAS payload recovery, persistent browser state, a resident host service, or notification delivery.
-- [V] No merge, release, production deployment, schedule activation, secret mutation, permission change, paid provisioning or external-agent dependency was introduced. PR remains draft pending further acceptance work.
+- [V] PR #56 merged to `main` at `eacfb1091a4e22000125fcec79fe5f25994f5963`; source head `7953e8399b1bc3cc0c53b8a306af9c5c84ae00e2`.
+- [V] Bounded daemon dispatch and file-locked/idempotent notification outbox are now in `main`.
+- [V] Exact-head CI before merge: Runtime Registry runs `42980352513` and `42980348236` PASS, 249 tests each; Environment Validation `42980352489` and `42980348128` PASS; OS Compliance `42980352502` and `42980348107` PASS; Vercel preview PASS.
+- [U] This is single-daemon-process concurrency evidence only. Multi-process queue contention and remote clock behavior are addressed by open PR #57, not PR #56.
+- [V] No live provider, resident worker, production task execution, notification receiver, paid resource or production deployment was activated.
+
+## PR #57 — independent-process queue and fail-closed runner — 2026-11-12
+
+- [V] OPEN, unmerged; branch head `fc42b5aaf5b8edaeb284f8cc4cebe2df2a8d2648`; code/test head `c6270e44a2c6b1f5855fc1112e563bc5b97d73ce`.
+- [V] PR evidence: Runtime Registry `43174162100` PASS (258 tests); Environment Validation `43174161957` PASS; OS Compliance `43174162026` PASS; Browser Adapter `43174161996` PASS (two local-fixture Chromium cycles; persistent-host job skipped); Vercel preview PASS.
+- [V] Independent-process tests cover competing claims, heartbeat, cancellation, interruption recovery and duplicate enqueue. Remote-clock tests use a deterministic fake GitHub transport.
+- [U] Live private remote CAS/payload recovery across independent workflow runs is not proven. The runner reports `BLOCKED_NO_EXECUTOR` and leaves tasks unclaimed when no native executor is wired; notification delivery remains `NOT_CONFIGURED`.
+- [V] Both lifecycle simulations explicitly report `actual_agent_spawned=false` and `SIMULATION_ONLY`. PR #57 does not activate a live model provider or resident worker.
 
 **Snapshot:** 2026-11-11 — PR #52 merged to `main` at `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f` (source head `7133e3a`); native worker daemon code is merged but not host-activated.
 **Architecture:** Self-contained Blind Sniper. No external agent or browser handoff.
