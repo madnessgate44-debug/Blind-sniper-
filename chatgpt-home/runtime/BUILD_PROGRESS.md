@@ -6,15 +6,16 @@
 - [V] Daemon dispatch is bounded by worker concurrency and per-cycle task limits; notification outbox writes are process-locked and deduplicated by task/run identity.
 - [V] Exact-head Runtime Registry runs `42980352513` and `42980348236` each passed 249 tests; OS Compliance and Environment Validation passed. E2E simulations remained SIMULATION_ONLY.
 
-## PR #57 — R2 multi-process acceptance and R5 fail-closed runner — 2026-11-11
+## PR #57 — R2 multi-process and remote-clock acceptance — 2026-11-12
 
-- [V] Active branch `feat/p0-r2-multiprocess-recovery-2026-11-11`; latest exact-head CI-verified code/test commit `dff07bb755f3fcb8a02e22ea0de664ed62f544b7`; PR #57 open, unmerged. Later commits only synchronize technical state notes.
-- [V] Five independent-process tests pass: exactly one worker wins a competing claim; a separate process renews the lease; a separate process cancels and prevents stale completion/reclaim; duplicate enqueue is refused; an interrupted worker is recovered by a new process and stale completion is rejected.
-- [V] R5 runner no longer consumes task attempts without a native executor. It recovers stale leases and emits aggregate-only health/digest artifacts; private task IDs are excluded. Notification delivery is NOT_CONFIGURED.
-- [V] Removed the obsolete OpenHands secret reference from the worker workflow; no external agent runtime, schedule, secret or permission change.
-- [V] Runtime Registry run `43007169781`: `Ran 252 tests in 5.297s` / `OK`; registry validation, skill audit and both deterministic E2E simulations passed. Both simulations explicitly report `actual_agent_spawned=false` / `SIMULATION_ONLY`. OS Compliance run `43007169875` PASS; Environment Validation run `43007169757` PASS; Vercel preview check PASS.
-- [U] Private remote CAS cross-run payload recovery, live provider execution, persistent daemon activation and notification delivery remain unverified. R2 and R5 remain PARTIAL; release remains NO-GO.
-
+- [V] Active branch `feat/p0-r2-multiprocess-recovery-2026-11-11`; runtime/code-test commit `c6270e44a2c6b1f5855fc1112e563bc5b97d73ce`; PR #57 open and unmerged.
+- [V] Five independent-process tests pass: exclusive claim contention; second-process heartbeat; second-process cancellation with stale completion/reclaim blocked; interrupted-worker stale recovery and attempt-2 reclaim; duplicate enqueue refusal.
+- [V] Fixed remote clock authority: GitHub Contents CAS queue operations now use the GitHub `Date` header rather than runner-local wall clocks for queue timestamps, lease validation, health and stale recovery. Browser reservation and guarded append use the current server time; missing Date fails closed.
+- [V] Four deterministic fake-transport tests cover guarded append clock skew, queue claim/completion clock skew, stale recovery with a skewed caller clock, and browser reservation clock skew.
+- [V] Runtime Registry run `43174162100`: `Ran 258 tests in 5.831s` / `OK`; registry validation, skill audit and both E2E simulations passed. Simulations explicitly report `actual_agent_spawned=false` / `SIMULATION_ONLY`.
+- [V] Environment Validation `43174161957` PASS; OS Compliance `43174162026` PASS; Native Browser Adapter `43174161996` PASS (19 policy tests, 9 lease-dispatch tests, two Chromium local-fixture cycles, 36 correlated receipts). Persistent-host jobs were skipped.
+- [V] R5 Actions runner remains recovery/health only and never claims pending work without a native executor. Public artifacts remain aggregate-only; notification delivery is `NOT_CONFIGURED`; no schedule is enabled.
+- [U] Fake-transport tests do not prove live private remote CAS, cross-run private payload recovery, live model-provider execution, persistent daemon/browser hosting or notification delivery. R2/R5 remain PARTIAL; release remains NO-GO.
 ## GitHub + Vercel host adapter — 2026-11-11
 
 - [V] The existing Vercel `Forge` team is on Hobby; no `blind-sniper` project was found. No paid provisioning or secret mutation was performed.

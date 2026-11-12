@@ -1,16 +1,16 @@
 # Blind Sniper — Current Technical State
 
-## PR #57 — R2 multi-process acceptance and R5 fail-closed runner — 2026-11-11
+## PR #57 — R2 multi-process and remote-clock acceptance — 2026-11-12
 
 - [V] PR #56 merged to `main` at `eacfb1091a4e22000125fcec79fe5f25994f5963`; source head `7953e8399b1bc3cc0c53b8a306af9c5c84ae00e2`.
-- [V] Active branch: `feat/p0-r2-multiprocess-recovery-2026-11-11`; latest exact-head CI-verified code/test commit `dff07bb755f3fcb8a02e22ea0de664ed62f544b7`. PR #57 is open and ready for review; base `main` at `eacfb1091a4e22000125fcec79fe5f25994f5963`. Subsequent commits, if any, are state-note synchronization only.
-- [V] R2 independent-process acceptance: two-process exclusive claim, duplicate enqueue refusal, interrupted-worker recovery/reclaim and stale-owner completion rejection all PASS in Runtime Registry run `43007169781`; full suite `Ran 252 tests in 5.297s` / `OK`.
-- [V] Runtime registry validation, skill audit, interruption/recovery simulation and scheduled-jobs simulation passed in run `43007169781`; simulations explicitly report `actual_agent_spawned=false` and `execution_mode=SIMULATION_ONLY`. OS Compliance run `43007169875` PASS; Environment Validation run `43007169757` PASS; Vercel preview check PASS.
-- [V] R5 safety: the ephemeral Actions runner recovers stale leases and writes aggregate-only health/digest artifacts; it does not claim pending tasks without a wired native executor. Public artifacts contain counts, not private task IDs. Notification delivery is explicitly NOT_CONFIGURED.
-- [V] Removed the obsolete `OPENHANDS_CLOUD_API_KEY` reference from the native worker workflow. No external agent runtime is used. No schedule was enabled.
-- [U] R2 private remote CAS cross-run payload recovery remains unverified. R5 persistent host activation, real provider configuration, a native notification delivery route and unattended end-to-end task execution remain unverified. No secret, permission, paid resource or production data was changed.
-- [V] PR #57 remains unmerged; issue #46 remains open; release remains NO-GO.
-
+- [V] Active follow-up branch: `feat/p0-r2-multiprocess-recovery-2026-11-11`; latest runtime/code-test commit `c6270e44a2c6b1f5855fc1112e563bc5b97d73ce`; PR #57 remains open against `main` at `eacfb1091a4e22000125fcec79fe5f25994f5963`.
+- [V] R2 remote-clock defect fixed: `GitHubContentsLedger.server_now()` reads the GitHub `Date` header; `DurableQueue` uses the remote ledger clock for enqueue/claim/heartbeat/completion/failure/cancel/tool receipts/health/reconciliation/recovery; remote guarded appends and browser reservations evaluate lease time against the server clock. Missing server time fails closed.
+- [V] Four deterministic fake-transport regressions cover skewed guarded append, queue enqueue/claim/completion, stale-lease health/recovery, and browser lease reservation. Runtime Registry run `43174162100`: `Ran 258 tests in 5.831s` / `OK`; all five independent-process queue tests also pass.
+- [V] Runtime registry and skill validation passed; both E2E lifecycle runs explicitly report `actual_agent_spawned=false` and `execution_mode=SIMULATION_ONLY`. Environment Validation run `43174161957` PASS; Engineering Execution OS Compliance run `43174162026` PASS.
+- [V] Native Browser Adapter run `43174161996` PASS: 19 browser policy tests, 9 lease-dispatch tests, and two real Chromium local-fixture cycles with 36 correlated receipts. Persistent-host jobs were skipped.
+- [V] R5 runner remains fail-closed: ephemeral Actions only performs stale recovery and aggregate health/digest; it does not claim pending tasks without a native executor. Notification delivery is `NOT_CONFIGURED`; no schedule is enabled.
+- [U] The new remote-clock tests use a deterministic fake GitHub transport. They do not prove a live private remote CAS write/read, private payload re-supply across independent workflow runs, or resident worker execution. Provider invocation, persistent authenticated browser hosting and notification delivery remain unverified.
+- [V] No external agent runtime, secret/credential, permission, paid resource, production data or schedule was touched. PR #57 remains unmerged; issue #46 remains open; release remains NO-GO.
 **Live snapshot:** 2026-11-11 — PR #52 merged to `main` at `48dd744`; Vercel host adapter PR #53 and entrypoint fix PR #55 merged; production health endpoint deployed and HTTP 200 smoke-tested. BS-RELEASE-001 remains **NO-GO**.
 **Default branch:** `main`
 **Latest release-assessment merge:** PR #45 at `9d3ab26a05b6c4588554fc21a0411f9a04277676`.
