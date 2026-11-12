@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from blind_sniper_ledger import GitHubContentsLedger, GitHubLedgerError, TaskLedger  # noqa: E402
 import blind_sniper_runtime as runtime  # noqa: E402
+from blind_sniper_worker import DurableQueue, QueueError  # noqa: E402
 
 
 class FakeContentsAPI:
@@ -196,6 +197,96 @@ class GitHubContentsLedgerTests(unittest.TestCase):
             idempotency_key="server-time:claim", now=caller_clock,
         )
         self.assertEqual(claimed["lease_expires_at"], "2026-11-08T15:01:00+00:00")
+
+
+    def test_remote_guarded_append_uses_server_clock_not_caller_clock(self):
+        caller_clock = datetime(2030, 1, 1, tzinfo=timezone.utc)
+        observed = []
+
+        event = self.ledger.append_guarded(
+            guard=lambda rows, instant: observed.append(instant) or None,
+            task_id="BS-GH-GUARDED-CLOCK",
+            event_type="QUEUE_TASK_ENQUEUED",
+            payload={"kind": "model_task"},
+            idempotency_key="guarded-clock:enqueue",
+            now=caller_clock,
+        )
+
+        self.assertEqual(observed, [datetime(2026, 11, 8, 15, 0, tzinfo=timezone.utc)])
+        self.assertEqual(event["commit_sha"], "c" * 40)
+
+    def test_remote_durable_queue_uses_server_clock_for_lease_and_completion(self):
+        queue = DurableQueue(self.ledger)
+        caller_clock = datetime(2030, 1, 1, tzinfo=timezone.utc)
+        task_id = "BS-GH-QUEUE-CLOCK"
+
+        queue.enqueue(
+            task_id=task_id, kind="model_task", payload_digest="digest",
+            now=caller_clock,
+        )
+        self.assertEqual(
+            queue.status(task_id)["enqueued_at"],
+            "2026-11-08T15:00:00+00:00",
+        )
+        claim = queue.claim(
+            owner_id="runner-a", lease_seconds=60, task_id=task_id,
+            now=caller_clock,
+        )
+        self.assertEqual(claim["lease_expires_at"], "2026-11-08T15:01:00+00:00")
+        queue.complete(
+            task_id=task_id, owner_id="runner-a", result_digest="result",
+            now=caller_clock,
+        )
+        self.assertEqual(queue.status(task_id)["status"], "COMPLETED")
+
+    def test_remote_durable_queue_recovers_stale_lease_using_server_clock(self):
+        queue = DurableQueue(self.ledger)
+        caller_clock = datetime(2020, 1, 1, tzinfo=timezone.utc)
+        task_id = "BS-GH-QUEUE-RECOVERY"
+
+        queue.enqueue(
+            task_id=task_id, kind="model_task", payload_digest="digest",
+            now=caller_clock,
+        )
+        queue.claim(
+            owner_id="runner-a", lease_seconds=60, task_id=task_id,
+            now=caller_clock,
+        )
+        self.api.server_date = "Sun, 08 Nov 2026 15:02:00 GMT"
+
+        self.assertEqual(queue.health(now=caller_clock)["stale_claims"], [task_id])
+        recovered = queue.recover_stale(now=caller_clock)
+        self.assertEqual(recovered["recovered"], [task_id])
+        self.assertEqual(queue.status(task_id)["status"], "PENDING")
+
+    def test_remote_browser_lease_reservation_uses_server_clock(self):
+        task_id = "BS-GH-BROWSER-CLOCK"
+        caller_clock = datetime(2030, 1, 1, tzinfo=timezone.utc)
+        self.ledger.append(
+            task_id=task_id,
+            event_type="TASK_TRANSITIONED",
+            payload={"state": {
+                "task_id": task_id,
+                "status": "EXECUTING",
+                "implementer_id": "browser-owner",
+            }},
+            idempotency_key="browser-clock:executing",
+        )
+        self.ledger.claim_task(
+            task_id=task_id, owner_id="browser-owner", lease_seconds=60,
+            idempotency_key="browser-clock:claim",
+            now=caller_clock,
+        )
+
+        reserved = self.ledger.reserve_browser_action_if_lease(
+            task_id=task_id,
+            owner_id="browser-owner",
+            payload={"run_id": "run-1", "step_id": "step-1"},
+            idempotency_key="browser-clock:step-1",
+            min_remaining_seconds=10,
+            now=caller_clock,
+        )
+        self.assertTrue(reserved["reserved"])
 
     def test_remote_lease_refuses_to_guess_when_date_header_is_missing(self):
         self.api.include_date = False
