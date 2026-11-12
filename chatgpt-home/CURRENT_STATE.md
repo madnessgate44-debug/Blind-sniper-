@@ -2,7 +2,7 @@
 
 ## State reconciliation — 2026-11-12
 
-- [V] Default branch `main` HEAD is `eacfb1091a4e22000125fcec79fe5f25994f5963`.
+- [V] Latest application/runtime code commit on `main` is `eacfb1091a4e22000125fcec79fe5f25994f5963`; subsequent commits `fdb4eb7` and `1517892` only synchronize the current-state and build-progress documents.
 - [V] PR #56 is **MERGED**, not draft: source head `7953e8399b1bc3cc0c53b8a306af9c5c84ae00e2`, merge commit `eacfb1091a4e22000125fcec79fe5f25994f5963`. It adds bounded per-cycle daemon concurrency and idempotent, file-locked notification outbox writes.
 - [V] PR #57 is OPEN and unmerged at `fc42b5aaf5b8edaeb284f8cc4cebe2df2a8d2648`; code/test head `c6270e44a2c6b1f5855fc1112e563bc5b97d73ce`. It adds independent-process queue tests, remote-clock handling and a fail-closed ephemeral runner.
 - [V] PR #57 evidence: Runtime Registry `43174162100` PASS (258 tests); Environment Validation `43174161957` PASS; OS Compliance `43174162026` PASS; Browser Adapter `43174161996` PASS (local-fixture only); Vercel preview PASS.
