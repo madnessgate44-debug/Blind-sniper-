@@ -20,7 +20,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 SCHEMA_VERSION = "1.0.0"
-ACTIONS = {"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "get-title", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "download", "pdf", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
+ACTIONS = {"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "get-title", "detach", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "download", "pdf", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
 MUTATING_ACTIONS = {"click", "fill", "press", "upload", "download", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
 SAFE_KEY_NAMES = {"ENTER", "TAB", "ESCAPE", "ARROWDOWN", "ARROWUP", "ARROWLEFT", "ARROWRIGHT"}
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
