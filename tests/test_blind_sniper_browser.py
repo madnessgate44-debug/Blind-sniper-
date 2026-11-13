@@ -200,16 +200,22 @@ class BrowserPolicyTests(unittest.TestCase):
         with self.assertRaises(BrowserPolicyError):
             adapter._append_receipt({"step_id": "step-1"})
 
-    def test_persistent_profile_uses_private_profile_without_cli_domain_replay(self):
+    def test_persistent_profile_uses_private_restore_state_without_cli_domain_replay(self):
         adapter = self.adapter()
-        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_PERSISTENT_PROFILE": "1"}):
-            with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
-                adapter._command("open", "http://127.0.0.1/")
-        command = run.call_args.args[0]
-        self.assertIn("--profile", command)
-        self.assertNotIn("--allowed-domains", command)
-        profile = Path(command[command.index("--profile") + 1])
-        self.assertEqual(profile, adapter.profiles_dir / adapter.session_id)
+        with tempfile.TemporaryDirectory() as home:
+            with patch("scripts.blind_sniper_browser.Path.home", return_value=Path(home)):
+                with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_PERSISTENT_PROFILE": "1"}):
+                    with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
+                        adapter._command("open", "http://127.0.0.1/")
+            command = run.call_args.args[0]
+            self.assertIn("--profile", command)
+            self.assertIn("--restore", command)
+            self.assertNotIn("--allowed-domains", command)
+            profile = Path(command[command.index("--profile") + 1])
+            self.assertEqual(profile, adapter.profiles_dir / adapter.session_id)
+            self.assertEqual(run.call_args.kwargs["env"]["AGENT_BROWSER_AUTOSAVE_INTERVAL_MS"], "1000")
+            self.assertEqual((Path(home) / ".agent-browser").stat().st_mode & 0o777, 0o700)
+            self.assertEqual((Path(home) / ".agent-browser" / "sessions").stat().st_mode & 0o777, 0o700)
 
     def test_stale_chrome_profile_locks_are_removed_after_owner_process_is_gone(self):
         adapter = self.adapter()
