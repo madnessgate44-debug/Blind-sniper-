@@ -41,6 +41,7 @@ class FakeServer:
 class BrowserMCPStatusTests(unittest.TestCase):
     def _server(self, *, url_exit=0):
         server = BrowserMCP.__new__(BrowserMCP)
+        server.active = {}
 
         def dispatch(action, args):
             if action == "get-url":
@@ -67,6 +68,44 @@ class BrowserMCPStatusTests(unittest.TestCase):
         self.assertEqual(result["visible_text"], "- heading Example")
         self.assertEqual(result["screenshot_reference"], ["/private/browser.png"])
         self.assertTrue(all(row["exit_code"] == 0 for row in result["receipts"]))
+        self.assertFalse(result["user_action_required"])
+        self.assertIsNone(result["handoff_type"])
+
+    def test_status_detects_captcha_and_pauses_browser_actions(self):
+        server = self._server()
+        def dispatch(action, args):
+            output = {
+                "get-url": json.dumps({"data": {"url": "https://example.org/"}}),
+                "snapshot": json.dumps({"data": {"snapshot": "Verify you are human to continue"}}),
+                "screenshot": "{}",
+            }[action]
+            receipt = {"action": action, "exit_code": 0}
+            if action == "screenshot":
+                receipt["artifact_paths"] = ["/private/challenge.png"]
+            return {"output": output, "receipt": receipt}
+        server._dispatch = dispatch
+        result = server.status()
+        self.assertTrue(result["user_action_required"])
+        self.assertEqual(result["handoff_type"], "captcha")
+        with self.assertRaisesRegex(PermissionError, "CAPTCHA/MFA bypass is not supported"):
+            server.action("click", ["#continue"])
+
+    def test_status_detects_mfa_and_hands_off(self):
+        server = self._server()
+        def dispatch(action, args):
+            output = {
+                "get-url": json.dumps({"data": {"url": "https://example.org/"}}),
+                "snapshot": json.dumps({"data": {"snapshot": "Enter the one-time code from your authenticator app"}}),
+                "screenshot": "{}",
+            }[action]
+            receipt = {"action": action, "exit_code": 0}
+            if action == "screenshot":
+                receipt["artifact_paths"] = ["/private/mfa.png"]
+            return {"output": output, "receipt": receipt}
+        server._dispatch = dispatch
+        result = server.status()
+        self.assertTrue(result["user_action_required"])
+        self.assertEqual(result["handoff_type"], "mfa")
 
     def test_status_fails_closed_when_url_read_fails(self):
         with self.assertRaisesRegex(BrowserDispatchError, "status action failed: get-url"):
