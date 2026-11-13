@@ -10,6 +10,7 @@ on:
       - "scripts/blind_sniper_browser_dispatch.py"
       - "scripts/blind_sniper_tool_runtime.py"
       - "scripts/run_blind_sniper_browser_e2e.py"
+      - "scripts/run_blind_sniper_miss_noor_smoke.py"
       - "scripts/run_blind_sniper_browser_persistence_probe.py"
       - "tests/test_blind_sniper_browser.py"
       - "tests/test_blind_sniper_browser_dispatch.py"
@@ -20,10 +21,12 @@ on:
   push:
     branches:
       - "feat/blind-sniper-browser-adapter-2026-11-08"
+      - "main"
     paths:
       - "scripts/blind_sniper_browser.py"
       - "scripts/blind_sniper_browser_dispatch.py"
       - "scripts/run_blind_sniper_browser_e2e.py"
+      - "scripts/run_blind_sniper_miss_noor_smoke.py"
       - "tests/test_blind_sniper_browser.py"
       - "tests/test_blind_sniper_browser_dispatch.py"
       - "tests/fixtures/browser/**"
@@ -72,6 +75,44 @@ jobs:
           path: .blind-sniper/browser/
           if-no-files-found: warn
           retention-days: 3
+  miss-noor-live-inspection:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      BLIND_SNIPER_MISS_NOOR_URL: https://amina-nine-sepia.vercel.app/
+      BLIND_SNIPER_BROWSER_STATE_DIR: .blind-sniper/browser-live
+      BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS: amina-nine-sepia.vercel.app
+      BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS: ""
+      BLIND_SNIPER_BROWSER_WRITE_APPROVED: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned Blind Sniper browser
+        run: |
+          npm install --global agent-browser@0.41.2
+          agent-browser install --with-deps
+          agent-browser --version
+      - name: Validate live inspection runner
+        run: python -m py_compile scripts/run_blind_sniper_miss_noor_smoke.py
+      - name: Inspect live Miss Noor through the native lease-gated browser
+        run: python scripts/run_blind_sniper_miss_noor_smoke.py
+      - name: Upload Miss Noor inspection evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: miss-noor-live-inspection-${{ github.run_id }}
+          path: .blind-sniper/browser-live/
+          if-no-files-found: warn
+          retention-days: 7
   persistent-host-open:
     if: github.event_name == 'workflow_dispatch' && vars.BLIND_SNIPER_SELF_HOSTED_ENABLED == 'true'
     runs-on: [self-hosted, linux, ARM64, blind-sniper-browser]
