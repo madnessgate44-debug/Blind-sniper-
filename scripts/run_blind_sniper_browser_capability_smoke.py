@@ -43,7 +43,8 @@ def main() -> int:
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
 
-        state_dir = root / "browser-state"
+        state_dir = Path(os.environ.get("BLIND_SNIPER_BROWSER_STATE_DIR", ".blind-sniper/browser-capabilities")).resolve()
+        state_dir.mkdir(parents=True, exist_ok=True)
         ledger = TaskLedger(state_dir / "state" / "events.jsonl")
         task_id = "BS-BROWSER-CAPABILITY-SMOKE"
         owner_id = "github-actions-capability-smoke"
