@@ -325,7 +325,7 @@ class BrowserPolicyTests(unittest.TestCase):
         adapter._save_state()
         resumed = BrowserAdapter(
             task_id=adapter.task_id, run_id=adapter.run_id, session_id=adapter.session_id,
-            state_dir=adapter.state_dir, allowed_domains=["example.org"],
+            state_dir=adapter.state_dir,
         )
         self.assertEqual(resumed.state["status"], "DETACHED")
         with patch.object(resumed, "_current_url", side_effect=["about:blank", "https://example.org/"]):
