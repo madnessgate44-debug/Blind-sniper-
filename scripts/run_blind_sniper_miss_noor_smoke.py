@@ -23,7 +23,7 @@ OWNER_ID = "github-actions-browser-smoke"
 
 def main() -> int:
     if not EXPECTED_HOST:
-        raise RuntimeError("The Miss Noor target URL has no hostname")
+        raise RuntimeError("The configured browser target URL has no hostname")
     run_id = os.environ.get("GITHUB_RUN_ID", "local")
     attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "1")
     safe_run = re.sub(r"[^A-Za-z0-9_.:-]", "-", f"{TARGET_LABEL}-{run_id}-{attempt}")
@@ -89,8 +89,8 @@ def main() -> int:
                 "final_url": current_url.strip(),
                 "host": EXPECTED_HOST,
                 "snapshot_characters": len(snapshot_text),
-                "screenshot_bytes": (artifacts / "miss-noor-home.png").stat().st_size
-                    if (artifacts / "miss-noor-home.png").exists() else 0,
+                "screenshot_bytes": (artifacts / f"{TARGET_LABEL}.png").stat().st_size
+                    if (artifacts / f"{TARGET_LABEL}.png").exists() else 0,
                 "open_receipt": opened["receipt"],
                 "snapshot_receipt": snapshot["receipt"],
                 "screenshot_receipt": screenshot["receipt"],
