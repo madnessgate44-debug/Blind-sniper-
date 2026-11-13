@@ -2,13 +2,13 @@
   "schema_version": "1.0.0",
   "runtime_name": "Blind Sniper",
   "runtime_model": "Blind Sniper native runtime + GitHub control plane + native browser and bounded host execution",
-  "snapshot_date": "2026-11-10",
+  "snapshot_date": "2026-11-13",
   "evidence_policy": "A capability is operational only when its trigger, permission, execution, output and verification path are proven.",
   "adapters": [
     {
       "id": "native_mcp_browser_bridge",
       "kind": "mcp_stdio_browser_control",
-      "status": "implemented_source_not_runtime_verified",
+      "status": "implemented_ci_verified_live_mcp_unverified",
       "tools": [
         "scripts/blind_sniper_mcp_server.py"
       ],
@@ -24,7 +24,7 @@
         "lease_gated_dispatch"
       ],
       "limitations": [
-        "Protocol unit tests are authored but have not been run on this feature branch.",
+        "Nine MCP protocol tests pass within the 261-test Runtime Registry CI suite (run 43438707670).",
         "No MCP client has connected and no live browser action has been executed through this server.",
         "Current ChatGPT session exposes no MCP stdio registration or invocation action.",
         "Requires a persistent private host with Python, pinned agent-browser CLI, Chromium and host browser policy.",
