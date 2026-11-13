@@ -267,7 +267,9 @@ def handle(server: BrowserMCP, message: dict[str, Any]) -> dict[str, Any] | None
         return {"jsonrpc": "2.0", "id": request_id, "result": {"tools": TOOLS}}
     if method == "tools/call":
         name = params.get("name")
-        arguments = params.get("arguments") or {}
+        arguments = params.get("arguments", {})
+        if arguments is None:
+            arguments = {}
         if not isinstance(arguments, dict):
             return {"jsonrpc": "2.0", "id": request_id, "error": {"code": -32602, "message": "arguments must be an object"}}
         try:
