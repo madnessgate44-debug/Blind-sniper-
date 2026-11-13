@@ -100,6 +100,7 @@ class BrowserPolicyTests(unittest.TestCase):
         command = run.call_args.args[0]
         self.assertEqual(command[1:3], ["--executable-path", "/usr/bin/chromium"])
         self.assertIn("--allowed-domains", command)
+        self.assertIn("--restore", command)
         self.assertIn("--action-policy", command)
         self.assertIn("--content-boundaries", command)
         self.assertIn("127.0.0.1,example.test", command)
