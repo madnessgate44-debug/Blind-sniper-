@@ -1,5 +1,15 @@
 # Blind Sniper build progress — current status
 
+## Live Miss Noor browser inspection — 2026-11-13
+
+- [V] Added `scripts/run_blind_sniper_miss_noor_smoke.py`: creates a native task lease, invokes the checked-in BrowserAdapter only through `dispatch_browser_action`, performs read-only navigation/snapshot/screenshot, verifies the observed host, closes the session, and releases the lease.
+- [V] Updated `.github/workflows/blind-sniper-browser.yml` so browser acceptance runs on relevant `main` pushes and a separate live Miss Noor inspection job executes on GitHub-hosted Ubuntu. Browser write approval remains disabled.
+- [V] Commit: `994bee7da31d6d50831ac2db19923846344abe88`.
+- [V] Browser workflow run `43417117267`: live inspection job SUCCESS; Chromium local-fixture acceptance SUCCESS; persistent-host jobs SKIPPED.
+- [V] Live inspection logs: opened `https://amina-nine-sepia.vercel.app/`; accessibility snapshot 2,284 characters; screenshot 51,387 bytes; both receipts returned exit code 0. Artifact `14032006969` (name `miss-noor-live-inspection-43417117267`) contains snapshot, screenshot, inspection metadata, task ledger and action receipts.
+- [V] Fixture acceptance: 19 adapter tests + 9 dispatch tests passed; two real Chromium cycles produced 36 receipts, with one started-only interruption reconciled per cycle and no replay.
+- [U] The current proof is an ephemeral read-only inspection, not persistent browser hosting or direct in-chat browser control. No form was submitted and no account/profile data was entered. Further interaction and mobile viewport tests remain open.
+
 ## PR #56 — merged bounded daemon concurrency and receipt idempotency — 2026-11-12
 
 - [V] PR #56 merged to `main` at `eacfb1091a4e22000125fcec79fe5f25994f5963`; source head `7953e8399b1bc3cc0c53b8a306af9c5c84ae00e2`.
