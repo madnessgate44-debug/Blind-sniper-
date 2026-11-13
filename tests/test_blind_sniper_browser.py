@@ -123,7 +123,7 @@ class BrowserPolicyTests(unittest.TestCase):
         command = run.call_args.args[0]
         self.assertEqual(command[1:3], ["--executable-path", "/usr/bin/chromium"])
         self.assertIn("--allowed-domains", command)
-        self.assertIn("--restore", command)
+        self.assertNotIn("--restore", command)
         self.assertIn("--action-policy", command)
         self.assertIn("--content-boundaries", command)
         self.assertIn("127.0.0.1,example.test", command)
@@ -147,6 +147,8 @@ class BrowserPolicyTests(unittest.TestCase):
         self.assertNotIn("/private/path", serialized)
         self.assertEqual(result["receipt"]["requested_url"], "http://127.0.0.1/[REDACTED]")
         self.assertNotIn("secret", adapter.session_file.read_text(encoding="utf-8"))
+        self.assertEqual(json.loads(adapter.restore_url_file.read_text(encoding="utf-8"))["url"], url)
+        self.assertEqual(adapter.restore_url_file.stat().st_mode & 0o777, 0o600)
         self.assertEqual(
             redact_url_for_receipt("https://example.test/a?token=x#fragment"),
             "https://example.test/[REDACTED]",
