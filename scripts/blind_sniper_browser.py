@@ -20,7 +20,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 SCHEMA_VERSION = "1.0.0"
-ACTIONS = {"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "download", "pdf", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
+ACTIONS = {"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "get-title", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "download", "pdf", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
 MUTATING_ACTIONS = {"click", "fill", "press", "upload", "download", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
 SAFE_KEY_NAMES = {"ENTER", "TAB", "ESCAPE", "ARROWDOWN", "ARROWUP", "ARROWLEFT", "ARROWRIGHT"}
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
@@ -175,7 +175,7 @@ class BrowserAdapter:
             os.chmod(directory, 0o700)
         self.policy_file.write_text(json.dumps({
             "default": "deny",
-            "allow": ["launch", "close", "navigate", "snapshot", "screenshot", "click", "fill", "upload", "download", "clipboard", "tab_list", "tab_new", "tab_switch", "tab_close", "frame", "frame_switch", "mainframe", "pdf", "scroll", "wait", "get", "url", "getattribute", "count", "interact", "read"],
+            "allow": ["launch", "close", "navigate", "snapshot", "screenshot", "click", "fill", "upload", "download", "clipboard", "tab_list", "tab_new", "tab_switch", "tab_close", "frame", "frame_switch", "mainframe", "pdf", "scroll", "wait", "get", "url", "title", "getattribute", "count", "interact", "read"],
         }, indent=2) + "\n", encoding="utf-8")
         self.session_file = self.sessions_dir / f"{session_id}.json"
         self.receipt_file = self.receipts_dir / f"{self.task_id}__{self.run_id}.jsonl"
@@ -543,10 +543,13 @@ class BrowserAdapter:
             cli_args = ["clipboard", "paste"]
         elif action == "get-url":
             cli_args = ["get", "url"]
+        elif action == "get-title":
+            validate_url(self.state.get("current_url") or "")
+            cli_args = ["get", "title"]
         else:
             cli_args = ["close"]
 
-        if action not in {"open", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame"}:
+        if action not in {"open", "get-url", "get-title", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame"}:
             requested_url = self.state.get("current_url")
         code, stdout, stderr, command = self._command(*cli_args)
         if action == "download" and code == 0:
