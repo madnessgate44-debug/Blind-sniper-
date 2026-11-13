@@ -37,6 +37,26 @@ def _text(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True)
 
 
+def _nested_string(raw: Any, field: str) -> str:
+    if not isinstance(raw, str):
+        return ""
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return raw.strip()
+    pending = [parsed]
+    while pending:
+        item = pending.pop(0)
+        if isinstance(item, dict):
+            for key, value in item.items():
+                if key.lower() == field and isinstance(value, str):
+                    return value
+                pending.append(value)
+        elif isinstance(item, list):
+            pending.extend(item)
+    return raw.strip()
+
+
 class BrowserMCP:
     def __init__(self) -> None:
         default_root = Path(os.environ.get("BLIND_SNIPER_MCP_STATE_DIR", "/tmp/blind-sniper-mcp")).resolve()
@@ -157,10 +177,23 @@ class BrowserMCP:
         url = self._dispatch("get-url", [])
         snapshot = self._dispatch("snapshot", [])
         screenshot = self._dispatch("screenshot", [f"browser-{uuid.uuid4().hex}.png"])
+        results = (url, snapshot, screenshot)
+        for result in results:
+            receipt = result.get("receipt")
+            if not isinstance(receipt, dict) or int(receipt.get("exit_code", 1)) != 0:
+                action = receipt.get("action", "unknown") if isinstance(receipt, dict) else "unknown"
+                raise BrowserDispatchError(f"Browser status action failed: {action}")
+        current_url = _nested_string(url.get("output", ""), "url")
+        if not current_url.startswith(("http://", "https://")):
+            raise BrowserDispatchError("Browser status could not extract the current URL")
+        visible_text = _nested_string(snapshot.get("output", ""), "snapshot")
+        screenshot_reference = screenshot.get("receipt", {}).get("artifact_paths", [])
+        if not screenshot_reference:
+            raise BrowserDispatchError("Browser status screenshot produced no artifact reference")
         return {
-            "url": url.get("output", ""),
-            "visible_text": snapshot.get("output", ""),
-            "screenshot_reference": screenshot.get("receipt", {}).get("artifact_paths", []),
+            "url": current_url,
+            "visible_text": visible_text,
+            "screenshot_reference": screenshot_reference,
             "receipts": [url.get("receipt"), snapshot.get("receipt"), screenshot.get("receipt")],
         }
 
