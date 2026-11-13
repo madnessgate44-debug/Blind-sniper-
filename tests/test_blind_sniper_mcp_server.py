@@ -76,7 +76,7 @@ class BrowserMCPStatusTests(unittest.TestCase):
         def dispatch(action, args):
             output = {
                 "get-url": json.dumps({"data": {"url": "https://example.org/"}}),
-                "snapshot": json.dumps({"data": {"snapshot": "Verify you are human to continue"}}),
+                "snapshot": json.dumps({"data": {"snapshot": "Please complete the following challenge to confirm this search was made by a human. Select all squares containing a duck."}}),
                 "screenshot": "{}",
             }[action]
             receipt = {"action": action, "exit_code": 0}
