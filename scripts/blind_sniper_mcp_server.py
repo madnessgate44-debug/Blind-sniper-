@@ -268,6 +268,17 @@ class BrowserMCP:
             "receipts": [url.get("receipt"), snapshot.get("receipt"), screenshot.get("receipt")],
         }
 
+    def detach(self) -> dict[str, Any]:
+        if not self.active:
+            raise RuntimeError("No active browser session to detach")
+        row = dict(self.active)
+        result = self._dispatch("close", [])
+        receipt = result.get("receipt")
+        if not isinstance(receipt, dict) or int(receipt.get("exit_code", 1)) != 0:
+            raise BrowserDispatchError("Browser detach failed; the task lease remains active")
+        self.active = None
+        return {"session": row, "browser": result, "lease_retained": True}
+
     def close(self) -> dict[str, Any]:
         if not self.active:
             raise RuntimeError("No active browser session")
@@ -315,6 +326,11 @@ TOOLS = [
     {
         "name": "browser.status",
         "description": "Return current URL, page title, visible text, screenshot and available actions; pause for CAPTCHA/MFA handoff.",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "browser.detach",
+        "description": "Gracefully close the browser while retaining the task lease and persistent profile for later browser.resume.",
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
     {
@@ -389,6 +405,8 @@ def handle(server: BrowserMCP, message: dict[str, Any]) -> dict[str, Any] | None
                 value = server.action(action, args)
             elif name == "browser.status":
                 value = server.status()
+            elif name == "browser.detach":
+                value = server.detach()
             elif name == "browser.close":
                 value = server.close()
             else:
