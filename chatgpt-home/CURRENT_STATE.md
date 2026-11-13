@@ -1,5 +1,14 @@
 # Blind Sniper — Current Technical State
 
+## Live browser execution verification — 2026-11-13
+
+- [V] Commit `994bee7da31d6d50831ac2db19923846344abe88` adds a read-only Miss Noor browser smoke runner and a main-branch GitHub Actions job using the native lease-gated dispatcher.
+- [V] Browser workflow run `43417117267`: `miss-noor-live-inspection` SUCCESS. Pinned `agent-browser@0.41.2` installed on GitHub-hosted Ubuntu; runner opened `https://amina-nine-sepia.vercel.app/`, captured a 2,284-character accessibility snapshot and a 51,387-byte screenshot, and uploaded artifact `14032006969`.
+- [V] The same workflow's `browser-acceptance` job SUCCESS: 19 browser adapter tests and 9 dispatch tests; two real Chromium fixture cycles passed with 36 correlated receipts and interruption/no-replay reconciliation.
+- [V] Live page inspection observed the Arabic onboarding screen: Miss Noor greeting, Grade 5 teacher introduction, language selectors (Arabic/English/French), name field, gender and age choices, and a disabled Next button pending required inputs.
+- [V] This proves bounded, ephemeral live browsing through GitHub-hosted execution. It does NOT provide a browser session callable directly from ChatGPT or a persistent browser host. Self-hosted cross-job persistence jobs remain skipped.
+- [U] Multi-step authenticated user journeys, responsive viewport coverage, browser session recovery across jobs, and interaction flows beyond read-only inspection remain unverified.
+
 ## State reconciliation — 2026-11-12
 
 - [V] Latest application/runtime code commit on `main` is `eacfb1091a4e22000125fcec79fe5f25994f5963`; subsequent commits `fdb4eb7` and `1517892` only synchronize the current-state and build-progress documents.
@@ -8,7 +17,7 @@
 - [V] PR #57 evidence: Runtime Registry `43174162100` PASS (258 tests); Environment Validation `43174161957` PASS; OS Compliance `43174162026` PASS; Browser Adapter `43174161996` PASS (local-fixture only); Vercel preview PASS.
 - [V] Both lifecycle E2E simulations explicitly report `actual_agent_spawned=false` and `execution_mode=SIMULATION_ONLY`. These are not live model-agent executions.
 - [V] PR #47 remains OPEN as a review-only Shadow report; it does not close implementation requirements. Issue #46 remains OPEN.
-- [U] Live provider invocation, private remote CAS/payload recovery across workflow runs, resident worker activation, persistent browser hosting and notification delivery remain unverified. No paid host or provider was activated.
+- [U] Live provider invocation, private remote CAS/payload recovery across workflow runs, resident worker activation, persistent browser hosting and notification delivery remain unverified. Bounded ephemeral live-site browsing is now verified. No paid host or provider was activated.
 - [V] The production health endpoint is a health-only adapter; it reports `task_execution_enabled=false` and `worker=not_activated`. Native task execution is not live.
 - [V] Release remains **NO-GO**.
 
