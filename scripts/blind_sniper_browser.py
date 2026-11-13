@@ -18,8 +18,8 @@ from typing import Any
 from urllib.parse import urlsplit
 
 SCHEMA_VERSION = "1.0.0"
-ACTIONS = {"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "download", "pdf"}
-MUTATING_ACTIONS = {"click", "fill", "press", "upload"}
+ACTIONS = {"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "download", "pdf", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
+MUTATING_ACTIONS = {"click", "fill", "press", "upload", "clipboard-write", "clipboard-copy", "clipboard-paste"}
 SAFE_KEY_NAMES = {"ENTER", "TAB", "ESCAPE", "ARROWDOWN", "ARROWUP", "ARROWLEFT", "ARROWRIGHT"}
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 SESSION_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -328,6 +328,29 @@ class BrowserAdapter:
             target = self._contained_file(self.artifacts_dir, args[0], must_exist=False, max_bytes=25 * 1024 * 1024)
             cli_args = ["pdf", str(target)]
             artifact_paths.append(str(target))
+        elif action == "clipboard-read":
+            if args:
+                raise BrowserPolicyError("clipboard-read takes no arguments")
+            validate_url(self.state.get("current_url") or "")
+            cli_args = ["clipboard", "read"]
+        elif action == "clipboard-write":
+            self._assert_write_approved()
+            if len(args) != 1 or len(args[0]) > 10000:
+                raise BrowserPolicyError("clipboard-write requires one text value of at most 10000 characters")
+            validate_url(self.state.get("current_url") or "")
+            cli_args = ["clipboard", "write", args[0]]
+        elif action == "clipboard-copy":
+            self._assert_write_approved()
+            if args:
+                raise BrowserPolicyError("clipboard-copy takes no arguments")
+            validate_url(self.state.get("current_url") or "")
+            cli_args = ["clipboard", "copy"]
+        elif action == "clipboard-paste":
+            self._assert_write_approved()
+            if args:
+                raise BrowserPolicyError("clipboard-paste takes no arguments")
+            validate_url(self.state.get("current_url") or "")
+            cli_args = ["clipboard", "paste"]
         elif action == "get-url":
             cli_args = ["get", "url"]
         else:
