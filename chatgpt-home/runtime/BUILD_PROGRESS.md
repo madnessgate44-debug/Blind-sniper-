@@ -190,3 +190,15 @@ Remaining:
 - [V] The earlier E2E failure `42805773341` was caused by a simulation fixture selecting `task-control-loop`, which correctly fails closed because the native model provider is not configured. The fixture now selects `bounded-verification` for local deterministic work; the subsequent complete runtime workflow passed.
 - [U] These checks verify the current planner, local ledger lifecycle and deterministic simulations; they do not verify independent model-agent invocation, a private cross-run queue worker, a persistent authenticated browser host, or unattended native autonomy.
 - [U] R1 NOT IMPLEMENTED; R2 PARTIAL; R3 PARTIAL; R4 PARTIAL; R5 NOT VERIFIED.
+
+## Screenshot and clipboard browser capability — 2026-11-13
+
+- [V] Implemented clipboard-read, clipboard-write, clipboard-copy and clipboard-paste in scripts/blind_sniper_browser.py, and exposed them through scripts/blind_sniper_browser_dispatch.py.
+- [V] Mutating clipboard actions are approval-gated. Clipboard write payloads are redacted from action receipts. The native dispatcher and task lease remain mandatory.
+- [V] Added unit coverage for CLI mapping, write approval, text length bounds and clipboard write receipt redaction in tests/test_blind_sniper_browser.py.
+- [V] Added scripts/run_blind_sniper_browser_capability_smoke.py: a real Chromium localhost-fixture E2E that checks PNG screenshot creation, clipboard write/paste, selection copy and clipboard readback.
+- [V] Added the browser-capability-smoke GitHub Actions job with a seven-day evidence artifact. Fixed artifact persistence so the screenshot remains under .blind-sniper/browser-capabilities/ after the script exits.
+- [V] Corrected target-specific screenshot byte accounting in scripts/run_blind_sniper_miss_noor_smoke.py.
+- [U] CI execution, browser CLI compatibility for clipboard commands, actual screenshot bytes and copy/paste behavior remain pending independent run/log/artifact inspection. Do not call this capability verified yet.
+- Latest commit: e0ba0a232810495451e65432e697d4a12d01594e.
+- Verification mapping: R1 screenshot file saved and artifacted — implementation complete, E2E NOT VERIFIED; R2 clipboard write/read — implementation complete, E2E NOT VERIFIED; R3 copy/paste — implementation complete, E2E NOT VERIFIED; R4 approval and receipt privacy — unit tests authored, NOT RUN in this checkpoint.
