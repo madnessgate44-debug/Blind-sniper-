@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -7,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from blind_sniper_mcp_server import TOOLS, handle  # noqa: E402
+from blind_sniper_mcp_server import BrowserDispatchError, BrowserMCP, TOOLS, handle  # noqa: E402
 
 
 class FakeServer:
@@ -35,6 +36,41 @@ class FakeServer:
     def close(self):
         self.calls.append(("close",))
         return {"lease_released": True}
+
+
+class BrowserMCPStatusTests(unittest.TestCase):
+    def _server(self, *, url_exit=0):
+        server = BrowserMCP.__new__(BrowserMCP)
+
+        def dispatch(action, args):
+            if action == "get-url":
+                return {
+                    "output": json.dumps({"success": True, "data": {"url": "https://example.org/"}}),
+                    "receipt": {"action": action, "exit_code": url_exit},
+                }
+            if action == "snapshot":
+                return {
+                    "output": json.dumps({"success": True, "data": {"snapshot": "- heading Example"}}),
+                    "receipt": {"action": action, "exit_code": 0},
+                }
+            return {
+                "output": "{}",
+                "receipt": {"action": action, "exit_code": 0, "artifact_paths": ["/private/browser.png"]},
+            }
+
+        server._dispatch = dispatch
+        return server
+
+    def test_status_returns_normalized_url_visible_text_and_screenshot(self):
+        result = self._server().status()
+        self.assertEqual(result["url"], "https://example.org/")
+        self.assertEqual(result["visible_text"], "- heading Example")
+        self.assertEqual(result["screenshot_reference"], ["/private/browser.png"])
+        self.assertTrue(all(row["exit_code"] == 0 for row in result["receipts"]))
+
+    def test_status_fails_closed_when_url_read_fails(self):
+        with self.assertRaisesRegex(BrowserDispatchError, "status action failed: get-url"):
+            self._server(url_exit=1).status()
 
 
 class BrowserMCPProtocolTests(unittest.TestCase):
