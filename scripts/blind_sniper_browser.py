@@ -7,9 +7,11 @@ variables. This module never invokes a shell and never persists page contents.
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -67,17 +69,55 @@ def redact_url_for_receipt(url: str | None) -> str | None:
         return "[REDACTED_URL]"
 
 
+def _assert_public_host(host: str, port: int | None) -> None:
+    literal = host.split("%", 1)[0]
+    try:
+        addresses = [ipaddress.ip_address(literal)]
+    except ValueError:
+        if host == "localhost" or host.endswith((".localhost", ".local", ".internal", ".lan", ".home", ".corp", ".test", ".invalid", ".example", ".onion")):
+            raise BrowserPolicyError(f"Local or non-public host is not permitted: {host}")
+        try:
+            records = socket.getaddrinfo(host, port or 443, type=socket.SOCK_STREAM)
+        except OSError as exc:
+            raise BrowserPolicyError(f"DNS resolution failed for public host: {host}") from exc
+        addresses = []
+        for record in records:
+            try:
+                addresses.append(ipaddress.ip_address(record[4][0].split("%", 1)[0]))
+            except ValueError:
+                continue
+    if not addresses:
+        raise BrowserPolicyError(f"Host has no usable public IP address: {host}")
+    for address in addresses:
+        if address.version == 6 and address.ipv4_mapped:
+            address = address.ipv4_mapped
+        if not address.is_global:
+            raise BrowserPolicyError(f"Host resolves to a non-public IP address: {address}")
+
+
 def validate_url(url: str) -> str:
-    parsed = urlsplit(url)
-    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+    try:
+        parsed = urlsplit(url)
+        port = parsed.port
+    except ValueError as exc:
+        raise BrowserPolicyError("Malformed URL or port") from exc
+    general_https = os.environ.get("BLIND_SNIPER_BROWSER_GENERAL_HTTPS") == "1"
+    scheme = parsed.scheme.lower()
+    allowed_schemes = {"https"} if general_https else {"http", "https"}
+    if scheme not in allowed_schemes or not parsed.hostname:
+        if general_https:
+            raise BrowserPolicyError("General browsing permits only absolute public HTTPS URLs")
         raise BrowserPolicyError("Only absolute HTTP(S) URLs are permitted")
     if parsed.username is not None or parsed.password is not None:
         raise BrowserPolicyError("URLs containing embedded credentials are not permitted")
     host = parsed.hostname.lower().rstrip(".")
     blocked = _domain_list("BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS")
-    allowed = _domain_list("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS")
     if any(_matches(host, rule) for rule in blocked):
         raise BrowserPolicyError(f"Domain is blocked by host policy: {host}")
+    if general_https:
+        _assert_public_host(host, port)
+        return host
+    allowed = _domain_list("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS")
     if not allowed or not any(_matches(host, rule) for rule in allowed):
         raise BrowserPolicyError(f"Domain is not in the host allowlist: {host}")
     return host
@@ -188,8 +228,9 @@ class BrowserAdapter:
             item.strip() for item in os.environ.get("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS", "").split(",")
             if item.strip()
         )
-        if not allowed_domains:
-            raise BrowserPolicyError("The host must provide BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS")
+        general_https = os.environ.get("BLIND_SNIPER_BROWSER_GENERAL_HTTPS") == "1"
+        if not allowed_domains and not general_https:
+            raise BrowserPolicyError("The host must provide BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS or enable general HTTPS policy")
         idle_timeout = os.environ.get("BLIND_SNIPER_BROWSER_IDLE_TIMEOUT", "1h").strip()
         if not re.fullmatch(r"(?:0|[1-9][0-9]*(?:ms|s|m|h))", idle_timeout):
             raise BrowserPolicyError("BLIND_SNIPER_BROWSER_IDLE_TIMEOUT must be 0 or a positive duration such as 30m or 1h")
@@ -201,7 +242,7 @@ class BrowserAdapter:
             os.chmod(profile_dir, 0o700)
             self._clear_stale_profile_lock(profile_dir)
             command.extend(["--profile", str(profile_dir)])
-        else:
+        elif not general_https:
             command.extend(["--allowed-domains", allowed_domains])
         command.extend([
             "--action-policy", str(self.policy_file),
