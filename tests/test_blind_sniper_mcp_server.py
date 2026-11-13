@@ -224,8 +224,10 @@ class BrowserMCPProtocolTests(unittest.TestCase):
     def test_detach_closes_browser_but_retains_task_lease(self):
         server = BrowserMCP.__new__(BrowserMCP)
         server.active = {"task_id": "task-1", "run_id": "run-1", "session_id": "session-1"}
-        server._dispatch = lambda action, args: {"receipt": {"exit_code": 0, "action": action}}
+        dispatched = []
+        server._dispatch = lambda action, args: (dispatched.append(action) or {"receipt": {"exit_code": 0, "action": action}})
         result = server.detach()
+        self.assertEqual(dispatched, ["detach"])
         self.assertTrue(result["lease_retained"])
         self.assertEqual(result["session"]["session_id"], "session-1")
         self.assertIsNone(server.active)
@@ -245,6 +247,12 @@ class BrowserMCPProtocolTests(unittest.TestCase):
         })
         self.assertTrue(response["result"]["isError"])
         self.assertIn("browser.close", response["result"]["content"][0]["text"])
+        response = handle(FakeServer(), {
+            "jsonrpc": "2.0", "id": 8, "method": "tools/call",
+            "params": {"name": "browser.action", "arguments": {"action": "detach"}},
+        })
+        self.assertTrue(response["result"]["isError"])
+        self.assertIn("browser.detach", response["result"]["content"][0]["text"])
 
 
 if __name__ == "__main__":
