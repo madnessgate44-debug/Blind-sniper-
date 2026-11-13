@@ -95,6 +95,20 @@ def _assert_public_host(host: str, port: int | None) -> None:
             raise BrowserPolicyError(f"Host resolves to a non-public IP address: {address}")
 
 
+def _disable_ipv6_egress(proc_root: Path = Path("/proc")) -> None:
+    controls = list((proc_root / "sys/net/ipv6/conf").glob("*/disable_ipv6"))
+    if not controls:
+        raise BrowserPolicyError("Host cannot verify or disable IPv6 egress")
+    try:
+        for control in controls:
+            if control.read_text(encoding="utf-8").strip() != "1":
+                control.write_text("1", encoding="utf-8")
+        if any(control.read_text(encoding="utf-8").strip() != "1" for control in controls):
+            raise OSError("IPv6 disable control did not persist")
+    except OSError as exc:
+        raise BrowserPolicyError("Host must disable IPv6 egress before general browsing") from exc
+
+
 def validate_url(url: str) -> str:
     try:
         parsed = urlsplit(url)
@@ -115,6 +129,9 @@ def validate_url(url: str) -> str:
     if any(_matches(host, rule) for rule in blocked):
         raise BrowserPolicyError(f"Domain is blocked by host policy: {host}")
     if general_https:
+        if os.environ.get("BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE") != "1":
+            raise BrowserPolicyError("General HTTPS requires a host-level IPv6 egress block")
+        _disable_ipv6_egress()
         _assert_public_host(host, port)
         return host
     allowed = _domain_list("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS")
