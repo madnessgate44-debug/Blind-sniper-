@@ -82,6 +82,29 @@ class BrowserPolicyTests(unittest.TestCase):
         with self.assertRaises(BrowserPolicyError):
             adapter._append_receipt({"step_id": "step-1"})
 
+    def test_persistent_profile_uses_private_profile_without_cli_domain_replay(self):
+        adapter = self.adapter()
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_PERSISTENT_PROFILE": "1"}):
+            with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
+                adapter._command("open", "http://127.0.0.1/")
+        command = run.call_args.args[0]
+        self.assertIn("--profile", command)
+        self.assertNotIn("--allowed-domains", command)
+        profile = Path(command[command.index("--profile") + 1])
+        self.assertEqual(profile, adapter.profiles_dir / adapter.session_id)
+
+    def test_ensure_page_restored_reopens_saved_url_after_blank_page(self):
+        adapter = self.adapter()
+        restore_url = "http://127.0.0.1/saved?query=private"
+        adapter.state["restore_url"] = restore_url
+        adapter.state["current_url"] = "http://127.0.0.1/[REDACTED]"
+        with patch.object(adapter, "_current_url", side_effect=["about:blank", restore_url]):
+            with patch.object(adapter, "_command", return_value=(0, "{}", "", [])) as command:
+                adapter._ensure_page_restored()
+        command.assert_called_once_with("open", restore_url)
+        self.assertEqual(adapter.state["restore_url"], restore_url)
+        self.assertEqual(adapter.state["current_url"], redact_url_for_receipt(restore_url))
+
     def test_action_policy_is_deny_by_default(self):
         adapter = self.adapter()
         policy = json.loads(adapter.policy_file.read_text(encoding="utf-8"))
