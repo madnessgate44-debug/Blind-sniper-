@@ -517,6 +517,7 @@ class BrowserAdapter:
             cli_args = ["pdf", str(target)]
             artifact_paths.append(str(target))
         elif action == "clipboard-read":
+            self._assert_write_approved()
             if args:
                 raise BrowserPolicyError("clipboard-read takes no arguments")
             validate_url(self.state.get("current_url") or "")
