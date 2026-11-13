@@ -103,14 +103,19 @@ class BrowserAdapter:
         if str(state_dir) == ".blind-sniper/browser":
             state_dir = os.environ.get("BLIND_SNIPER_BROWSER_STATE_DIR", str(state_dir))
         self.state_dir = Path(state_dir).resolve()
+        self.state_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(self.state_dir, 0o700)
         self.sessions_dir = self.state_dir / "sessions"
         self.receipts_dir = self.state_dir / "receipts"
         self.artifacts_dir = self.state_dir / "artifacts"
         self.uploads_dir = self.state_dir / "uploads"
         self.profiles_dir = self.state_dir / "profiles"
+        self.restore_urls_dir = self.state_dir / "resume"
+        self.restore_url_file = self.restore_urls_dir / f"{session_id}.json"
         self.policy_file = self.state_dir / "action-policy.json"
-        for directory in (self.sessions_dir, self.receipts_dir, self.artifacts_dir, self.uploads_dir, self.profiles_dir):
-            directory.mkdir(parents=True, exist_ok=True)
+        for directory in (self.sessions_dir, self.receipts_dir, self.artifacts_dir, self.uploads_dir, self.profiles_dir, self.restore_urls_dir):
+            directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+            os.chmod(directory, 0o700)
         self.policy_file.write_text(json.dumps({
             "default": "deny",
             "allow": ["launch", "close", "navigate", "snapshot", "screenshot", "click", "fill", "upload", "download", "tab_list", "tab_new", "tab_switch", "tab_close", "frame", "frame_switch", "mainframe", "pdf", "scroll", "wait", "get", "url", "interact", "read"],
@@ -121,11 +126,14 @@ class BrowserAdapter:
 
     def _load_state(self) -> dict[str, Any]:
         if not self.session_file.exists():
-            return {
+            state = {
                 "schema_version": SCHEMA_VERSION, "task_id": self.task_id,
                 "run_id": self.run_id, "session_id": self.session_id,
-                "status": "NEW", "current_url": None, "restore_url": None, "created_at": utc_now(),
+                "status": "NEW", "current_url": None, "created_at": utc_now(),
             }
+            if self.restore_url_file.exists():
+                state["restore_url"] = self._read_restore_url()
+            return state
         try:
             state = json.loads(self.session_file.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
@@ -135,12 +143,29 @@ class BrowserAdapter:
                 raise BrowserPolicyError(f"Session {key} mismatch; refusing cross-task reuse")
         if state.get("status") == "CLOSED":
             raise BrowserPolicyError("Session is closed; create a new session_id")
+        if self.restore_url_file.exists():
+            state["restore_url"] = self._read_restore_url()
         return state
 
+    def _read_restore_url(self) -> str | None:
+        try:
+            value = json.loads(self.restore_url_file.read_text(encoding="utf-8")).get("url")
+        except (OSError, json.JSONDecodeError, AttributeError) as exc:
+            raise BrowserAdapterError(f"Cannot recover private browser resume URL: {exc}") from exc
+        return value if isinstance(value, str) and value.startswith(("http://", "https://")) else None
+
     def _save_state(self) -> None:
+        public_state = {key: value for key, value in self.state.items() if key != "restore_url"}
         temp = self.session_file.with_suffix(".tmp")
-        temp.write_text(json.dumps(self.state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        temp.write_text(json.dumps(public_state, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        os.chmod(temp, 0o600)
         os.replace(temp, self.session_file)
+        restore_url = self.state.get("restore_url")
+        if isinstance(restore_url, str) and restore_url.startswith(("http://", "https://")):
+            resume_temp = self.restore_url_file.with_suffix(".tmp")
+            resume_temp.write_text(json.dumps({"url": restore_url}) + "\n", encoding="utf-8")
+            os.chmod(resume_temp, 0o600)
+            os.replace(resume_temp, self.restore_url_file)
 
     def _command(self, *args: str) -> tuple[int, str, str, list[str]]:
         allowed_domains = ",".join(
@@ -156,7 +181,8 @@ class BrowserAdapter:
         command = [self.binary, "--session", self.session_id, "--idle-timeout", idle_timeout]
         if persistent_profile:
             profile_dir = self.profiles_dir / self.session_id
-            profile_dir.mkdir(parents=True, exist_ok=True)
+            profile_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+            os.chmod(profile_dir, 0o700)
             command.extend(["--profile", str(profile_dir)])
         else:
             command.extend(["--allowed-domains", allowed_domains])
