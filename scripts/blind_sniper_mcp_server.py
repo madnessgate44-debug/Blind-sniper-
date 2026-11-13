@@ -40,7 +40,8 @@ def _text(value: Any) -> str:
 
 CAPTCHA_PATTERN = re.compile(
     r"captcha|recaptcha|hcaptcha|turnstile|verify (?:that )?you are human|prove you are human|"
-    r"human verification|security challenge|unusual traffic",
+    r"human verification|security challenge|unusual traffic|complete the following challenge|"
+    r"challenge to confirm .*human|select all (?:squares|images)|not a robot",
     re.I,
 )
 MFA_PATTERN = re.compile(
