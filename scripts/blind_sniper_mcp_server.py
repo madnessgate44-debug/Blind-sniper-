@@ -314,7 +314,7 @@ TOOLS = [
     },
     {
         "name": "browser.status",
-        "description": "Return current URL, page title, visible text, screenshot and available actions; pause for CAPTCHA/MFA handoff."
+        "description": "Return current URL, page title, visible text, screenshot and available actions; pause for CAPTCHA/MFA handoff.",
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
     {
