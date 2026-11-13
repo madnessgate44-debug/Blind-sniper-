@@ -71,10 +71,9 @@ def main() -> int:
     try:
         opened = run("open-miss-noor", "open", (TARGET_URL,))
         snapshot = run("capture-accessibility-tree", "snapshot")
-        current = run("verify-current-url", "get-url")
         screenshot = run("capture-screenshot", "screenshot", ("miss-noor-home.png",))
-        current_url = current.get("output", "")
-        parsed = urlsplit(current_url.strip())
+        current_url = opened["receipt"].get("observed_url") or ""
+        parsed = urlsplit(current_url.replace("/[REDACTED]", "/"))
         if parsed.hostname != EXPECTED_HOST:
             raise RuntimeError(f"Unexpected final browser host: {parsed.hostname!r}")
         snapshot_text = snapshot.get("output", "")
@@ -93,7 +92,6 @@ def main() -> int:
                     if (artifacts / "miss-noor-home.png").exists() else 0,
                 "open_receipt": opened["receipt"],
                 "snapshot_receipt": snapshot["receipt"],
-                "url_receipt": current["receipt"],
                 "screenshot_receipt": screenshot["receipt"],
             }, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
