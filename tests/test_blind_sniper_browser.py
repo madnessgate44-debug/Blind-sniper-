@@ -200,5 +200,44 @@ class BrowserPolicyTests(unittest.TestCase):
         self.assertIn("blind_sniper_browser_dispatch.py", output.getvalue())
 
 
+    def test_clipboard_actions_map_to_cli_and_redact_written_text(self):
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "clipboard-result", "")) as run:
+                adapter.execute("clipboard-write", "clipboard-write-1", "private clipboard phrase")
+                adapter.execute("clipboard-read", "clipboard-read-1")
+                adapter.execute("clipboard-copy", "clipboard-copy-1")
+                adapter.execute("clipboard-paste", "clipboard-paste-1")
+        commands = [call.args[0] for call in run.call_args_list]
+        self.assertTrue(any(command[-3:] == ["clipboard", "write", "private clipboard phrase"] for command in commands))
+        self.assertTrue(any(command[-2:] == ["clipboard", "read"] for command in commands))
+        self.assertTrue(any(command[-2:] == ["clipboard", "copy"] for command in commands))
+        self.assertTrue(any(command[-2:] == ["clipboard", "paste"] for command in commands))
+        receipt_text = adapter.receipt_file.read_text(encoding="utf-8")
+        self.assertNotIn("private clipboard phrase", receipt_text)
+        self.assertIn("[REDACTED]", receipt_text)
+
+    def test_clipboard_mutations_require_host_approval(self):
+        adapter = self.adapter()
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        for action, args in (
+            ("clipboard-write", ("text",)),
+            ("clipboard-copy", ()),
+            ("clipboard-paste", ()),
+        ):
+            with self.subTest(action=action):
+                with self.assertRaises(BrowserPolicyError):
+                    adapter.execute(action, f"blocked-{action}", *args)
+
+    def test_clipboard_write_enforces_text_limit(self):
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with self.assertRaises(BrowserPolicyError):
+                adapter.execute("clipboard-write", "clipboard-too-long", "x" * 10001)
+
+
+
 if __name__ == "__main__":
     unittest.main()
