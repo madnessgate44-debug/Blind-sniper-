@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -18,6 +19,29 @@ from blind_sniper_browser import ACTIONS, BrowserAdapter, BrowserAdapterError, B
 
 class BrowserDispatchError(RuntimeError):
     """A browser dispatch rejected by native task or lease policy."""
+
+
+def _persist_receipt_artifact(state_dir: str | Path, task_id: str, step_id: str, receipt: dict[str, Any]) -> tuple[str, str]:
+    root = Path(state_dir).resolve()
+    receipt_dir = root / "receipts" / task_id
+    receipt_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(receipt_dir, 0o700)
+    target = receipt_dir / f"{step_id}.json"
+    temp = target.with_suffix(".tmp")
+    raw = (json.dumps(receipt, sort_keys=True, ensure_ascii=False) + "\\n").encode("utf-8")
+    temp.write_bytes(raw)
+    os.chmod(temp, 0o600)
+    os.replace(temp, target)
+    return str(target.relative_to(root)), hashlib.sha256(raw).hexdigest()
+
+
+def _receipt_summary(receipt: dict[str, Any]) -> dict[str, Any]:
+    keys = (
+        "action", "exit_code", "started_at", "completed_at", "requested_url",
+        "observed_url", "stdout_bytes", "stdout_sha256", "stderr_bytes",
+        "stderr_sha256", "policy_error",
+    )
+    return {key: receipt.get(key) for key in keys if key in receipt}
 
 
 def dispatch_browser_action(
@@ -93,13 +117,16 @@ def dispatch_browser_action(
     # Record the action result even if the lease expired while the bounded action ran.
     lease_after = ledger.lease_status(task_id)
     lease_valid_after = bool(lease_after and lease_after.get("owner_id") == owner_id)
+    receipt_ref, receipt_sha256 = _persist_receipt_artifact(state_dir, task_id, step_id, receipt)
     ledger.append(
         task_id=task_id,
         event_type="BROWSER_ACTION_COMPLETED",
         payload={
             "owner_id": owner_id, "run_id": run_id, "session_id": session_id,
             "step_id": step_id, "action": action, "exit_code": receipt.get("exit_code"),
-            "receipt": receipt, "lease_valid_after_action": lease_valid_after,
+            "receipt_summary": _receipt_summary(receipt),
+            "receipt_ref": receipt_ref, "receipt_sha256": receipt_sha256,
+            "lease_valid_after_action": lease_valid_after,
         },
         idempotency_key=completed_key,
     )
