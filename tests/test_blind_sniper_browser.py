@@ -11,7 +11,7 @@ from subprocess import CompletedProcess
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.blind_sniper_browser import BrowserAdapter, BrowserAdapterError, BrowserPolicyError, validate_url, main, redact_url_for_receipt
+from scripts.blind_sniper_browser import BrowserAdapter, BrowserAdapterError, BrowserPolicyError, validate_url, main, redact_url_for_receipt, _disable_ipv6_egress
 
 
 class BrowserPolicyTests(unittest.TestCase):
