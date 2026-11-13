@@ -40,9 +40,11 @@ class BrowserPolicyTests(unittest.TestCase):
         with self.assertRaises(BrowserPolicyError):
             validate_url("https://blocked.example.test/")
 
+    @patch("scripts.blind_sniper_browser._disable_ipv6_egress")
     def test_general_https_allows_public_host_without_allowlist(self):
         with patch.dict(os.environ, {
             "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
             "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
             "BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS": "",
         }):
@@ -51,9 +53,11 @@ class BrowserPolicyTests(unittest.TestCase):
             ]):
                 self.assertEqual(validate_url("https://never-configured.example.net/"), "never-configured.example.net")
 
+    @patch("scripts.blind_sniper_browser._disable_ipv6_egress")
     def test_general_https_rejects_http_and_private_ip_literals(self):
         with patch.dict(os.environ, {
             "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
             "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
             "BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS": "",
         }):
@@ -63,9 +67,11 @@ class BrowserPolicyTests(unittest.TestCase):
                 with self.subTest(url=url), self.assertRaises(BrowserPolicyError):
                     validate_url(url)
 
+    @patch("scripts.blind_sniper_browser._disable_ipv6_egress")
     def test_general_https_rejects_dns_rebinding_to_private_address(self):
         with patch.dict(os.environ, {
             "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
             "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
             "BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS": "",
         }):
@@ -75,9 +81,11 @@ class BrowserPolicyTests(unittest.TestCase):
                 with self.assertRaisesRegex(BrowserPolicyError, "non-public IP"):
                     validate_url("https://rebind.example.net/")
 
+    @patch("scripts.blind_sniper_browser._disable_ipv6_egress")
     def test_general_https_rejects_mixed_public_and_private_dns_answers(self):
         with patch.dict(os.environ, {
             "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
             "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
             "BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS": "",
         }):
@@ -88,10 +96,23 @@ class BrowserPolicyTests(unittest.TestCase):
                 with self.assertRaisesRegex(BrowserPolicyError, "non-public IP"):
                     validate_url("https://mixed.example.net/")
 
+    def test_ipv6_egress_block_disables_all_proc_controls(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for interface in ("all", "default", "lo", "eth0"):
+                control = root / "sys/net/ipv6/conf" / interface / "disable_ipv6"
+                control.parent.mkdir(parents=True, exist_ok=True)
+                control.write_text("0", encoding="utf-8")
+            _disable_ipv6_egress(root)
+            for interface in ("all", "default", "lo", "eth0"):
+                control = root / "sys/net/ipv6/conf" / interface / "disable_ipv6"
+                self.assertEqual(control.read_text(encoding="utf-8").strip(), "1")
+
     def test_general_https_command_does_not_require_domain_allowlist(self):
         adapter = self.adapter()
         with patch.dict(os.environ, {
             "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
             "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
         }):
             with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
