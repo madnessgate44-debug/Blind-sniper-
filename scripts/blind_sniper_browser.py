@@ -553,6 +553,8 @@ class BrowserAdapter:
         elif action == "get-title":
             validate_url(self.state.get("current_url") or "")
             cli_args = ["get", "title"]
+        elif action == "detach":
+            cli_args = ["close"]
         else:
             cli_args = ["close"]
 
@@ -586,6 +588,9 @@ class BrowserAdapter:
                     self.state["closed_at"] = utc_now()
                     code = 2
                     stderr = (stderr + "\n" + policy_error).strip()
+        elif action == "detach":
+            self.state["status"] = "DETACHED"
+            self.state["detached_at"] = utc_now()
         elif action == "close":
             self.state["status"] = "CLOSED"
             self.state["closed_at"] = utc_now()
