@@ -138,7 +138,8 @@ class BrowserMCPProtocolTests(unittest.TestCase):
             {row["name"] for row in response["result"]["tools"]},
             {row["name"] for row in TOOLS},
         )
-        self.assertEqual(len(TOOLS), 5)
+        self.assertEqual(len(TOOLS), 6)
+        self.assertIn("browser.detach", {row["name"] for row in TOOLS})
 
     def test_failed_browser_start_cancels_task_and_releases_lease(self):
         class Ledger:
@@ -218,6 +219,23 @@ class BrowserMCPProtocolTests(unittest.TestCase):
             "params": {"name": "browser.status", "arguments": []},
         })
         self.assertEqual(response["error"]["code"], -32602)
+
+    def test_detach_closes_browser_but_retains_task_lease(self):
+        server = BrowserMCP.__new__(BrowserMCP)
+        server.active = {"task_id": "task-1", "run_id": "run-1", "session_id": "session-1"}
+        server._dispatch = lambda action, args: {"receipt": {"exit_code": 0, "action": action}}
+        result = server.detach()
+        self.assertTrue(result["lease_retained"])
+        self.assertEqual(result["session"]["session_id"], "session-1")
+        self.assertIsNone(server.active)
+
+    def test_failed_detach_keeps_active_session_and_lease(self):
+        server = BrowserMCP.__new__(BrowserMCP)
+        server.active = {"task_id": "task-1", "run_id": "run-1", "session_id": "session-1"}
+        server._dispatch = lambda action, args: {"receipt": {"exit_code": 1, "action": action}}
+        with self.assertRaisesRegex(BrowserDispatchError, "lease remains active"):
+            server.detach()
+        self.assertIsNotNone(server.active)
 
     def test_generic_action_cannot_bypass_session_close_lifecycle(self):
         response = handle(FakeServer(), {
