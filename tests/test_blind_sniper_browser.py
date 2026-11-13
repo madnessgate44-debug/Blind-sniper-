@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import io
 import os
+import socket
 import tempfile
 import unittest
 from contextlib import redirect_stderr
@@ -39,6 +40,65 @@ class BrowserPolicyTests(unittest.TestCase):
         with self.assertRaises(BrowserPolicyError):
             validate_url("https://blocked.example.test/")
 
+    def test_general_https_allows_public_host_without_allowlist(self):
+        with patch.dict(os.environ, {
+            "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
+            "BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS": "",
+        }):
+            with patch("scripts.blind_sniper_browser.socket.getaddrinfo", return_value=[
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443)),
+            ]):
+                self.assertEqual(validate_url("https://never-configured.example/"), "never-configured.example")
+
+    def test_general_https_rejects_http_and_private_ip_literals(self):
+        with patch.dict(os.environ, {
+            "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
+            "BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS": "",
+        }):
+            with self.assertRaisesRegex(BrowserPolicyError, "public HTTPS"):
+                validate_url("http://example.com/")
+            for url in ("https://127.0.0.1/", "https://169.254.169.254/", "https://[::1]/", "https://[fd00::1]/"):
+                with self.subTest(url=url), self.assertRaises(BrowserPolicyError):
+                    validate_url(url)
+
+    def test_general_https_rejects_dns_rebinding_to_private_address(self):
+        with patch.dict(os.environ, {
+            "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
+            "BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS": "",
+        }):
+            with patch("scripts.blind_sniper_browser.socket.getaddrinfo", return_value=[
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.2.3.4", 443)),
+            ]):
+                with self.assertRaisesRegex(BrowserPolicyError, "non-public IP"):
+                    validate_url("https://rebind.example/")
+
+    def test_general_https_rejects_mixed_public_and_private_dns_answers(self):
+        with patch.dict(os.environ, {
+            "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
+            "BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS": "",
+        }):
+            with patch("scripts.blind_sniper_browser.socket.getaddrinfo", return_value=[
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443)),
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.168.1.10", 443)),
+            ]):
+                with self.assertRaisesRegex(BrowserPolicyError, "non-public IP"):
+                    validate_url("https://mixed.example/")
+
+    def test_general_https_command_does_not_require_domain_allowlist(self):
+        adapter = self.adapter()
+        with patch.dict(os.environ, {
+            "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
+        }):
+            with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
+                adapter._command("open", "https://public.example/")
+        command = run.call_args.args[0]
+        self.assertNotIn("--allowed-domains", command)
+
     def test_non_http_scheme_is_rejected(self):
         with self.assertRaises(BrowserPolicyError):
             validate_url("file:///etc/passwd")
@@ -57,6 +117,41 @@ class BrowserPolicyTests(unittest.TestCase):
         adapter.state["current_url"] = "http://127.0.0.1/"
         with self.assertRaises(BrowserPolicyError):
             adapter.execute("click", "step-1", "#submit")
+
+    def test_fill_blocks_page_with_password_or_mfa_field(self):
+        adapter = self.adapter()
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with patch.object(adapter, "_cli_data_field", return_value=1):
+                with self.assertRaisesRegex(BrowserPolicyError, "password or one-time-code"):
+                    adapter.execute("fill", "fill-credential-page", 'input[name="customer"]', "Ahmed")
+
+    def test_fill_blocks_password_field_even_with_neutral_selector(self):
+        adapter = self.adapter()
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        def field(*args, field):
+            if args[0] == "count":
+                return 0
+            return {"type": "password", "name": "login"}.get(args[-1])
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with patch.object(adapter, "_cli_data_field", side_effect=field):
+                with self.assertRaisesRegex(BrowserPolicyError, "Sensitive credential"):
+                    adapter.execute("fill", "fill-password-field", "#field", "not-a-secret")
+
+    def test_fill_allows_verified_non_sensitive_form_field(self):
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        def field(*args, field):
+            if args[0] == "count":
+                return 0
+            return {"type": "text", "name": "custname"}.get(args[-1])
+        completed = CompletedProcess([], 0, '{"success":true,"data":{"url":"http://127.0.0.1/"}}', "")
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with patch.object(adapter, "_cli_data_field", side_effect=field):
+                with patch("scripts.blind_sniper_browser.subprocess.run", return_value=completed) as run:
+                    result = adapter.execute("fill", "fill-safe-field", 'input[name="custname"]', "Ahmed")
+        self.assertEqual(result["receipt"]["exit_code"], 0)
+        self.assertTrue(any(command[-3:] == ["fill", 'input[name="custname"]', "Ahmed"] for command in [call.args[0] for call in run.call_args_list]))
 
     def test_sensitive_selector_is_rejected(self):
         with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
