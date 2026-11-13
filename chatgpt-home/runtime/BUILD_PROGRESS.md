@@ -5,9 +5,10 @@
 - [VERIFIED] Added stdio MCP server at `scripts/blind_sniper_mcp_server.py` with five browser tools: start, action, status, resume and close. The bridge creates native task/session identities and routes browser actions through `dispatch_browser_action`; lease and step reservation remain mandatory.
 - [VERIFIED] Private ledger/browser-state paths are required to remain outside the public repository. Mutating actions still require host approval and an approval reference. Failed browser close does not release the lease.
 - [VERIFIED] Added nine protocol unit tests in `tests/test_blind_sniper_mcp_server.py` and B1 deployment/configuration/acceptance documentation in `docs/BS-BROWSER-001-B1-MCP-BRIDGE.md`.
-- [UNPROVEN] No tests or live MCP/browser session were run from this connector session. Source review is not runtime verification.
+- [VERIFIED] Runtime Registry run `43438707670` SUCCESS: 261 unit tests passed, including all nine `test_blind_sniper_mcp_server` protocol tests. OS Compliance `43438705592` and Environment Validation `43438705523` also SUCCESS. The earlier runtime failure `43438598796` was corrected and the latest head passed.
+- [UNPROVEN] No MCP client has connected and no browser action has been executed through the new server. CI unit tests do not prove a live stdio client or Chromium session.
 - [BLOCKED] ChatGPT cannot call a stdio MCP server in this session; no MCP registration/stdio invocation tool is available. A host must launch the process and expose it to an MCP-capable client. Existing Vercel Python function is stateless and cannot host Chromium.
-- [VERIFIED] Draft PR #58 is OPEN at `https://github.com/madnessgate44-debug/Blind-sniper-/pull/58`; feature branch is ahead of main by eight commits at the initial PR comparison, with no base divergence.
+- [VERIFIED] Draft PR #58 is OPEN at `https://github.com/madnessgate44-debug/Blind-sniper-/pull/58`; feature branch is ahead of main with no base divergence.
 - [FAILED] Local test checkout attempt `git clone --depth 1 --branch feat/bs-browser-001-mcp-bridge https://github.com/madnessgate44-debug/Blind-sniper-.git /tmp/blind-sniper-b1` -> exit 128; raw output: `fatal: unable to access 'https://github.com/madnessgate44-debug/Blind-sniper-.git/': Could not resolve host: github.com`. Tests therefore remain NOT RUN.
 - [GATE] B1 remains OPEN / NOT PASSED. Do not start B2 or B3 until ChatGPT invokes this bridge and a live browser action succeeds.
 
