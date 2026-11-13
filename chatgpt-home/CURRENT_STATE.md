@@ -4,7 +4,7 @@
 
 - [VERIFIED] Added `scripts/blind_sniper_mcp_server.py`: native MCP stdio/JSON-RPC server exposing browser.start, browser.action, browser.status, browser.resume and browser.close. Task/run/session/step IDs are generated internally; actions route through the existing lease-gated dispatcher.
 - [VERIFIED] Added protocol tests in `tests/test_blind_sniper_mcp_server.py` and operating/host configuration notes in `docs/BS-BROWSER-001-B1-MCP-BRIDGE.md`. Source files were re-fetched from the feature branch.
-- [VERIFIED] Nine MCP protocol tests pass within the 261-test Runtime Registry suite on PR head `356757d454af04910a9bb2fc9f0a412f4b27d5b6`; run `43438707670` SUCCESS. The first run exposed one argument-validation defect (`43438598796`); the fix passed on the next run.
+- [VERIFIED] Nine MCP protocol tests pass within the 261-test Runtime Registry suite on final documentation head `1b3a4dbf13125f00f41113ebb07856ce73df0c1c`; run `43438890577` SUCCESS. The source-fix head also passed run `43438707670`. The first run exposed one argument-validation defect (`43438598796`); the fix passed on the next run.
 - [UNPROVEN] No MCP client has connected and no browser action has been executed through the new server.
 - [BLOCKED] ChatGPT cannot invoke this stdio server in the current session: no MCP stdio registration/call tool is exposed. The existing Vercel health function is stateless and is not a Chromium host.
 - [VERIFIED] OS compliance run `43438705592` SUCCESS; environment validation run `43438705523` SUCCESS.
