@@ -41,7 +41,7 @@ class BrowserPolicyTests(unittest.TestCase):
             validate_url("https://blocked.example.test/")
 
     @patch("scripts.blind_sniper_browser._disable_ipv6_egress")
-    def test_general_https_allows_public_host_without_allowlist(self):
+    def test_general_https_allows_public_host_without_allowlist(self, _disable_ipv6):
         with patch.dict(os.environ, {
             "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
             "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
@@ -54,7 +54,7 @@ class BrowserPolicyTests(unittest.TestCase):
                 self.assertEqual(validate_url("https://never-configured.example.net/"), "never-configured.example.net")
 
     @patch("scripts.blind_sniper_browser._disable_ipv6_egress")
-    def test_general_https_rejects_http_and_private_ip_literals(self):
+    def test_general_https_rejects_http_and_private_ip_literals(self, _disable_ipv6):
         with patch.dict(os.environ, {
             "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
             "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
@@ -68,7 +68,7 @@ class BrowserPolicyTests(unittest.TestCase):
                     validate_url(url)
 
     @patch("scripts.blind_sniper_browser._disable_ipv6_egress")
-    def test_general_https_rejects_dns_rebinding_to_private_address(self):
+    def test_general_https_rejects_dns_rebinding_to_private_address(self, _disable_ipv6):
         with patch.dict(os.environ, {
             "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
             "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
@@ -82,7 +82,7 @@ class BrowserPolicyTests(unittest.TestCase):
                     validate_url("https://rebind.example.net/")
 
     @patch("scripts.blind_sniper_browser._disable_ipv6_egress")
-    def test_general_https_rejects_mixed_public_and_private_dns_answers(self):
+    def test_general_https_rejects_mixed_public_and_private_dns_answers(self, _disable_ipv6):
         with patch.dict(os.environ, {
             "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
             "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
