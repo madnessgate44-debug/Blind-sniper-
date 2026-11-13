@@ -47,14 +47,14 @@ Mutating browser actions additionally require both `BLIND_SNIPER_BROWSER_WRITE_A
 
 | Requirement | Acceptance | Current result |
 |---|---|---|
-| R1 MCP transport | Initialize, list tools, call tools over stdio | Source added; unit tests authored; NOT RUN |
+| R1 MCP protocol | Initialize, list tools, call tool dispatch and reject malformed arguments | 9 protocol tests PASS within 261-test CI suite; live MCP client handshake NOT RUN |
 | R2 conversational session interface | Start, action, status, resume, close with internal task/session IDs | Source added; NOT RUN |
-| R3 native policy integration | Every action uses the lease-gated dispatcher and existing approval/domain checks | Source review only; runtime NOT RUN |
+| R3 native policy integration | Every action uses the lease-gated dispatcher and existing approval/domain checks | Source review + unit suite PASS; real browser dispatch NOT RUN |
 | R4 structured result | Return URL, page snapshot, screenshot reference and receipts | Source added; runtime NOT RUN |
 | R5 ChatGPT invocation | ChatGPT can invoke the MCP server as a callable tool | BLOCKED: current session exposes no custom MCP registration or direct MCP stdio tool |
 | R6 live browser E2E | ChatGPT starts a new session and controls an unconfigured site through one conversation | BLOCKED until R5 and a configured browser host are available |
 
-This is a real stdio MCP server implementation, not a live ChatGPT connection. A stdio server requires an MCP host to launch it; a hosted HTTP MCP endpoint requires a persistent browser execution host and a separately verified remote transport. The existing Vercel health function is stateless and cannot itself host the Chromium process. Do not claim B1 passed until the real ChatGPT-to-MCP-to-Chromium loop is exercised.
+Runtime Registry CI run `43438707670` passed 261 unit tests (including all nine MCP protocol tests); OS compliance `43438705592` and environment validation `43438705523` also passed. This is a real stdio MCP server implementation, not a live ChatGPT connection. A stdio server requires an MCP host to launch it; a hosted HTTP MCP endpoint requires a persistent browser execution host and a separately verified remote transport. The existing Vercel health function is stateless and cannot itself host the Chromium process. Do not claim B1 passed until the real ChatGPT-to-MCP-to-Chromium loop is exercised.
 
 ## Deliberately deferred
 
