@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import uuid
 from pathlib import Path
@@ -35,6 +36,26 @@ MUTATING = {"click", "fill", "press", "upload", "clipboard-write", "clipboard-co
 
 def _text(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
+
+CAPTCHA_PATTERN = re.compile(
+    r"captcha|recaptcha|hcaptcha|turnstile|verify (?:that )?you are human|prove you are human|"
+    r"human verification|security challenge|unusual traffic",
+    re.I,
+)
+MFA_PATTERN = re.compile(
+    r"two[- ]factor|multi[- ]factor|one[- ]time (?:password|code)|verification code|"
+    r"authenticator app|security code|passkey|approve sign[- ]in|enter the code",
+    re.I,
+)
+
+
+def _detect_user_handoff(visible_text: str) -> str | None:
+    if CAPTCHA_PATTERN.search(visible_text):
+        return "captcha"
+    if MFA_PATTERN.search(visible_text):
+        return "mfa"
+    return None
 
 
 def _nested_string(raw: Any, field: str) -> str:
@@ -166,6 +187,11 @@ class BrowserMCP:
     def action(self, action: str, args: list[str]) -> dict[str, Any]:
         if action not in ACTIONS - {"close"}:
             raise ValueError(f"Unsupported browser action: {action}; use browser.close for session shutdown")
+        if self.active and self.active.get("user_action_required"):
+            raise PermissionError(
+                f"Browser paused for user action ({self.active.get('handoff_type')}); "
+                "complete the challenge yourself. CAPTCHA/MFA bypass is not supported."
+            )
         if action in MUTATING:
             if os.environ.get("BLIND_SNIPER_BROWSER_WRITE_APPROVED") != "1":
                 raise PermissionError("Host browser-write approval is absent")
@@ -190,10 +216,16 @@ class BrowserMCP:
         screenshot_reference = screenshot.get("receipt", {}).get("artifact_paths", [])
         if not screenshot_reference:
             raise BrowserDispatchError("Browser status screenshot produced no artifact reference")
+        handoff_type = _detect_user_handoff(visible_text)
+        if self.active is not None:
+            self.active["user_action_required"] = handoff_type is not None
+            self.active["handoff_type"] = handoff_type
         return {
             "url": current_url,
             "visible_text": visible_text,
             "screenshot_reference": screenshot_reference,
+            "user_action_required": handoff_type is not None,
+            "handoff_type": handoff_type,
             "receipts": [url.get("receipt"), snapshot.get("receipt"), screenshot.get("receipt")],
         }
 
@@ -243,7 +275,7 @@ TOOLS = [
     },
     {
         "name": "browser.status",
-        "description": "Return current URL, accessibility/visible page snapshot and a private screenshot artifact reference.",
+        "description": "Return current URL, visible page snapshot and screenshot; pause for user action if CAPTCHA or MFA is detected.",
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
     {
