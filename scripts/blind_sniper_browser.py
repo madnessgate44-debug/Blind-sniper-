@@ -398,7 +398,7 @@ class BrowserAdapter:
             "observed_url": redact_url_for_receipt(observed_url),
             "started_at": started, "completed_at": utc_now(),
             "command": [
-                "[REDACTED]" if action == "fill" and i == len(command) - 1
+                "[REDACTED]" if action in {"fill", "clipboard-write"} and i == len(command) - 1
                 else "[WORKSPACE_FILE]" if action == "upload" and i == len(command) - 1
                 else redact_url_for_receipt(value) if value.startswith(("http://", "https://"))
                 else value
