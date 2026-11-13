@@ -235,9 +235,10 @@ class BrowserMCP:
 
     def status(self) -> dict[str, Any]:
         url = self._dispatch("get-url", [])
+        title = self._dispatch("get-title", [])
         snapshot = self._dispatch("snapshot", [])
         screenshot = self._dispatch("screenshot", [f"browser-{uuid.uuid4().hex}.png"])
-        results = (url, snapshot, screenshot)
+        results = (url, title, snapshot, screenshot)
         for result in results:
             receipt = result.get("receipt")
             if not isinstance(receipt, dict) or int(receipt.get("exit_code", 1)) != 0:
@@ -246,6 +247,7 @@ class BrowserMCP:
         current_url = _nested_string(url.get("output", ""), "url")
         if not current_url.startswith(("http://", "https://")):
             raise BrowserDispatchError("Browser status could not extract the current URL")
+        page_title = _nested_string(title.get("output", ""), "title")
         visible_text = _nested_string(snapshot.get("output", ""), "snapshot")
         screenshot_reference = screenshot.get("receipt", {}).get("artifact_paths", [])
         if not screenshot_reference:
@@ -256,8 +258,11 @@ class BrowserMCP:
             self.active["handoff_type"] = handoff_type
         return {
             "url": current_url,
+            "title": page_title,
             "visible_text": visible_text,
             "screenshot_reference": screenshot_reference,
+            "available_actions": sorted((ACTIONS - {"close"}) | {"browser.close"}),
+            "approval_required_actions": sorted(MUTATING),
             "user_action_required": handoff_type is not None,
             "handoff_type": handoff_type,
             "receipts": [url.get("receipt"), snapshot.get("receipt"), screenshot.get("receipt")],
@@ -309,7 +314,7 @@ TOOLS = [
     },
     {
         "name": "browser.status",
-        "description": "Return current URL, visible page snapshot and screenshot; pause for user action if CAPTCHA or MFA is detected.",
+        "description": "Return current URL, page title, visible text, screenshot and available actions; pause for CAPTCHA/MFA handoff."
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
     {
