@@ -49,7 +49,7 @@ class BrowserPolicyTests(unittest.TestCase):
             with patch("scripts.blind_sniper_browser.socket.getaddrinfo", return_value=[
                 (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443)),
             ]):
-                self.assertEqual(validate_url("https://never-configured.example.net/"), "never-configured.example")
+                self.assertEqual(validate_url("https://never-configured.example.net/"), "never-configured.example.net")
 
     def test_general_https_rejects_http_and_private_ip_literals(self):
         with patch.dict(os.environ, {
