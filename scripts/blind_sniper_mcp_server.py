@@ -48,12 +48,21 @@ class BrowserMCP:
             raise RuntimeError("MCP private state directory must be outside the public repository")
         default_root.mkdir(parents=True, exist_ok=True)
         self.state_root = default_root
-        self.ledger = TaskLedger(os.environ.get(
+        ledger_path = Path(os.environ.get(
             "BLIND_SNIPER_MCP_LEDGER", str(default_root / "events.jsonl")
-        ))
-        self.browser_state = Path(os.environ.get(
+        )).resolve()
+        browser_state = Path(os.environ.get(
             "BLIND_SNIPER_BROWSER_STATE_DIR", str(default_root / "browser")
         )).resolve()
+        for label, candidate in (("ledger", ledger_path), ("browser state", browser_state)):
+            try:
+                candidate.relative_to(ROOT)
+            except ValueError:
+                pass
+            else:
+                raise RuntimeError(f"Private {label} path must be outside the public repository")
+        self.ledger = TaskLedger(ledger_path)
+        self.browser_state = browser_state
         self.active: dict[str, str] | None = None
 
     def _lease(self, task_id: str, key: str) -> None:
