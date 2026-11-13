@@ -28,6 +28,7 @@ on:
       - "scripts/blind_sniper_browser_dispatch.py"
       - "scripts/run_blind_sniper_browser_e2e.py"
       - "scripts/run_blind_sniper_miss_noor_smoke.py"
+      - "scripts/run_blind_sniper_browser_capability_smoke.py"
       - "tests/test_blind_sniper_browser.py"
       - "tests/test_blind_sniper_browser_dispatch.py"
       - "tests/fixtures/browser/**"
