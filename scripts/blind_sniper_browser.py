@@ -21,7 +21,7 @@ from urllib.parse import urlsplit
 
 SCHEMA_VERSION = "1.0.0"
 ACTIONS = {"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "download", "pdf", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
-MUTATING_ACTIONS = {"click", "fill", "press", "upload", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
+MUTATING_ACTIONS = {"click", "fill", "press", "upload", "download", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
 SAFE_KEY_NAMES = {"ENTER", "TAB", "ESCAPE", "ARROWDOWN", "ARROWUP", "ARROWLEFT", "ARROWRIGHT"}
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 SESSION_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -503,6 +503,7 @@ class BrowserAdapter:
                 raise BrowserPolicyError("Upload file type is not permitted")
             cli_args = ["upload", args[0], str(source)]
         elif action == "download":
+            self._assert_write_approved()
             validate_url(self.state.get("current_url") or "")
             if len(args) != 2 or not args[0] or len(args[0]) > 256 or Path(args[1]).name != args[1]:
                 raise BrowserPolicyError("download requires a selector and a simple output filename")
