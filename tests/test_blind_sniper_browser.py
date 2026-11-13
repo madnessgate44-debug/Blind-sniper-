@@ -90,6 +90,7 @@ class BrowserPolicyTests(unittest.TestCase):
         self.assertIn("upload", policy["allow"])
         self.assertIn("download", policy["allow"])
         self.assertIn("close", policy["allow"])
+        self.assertIn("url", policy["allow"])
 
     def test_engine_command_enforces_domain_and_content_boundaries(self):
         adapter = self.adapter()
