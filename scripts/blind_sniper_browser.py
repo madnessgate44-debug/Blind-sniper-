@@ -253,12 +253,19 @@ class BrowserAdapter:
             raise BrowserPolicyError("BLIND_SNIPER_BROWSER_IDLE_TIMEOUT must be 0 or a positive duration such as 30m or 1h")
         persistent_profile = os.environ.get("BLIND_SNIPER_BROWSER_PERSISTENT_PROFILE") == "1"
         command = [self.binary, "--session", self.session_id, "--idle-timeout", idle_timeout]
+        command_env = os.environ.copy()
         if persistent_profile:
             profile_dir = self.profiles_dir / self.session_id
             profile_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
             os.chmod(profile_dir, 0o700)
             self._clear_stale_profile_lock(profile_dir)
-            command.extend(["--profile", str(profile_dir)])
+            restore_root = Path.home() / ".agent-browser"
+            restore_sessions = restore_root / "sessions"
+            restore_sessions.mkdir(parents=True, exist_ok=True, mode=0o700)
+            os.chmod(restore_root, 0o700)
+            os.chmod(restore_sessions, 0o700)
+            command_env.setdefault("AGENT_BROWSER_AUTOSAVE_INTERVAL_MS", "1000")
+            command.extend(["--profile", str(profile_dir), "--restore"])
         elif not general_https:
             command.extend(["--allowed-domains", allowed_domains])
         command.extend([
@@ -270,7 +277,7 @@ class BrowserAdapter:
         if executable_path:
             command[1:1] = ["--executable-path", executable_path]
         try:
-            completed = subprocess.run(command, capture_output=True, text=True, timeout=self.timeout, check=False, shell=False)
+            completed = subprocess.run(command, capture_output=True, text=True, timeout=self.timeout, check=False, shell=False, env=command_env)
         except FileNotFoundError as exc:
             raise BrowserAdapterError("agent-browser is not installed; install the pinned CLI and Chromium on the execution host") from exc
         except subprocess.TimeoutExpired as exc:
