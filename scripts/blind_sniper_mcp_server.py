@@ -261,7 +261,7 @@ class BrowserMCP:
             "title": page_title,
             "visible_text": visible_text,
             "screenshot_reference": screenshot_reference,
-            "available_actions": sorted((ACTIONS - {"close"}) | {"browser.close"}),
+            "available_actions": sorted((ACTIONS - {"close"}) | {"browser.detach", "browser.close"}),
             "approval_required_actions": sorted(MUTATING),
             "user_action_required": handoff_type is not None,
             "handoff_type": handoff_type,
