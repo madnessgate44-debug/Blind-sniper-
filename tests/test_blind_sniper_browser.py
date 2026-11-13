@@ -49,7 +49,7 @@ class BrowserPolicyTests(unittest.TestCase):
             with patch("scripts.blind_sniper_browser.socket.getaddrinfo", return_value=[
                 (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443)),
             ]):
-                self.assertEqual(validate_url("https://never-configured.example/"), "never-configured.example")
+                self.assertEqual(validate_url("https://never-configured.example.net/"), "never-configured.example")
 
     def test_general_https_rejects_http_and_private_ip_literals(self):
         with patch.dict(os.environ, {
@@ -73,7 +73,7 @@ class BrowserPolicyTests(unittest.TestCase):
                 (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.2.3.4", 443)),
             ]):
                 with self.assertRaisesRegex(BrowserPolicyError, "non-public IP"):
-                    validate_url("https://rebind.example/")
+                    validate_url("https://rebind.example.net/")
 
     def test_general_https_rejects_mixed_public_and_private_dns_answers(self):
         with patch.dict(os.environ, {
@@ -86,7 +86,7 @@ class BrowserPolicyTests(unittest.TestCase):
                 (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.168.1.10", 443)),
             ]):
                 with self.assertRaisesRegex(BrowserPolicyError, "non-public IP"):
-                    validate_url("https://mixed.example/")
+                    validate_url("https://mixed.example.net/")
 
     def test_general_https_command_does_not_require_domain_allowlist(self):
         adapter = self.adapter()
@@ -119,7 +119,7 @@ class BrowserPolicyTests(unittest.TestCase):
             adapter.execute("click", "step-1", "#submit")
 
     def test_fill_blocks_page_with_password_or_mfa_field(self):
-        adapter = self.adapter()
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
         adapter.state["current_url"] = "http://127.0.0.1/"
         with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
             with patch.object(adapter, "_cli_data_field", return_value=1):
@@ -127,7 +127,7 @@ class BrowserPolicyTests(unittest.TestCase):
                     adapter.execute("fill", "fill-credential-page", 'input[name="customer"]', "Ahmed")
 
     def test_fill_blocks_password_field_even_with_neutral_selector(self):
-        adapter = self.adapter()
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
         adapter.state["current_url"] = "http://127.0.0.1/"
         def field(*args, field):
             if args[0] == "count":
