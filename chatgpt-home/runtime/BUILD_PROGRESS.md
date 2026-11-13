@@ -1,5 +1,14 @@
 # Blind Sniper build progress — current status
 
+## BS-BROWSER-001 — B1 native MCP bridge — 2026-11-13
+
+- [VERIFIED] Added stdio MCP server at `scripts/blind_sniper_mcp_server.py` with five browser tools: start, action, status, resume and close. The bridge creates native task/session identities and routes browser actions through `dispatch_browser_action`; lease and step reservation remain mandatory.
+- [VERIFIED] Private ledger/browser-state paths are required to remain outside the public repository. Mutating actions still require host approval and an approval reference. Failed browser close does not release the lease.
+- [VERIFIED] Added six protocol unit tests in `tests/test_blind_sniper_mcp_server.py` and B1 deployment/configuration/acceptance documentation in `docs/BS-BROWSER-001-B1-MCP-BRIDGE.md`.
+- [UNPROVEN] No tests or live MCP/browser session were run from this connector session. Source review is not runtime verification.
+- [BLOCKED] ChatGPT cannot call a stdio MCP server in this session; no MCP registration/stdio invocation tool is available. A host must launch the process and expose it to an MCP-capable client. Existing Vercel Python function is stateless and cannot host Chromium.
+- [GATE] B1 remains OPEN / NOT PASSED. Do not start B2 or B3 until ChatGPT invokes this bridge and a live browser action succeeds.
+
 ## Live Miss Noor browser inspection — 2026-11-13
 
 - [V] Added `scripts/run_blind_sniper_miss_noor_smoke.py`: creates a native task lease, invokes the checked-in BrowserAdapter only through `dispatch_browser_action`, performs read-only navigation/snapshot/screenshot, verifies the observed host, closes the session, and releases the lease.
