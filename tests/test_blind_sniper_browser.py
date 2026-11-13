@@ -138,6 +138,8 @@ class BrowserPolicyTests(unittest.TestCase):
         adapter.state["current_url"] = "http://127.0.0.1/"
         with self.assertRaises(BrowserPolicyError):
             adapter.execute("click", "step-1", "#submit")
+        with self.assertRaises(BrowserPolicyError):
+            adapter.execute("download", "step-2", "a.file", "fixture.txt")
 
     def test_fill_blocks_page_with_password_or_mfa_field(self):
         adapter = self.adapter(approval_reference="OWNER-APPROVED")
@@ -343,13 +345,14 @@ class BrowserPolicyTests(unittest.TestCase):
                 adapter.execute("upload", "upload-exe", "input[type=file]", "payload.exe")
 
     def test_download_is_saved_only_inside_artifact_workspace(self):
-        adapter = self.adapter()
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
         adapter.state["current_url"] = "http://127.0.0.1/"
         def fake_run(command, **kwargs):
             Path(command[-1]).write_bytes(b"downloaded")
             return CompletedProcess(command, 0, "{}", "")
-        with patch("scripts.blind_sniper_browser.subprocess.run", side_effect=fake_run) as run:
-            result = adapter.execute("download", "download-1", "a.download", "report.pdf")
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with patch("scripts.blind_sniper_browser.subprocess.run", side_effect=fake_run) as run:
+                result = adapter.execute("download", "download-1", "a.download", "report.pdf")
         target = adapter.artifacts_dir / "report.pdf"
         self.assertTrue(target.is_file())
         self.assertEqual(target.read_bytes(), b"downloaded")
@@ -357,10 +360,11 @@ class BrowserPolicyTests(unittest.TestCase):
         self.assertEqual(result["receipt"]["artifact_paths"], [str(target)])
 
     def test_download_rejects_path_traversal(self):
-        adapter = self.adapter()
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
         adapter.state["current_url"] = "http://127.0.0.1/"
-        with self.assertRaises(BrowserPolicyError):
-            adapter.execute("download", "download-traversal", "a.download", "../outside.pdf")
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with self.assertRaises(BrowserPolicyError):
+                adapter.execute("download", "download-traversal", "a.download", "../outside.pdf")
 
     def test_standalone_adapter_cli_is_blocked(self):
         output = io.StringIO()
