@@ -167,6 +167,22 @@ class BrowserAdapter:
             os.chmod(resume_temp, 0o600)
             os.replace(resume_temp, self.restore_url_file)
 
+    def _clear_stale_profile_lock(self, profile_dir: Path) -> None:
+        lock = profile_dir / "SingletonLock"
+        if not lock.is_symlink():
+            return
+        try:
+            target = os.readlink(lock)
+        except OSError:
+            return
+        pid = target.rsplit("-", 1)[-1]
+        if not pid.isdigit() or (Path("/proc") / pid).exists():
+            return
+        for name in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+            candidate = profile_dir / name
+            if candidate.is_symlink():
+                candidate.unlink(missing_ok=True)
+
     def _command(self, *args: str) -> tuple[int, str, str, list[str]]:
         allowed_domains = ",".join(
             item.strip() for item in os.environ.get("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS", "").split(",")
@@ -183,6 +199,7 @@ class BrowserAdapter:
             profile_dir = self.profiles_dir / self.session_id
             profile_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
             os.chmod(profile_dir, 0o700)
+            self._clear_stale_profile_lock(profile_dir)
             command.extend(["--profile", str(profile_dir)])
         else:
             command.extend(["--allowed-domains", allowed_domains])
