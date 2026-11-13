@@ -233,3 +233,15 @@ Everything below this heading is the prior 2026-11-09 02:31 UTC snapshot. It is 
 ## Scope and next gate
 - This task is confined to `madnessgate44-debug/Blind-sniper-`.
 - Next gate: complete full diff review and obtain a distinct independent review; then merge PR #17 and close superseded PRs.
+
+## Browser screenshot and clipboard capability tranche — 2026-11-13
+
+- [V] Native browser action registry and lease-gated dispatcher now expose screenshot, clipboard read, clipboard write, copy-current-selection and paste-current-clipboard actions.
+- [V] Clipboard write/copy/paste require host write approval; clipboard-write arguments are redacted from browser receipts. Clipboard read output is returned to the caller but is not written into the receipt payload.
+- [V] Added real Chromium capability smoke script using a disposable localhost fixture. It captures a PNG, writes and pastes known text into a fixture textarea, copies a selected fixture paragraph, reads clipboard text, and checks each result.
+- [V] CI workflow now includes a dedicated capability-smoke job and uploads browser state/artifacts for seven days. The smoke script writes its screenshot under the configured artifact directory.
+- [V] Fixed configurable live-site smoke metadata to measure the target-labeled screenshot rather than the old Miss Noor filename.
+- [U] The new real Chromium screenshot/clipboard smoke job has not yet been independently inspected for a completed run and artifact in this checkpoint. Do not report screenshot or clipboard E2E as verified until its CI logs and artifact are retrieved.
+- [U] The external Grade 5 Science PDF browser job remains separately unverified. This tranche does not prove arbitrary website access, persistent browser hosting or authenticated profile support.
+- Latest implementation checkpoint: e0ba0a232810495451e65432e697d4a12d01594e.
+- Diff from prior science-browser checkpoint dac65f92ddfe785eed2294425929640df0d8e7c4: 9 commits, 6 files changed, 220 additions, 7 deletions. Vercel status reports build-rate-limit failure; this is not a browser job result.
