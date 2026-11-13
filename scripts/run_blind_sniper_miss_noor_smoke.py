@@ -15,7 +15,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from blind_sniper_browser_dispatch import dispatch_browser_action
 from blind_sniper_ledger import TaskLedger
 
-TARGET_URL = os.environ.get("BLIND_SNIPER_MISS_NOOR_URL", "https://amina-nine-sepia.vercel.app/")
+TARGET_URL = os.environ.get("BLIND_SNIPER_TARGET_URL", os.environ.get("BLIND_SNIPER_MISS_NOOR_URL", "https://amina-nine-sepia.vercel.app/"))
+TARGET_LABEL = re.sub(r"[^A-Za-z0-9_-]", "-", os.environ.get("BLIND_SNIPER_TARGET_LABEL", "target"))[:40]
 EXPECTED_HOST = urlsplit(TARGET_URL).hostname
 OWNER_ID = "github-actions-browser-smoke"
 
@@ -25,9 +26,9 @@ def main() -> int:
         raise RuntimeError("The Miss Noor target URL has no hostname")
     run_id = os.environ.get("GITHUB_RUN_ID", "local")
     attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "1")
-    safe_run = re.sub(r"[^A-Za-z0-9_.:-]", "-", f"miss-noor-{run_id}-{attempt}")
-    task_id = f"BS-MISS-NOOR-{safe_run}"
-    session_id = re.sub(r"[^A-Za-z0-9_-]", "-", f"missnoor{run_id}{attempt}")[:64]
+    safe_run = re.sub(r"[^A-Za-z0-9_.:-]", "-", f"{TARGET_LABEL}-{run_id}-{attempt}")
+    task_id = f"BS-BROWSER-SMOKE-{safe_run}"
+    session_id = re.sub(r"[^A-Za-z0-9_-]", "-", f"bsbrowser{run_id}{attempt}")[:64]
     state_dir = Path(os.environ.get("BLIND_SNIPER_BROWSER_STATE_DIR", ".blind-sniper/browser-live")).resolve()
     ledger = TaskLedger(state_dir / "state" / "events.jsonl")
     task_state = {
@@ -71,7 +72,7 @@ def main() -> int:
     try:
         opened = run("open-miss-noor", "open", (TARGET_URL,))
         snapshot = run("capture-accessibility-tree", "snapshot")
-        screenshot = run("capture-screenshot", "screenshot", ("miss-noor-home.png",))
+        screenshot = run("capture-screenshot", "screenshot", (f"{TARGET_LABEL}.png",))
         current_url = opened["receipt"].get("observed_url") or ""
         parsed = urlsplit(current_url.replace("/[REDACTED]", "/"))
         if parsed.hostname != EXPECTED_HOST:
@@ -81,8 +82,8 @@ def main() -> int:
             raise RuntimeError("Browser returned an empty accessibility snapshot")
         artifacts = state_dir / "artifacts"
         artifacts.mkdir(parents=True, exist_ok=True)
-        (artifacts / "miss-noor-accessibility-snapshot.txt").write_text(snapshot_text, encoding="utf-8")
-        (artifacts / "miss-noor-inspection.json").write_text(
+        (artifacts / f"{TARGET_LABEL}-accessibility-snapshot.txt").write_text(snapshot_text, encoding="utf-8")
+        (artifacts / f"{TARGET_LABEL}-inspection.json").write_text(
             json.dumps({
                 "target_url": TARGET_URL,
                 "final_url": current_url.strip(),
@@ -96,7 +97,7 @@ def main() -> int:
             }, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-        image = artifacts / "miss-noor-home.png"
+        image = artifacts / f"{TARGET_LABEL}.png"
         if not image.is_file() or image.stat().st_size == 0:
             raise RuntimeError("Browser screenshot artifact is missing or empty")
         print(f"PASS: Blind Sniper opened {TARGET_URL}")
