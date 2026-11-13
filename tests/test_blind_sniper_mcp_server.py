@@ -130,6 +130,32 @@ class BrowserMCPProtocolTests(unittest.TestCase):
         )
         self.assertEqual(len(TOOLS), 5)
 
+    def test_failed_browser_start_cancels_task_and_releases_lease(self):
+        class Ledger:
+            def __init__(self):
+                self.transitions = []
+                self.released = False
+            def append(self, **kwargs):
+                return {}
+            def claim_task(self, **kwargs):
+                return {"claimed": True}
+            def append_transition_if_lease(self, **kwargs):
+                self.transitions.append(kwargs["payload"]["state"])
+                return {}
+            def release_task(self, **kwargs):
+                self.released = True
+                return {"released": True}
+        server = BrowserMCP.__new__(BrowserMCP)
+        server.ledger = Ledger()
+        server.browser_state = Path("/tmp/blind-sniper-browser-test")
+        server.active = None
+        server._dispatch = lambda action, args: (_ for _ in ()).throw(RuntimeError("blocked destination"))
+        with self.assertRaisesRegex(RuntimeError, "blocked destination"):
+            server.start("https://127.0.0.1/")
+        self.assertIsNone(server.active)
+        self.assertTrue(server.ledger.released)
+        self.assertEqual(server.ledger.transitions[-1]["status"], "CANCELLED")
+
     def test_start_routes_to_server_and_returns_structured_content(self):
         server = FakeServer()
         response = handle(server, {
