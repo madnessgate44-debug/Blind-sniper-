@@ -259,6 +259,7 @@ class BrowserPolicyTests(unittest.TestCase):
         self.assertIn("getattribute", policy["allow"])
         self.assertIn("count", policy["allow"])
         self.assertIn("clipboard", policy["allow"])
+        self.assertIn("title", policy["allow"])
 
     def test_engine_command_enforces_domain_and_content_boundaries(self):
         adapter = self.adapter()
@@ -298,6 +299,15 @@ class BrowserPolicyTests(unittest.TestCase):
             redact_url_for_receipt("https://example.test/a?token=x#fragment"),
             "https://example.test/[REDACTED]",
         )
+
+    def test_get_title_action_maps_to_agent_browser_title_command(self):
+        adapter = self.adapter()
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        completed = CompletedProcess([], 0, '{"success":true,"data":{"title":"Example Domain"}}', "")
+        with patch("scripts.blind_sniper_browser.subprocess.run", return_value=completed) as run:
+            result = adapter.execute("get-title", "title-step")
+        self.assertEqual(result["receipt"]["exit_code"], 0)
+        self.assertTrue(any(call.args[0][-2:] == ["get", "title"] for call in run.call_args_list))
 
     def test_tab_and_frame_actions_map_to_supported_cli(self):
         adapter = self.adapter()
