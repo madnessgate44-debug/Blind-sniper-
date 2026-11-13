@@ -156,6 +156,17 @@ class BrowserMCPProtocolTests(unittest.TestCase):
         self.assertTrue(server.ledger.released)
         self.assertEqual(server.ledger.transitions[-1]["status"], "CANCELLED")
 
+        failed_result_server = BrowserMCP.__new__(BrowserMCP)
+        failed_result_server.ledger = Ledger()
+        failed_result_server.browser_state = Path("/tmp/blind-sniper-browser-test")
+        failed_result_server.active = None
+        failed_result_server._dispatch = lambda action, args: {"receipt": {"exit_code": 2}}
+        with self.assertRaisesRegex(BrowserDispatchError, "did not establish"):
+            failed_result_server.start("https://127.0.0.1/")
+        self.assertIsNone(failed_result_server.active)
+        self.assertTrue(failed_result_server.ledger.released)
+        self.assertEqual(failed_result_server.ledger.transitions[-1]["status"], "CANCELLED")
+
     def test_start_routes_to_server_and_returns_structured_content(self):
         server = FakeServer()
         response = handle(server, {
