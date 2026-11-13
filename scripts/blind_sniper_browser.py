@@ -107,8 +107,9 @@ class BrowserAdapter:
         self.receipts_dir = self.state_dir / "receipts"
         self.artifacts_dir = self.state_dir / "artifacts"
         self.uploads_dir = self.state_dir / "uploads"
+        self.profiles_dir = self.state_dir / "profiles"
         self.policy_file = self.state_dir / "action-policy.json"
-        for directory in (self.sessions_dir, self.receipts_dir, self.artifacts_dir, self.uploads_dir):
+        for directory in (self.sessions_dir, self.receipts_dir, self.artifacts_dir, self.uploads_dir, self.profiles_dir):
             directory.mkdir(parents=True, exist_ok=True)
         self.policy_file.write_text(json.dumps({
             "default": "deny",
@@ -123,7 +124,7 @@ class BrowserAdapter:
             return {
                 "schema_version": SCHEMA_VERSION, "task_id": self.task_id,
                 "run_id": self.run_id, "session_id": self.session_id,
-                "status": "NEW", "current_url": None, "created_at": utc_now(),
+                "status": "NEW", "current_url": None, "restore_url": None, "created_at": utc_now(),
             }
         try:
             state = json.loads(self.session_file.read_text(encoding="utf-8"))
@@ -151,14 +152,19 @@ class BrowserAdapter:
         idle_timeout = os.environ.get("BLIND_SNIPER_BROWSER_IDLE_TIMEOUT", "1h").strip()
         if not re.fullmatch(r"(?:0|[1-9][0-9]*(?:ms|s|m|h))", idle_timeout):
             raise BrowserPolicyError("BLIND_SNIPER_BROWSER_IDLE_TIMEOUT must be 0 or a positive duration such as 30m or 1h")
-        command = [
-            self.binary, "--session", self.session_id, "--restore",
-            "--idle-timeout", idle_timeout,
-            "--allowed-domains", allowed_domains,
+        persistent_profile = os.environ.get("BLIND_SNIPER_BROWSER_PERSISTENT_PROFILE") == "1"
+        command = [self.binary, "--session", self.session_id, "--idle-timeout", idle_timeout]
+        if persistent_profile:
+            profile_dir = self.profiles_dir / self.session_id
+            profile_dir.mkdir(parents=True, exist_ok=True)
+            command.extend(["--profile", str(profile_dir)])
+        else:
+            command.extend(["--allowed-domains", allowed_domains])
+        command.extend([
             "--action-policy", str(self.policy_file),
             "--content-boundaries", "--max-output", "50000", "--json",
             *args,
-        ]
+        ])
         executable_path = os.environ.get("AGENT_BROWSER_EXECUTABLE_PATH", "").strip()
         if executable_path:
             command[1:1] = ["--executable-path", executable_path]
@@ -179,7 +185,7 @@ class BrowserAdapter:
     def _current_url(self) -> str | None:
         code, stdout, _, _ = self._command("get", "url")
         if code != 0:
-            return self.state.get("current_url")
+            return None
         try:
             data = json.loads(stdout)
             pending = [data]
@@ -187,7 +193,7 @@ class BrowserAdapter:
                 item = pending.pop()
                 if isinstance(item, dict):
                     for key, value in item.items():
-                        if key.lower() in {"url", "value"} and isinstance(value, str) and value.startswith(("http://", "https://")):
+                        if key.lower() in {"url", "value"} and isinstance(value, str) and (value.startswith(("http://", "https://")) or value == "about:blank"):
                             return value
                         pending.append(value)
                 elif isinstance(item, list):
@@ -195,7 +201,28 @@ class BrowserAdapter:
         except json.JSONDecodeError:
             pass
         match = re.search(r"https?://[^\s\"']+", stdout)
-        return match.group(0) if match else self.state.get("current_url")
+        return match.group(0) if match else None
+
+    def _ensure_page_restored(self) -> None:
+        restore_url = self.state.get("restore_url")
+        if not isinstance(restore_url, str) or not restore_url:
+            return
+        current_url = self._current_url()
+        if current_url and current_url != "about:blank":
+            validate_url(current_url)
+            self.state["restore_url"] = current_url
+            self.state["current_url"] = redact_url_for_receipt(current_url)
+            return
+        validate_url(restore_url)
+        code, _, stderr, _ = self._command("open", restore_url)
+        if code != 0:
+            raise BrowserAdapterError(f"Cannot restore the last browser page: {stderr or 'browser open failed'}")
+        current_url = self._current_url()
+        if not current_url or current_url == "about:blank":
+            raise BrowserAdapterError("Browser page restoration did not return an HTTP(S) URL")
+        validate_url(current_url)
+        self.state["restore_url"] = current_url
+        self.state["current_url"] = redact_url_for_receipt(current_url)
 
     def _ensure_step_unused(self, step_id: str) -> None:
         if not self.receipt_file.exists():
@@ -240,6 +267,9 @@ class BrowserAdapter:
         started = utc_now()
         requested_url = None
         artifact_paths: list[str] = []
+
+        if action not in {"open", "close"}:
+            self._ensure_page_restored()
 
         if action == "open":
             if len(args) != 1:
@@ -377,6 +407,7 @@ class BrowserAdapter:
             if observed_url:
                 try:
                     validate_url(observed_url)
+                    self.state["restore_url"] = observed_url
                     self.state["current_url"] = redact_url_for_receipt(observed_url)
                 except BrowserPolicyError as exc:
                     policy_error = str(exc)
