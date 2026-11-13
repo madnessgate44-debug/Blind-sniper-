@@ -72,6 +72,7 @@ class BrowserMCPStatusTests(unittest.TestCase):
         self.assertEqual(result["url"], "https://example.org/")
         self.assertEqual(result["title"], "Example Domain")
         self.assertIn("browser.close", result["available_actions"])
+        self.assertIn("browser.detach", result["available_actions"])
         self.assertIn("fill", result["approval_required_actions"])
         self.assertEqual(result["visible_text"], "- heading Example")
         self.assertEqual(result["screenshot_reference"], ["/private/browser.png"])
