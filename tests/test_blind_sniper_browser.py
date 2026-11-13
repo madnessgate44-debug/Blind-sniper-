@@ -310,9 +310,10 @@ class BrowserPolicyTests(unittest.TestCase):
         adapter = self.adapter()
         adapter.state["current_url"] = "https://example.org/"
         adapter.state["restore_url"] = "https://example.org/"
-        with patch.object(adapter, "_current_url", return_value="https://example.org/"):
-            with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, '{"success":true,"saveStatus":"saved"}', "")) as run:
-                result = adapter.execute("detach", "detach-step")
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "example.org"}):
+            with patch.object(adapter, "_current_url", return_value="https://example.org/"):
+                with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, '{"success":true,"saveStatus":"saved"}', "")) as run:
+                    result = adapter.execute("detach", "detach-step")
         self.assertEqual(result["receipt"]["exit_code"], 0)
         self.assertEqual(adapter.state["status"], "DETACHED")
         self.assertNotEqual(adapter.state["status"], "CLOSED")
@@ -328,9 +329,10 @@ class BrowserPolicyTests(unittest.TestCase):
             state_dir=adapter.state_dir,
         )
         self.assertEqual(resumed.state["status"], "DETACHED")
-        with patch.object(resumed, "_current_url", side_effect=["about:blank", "https://example.org/"]):
-            with patch.object(resumed, "_command", return_value=(0, "{}", "", ["agent-browser", "open", "https://example.org/"])) as command:
-                resumed._ensure_page_restored()
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "example.org"}):
+            with patch.object(resumed, "_current_url", side_effect=["about:blank", "https://example.org/"]):
+                with patch.object(resumed, "_command", return_value=(0, "{}", "", ["agent-browser", "open", "https://example.org/"])) as command:
+                    resumed._ensure_page_restored()
         self.assertEqual(command.call_args.args, ("open", "https://example.org/"))
         self.assertEqual(resumed.state["current_url"], "https://example.org/")
 
