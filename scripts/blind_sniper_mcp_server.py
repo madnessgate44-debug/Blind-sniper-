@@ -261,7 +261,7 @@ class BrowserMCP:
             "title": page_title,
             "visible_text": visible_text,
             "screenshot_reference": screenshot_reference,
-            "available_actions": sorted((ACTIONS - {"close"}) | {"browser.detach", "browser.close"}),
+            "available_actions": sorted((ACTIONS - {"close", "detach"}) | {"browser.detach", "browser.close"}),
             "approval_required_actions": sorted(MUTATING),
             "user_action_required": handoff_type is not None,
             "handoff_type": handoff_type,
@@ -272,7 +272,7 @@ class BrowserMCP:
         if not self.active:
             raise RuntimeError("No active browser session to detach")
         row = dict(self.active)
-        result = self._dispatch("close", [])
+        result = self._dispatch("detach", [])
         receipt = result.get("receipt")
         if not isinstance(receipt, dict) or int(receipt.get("exit_code", 1)) != 0:
             raise BrowserDispatchError("Browser detach failed; the task lease remains active")
@@ -321,7 +321,7 @@ TOOLS = [
     {
         "name": "browser.action",
         "description": "Execute one registered native browser action. Mutating actions require host approval. Arguments are strings in the adapter's documented order.",
-        "inputSchema": {"type": "object", "properties": {"action": {"type": "string", "enum": sorted(ACTIONS - {"close"})}, "args": {"type": "array", "items": {"type": "string"}, "maxItems": 3}}, "required": ["action"], "additionalProperties": False},
+        "inputSchema": {"type": "object", "properties": {"action": {"type": "string", "enum": sorted(ACTIONS - {"close", "detach"})}, "args": {"type": "array", "items": {"type": "string"}, "maxItems": 3}}, "required": ["action"], "additionalProperties": False},
     },
     {
         "name": "browser.status",
