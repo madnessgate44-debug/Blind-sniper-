@@ -161,7 +161,32 @@ class BrowserMCP:
             "task_id": task_id, "run_id": run_id,
             "session_id": session_id, "task_state": state,
         }
-        result = self._dispatch("open", [url])
+        try:
+            result = self._dispatch("open", [url])
+        except Exception:
+            row = self.active
+            if row is not None:
+                failed_state = dict(row["task_state"])
+                failed_state["status"] = "CANCELLED"
+                failed_state["events"] = list(failed_state.get("events", [])) + [{
+                    "from": "EXECUTING", "to": "CANCELLED",
+                    "evidence": "Browser start failed before a live page was established.",
+                }]
+                try:
+                    self.ledger.append_transition_if_lease(
+                        task_id=task_id, owner_id=OWNER_ID,
+                        payload={"state": failed_state, "lease_guard": {
+                            "task_id": task_id, "status": "CANCELLED", "implementer_id": OWNER_ID,
+                        }},
+                        idempotency_key=f"{task_id}:mcp-start-failed",
+                    )
+                finally:
+                    self.ledger.release_task(
+                        task_id=task_id, owner_id=OWNER_ID,
+                        idempotency_key=f"{task_id}:mcp-start-failed-release",
+                    )
+                    self.active = None
+            raise
         return {"session": dict(self.active), "browser": result}
 
     def resume(self, task_id: str, run_id: str, session_id: str) -> dict[str, Any]:
@@ -182,7 +207,11 @@ class BrowserMCP:
             "task_id": task_id, "run_id": run_id,
             "session_id": session_id, "task_state": state,
         }
-        result = self._dispatch("snapshot", [])
+        try:
+            result = self._dispatch("snapshot", [])
+        except Exception:
+            self.active = None
+            raise
         return {"session": dict(self.active), "browser": result}
 
     def action(self, action: str, args: list[str]) -> dict[str, Any]:
