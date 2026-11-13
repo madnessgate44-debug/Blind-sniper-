@@ -256,6 +256,7 @@ class BrowserPolicyTests(unittest.TestCase):
         self.assertIn("url", policy["allow"])
         self.assertIn("getattribute", policy["allow"])
         self.assertIn("count", policy["allow"])
+        self.assertIn("clipboard", policy["allow"])
 
     def test_engine_command_enforces_domain_and_content_boundaries(self):
         adapter = self.adapter()
@@ -391,6 +392,7 @@ class BrowserPolicyTests(unittest.TestCase):
         adapter = self.adapter()
         adapter.state["current_url"] = "http://127.0.0.1/"
         for action, args in (
+            ("clipboard-read", ()),
             ("clipboard-write", ("text",)),
             ("clipboard-copy", ()),
             ("clipboard-paste", ()),
