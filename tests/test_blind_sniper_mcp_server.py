@@ -23,6 +23,8 @@ class FakeServer:
         return {"resumed": task_id}
 
     def action(self, action, args):
+        if action == "close":
+            raise ValueError("use browser.close for session shutdown")
         self.calls.append(("action", action, args))
         return {"action": action, "args": args}
 
