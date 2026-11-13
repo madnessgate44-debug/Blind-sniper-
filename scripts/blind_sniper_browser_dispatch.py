@@ -28,7 +28,7 @@ def _persist_receipt_artifact(state_dir: str | Path, task_id: str, step_id: str,
     os.chmod(receipt_dir, 0o700)
     target = receipt_dir / f"{step_id}.json"
     temp = target.with_suffix(".tmp")
-    raw = (json.dumps(receipt, sort_keys=True, ensure_ascii=False) + "\\n").encode("utf-8")
+    raw = (json.dumps(receipt, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
     temp.write_bytes(raw)
     os.chmod(temp, 0o600)
     os.replace(temp, target)
