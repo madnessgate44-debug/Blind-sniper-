@@ -31,7 +31,7 @@ SERVER_INFO = {"name": "blind-sniper-native-browser", "version": "0.1.0"}
 OWNER_ID = os.environ.get("BLIND_SNIPER_MCP_OWNER_ID", "blind-sniper-mcp-host")
 LEASE_SECONDS = 3600
 MAX_MESSAGE_BYTES = 1_048_576
-MUTATING = {"click", "fill", "press", "upload", "clipboard-write", "clipboard-copy", "clipboard-paste"}
+MUTATING = {"click", "fill", "press", "upload", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
 
 
 def _text(value: Any) -> str:
