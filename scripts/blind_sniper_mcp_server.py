@@ -130,8 +130,8 @@ class BrowserMCP:
         return {"session": dict(self.active), "browser": result}
 
     def action(self, action: str, args: list[str]) -> dict[str, Any]:
-        if action not in ACTIONS:
-            raise ValueError(f"Unsupported browser action: {action}")
+        if action not in ACTIONS - {"close"}:
+            raise ValueError(f"Unsupported browser action: {action}; use browser.close for session shutdown")
         if action in MUTATING:
             if os.environ.get("BLIND_SNIPER_BROWSER_WRITE_APPROVED") != "1":
                 raise PermissionError("Host browser-write approval is absent")
@@ -179,7 +179,7 @@ TOOLS = [
     {
         "name": "browser.action",
         "description": "Execute one registered native browser action. Mutating actions require host approval. Arguments are strings in the adapter's documented order.",
-        "inputSchema": {"type": "object", "properties": {"action": {"type": "string", "enum": sorted(ACTIONS)}, "args": {"type": "array", "items": {"type": "string"}, "maxItems": 3}}, "required": ["action"], "additionalProperties": False},
+        "inputSchema": {"type": "object", "properties": {"action": {"type": "string", "enum": sorted(ACTIONS - {"close"})}, "args": {"type": "array", "items": {"type": "string"}, "maxItems": 3}}, "required": ["action"], "additionalProperties": False},
     },
     {
         "name": "browser.status",
@@ -194,15 +194,19 @@ TOOLS = [
 ]
 
 
-def _result(value: Any) -> dict[str, Any]:
-    failed = False
+def _has_failed_receipt(value: Any) -> bool:
     if isinstance(value, dict):
         receipt = value.get("receipt")
         if isinstance(receipt, dict) and receipt.get("exit_code") not in (None, 0):
-            failed = True
-        for item in value.get("receipts", []):
-            if isinstance(item, dict) and item.get("exit_code") not in (None, 0):
-                failed = True
+            return True
+        return any(_has_failed_receipt(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_has_failed_receipt(item) for item in value)
+    return False
+
+
+def _result(value: Any) -> dict[str, Any]:
+    failed = _has_failed_receipt(value)
     result = {"content": [{"type": "text", "text": _text(value)}], "structuredContent": value}
     if failed:
         result["isError"] = True
@@ -217,6 +221,10 @@ def handle(server: BrowserMCP, message: dict[str, Any]) -> dict[str, Any] | None
     method = message.get("method")
     request_id = message.get("id")
     params = message.get("params") or {}
+    if not isinstance(params, dict):
+        if request_id is None:
+            return None
+        return {"jsonrpc": "2.0", "id": request_id, "error": {"code": -32602, "message": "params must be an object"}}
     if method == "notifications/initialized":
         return None
     if method == "initialize":
@@ -233,6 +241,8 @@ def handle(server: BrowserMCP, message: dict[str, Any]) -> dict[str, Any] | None
     if method == "tools/call":
         name = params.get("name")
         arguments = params.get("arguments") or {}
+        if not isinstance(arguments, dict):
+            return {"jsonrpc": "2.0", "id": request_id, "error": {"code": -32602, "message": "arguments must be an object"}}
         try:
             if name == "browser.start":
                 value = server.start(str(arguments["url"]))
