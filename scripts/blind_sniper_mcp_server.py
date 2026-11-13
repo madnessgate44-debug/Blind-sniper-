@@ -63,7 +63,7 @@ class BrowserMCP:
                 raise RuntimeError(f"Private {label} path must be outside the public repository")
         self.ledger = TaskLedger(ledger_path)
         self.browser_state = browser_state
-        self.active: dict[str, str] | None = None
+        self.active: dict[str, Any] | None = None
 
     def _lease(self, task_id: str, key: str) -> None:
         claim = self.ledger.claim_task(
@@ -115,7 +115,10 @@ class BrowserMCP:
             }},
             idempotency_key=f"{task_id}:mcp-executing",
         )
-        self.active = {"task_id": task_id, "run_id": run_id, "session_id": session_id}
+        self.active = {
+            "task_id": task_id, "run_id": run_id,
+            "session_id": session_id, "task_state": state,
+        }
         result = self._dispatch("open", [url])
         return {"session": dict(self.active), "browser": result}
 
@@ -125,7 +128,18 @@ class BrowserMCP:
         lease = self.ledger.lease_status(task_id)
         if not lease or lease.get("owner_id") != OWNER_ID:
             raise RuntimeError("No active native lease for that browser session")
-        self.active = {"task_id": task_id, "run_id": run_id, "session_id": session_id}
+        rows = self.ledger.events(task_id)
+        state = next(
+            (row.get("payload", {}).get("state") for row in reversed(rows)
+             if isinstance(row.get("payload", {}).get("state"), dict)),
+            None,
+        )
+        if not isinstance(state, dict) or state.get("status") != "EXECUTING":
+            raise RuntimeError("No resumable EXECUTING task snapshot exists for that session")
+        self.active = {
+            "task_id": task_id, "run_id": run_id,
+            "session_id": session_id, "task_state": state,
+        }
         result = self._dispatch("snapshot", [])
         return {"session": dict(self.active), "browser": result}
 
@@ -157,6 +171,19 @@ class BrowserMCP:
         result = self._dispatch("close", [])
         if int(result.get("receipt", {}).get("exit_code", 1)) != 0:
             return {"browser": result, "lease_released": False}
+        task_state = dict(row["task_state"])
+        task_state["status"] = "CANCELLED"
+        task_state["events"] = list(task_state.get("events", [])) + [{
+            "from": "EXECUTING", "to": "CANCELLED",
+            "evidence": "Browser session closed by the MCP client.",
+        }]
+        self.ledger.append_transition_if_lease(
+            task_id=row["task_id"], owner_id=OWNER_ID,
+            payload={"state": task_state, "lease_guard": {
+                "task_id": row["task_id"], "status": "CANCELLED", "implementer_id": OWNER_ID,
+            }},
+            idempotency_key=f"{row['task_id']}:mcp-cancelled",
+        )
         released = self.ledger.release_task(
             task_id=row["task_id"], owner_id=OWNER_ID,
             idempotency_key=f"{row['task_id']}:mcp-release",
