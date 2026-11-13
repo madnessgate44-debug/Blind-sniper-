@@ -153,3 +153,43 @@ jobs:
         uses: actions/checkout@v4
       - name: Verify the same live Chromium page survived the job boundary
         run: python3 scripts/run_blind_sniper_browser_persistence_probe.py --phase verify
+
+  grade5-science-external-site-inspection:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      BLIND_SNIPER_TARGET_URL: "https://elearnningcontent.blob.core.windows.net/elearnningcontent/content/2025/Primary/Primary5/Term1/Streem/Science_ENGLISH_Prim5_TR1_T_W12.pdf"
+      BLIND_SNIPER_TARGET_LABEL: "grade5-science-ministry-pdf"
+      BLIND_SNIPER_BROWSER_STATE_DIR: .blind-sniper/browser-science
+      BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS: elearnningcontent.blob.core.windows.net
+      BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS: ""
+      BLIND_SNIPER_BROWSER_WRITE_APPROVED: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned Blind Sniper browser
+        run: |
+          npm install --global agent-browser@0.41.2
+          agent-browser install --with-deps
+          agent-browser --version
+      - name: Validate configurable browser runner
+        run: python -m py_compile scripts/run_blind_sniper_miss_noor_smoke.py
+      - name: Open Ministry-hosted Grade 5 Science PDF and capture evidence
+        run: python scripts/run_blind_sniper_miss_noor_smoke.py
+      - name: Upload Grade 5 Science browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grade5-science-browser-inspection-${{ github.run_id }}
+          path: .blind-sniper/browser-science/
+          if-no-files-found: warn
+          retention-days: 7
