@@ -306,6 +306,34 @@ class BrowserPolicyTests(unittest.TestCase):
             "https://example.test/[REDACTED]",
         )
 
+    def test_detach_closes_browser_but_keeps_session_resumable(self):
+        adapter = self.adapter()
+        adapter.state["current_url"] = "https://example.org/"
+        adapter.state["restore_url"] = "https://example.org/"
+        with patch.object(adapter, "_current_url", return_value="https://example.org/"):
+            with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, '{"success":true,"saveStatus":"saved"}', "")) as run:
+                result = adapter.execute("detach", "detach-step")
+        self.assertEqual(result["receipt"]["exit_code"], 0)
+        self.assertEqual(adapter.state["status"], "DETACHED")
+        self.assertNotEqual(adapter.state["status"], "CLOSED")
+        self.assertEqual(run.call_args.args[0][-1], "close")
+
+    def test_detached_session_metadata_can_be_loaded_for_resume(self):
+        adapter = self.adapter()
+        adapter.state["status"] = "DETACHED"
+        adapter.state["restore_url"] = "https://example.org/"
+        adapter._save_state()
+        resumed = BrowserAdapter(
+            task_id=adapter.task_id, run_id=adapter.run_id, session_id=adapter.session_id,
+            state_dir=adapter.state_dir, allowed_domains=["example.org"],
+        )
+        self.assertEqual(resumed.state["status"], "DETACHED")
+        with patch.object(resumed, "_current_url", side_effect=["about:blank", "https://example.org/"]):
+            with patch.object(resumed, "_command", return_value=(0, "{}", "", ["agent-browser", "open", "https://example.org/"])) as command:
+                resumed._ensure_page_restored()
+        self.assertEqual(command.call_args.args, ("open", "https://example.org/"))
+        self.assertEqual(resumed.state["current_url"], "https://example.org/")
+
     def test_get_title_action_maps_to_agent_browser_title_command(self):
         adapter = self.adapter()
         adapter.state["current_url"] = "http://127.0.0.1/"
