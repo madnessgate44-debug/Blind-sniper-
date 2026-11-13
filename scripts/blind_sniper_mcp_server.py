@@ -163,6 +163,8 @@ class BrowserMCP:
         }
         try:
             result = self._dispatch("open", [url])
+            if not isinstance(result.get("receipt"), dict) or int(result["receipt"].get("exit_code", 1)) != 0:
+                raise BrowserDispatchError("Browser start did not establish a successful page session")
         except Exception:
             row = self.active
             if row is not None:
@@ -209,6 +211,8 @@ class BrowserMCP:
         }
         try:
             result = self._dispatch("snapshot", [])
+            if not isinstance(result.get("receipt"), dict) or int(result["receipt"].get("exit_code", 1)) != 0:
+                raise BrowserDispatchError("Browser resume could not restore a live page")
         except Exception:
             self.active = None
             raise
