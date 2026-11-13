@@ -11,6 +11,7 @@ on:
       - "scripts/blind_sniper_tool_runtime.py"
       - "scripts/run_blind_sniper_browser_e2e.py"
       - "scripts/run_blind_sniper_miss_noor_smoke.py"
+      - "scripts/run_blind_sniper_browser_capability_smoke.py"
       - "scripts/run_blind_sniper_browser_persistence_probe.py"
       - "tests/test_blind_sniper_browser.py"
       - "tests/test_blind_sniper_browser_dispatch.py"
@@ -191,5 +192,40 @@ jobs:
         with:
           name: grade5-science-browser-inspection-${{ github.run_id }}
           path: .blind-sniper/browser-science/
+          if-no-files-found: warn
+          retention-days: 7
+
+  browser-capability-smoke:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      BLIND_SNIPER_BROWSER_STATE_DIR: .blind-sniper/browser-capabilities
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned Blind Sniper browser
+        run: |
+          npm install --global agent-browser@0.41.2
+          agent-browser install --with-deps
+          agent-browser --version
+      - name: Compile browser capability smoke
+        run: python -m py_compile scripts/run_blind_sniper_browser_capability_smoke.py
+      - name: Verify screenshot, clipboard write/read, copy and paste through native dispatch
+        run: python scripts/run_blind_sniper_browser_capability_smoke.py
+      - name: Upload browser capability evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blind-sniper-browser-capabilities-${{ github.run_id }}
+          path: .blind-sniper/browser-capabilities/
           if-no-files-found: warn
           retention-days: 7
