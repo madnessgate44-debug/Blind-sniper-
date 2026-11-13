@@ -155,6 +155,8 @@ class BrowserMCP:
             raise RuntimeError("No active browser session")
         row = self.active
         result = self._dispatch("close", [])
+        if int(result.get("receipt", {}).get("exit_code", 1)) != 0:
+            return {"browser": result, "lease_released": False}
         released = self.ledger.release_task(
             task_id=row["task_id"], owner_id=OWNER_ID,
             idempotency_key=f"{row['task_id']}:mcp-release",
@@ -193,7 +195,18 @@ TOOLS = [
 
 
 def _result(value: Any) -> dict[str, Any]:
-    return {"content": [{"type": "text", "text": _text(value)}], "structuredContent": value}
+    failed = False
+    if isinstance(value, dict):
+        receipt = value.get("receipt")
+        if isinstance(receipt, dict) and receipt.get("exit_code") not in (None, 0):
+            failed = True
+        for item in value.get("receipts", []):
+            if isinstance(item, dict) and item.get("exit_code") not in (None, 0):
+                failed = True
+    result = {"content": [{"type": "text", "text": _text(value)}], "structuredContent": value}
+    if failed:
+        result["isError"] = True
+    return result
 
 
 def _error(message: str) -> dict[str, Any]:
