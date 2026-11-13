@@ -6,6 +6,33 @@
   "evidence_policy": "A capability is operational only when its trigger, permission, execution, output and verification path are proven.",
   "adapters": [
     {
+      "id": "native_mcp_browser_bridge",
+      "kind": "mcp_stdio_browser_control",
+      "status": "implemented_source_not_runtime_verified",
+      "tools": [
+        "scripts/blind_sniper_mcp_server.py"
+      ],
+      "capabilities": [
+        "mcp_initialize",
+        "mcp_tools_list",
+        "browser_start",
+        "browser_action",
+        "browser_status",
+        "browser_resume",
+        "browser_close",
+        "internal_task_and_session_identity",
+        "lease_gated_dispatch"
+      ],
+      "limitations": [
+        "Protocol unit tests are authored but have not been run on this feature branch.",
+        "No MCP client has connected and no live browser action has been executed through this server.",
+        "Current ChatGPT session exposes no MCP stdio registration or invocation action.",
+        "Requires a persistent private host with Python, pinned agent-browser CLI, Chromium and host browser policy.",
+        "Uses existing explicit browser domain allowlist; B3 general HTTPS policy is not implemented.",
+        "B2 persistent cross-job host and authenticated profile persistence remain deferred."
+      ]
+    },
+    {
       "id": "github",
       "kind": "repository_and_control_plane",
       "status": "available_in_current_session",
