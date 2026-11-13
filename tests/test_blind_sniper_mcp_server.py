@@ -49,6 +49,11 @@ class BrowserMCPStatusTests(unittest.TestCase):
                     "output": json.dumps({"success": True, "data": {"url": "https://example.org/"}}),
                     "receipt": {"action": action, "exit_code": url_exit},
                 }
+            if action == "get-title":
+                return {
+                    "output": json.dumps({"success": True, "data": {"title": "Example Domain"}}),
+                    "receipt": {"action": action, "exit_code": 0},
+                }
             if action == "snapshot":
                 return {
                     "output": json.dumps({"success": True, "data": {"snapshot": "- heading Example"}}),
@@ -65,6 +70,9 @@ class BrowserMCPStatusTests(unittest.TestCase):
     def test_status_returns_normalized_url_visible_text_and_screenshot(self):
         result = self._server().status()
         self.assertEqual(result["url"], "https://example.org/")
+        self.assertEqual(result["title"], "Example Domain")
+        self.assertIn("browser.close", result["available_actions"])
+        self.assertIn("fill", result["approval_required_actions"])
         self.assertEqual(result["visible_text"], "- heading Example")
         self.assertEqual(result["screenshot_reference"], ["/private/browser.png"])
         self.assertTrue(all(row["exit_code"] == 0 for row in result["receipts"]))
@@ -76,6 +84,7 @@ class BrowserMCPStatusTests(unittest.TestCase):
         def dispatch(action, args):
             output = {
                 "get-url": json.dumps({"data": {"url": "https://example.org/"}}),
+                "get-title": json.dumps({"data": {"title": "Challenge"}}),
                 "snapshot": json.dumps({"data": {"snapshot": "Please complete the following challenge to confirm this search was made by a human. Select all squares containing a duck."}}),
                 "screenshot": "{}",
             }[action]
@@ -95,6 +104,7 @@ class BrowserMCPStatusTests(unittest.TestCase):
         def dispatch(action, args):
             output = {
                 "get-url": json.dumps({"data": {"url": "https://example.org/"}}),
+                "get-title": json.dumps({"data": {"title": "MFA"}}),
                 "snapshot": json.dumps({"data": {"snapshot": "Enter the one-time code from your authenticator app"}}),
                 "screenshot": "{}",
             }[action]
