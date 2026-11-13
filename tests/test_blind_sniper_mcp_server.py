@@ -83,6 +83,26 @@ class BrowserMCPProtocolTests(unittest.TestCase):
         })
         self.assertIsNone(response)
 
+    def test_nested_browser_receipt_failure_is_reported_as_tool_error(self):
+        from blind_sniper_mcp_server import _result
+        response = _result({"browser": {"receipt": {"exit_code": 2}}})
+        self.assertTrue(response["isError"])
+
+    def test_non_object_arguments_return_json_rpc_error(self):
+        response = handle(FakeServer(), {
+            "jsonrpc": "2.0", "id": 6, "method": "tools/call",
+            "params": {"name": "browser.status", "arguments": []},
+        })
+        self.assertEqual(response["error"]["code"], -32602)
+
+    def test_generic_action_cannot_bypass_session_close_lifecycle(self):
+        response = handle(FakeServer(), {
+            "jsonrpc": "2.0", "id": 7, "method": "tools/call",
+            "params": {"name": "browser.action", "arguments": {"action": "close"}},
+        })
+        self.assertTrue(response["result"]["isError"])
+        self.assertIn("browser.close", response["result"]["content"][0]["text"])
+
 
 if __name__ == "__main__":
     unittest.main()
