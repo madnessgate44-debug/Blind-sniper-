@@ -158,7 +158,7 @@ class BrowserAdapter:
             os.chmod(directory, 0o700)
         self.policy_file.write_text(json.dumps({
             "default": "deny",
-            "allow": ["launch", "close", "navigate", "snapshot", "screenshot", "click", "fill", "upload", "download", "tab_list", "tab_new", "tab_switch", "tab_close", "frame", "frame_switch", "mainframe", "pdf", "scroll", "wait", "get", "url", "interact", "read"],
+            "allow": ["launch", "close", "navigate", "snapshot", "screenshot", "click", "fill", "upload", "download", "tab_list", "tab_new", "tab_switch", "tab_close", "frame", "frame_switch", "mainframe", "pdf", "scroll", "wait", "get", "url", "getattribute", "getcount", "interact", "read"],
         }, indent=2) + "\n", encoding="utf-8")
         self.session_file = self.sessions_dir / f"{session_id}.json"
         self.receipt_file = self.receipts_dir / f"{self.task_id}__{self.run_id}.jsonl"
@@ -287,6 +287,64 @@ class BrowserAdapter:
         match = re.search(r"https?://[^\s\"']+", stdout)
         return match.group(0) if match else None
 
+    def _cli_data_field(self, *args: str, field: str) -> Any:
+        code, stdout, _, _ = self._command("get", *args)
+        if code != 0:
+            return None
+        try:
+            parsed = json.loads(stdout)
+        except json.JSONDecodeError:
+            return None
+        pending = [parsed]
+        while pending:
+            item = pending.pop(0)
+            if isinstance(item, dict):
+                for key, value in item.items():
+                    if key.lower() == field.lower():
+                        return value
+                    pending.append(value)
+            elif isinstance(item, list):
+                pending.extend(item)
+        return None
+
+    def _assert_fill_target_safe(self, selector: str) -> None:
+        sensitive = re.compile(
+            r"password|passwd|secret|token|api[_-]?key|otp|one.?time.?code|"
+            r"authenticator|credential|passcode|security.?code|cvv|cvc|"
+            r"cc-(?:number|exp|csc)|credit.?card|ssn|social.?security",
+            re.I,
+        )
+        if sensitive.search(selector):
+            raise BrowserPolicyError("Sensitive credential or payment fields cannot be filled by automation")
+        credential_fields = self._cli_data_field(
+            "count",
+            'input[type="password"],input[autocomplete*="password"],input[autocomplete="one-time-code"]',
+            field="count",
+        )
+        if credential_fields is None:
+            raise BrowserPolicyError("Cannot verify whether this page contains credential fields; refusing form fill")
+        try:
+            if int(credential_fields) > 0:
+                raise BrowserPolicyError("Page contains password or one-time-code fields; user authentication must be handled manually")
+        except (TypeError, ValueError) as exc:
+            raise BrowserPolicyError("Cannot verify page credential fields; refusing form fill") from exc
+        attributes: dict[str, str] = {}
+        for name in ("type", "autocomplete", "name", "id", "placeholder", "aria-label"):
+            value = self._cli_data_field("attr", selector, name, field="value")
+            if isinstance(value, (str, int, float)) and str(value).strip():
+                attributes[name] = str(value).strip()
+        if not attributes and not re.search(r"textarea|contenteditable", selector, re.I):
+            raise BrowserPolicyError("Cannot verify the target field; refusing form fill")
+        if sensitive.search(" ".join(attributes.values())):
+            raise BrowserPolicyError("Sensitive credential or payment fields cannot be filled by automation")
+        if attributes.get("type", "").lower() in {"password", "hidden"}:
+            raise BrowserPolicyError("Password and hidden fields cannot be filled by automation")
+        if attributes.get("autocomplete", "").lower() in {
+            "current-password", "new-password", "one-time-code",
+            "cc-number", "cc-exp", "cc-csc",
+        }:
+            raise BrowserPolicyError("Credential, MFA and payment fields cannot be filled by automation")
+
     def _ensure_page_restored(self) -> None:
         restore_url = self.state.get("restore_url")
         if not isinstance(restore_url, str) or not restore_url:
@@ -378,8 +436,7 @@ class BrowserAdapter:
             if len(args) != 2:
                 raise BrowserPolicyError("fill requires a selector and value")
             validate_url(self.state.get("current_url") or "")
-            if re.search(r"password|passwd|secret|token|api[_-]?key|otp|one.?time.?code", args[0], re.I):
-                raise BrowserPolicyError("Sensitive credential selectors are not supported")
+            self._assert_fill_target_safe(args[0])
             cli_args = ["fill", args[0], args[1]]
         elif action == "press":
             self._assert_write_approved()
