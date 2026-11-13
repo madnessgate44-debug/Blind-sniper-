@@ -93,6 +93,30 @@ class BrowserPolicyTests(unittest.TestCase):
         profile = Path(command[command.index("--profile") + 1])
         self.assertEqual(profile, adapter.profiles_dir / adapter.session_id)
 
+    def test_stale_chrome_profile_locks_are_removed_after_owner_process_is_gone(self):
+        adapter = self.adapter()
+        profile = adapter.profiles_dir / adapter.session_id
+        profile.mkdir(parents=True, exist_ok=True)
+        for name, target in (
+            ("SingletonLock", "old-host-999999999"),
+            ("SingletonCookie", "stale-cookie"),
+            ("SingletonSocket", "/tmp/stale-chrome-socket"),
+        ):
+            (profile / name).symlink_to(target)
+        adapter._clear_stale_profile_lock(profile)
+        self.assertFalse((profile / "SingletonLock").exists())
+        self.assertFalse((profile / "SingletonCookie").exists())
+        self.assertFalse((profile / "SingletonSocket").exists())
+
+    def test_live_chrome_profile_lock_is_not_removed(self):
+        adapter = self.adapter()
+        profile = adapter.profiles_dir / adapter.session_id
+        profile.mkdir(parents=True, exist_ok=True)
+        lock = profile / "SingletonLock"
+        lock.symlink_to(f"current-host-{os.getpid()}")
+        adapter._clear_stale_profile_lock(profile)
+        self.assertTrue(lock.is_symlink())
+
     def test_ensure_page_restored_reopens_saved_url_after_blank_page(self):
         adapter = self.adapter()
         restore_url = "http://127.0.0.1/saved?query=private"
