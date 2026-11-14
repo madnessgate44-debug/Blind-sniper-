@@ -251,3 +251,23 @@ def recover_handoff(
         "approved_knowledge": knowledge,
         "task_state_source": "native_task_ledger",
     }
+
+def recover_native_handoff(
+    directory: str | Path,
+    handoff_id: str,
+    agent_id: str,
+    *,
+    queue: Any,
+    approved_knowledge_reader: Callable[[str], list[dict[str, Any]]] | None = None,
+) -> dict[str, Any]:
+    """Recover using the native DurableQueue.status ledger read path."""
+    status_reader = getattr(queue, "status", None)
+    if not callable(status_reader):
+        raise HandoffError("native queue must expose status(task_id)")
+    return recover_handoff(
+        directory,
+        handoff_id,
+        agent_id,
+        task_state_reader=status_reader,
+        approved_knowledge_reader=approved_knowledge_reader,
+    )
