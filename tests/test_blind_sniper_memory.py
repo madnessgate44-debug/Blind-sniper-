@@ -55,6 +55,14 @@ class MemoryObservationTests(unittest.TestCase):
         with self.assertRaisesRegex(MemoryError, "source"):
             build_observation(**sample(source="chatgpt_conversation"))
 
+    def test_rejects_non_json_content(self):
+        with self.assertRaisesRegex(MemoryError, "JSON-compatible"):
+            build_observation(**sample(content={"bad": object()}))
+
+    def test_redacts_source_reference(self):
+        record = build_observation(**sample(source_ref="run sk-" + "b" * 30))
+        self.assertNotIn("sk-", record["source_ref"])
+
     def test_rejects_timezone_naive_timestamp(self):
         with self.assertRaisesRegex(MemoryError, "timezone"):
             build_observation(**sample(occurred_at="2026-11-14T12:00:00"))
@@ -81,11 +89,18 @@ class MemoryObservationTests(unittest.TestCase):
             with self.assertRaisesRegex(MemoryError, "collision"):
                 append_observation(journal, second)
 
-    def test_rejects_journal_inside_repository(self):
-        repo_journal = Path(__file__).resolve().parents[1] / ".blind-sniper" / "forbidden-memory.jsonl"
+    def test_rejects_journal_inside_repository_without_creating_parent(self):
+        repo_root = Path(__file__).resolve().parents[1]
+        forbidden_dir = repo_root / ".blind-sniper" / "memory-test-forbidden"
+        repo_journal = forbidden_dir / "memory.jsonl"
         record = build_observation(**sample())
-        with self.assertRaisesRegex(MemoryError, "outside the repository"):
-            append_observation(repo_journal, record)
+        try:
+            with self.assertRaisesRegex(MemoryError, "outside the repository"):
+                append_observation(repo_journal, record)
+            self.assertFalse(forbidden_dir.exists())
+        finally:
+            if forbidden_dir.exists():
+                forbidden_dir.rmdir()
 
 
 if __name__ == "__main__":
