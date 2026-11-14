@@ -202,3 +202,15 @@ Remaining:
 - [U] CI execution, browser CLI compatibility for clipboard commands, actual screenshot bytes and copy/paste behavior remain pending independent run/log/artifact inspection. Do not call this capability verified yet.
 - Latest commit: e0ba0a232810495451e65432e697d4a12d01594e.
 - Verification mapping: R1 screenshot file saved and artifacted — implementation complete, E2E NOT VERIFIED; R2 clipboard write/read — implementation complete, E2E NOT VERIFIED; R3 copy/paste — implementation complete, E2E NOT VERIFIED; R4 approval and receipt privacy — unit tests authored, NOT RUN in this checkpoint.
+
+## Native memory and internal handoff integration — 2026-11-14
+
+- [V] Added the `agent.handoff` native model tool to the task-scoped tool registry. Calls are recorded through the durable queue's tool-call reservation/completion receipts.
+- [V] Handoff packets are written outside the public checkout with owner-only permissions, closed schema, deterministic redaction, idempotent identity, registered-recipient validation and bounded chain depth.
+- [V] Added `scripts/blind_sniper_handoff_runtime.py`: daemon reconciliation claims packets, requires a COMPLETED parent task, re-reads authoritative queue state and creates an idempotent deterministic child task.
+- [V] Recovery handles interruption after packet claim but before child materialization; failed/cancelled parent tasks are rejected and cause degraded daemon health.
+- [V] One distinct handoff per source task/agent prevents fan-out; child task IDs are derived deterministically from handoff IDs.
+- [V] Code checkpoint `5f16548f8e5d4292c2383d95c0ff615b1766855c`: 62 focused memory/tool-runtime/daemon tests PASS, Runtime Registry 285 tests PASS, OS Compliance PASS.
+- [U] Browser Adapter run `43609450976` was pending at this checkpoint.
+- [U] The native handoff path is code/CI verified with deterministic injected invokers, not yet a real provider round trip. Host activation requires the owner-controlled private daemon to allowlist `agent.handoff`; no host configuration or service was changed.
+- [V] No external agent runtime, Forge/OpenHands API, paid service, private memory payload or raw transcript was introduced.
