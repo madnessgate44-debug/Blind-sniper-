@@ -1,0 +1,39 @@
+name: Blind Sniper Memory Tests
+
+on:
+  pull_request:
+    paths:
+      - "memory/**"
+      - "scripts/blind_sniper_memory.py"
+      - "scripts/blind_sniper_redact.py"
+      - "tests/test_blind_sniper_memory.py"
+      - ".github/workflows/blind-sniper-memory.yml"
+  push:
+    branches:
+      - main
+      - "feat/**"
+    paths:
+      - "memory/**"
+      - "scripts/blind_sniper_memory.py"
+      - "scripts/blind_sniper_redact.py"
+      - "tests/test_blind_sniper_memory.py"
+      - ".github/workflows/blind-sniper-memory.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  memory-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile memory module
+        run: python -m py_compile scripts/blind_sniper_memory.py scripts/blind_sniper_redact.py
+      - name: Run synthetic memory contract tests
+        run: python -m unittest discover -s tests -p 'test_blind_sniper_memory.py' -v
