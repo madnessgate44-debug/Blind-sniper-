@@ -1,6 +1,6 @@
 # BS-MEMORY-001 — Native Memory Architecture
 
-**Status:** M1–M4 implementation baselines complete on the feature branch; M2 native daemon event wiring, M3 immutable proposals, and M4 approval-gated lexical retrieval have passing CI. Private-host activation and end-to-end persistence remain unverified.
+**Status:** M1–M5 implementation baselines complete on the feature branch; M2 native daemon capture, M3 immutable proposals, M4 approval-gated lexical retrieval, and M5 typed handoff/recovery have passing CI. Private-host activation and end-to-end persistence remain unverified.
 **Issue:** #59
 **Reference reviewed:** https://github.com/akitaonrails/ai-memory
 **Governing policy:** Root `AGENTS.md`, `ENGINEERING_EXECUTION_OS.md` v2.3, and `chatgpt-home/AUTHORITY_DELEGATION.md`.
@@ -113,7 +113,7 @@ Controls:
 - `memory.recover(task_id, agent_id)`
 - `memory.audit(record_id)`
 
-Implemented on this branch: capture, deterministic validation, proposal generation, explicit approval, and bounded lexical search. Handoff and task recovery remain phased work.
+Implemented on this branch: capture, deterministic validation, proposal generation, explicit approval, bounded lexical search, and typed handoff/recovery APIs. Runtime-driven handoff creation/consumption remains a separate integration gate.
 
 ## 10. Phase plan and acceptance
 
