@@ -245,3 +245,15 @@ Everything below this heading is the prior 2026-11-09 02:31 UTC snapshot. It is 
 - [U] The external Grade 5 Science PDF browser job remains separately unverified. This tranche does not prove arbitrary website access, persistent browser hosting or authenticated profile support.
 - Latest implementation checkpoint: e0ba0a232810495451e65432e697d4a12d01594e.
 - Diff from prior science-browser checkpoint dac65f92ddfe785eed2294425929640df0d8e7c4: 9 commits, 6 files changed, 220 additions, 7 deletions. Vercel status reports build-rate-limit failure; this is not a browser job result.
+
+## Native internal agent handoff — 2026-11-14
+
+- [V] PR #60 feature branch adds the native `agent.handoff` model tool, private immutable handoff packets, registered-recipient checks, one distinct handoff per source task/agent, and a maximum chain depth of four.
+- [V] The daemon reconciles handoffs only after the parent task reaches `COMPLETED`, claims the packet once, re-reads parent state through `DurableQueue.status`, and materializes a deterministic private child task without overwriting an existing task.
+- [V] Crash-recovery contract is covered by a synthetic interruption test: a packet already claimed before interruption is materialized on the next reconciliation without duplicate child creation.
+- [V] A failed/cancelled parent is not allowed to deliver its handoff; the daemon reports degraded health rather than dispatching the child.
+- [V] Code checkpoint `5f16548f8e5d4292c2383d95c0ff615b1766855c`: Memory workflow run `43609450977` (62 focused tests PASS), Runtime Registry `43609450949` (285 tests PASS), OS Compliance `43609450996` (PASS).
+- [U] Browser Adapter run `43609450976` was still running at this checkpoint.
+- [U] Real provider-to-recipient model handoff, host activation, and persistent cross-process restart acceptance remain unverified. The handoff tool is disabled unless the private host explicitly includes `agent.handoff` in `BLIND_SNIPER_DAEMON_TOOL_ALLOWLIST`.
+- [V] No real Owner memory, raw ChatGPT transcript, credentials, or personal data are stored in this public repository. Synthetic fixtures only.
+- [V] PR #60 remains open and unmerged; no release or deployment was performed.
