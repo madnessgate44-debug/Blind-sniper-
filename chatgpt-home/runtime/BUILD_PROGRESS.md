@@ -211,6 +211,6 @@ Remaining:
 - [V] Recovery handles interruption after packet claim but before child materialization; failed/cancelled parent tasks are rejected and cause degraded daemon health.
 - [V] One distinct handoff per source task/agent prevents fan-out; child task IDs are derived deterministically from handoff IDs.
 - [V] Code checkpoint `5f16548f8e5d4292c2383d95c0ff615b1766855c`: 62 focused memory/tool-runtime/daemon tests PASS, Runtime Registry 285 tests PASS, OS Compliance PASS.
-- [U] Browser Adapter run `43609450976` was pending at this checkpoint.
+- [V] Final exact PR-head checks on `ad51941e7cf6e88a1d14e8a3ada277a61f5329f4`: Memory 62 focused tests PASS (`43609588105`), Runtime Registry 285 tests PASS (`43609588165`), OS Compliance PASS (`43609588150`), Environment Validation PASS (`43609588173`), Browser Adapter 31 tests PASS (`43609588114`).
 - [U] The native handoff path is code/CI verified with deterministic injected invokers, not yet a real provider round trip. Host activation requires the owner-controlled private daemon to allowlist `agent.handoff`; no host configuration or service was changed.
 - [V] No external agent runtime, Forge/OpenHands API, paid service, private memory payload or raw transcript was introduced.
