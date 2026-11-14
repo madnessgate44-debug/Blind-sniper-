@@ -13,13 +13,13 @@ This matrix defines the synthetic evaluation gate for the native memory plane. F
 | Conflict handling | Competing statuses remain visible as evidence; no automatic conflict resolution | `test_blind_sniper_memory_knowledge.py` |
 | Approval | Only the exact reviewed proposal identity can be promoted to a separate approved copy | `test_blind_sniper_memory_retrieval.py` |
 | Retrieval | Only approved pages in the requested project/scope are returned; context is byte-bounded and provenance is retained | `test_blind_sniper_memory_retrieval.py` |
-| Handoff | Closed packet, atomic claim-once, owner-only storage, tamper checks and task-state re-read | `test_blind_sniper_memory_handoff.py` |
+| Handoff packet | Closed packet, atomic claim-once, owner-only storage, tamper checks and task-state re-read | `test_blind_sniper_memory_handoff.py` |\n| Model handoff tool | Lease-bound tool receipt, registered recipient, retry idempotency, one outgoing handoff per task/agent, depth bound | `test_blind_sniper_tool_runtime.py` |\n| Daemon delivery | Parent must be COMPLETED; claim and recovery precede idempotent child-task creation; child resumes with parent ledger state | `test_blind_sniper_daemon.py` |\n| No replay | Repeated daemon polls do not re-invoke completed parent or child tasks | `test_blind_sniper_daemon.py` |
 | Recovery knowledge | Non-approved knowledge is rejected | `test_blind_sniper_memory_handoff.py` |
 
 ## Explicitly unproven
 
 - A resident private host has not been activated; therefore cross-process/cross-session memory persistence has not been demonstrated on the Owner's actual host.
-- The daemon does not yet automatically create/consume agent handoffs.
+- Real model-provider execution of `agent.handoff` and persistent-host restart recovery have not been exercised; current evidence uses deterministic injected model invokers.
 - No real personal memory or ChatGPT transcript capture is enabled.
 - No multi-process stress test or fault-injection test has been run against a live private host.
 - Lexical retrieval has not been benchmarked against a representative real workload; SQLite FTS5 and vector search remain deferred.
@@ -27,9 +27,11 @@ This matrix defines the synthetic evaluation gate for the native memory plane. F
 
 ## Latest exact-head evidence — 2026-11-14
 
-- PR head: `57750da9d2192614ae296e3e519117ad4df3255d`.
-- Memory Tests run `43607413604`: 28 tests, 0 failures.
-- Runtime Registry run `43607413492`: 280 tests, 0 failures.
-- OS Compliance run `43607413515`: PASS.
+Code checkpoint: `5e4985ba4083e08e0ec4fab5555eab357a189786`.
 
-A passing synthetic suite is contract evidence, not proof of live deployment or operational persistence.
+- Memory workflow run `43609017044`: memory contracts 28 PASS, native tool runtime 13 PASS, daemon integration 19 PASS (60 focused tests total).
+- Runtime Registry run `43609016954`: 283 tests PASS.
+- OS Compliance run `43609017199`: PASS.
+- The subsequent fan-out guard and its regression test were committed after this checkpoint and require fresh exact-head checks.
+
+A passing synthetic suite is contract evidence, not proof of live deployment, real provider handoff or operational persistence.
