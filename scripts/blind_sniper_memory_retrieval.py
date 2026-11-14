@@ -97,6 +97,7 @@ def search_approved_pages(
                 "updated_at", "source_observation_ids", "supersedes", "score",
             )
         }
+        results.append(citation)
         rendered = f"## {item['title']}\n\n{item['body']}\n\n[page_id: {item['page_id']}]"
         encoded = rendered.encode("utf-8")
         separator = "\n\n".encode("utf-8") if context_parts else b""
@@ -113,7 +114,6 @@ def search_approved_pages(
             break
         context_parts.append(rendered)
         used += len(separator) + len(encoded)
-        results.append(citation)
     return {
         "results": results,
         "context": "\n\n".join(context_parts),
