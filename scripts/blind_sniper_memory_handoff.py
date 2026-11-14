@@ -121,8 +121,12 @@ def _private_directory(path: str | Path) -> Path:
 def write_handoff(directory: str | Path, packet: dict[str, Any]) -> str:
     if not isinstance(packet, dict) or set(packet) != HANDOFF_FIELDS:
         raise HandoffError("handoff packet does not match the closed schema")
-    if packet.get("claim_state") != "unclaimed":
-        raise HandoffError("new handoff must be unclaimed")
+    try:
+        validated = build_handoff(**packet)
+    except (TypeError, ValueError) as exc:
+        raise HandoffError("handoff packet failed schema validation") from exc
+    if validated != packet:
+        raise HandoffError("handoff packet is not canonical or sanitized")
     root = _private_directory(directory)
     path = _ensure_private_external_path(root / f"{packet['handoff_id']}.json")
     payload = _canonical(packet) + b"\n"
@@ -199,15 +203,20 @@ def recover_handoff(
     if not packet_path.is_file() or not claim_path.is_file():
         raise HandoffError("handoff must exist and be claimed before recovery")
     packet = json.loads(packet_path.read_text(encoding="utf-8"))
+    claim_info = claim_path.stat()
+    if not stat.S_ISREG(claim_info.st_mode) or claim_info.st_nlink != 1 or stat.S_IMODE(claim_info.st_mode) & 0o077:
+        raise HandoffError("handoff claim must be owner-only and singly linked")
     claim = json.loads(claim_path.read_text(encoding="utf-8"))
+    if claim.get("packet_digest") != hashlib.sha256(_canonical(packet)).hexdigest():
+        raise HandoffError("handoff claim does not match the packet digest")
     if claim.get("agent_id") != agent_id or packet.get("to_agent") != agent_id:
         raise HandoffError("recovery caller does not own this handoff claim")
     current = task_state_reader(packet["task_id"])
     if not isinstance(current, dict):
         raise HandoffError("authoritative task ledger did not return current task state")
     knowledge = approved_knowledge_reader(packet["task_id"]) if approved_knowledge_reader else []
-    if not isinstance(knowledge, list):
-        raise HandoffError("approved knowledge reader returned an invalid result")
+    if not isinstance(knowledge, list) or any(not isinstance(item, dict) or item.get("status") != "approved" for item in knowledge):
+        raise HandoffError("approved knowledge reader returned non-approved or invalid records")
     return {
         "handoff": packet,
         "current_task_state": current,
