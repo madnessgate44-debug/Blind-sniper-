@@ -253,7 +253,7 @@ Everything below this heading is the prior 2026-11-09 02:31 UTC snapshot. It is 
 - [V] Crash-recovery contract is covered by a synthetic interruption test: a packet already claimed before interruption is materialized on the next reconciliation without duplicate child creation.
 - [V] A failed/cancelled parent is not allowed to deliver its handoff; the daemon reports degraded health rather than dispatching the child.
 - [V] Code checkpoint `5f16548f8e5d4292c2383d95c0ff615b1766855c`: Memory workflow run `43609450977` (62 focused tests PASS), Runtime Registry `43609450949` (285 tests PASS), OS Compliance `43609450996` (PASS).
-- [U] Browser Adapter run `43609450976` was still running at this checkpoint.
+- [V] Final exact PR-head verification at `ad51941e7cf6e88a1d14e8a3ada277a61f5329f4`: Memory 62 focused tests PASS (`43609588105`), Runtime Registry 285 tests PASS (`43609588165`), OS Compliance PASS (`43609588150`), Environment Validation PASS (`43609588173`), Browser Adapter 31 tests PASS (`43609588114`).
 - [U] Real provider-to-recipient model handoff, host activation, and persistent cross-process restart acceptance remain unverified. The handoff tool is disabled unless the private host explicitly includes `agent.handoff` in `BLIND_SNIPER_DAEMON_TOOL_ALLOWLIST`.
 - [V] No real Owner memory, raw ChatGPT transcript, credentials, or personal data are stored in this public repository. Synthetic fixtures only.
 - [V] PR #60 remains open and unmerged; no release or deployment was performed.
