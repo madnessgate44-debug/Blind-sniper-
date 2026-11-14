@@ -133,7 +133,7 @@ Implemented on this branch: native metadata capture, deterministic proposal gene
 - [ ] Independent code review and live private-host acceptance.
 
 Remaining M2 work: prove the daemon journal on an owner-controlled persistent host. Do not add ChatGPT transcript capture.
-- Keep private journal path owner-controlled and outside the repository; no private data has been written by this implementation.
+- Keep private journal path owner-controlled and outside the repository; tests use synthetic fixtures only, and no real Owner data has been captured.
 - Do not capture ChatGPT messages or assistant text automatically; no such source is verified.
 
 ### M3 — Consolidation — IMPLEMENTED / SYNTHETIC CI VERIFIED
@@ -159,11 +159,11 @@ Remaining M2 work: prove the daemon journal on an owner-controlled persistent ho
 
 ### M6 — Evaluation — SYNTHETIC GATE PASS
 - Synthetic privacy/leakage, duplicate, provenance, conflicting-evidence, approval, retrieval, handoff and recovery fixtures.
-- Memory Tests run `43609017044`: 28 + 13 + 19 tests PASS (60 total).
-- Runtime Registry run `43609016954`: 283 tests PASS.
-- OS Compliance run `43609017199`: PASS.
-- All three checks ran on commit `5e4985ba4083e08e0ec4fab5555eab357a189786`.
-- Browser Adapter workflow run `43609016977` was still in progress at this checkpoint.
+- Memory Tests run `43609450977`: 28 memory + 13 tool-runtime + 21 daemon tests PASS (62 total).
+- Runtime Registry run `43609450949`: 285 tests PASS.
+- OS Compliance run `43609450996`: PASS.
+- All three checks ran on code commit `5f16548f8e5d4292c2383d95c0ff615b1766855c`.
+- Browser Adapter workflow run `43609450976` was still in progress at this checkpoint.
 - Live-host stress/fault injection and real provider-to-recipient handoff remain NOT RUN.
 
 ### M7 — Optional semantic retrieval
