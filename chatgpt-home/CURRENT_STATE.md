@@ -1,5 +1,17 @@
 # Blind Sniper — Current Technical State
 
+## BS-BROWSER-001 — native browser workflow — 2026-11-14
+
+- [V] Native MCP stdio server exposes six tools: start, action, status, detach, resume and close. All actions remain behind the lease-gated native dispatcher.
+- [V] Real MCP JSON-RPC harness exercised Chromium on unfamiliar public sites: MDN search, page select/copy command (exit 0; clipboard read-back denied by browser permission), two approved non-sensitive form fills (not submitted), and a 3,624-byte HTML download (SHA-256 `302b7f0b3f441ea2c56a47dd2233a01f7cf12ce2785d75908a3a22173f750fa5`).
+- [V] Detach → Vercel sandbox snapshot → new sandbox session → resume restored the same task/run/session IDs, final URL/title and downloaded artifact; final close released the lease. A separate httpbin test cookie survived the same snapshot/resume path.
+- [V] Full suite: 287 tests PASS. Targeted: browser 40, dispatcher 9, MCP 17 tests PASS. Runtime registry validator, Codex config validator, Python compilation and `git diff --check` PASS.
+- [V] Fixed browser action policy omission for `press`, added `CTRL+A` selection for copy workflow, added same-owner expired-lease reclaim on resume, and added checkpoint URL restoration when a restored profile exposes a stale tab.
+- [B] B1 acceptance remains NOT PASSED: this session has no ChatGPT custom MCP stdio registration/invocation action. The live browser run used a test harness launched inside Vercel sandbox, not ChatGPT direct control.
+- [V] B2 profile/cookie snapshot-resume behavior is verified in the named Vercel sandbox. [U] Permanent-host retention, billing and no-card eligibility are not verified; do not assume this is a zero-cost production host.
+- [B] B3 remains open: public HTTPS navigation was exercised with host controls, but redirect/SSRF/DNS-rebinding review and authenticated user-profile handling have not passed adversarial acceptance.
+- [V] Draft PR #58 remains OPEN and unmerged; current evidence is on the PR feature branch.
+
 ## Live browser execution verification — 2026-11-13
 
 - [V] Commit `994bee7da31d6d50831ac2db19923846344abe88` adds a read-only Miss Noor browser smoke runner and a main-branch GitHub Actions job using the native lease-gated dispatcher.

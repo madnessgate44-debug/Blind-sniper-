@@ -1,5 +1,17 @@
 # Blind Sniper build progress — current status
 
+## BS-BROWSER-001 — live native browser workflow — 2026-11-14
+
+- [V] MCP server now exposes six tools: `browser.start`, `browser.action`, `browser.status`, `browser.detach`, `browser.resume`, `browser.close`. `browser.detach` closes the browser but preserves resumable session/profile and lease.
+- [V] Real MCP stdio JSON-RPC harness executed Chromium actions on public sites: MDN search page, select-all + `clipboard-copy` (exit 0; clipboard read-back denied by browser permission), two approved `httpbin` form fills without submission, and sample HTML download (3,624 bytes; SHA-256 `302b7f0b3f441ea2c56a47dd2233a01f7cf12ce2785d75908a3a22173f750fa5`).
+- [V] Detach → named Vercel sandbox snapshot → new sandbox session → resume restored identical task/run/session IDs, final URL/title and downloaded artifact. `browser.close` then reported `lease_released=true`. Separate httpbin test cookie survived detach/snapshot/resume.
+- [V] Root-cause fixes: include `press` in default-deny browser action policy; allow safe `CTRL+A` selection for copy; atomically reclaim/renew an expired task lease for the same native owner on resume; restore the saved checkpoint URL if the profile exposes a stale nonblank tab.
+- [V] Verification: `python -m unittest discover -s tests -v` → exit 0, 287 tests, `OK`; targeted browser 40, dispatcher 9, MCP 17 tests all `OK`; runtime registry validator PASS; Codex config validator PASS; `py_compile` PASS; `git diff --check` PASS.
+- [B] B1 is not accepted: the server was invoked by a test harness inside Vercel sandbox, not directly by ChatGPT. This session exposes no custom MCP stdio registration/invocation action.
+- [V] B2 browser-profile and test-cookie snapshot/resume is verified on this Vercel sandbox. [U] Permanent retention, billing and no-card eligibility are not verified; no paid production host is claimed.
+- [B] B3 remains open: public HTTPS navigation was exercised with host controls, but redirect/SSRF/DNS-rebinding tests and authenticated-profile workflows are not complete.
+- [V] PR #58 remains OPEN, DRAFT and unmerged; evidence is on the feature branch.
+
 ## Live Miss Noor browser inspection — 2026-11-13
 
 - [V] Added `scripts/run_blind_sniper_miss_noor_smoke.py`: creates a native task lease, invokes the checked-in BrowserAdapter only through `dispatch_browser_action`, performs read-only navigation/snapshot/screenshot, verifies the observed host, closes the session, and releases the lease.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import io
 import os
+import socket
 import tempfile
 import unittest
 from contextlib import redirect_stderr
@@ -10,7 +11,7 @@ from subprocess import CompletedProcess
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts.blind_sniper_browser import BrowserAdapter, BrowserAdapterError, BrowserPolicyError, validate_url, main, redact_url_for_receipt
+from scripts.blind_sniper_browser import BrowserAdapter, BrowserAdapterError, BrowserPolicyError, validate_url, main, redact_url_for_receipt, _disable_ipv6_egress
 
 
 class BrowserPolicyTests(unittest.TestCase):
@@ -39,6 +40,86 @@ class BrowserPolicyTests(unittest.TestCase):
         with self.assertRaises(BrowserPolicyError):
             validate_url("https://blocked.example.test/")
 
+    @patch("scripts.blind_sniper_browser._disable_ipv6_egress")
+    def test_general_https_allows_public_host_without_allowlist(self, _disable_ipv6):
+        with patch.dict(os.environ, {
+            "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
+            "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
+            "BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS": "",
+        }):
+            with patch("scripts.blind_sniper_browser.socket.getaddrinfo", return_value=[
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443)),
+            ]):
+                self.assertEqual(validate_url("https://never-configured.example.net/"), "never-configured.example.net")
+
+    @patch("scripts.blind_sniper_browser._disable_ipv6_egress")
+    def test_general_https_rejects_http_and_private_ip_literals(self, _disable_ipv6):
+        with patch.dict(os.environ, {
+            "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
+            "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
+            "BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS": "",
+        }):
+            with self.assertRaisesRegex(BrowserPolicyError, "public HTTPS"):
+                validate_url("http://example.com/")
+            for url in ("https://127.0.0.1/", "https://169.254.169.254/", "https://[::1]/", "https://[fd00::1]/"):
+                with self.subTest(url=url), self.assertRaises(BrowserPolicyError):
+                    validate_url(url)
+
+    @patch("scripts.blind_sniper_browser._disable_ipv6_egress")
+    def test_general_https_rejects_dns_rebinding_to_private_address(self, _disable_ipv6):
+        with patch.dict(os.environ, {
+            "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
+            "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
+            "BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS": "",
+        }):
+            with patch("scripts.blind_sniper_browser.socket.getaddrinfo", return_value=[
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.2.3.4", 443)),
+            ]):
+                with self.assertRaisesRegex(BrowserPolicyError, "non-public IP"):
+                    validate_url("https://rebind.example.net/")
+
+    @patch("scripts.blind_sniper_browser._disable_ipv6_egress")
+    def test_general_https_rejects_mixed_public_and_private_dns_answers(self, _disable_ipv6):
+        with patch.dict(os.environ, {
+            "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
+            "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
+            "BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS": "",
+        }):
+            with patch("scripts.blind_sniper_browser.socket.getaddrinfo", return_value=[
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443)),
+                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.168.1.10", 443)),
+            ]):
+                with self.assertRaisesRegex(BrowserPolicyError, "non-public IP"):
+                    validate_url("https://mixed.example.net/")
+
+    def test_ipv6_egress_block_disables_all_proc_controls(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            for interface in ("all", "default", "lo", "eth0"):
+                control = root / "sys/net/ipv6/conf" / interface / "disable_ipv6"
+                control.parent.mkdir(parents=True, exist_ok=True)
+                control.write_text("0", encoding="utf-8")
+            _disable_ipv6_egress(root)
+            for interface in ("all", "default", "lo", "eth0"):
+                control = root / "sys/net/ipv6/conf" / interface / "disable_ipv6"
+                self.assertEqual(control.read_text(encoding="utf-8").strip(), "1")
+
+    def test_general_https_command_does_not_require_domain_allowlist(self):
+        adapter = self.adapter()
+        with patch.dict(os.environ, {
+            "BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1",
+            "BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE": "1",
+            "BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "",
+        }):
+            with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
+                adapter._command("open", "https://public.example/")
+        command = run.call_args.args[0]
+        self.assertNotIn("--allowed-domains", command)
+
     def test_non_http_scheme_is_rejected(self):
         with self.assertRaises(BrowserPolicyError):
             validate_url("file:///etc/passwd")
@@ -57,6 +138,51 @@ class BrowserPolicyTests(unittest.TestCase):
         adapter.state["current_url"] = "http://127.0.0.1/"
         with self.assertRaises(BrowserPolicyError):
             adapter.execute("click", "step-1", "#submit")
+        with self.assertRaises(BrowserPolicyError):
+            adapter.execute("download", "step-2", "a.file", "fixture.txt")
+
+    def test_fill_blocks_page_with_password_or_mfa_field(self):
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with patch.object(adapter, "_cli_data_field", return_value=1):
+                with self.assertRaisesRegex(BrowserPolicyError, "password or one-time-code"):
+                    adapter.execute("fill", "fill-credential-page", 'input[name="customer"]', "Ahmed")
+
+    def test_fill_blocks_password_field_even_with_neutral_selector(self):
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        def field(*args, field):
+            if args[0] == "count":
+                return 0
+            return {"type": "password", "name": "login"}.get(args[-1])
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with patch.object(adapter, "_cli_data_field", side_effect=field):
+                with self.assertRaisesRegex(BrowserPolicyError, "Sensitive credential"):
+                    adapter.execute("fill", "fill-password-field", "#field", "not-a-secret")
+
+    def test_press_allows_select_all_for_copy_workflow(self):
+        adapter = self.adapter(approval_reference="test")
+        adapter.state["current_url"] = "https://example.test/"
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
+                adapter.execute("press", "select-all", "CTRL+A")
+        self.assertTrue(any(call.args[0][-2:] == ["press", "CTRL+A"] for call in run.call_args_list))
+
+    def test_fill_allows_verified_non_sensitive_form_field(self):
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        def field(*args, field):
+            if args[0] == "count":
+                return 0
+            return {"type": "text", "name": "custname"}.get(args[-1])
+        completed = CompletedProcess([], 0, '{"success":true,"data":{"url":"http://127.0.0.1/"}}', "")
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with patch.object(adapter, "_cli_data_field", side_effect=field):
+                with patch("scripts.blind_sniper_browser.subprocess.run", return_value=completed) as run:
+                    result = adapter.execute("fill", "fill-safe-field", 'input[name="custname"]', "Ahmed")
+        self.assertEqual(result["receipt"]["exit_code"], 0)
+        self.assertTrue(any(command[-3:] == ["fill", 'input[name="custname"]', "Ahmed"] for command in [call.args[0] for call in run.call_args_list]))
 
     def test_sensitive_selector_is_rejected(self):
         with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
@@ -82,14 +208,73 @@ class BrowserPolicyTests(unittest.TestCase):
         with self.assertRaises(BrowserPolicyError):
             adapter._append_receipt({"step_id": "step-1"})
 
+    def test_persistent_profile_uses_private_restore_state_without_cli_domain_replay(self):
+        adapter = self.adapter()
+        with tempfile.TemporaryDirectory() as home:
+            with patch("scripts.blind_sniper_browser.Path.home", return_value=Path(home)):
+                with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_PERSISTENT_PROFILE": "1"}):
+                    with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
+                        adapter._command("open", "http://127.0.0.1/")
+            command = run.call_args.args[0]
+            self.assertIn("--profile", command)
+            self.assertIn("--restore", command)
+            self.assertNotIn("--allowed-domains", command)
+            profile = Path(command[command.index("--profile") + 1])
+            self.assertEqual(profile, adapter.profiles_dir / adapter.session_id)
+            self.assertEqual(run.call_args.kwargs["env"]["AGENT_BROWSER_AUTOSAVE_INTERVAL_MS"], "1000")
+            self.assertEqual((Path(home) / ".agent-browser").stat().st_mode & 0o777, 0o700)
+            self.assertEqual((Path(home) / ".agent-browser" / "sessions").stat().st_mode & 0o777, 0o700)
+
+    def test_stale_chrome_profile_locks_are_removed_after_owner_process_is_gone(self):
+        adapter = self.adapter()
+        profile = adapter.profiles_dir / adapter.session_id
+        profile.mkdir(parents=True, exist_ok=True)
+        for name, target in (
+            ("SingletonLock", "old-host-999999999"),
+            ("SingletonCookie", "stale-cookie"),
+            ("SingletonSocket", "/tmp/stale-chrome-socket"),
+        ):
+            (profile / name).symlink_to(target)
+        adapter._clear_stale_profile_lock(profile)
+        self.assertFalse((profile / "SingletonLock").exists())
+        self.assertFalse((profile / "SingletonCookie").exists())
+        self.assertFalse((profile / "SingletonSocket").exists())
+
+    def test_live_chrome_profile_lock_is_not_removed(self):
+        adapter = self.adapter()
+        profile = adapter.profiles_dir / adapter.session_id
+        profile.mkdir(parents=True, exist_ok=True)
+        lock = profile / "SingletonLock"
+        lock.symlink_to(f"current-host-{os.getpid()}")
+        adapter._clear_stale_profile_lock(profile)
+        self.assertTrue(lock.is_symlink())
+
+    def test_ensure_page_restored_reopens_saved_url_after_blank_page(self):
+        adapter = self.adapter()
+        restore_url = "http://127.0.0.1/saved?query=private"
+        adapter.state["restore_url"] = restore_url
+        adapter.state["current_url"] = "http://127.0.0.1/[REDACTED]"
+        with patch.object(adapter, "_current_url", side_effect=["about:blank", restore_url]):
+            with patch.object(adapter, "_command", return_value=(0, "{}", "", [])) as command:
+                adapter._ensure_page_restored()
+        command.assert_called_once_with("open", restore_url)
+        self.assertEqual(adapter.state["restore_url"], restore_url)
+        self.assertEqual(adapter.state["current_url"], redact_url_for_receipt(restore_url))
+
     def test_action_policy_is_deny_by_default(self):
         adapter = self.adapter()
         policy = json.loads(adapter.policy_file.read_text(encoding="utf-8"))
         self.assertEqual(policy["default"], "deny")
+        self.assertIn("press", policy["allow"])
         self.assertNotIn("eval", policy["allow"])
         self.assertIn("upload", policy["allow"])
         self.assertIn("download", policy["allow"])
         self.assertIn("close", policy["allow"])
+        self.assertIn("url", policy["allow"])
+        self.assertIn("getattribute", policy["allow"])
+        self.assertIn("count", policy["allow"])
+        self.assertIn("clipboard", policy["allow"])
+        self.assertIn("title", policy["allow"])
 
     def test_engine_command_enforces_domain_and_content_boundaries(self):
         adapter = self.adapter()
@@ -99,6 +284,7 @@ class BrowserPolicyTests(unittest.TestCase):
         command = run.call_args.args[0]
         self.assertEqual(command[1:3], ["--executable-path", "/usr/bin/chromium"])
         self.assertIn("--allowed-domains", command)
+        self.assertNotIn("--restore", command)
         self.assertIn("--action-policy", command)
         self.assertIn("--content-boundaries", command)
         self.assertIn("127.0.0.1,example.test", command)
@@ -122,10 +308,62 @@ class BrowserPolicyTests(unittest.TestCase):
         self.assertNotIn("/private/path", serialized)
         self.assertEqual(result["receipt"]["requested_url"], "http://127.0.0.1/[REDACTED]")
         self.assertNotIn("secret", adapter.session_file.read_text(encoding="utf-8"))
+        self.assertEqual(json.loads(adapter.restore_url_file.read_text(encoding="utf-8"))["url"], url)
+        self.assertEqual(adapter.restore_url_file.stat().st_mode & 0o777, 0o600)
         self.assertEqual(
             redact_url_for_receipt("https://example.test/a?token=x#fragment"),
             "https://example.test/[REDACTED]",
         )
+
+    def test_detach_closes_browser_but_keeps_session_resumable(self):
+        adapter = self.adapter()
+        adapter.state["current_url"] = "https://example.org/"
+        adapter.state["restore_url"] = "https://example.org/"
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "example.org"}):
+            with patch.object(adapter, "_current_url", return_value="https://example.org/"):
+                with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, '{"success":true,"saveStatus":"saved"}', "")) as run:
+                    result = adapter.execute("detach", "detach-step")
+        self.assertEqual(result["receipt"]["exit_code"], 0)
+        self.assertEqual(adapter.state["status"], "DETACHED")
+        self.assertNotEqual(adapter.state["status"], "CLOSED")
+        self.assertEqual(run.call_args.args[0][-1], "close")
+
+    def test_detached_session_metadata_can_be_loaded_for_resume(self):
+        adapter = self.adapter()
+        adapter.state["status"] = "DETACHED"
+        adapter.state["restore_url"] = "https://example.org/"
+        adapter._save_state()
+        resumed = BrowserAdapter(
+            task_id=adapter.task_id, run_id=adapter.run_id, session_id=adapter.session_id,
+            state_dir=adapter.state_dir,
+        )
+        self.assertEqual(resumed.state["status"], "DETACHED")
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "example.org"}):
+            with patch.object(resumed, "_current_url", side_effect=["about:blank", "https://example.org/"]):
+                with patch.object(resumed, "_command", return_value=(0, "{}", "", ["agent-browser", "open", "https://example.org/"])) as command:
+                    resumed._ensure_page_restored()
+        self.assertEqual(command.call_args.args, ("open", "https://example.org/"))
+        self.assertEqual(resumed.state["current_url"], "https://example.org/[REDACTED]")
+
+    def test_ensure_page_restored_reopens_stale_nonblank_page_to_checkpoint(self):
+        adapter = self.adapter()
+        adapter.state["current_url"] = "https://example.org/old"
+        adapter.state["restore_url"] = "https://example.org/new"
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "example.org"}):
+            with patch.object(adapter, "_current_url", side_effect=["https://example.org/old", "https://example.org/new"]):
+                with patch.object(adapter, "_command", return_value=(0, "{}", "", ["agent-browser", "open", "https://example.org/new"])) as command:
+                    adapter._ensure_page_restored()
+        self.assertEqual(command.call_args.args, ("open", "https://example.org/new"))
+        self.assertEqual(adapter.state["current_url"], "https://example.org/[REDACTED]")
+
+    def test_get_title_action_maps_to_agent_browser_title_command(self):
+        adapter = self.adapter()
+        adapter.state["current_url"] = "http://127.0.0.1/"
+        completed = CompletedProcess([], 0, '{"success":true,"data":{"title":"Example Domain"}}', "")
+        with patch("scripts.blind_sniper_browser.subprocess.run", return_value=completed) as run:
+            result = adapter.execute("get-title", "title-step")
+        self.assertEqual(result["receipt"]["exit_code"], 0)
+        self.assertTrue(any(call.args[0][-2:] == ["get", "title"] for call in run.call_args_list))
 
     def test_tab_and_frame_actions_map_to_supported_cli(self):
         adapter = self.adapter()
@@ -173,24 +411,26 @@ class BrowserPolicyTests(unittest.TestCase):
                 adapter.execute("upload", "upload-exe", "input[type=file]", "payload.exe")
 
     def test_download_is_saved_only_inside_artifact_workspace(self):
-        adapter = self.adapter()
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
         adapter.state["current_url"] = "http://127.0.0.1/"
         def fake_run(command, **kwargs):
             Path(command[-1]).write_bytes(b"downloaded")
             return CompletedProcess(command, 0, "{}", "")
-        with patch("scripts.blind_sniper_browser.subprocess.run", side_effect=fake_run) as run:
-            result = adapter.execute("download", "download-1", "a.download", "report.pdf")
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with patch("scripts.blind_sniper_browser.subprocess.run", side_effect=fake_run) as run:
+                result = adapter.execute("download", "download-1", "a.download", "report.pdf")
         target = adapter.artifacts_dir / "report.pdf"
         self.assertTrue(target.is_file())
         self.assertEqual(target.read_bytes(), b"downloaded")
-        self.assertEqual(run.call_args.args[0][-3], "download")
+        self.assertTrue(any(call.args[0][-3] == "download" for call in run.call_args_list))
         self.assertEqual(result["receipt"]["artifact_paths"], [str(target)])
 
     def test_download_rejects_path_traversal(self):
-        adapter = self.adapter()
+        adapter = self.adapter(approval_reference="OWNER-APPROVED")
         adapter.state["current_url"] = "http://127.0.0.1/"
-        with self.assertRaises(BrowserPolicyError):
-            adapter.execute("download", "download-traversal", "a.download", "../outside.pdf")
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with self.assertRaises(BrowserPolicyError):
+                adapter.execute("download", "download-traversal", "a.download", "../outside.pdf")
 
     def test_standalone_adapter_cli_is_blocked(self):
         output = io.StringIO()
@@ -222,6 +462,7 @@ class BrowserPolicyTests(unittest.TestCase):
         adapter = self.adapter()
         adapter.state["current_url"] = "http://127.0.0.1/"
         for action, args in (
+            ("clipboard-read", ()),
             ("clipboard-write", ("text",)),
             ("clipboard-copy", ()),
             ("clipboard-paste", ()),
