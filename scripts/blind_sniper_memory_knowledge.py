@@ -167,7 +167,9 @@ def approve_proposal(
     """Create an immutable approved copy after an explicit reviewer action."""
     if not isinstance(reviewer, str) or not reviewer.strip() or len(reviewer.strip()) > 128:
         raise KnowledgeError("reviewer must be a non-empty bounded identifier")
-    source = Path(proposal_path).expanduser().resolve(strict=True)
+    source = Path(proposal_path).expanduser().absolute()
+    source = _ensure_private_external_path(source)
+    source = source.resolve(strict=True)
     source_info = source.stat()
     if not stat.S_ISREG(source_info.st_mode) or source_info.st_nlink != 1:
         raise KnowledgeError("proposal must be a regular singly-linked file")
