@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+from blind_sniper_memory import MemoryError  # noqa: E402
 from blind_sniper_memory_handoff import (  # noqa: E402
     HandoffError,
     build_handoff,
@@ -49,7 +50,7 @@ class HandoffTests(unittest.TestCase):
             result = recover_handoff(
                 root, item["handoff_id"], "implementer",
                 task_state_reader=lambda task_id: state if task_id == item["task_id"] else None,
-                approved_knowledge_reader=lambda _task_id: [{"page_id": "approved-1"}],
+                approved_knowledge_reader=lambda _task_id: [{"page_id": "approved-1", "status": "approved"}],
             )
             self.assertEqual(result["current_task_state"], state)
             self.assertEqual(result["task_state_source"], "native_task_ledger")
