@@ -25,4 +25,11 @@ This matrix defines the synthetic evaluation gate for the native memory plane. F
 - Lexical retrieval has not been benchmarked against a representative real workload; SQLite FTS5 and vector search remain deferred.
 - Model-assisted summarization and semantic retrieval are not part of this evaluation.
 
-## Latest exact-head evidence — 2026-11-14\n\n- PR head: `dcea04d63cf341c3809b4b015f726fbdffb4269f`.\n- Memory Tests run `43607134001`: 28 tests, 0 failures.\n- Runtime Registry run `43607134010`: 280 tests, 0 failures.\n- OS Compliance run `43607134009`: PASS.\n\nA passing synthetic suite is contract evidence, not proof of live deployment or operational persistence.
+## Latest exact-head evidence — 2026-11-14
+
+- PR head: `dcea04d63cf341c3809b4b015f726fbdffb4269f`.
+- Memory Tests run `43607134001`: 28 tests, 0 failures.
+- Runtime Registry run `43607134010`: 280 tests, 0 failures.
+- OS Compliance run `43607134009`: PASS.
+
+A passing synthetic suite is contract evidence, not proof of live deployment or operational persistence.
