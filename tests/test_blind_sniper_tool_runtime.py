@@ -198,3 +198,72 @@ class NativeToolRuntimeTests(unittest.TestCase):
             NativeToolRuntime.definitions(("shell.exec",))
         with self.assertRaisesRegex(NativeToolError, "fixed allowlist"):
             self.runtime._run_verification({"command_id": "python -c 'print(1)'"})
+
+    def test_agent_handoff_creates_private_packet_and_correlated_tool_receipt(self):
+        handoff_dir = self.root / "private-handoffs"
+        handoff_dir.mkdir(mode=0o700)
+        runtime = NativeToolRuntime(
+            self.queue, workspace_root=self.root,
+            handoff_state_dir=handoff_dir,
+            allowed_agent_ids=frozenset({"engineer", "planner"}),
+        )
+        spec = AgentSpec(agent_id="engineer", tool_allowlist=("agent.handoff",))
+        arguments = {
+            "to_agent": "planner",
+            "objective": "Have the planner validate the remaining design.",
+            "verified_state": {"status": "IN_PROGRESS", "attempt": 1},
+            "open_questions": ["Which acceptance case is still missing?"],
+            "files_touched": ["scripts/blind_sniper_tool_runtime.py"],
+            "evidence_refs": ["test:agent-handoff"],
+            "next_action": "Inspect the current task state and plan the next bounded step.",
+        }
+        result = runtime.execute(
+            name="agent.handoff", arguments=arguments, spec=spec,
+            task=self.task, run_id="run-handoff", tool_call_id="call-handoff",
+        )
+        self.assertTrue(result["ok"], result)
+        self.assertEqual(result["result"]["to_agent"], "planner")
+        self.assertEqual(result["receipt"]["tool_name"], "agent.handoff")
+        packet_path = next(handoff_dir.glob("handoff:*.json"))
+        packet = __import__("json").loads(packet_path.read_text(encoding="utf-8"))
+        self.assertEqual(packet["from_agent"], "engineer")
+        self.assertEqual(packet["to_agent"], "planner")
+        self.assertEqual(packet["handoff_depth"], 0)
+        self.assertEqual(packet["task_id"], self.task.task_id)
+        self.assertEqual(packet_path.stat().st_mode & 0o777, 0o600)
+
+    def test_agent_handoff_rejects_unregistered_recipient_and_depth_limit(self):
+        handoff_dir = self.root / "private-handoffs"
+        handoff_dir.mkdir(mode=0o700)
+        runtime = NativeToolRuntime(
+            self.queue, workspace_root=self.root,
+            handoff_state_dir=handoff_dir,
+            allowed_agent_ids=frozenset({"engineer", "planner"}),
+        )
+        spec = AgentSpec(agent_id="engineer", tool_allowlist=("agent.handoff",))
+        arguments = {
+            "to_agent": "unregistered",
+            "objective": "Continue.",
+            "verified_state": {"status": "IN_PROGRESS"},
+            "open_questions": [],
+            "files_touched": [],
+            "evidence_refs": [],
+            "next_action": "Continue the task.",
+        }
+        denied = runtime.execute(
+            name="agent.handoff", arguments=arguments, spec=spec,
+            task=self.task, run_id="run-handoff-denied", tool_call_id="call-denied",
+        )
+        self.assertFalse(denied["ok"])
+        self.assertIn("registered", denied["result"]["error"])
+        deep_task = ModelTask(
+            task_id=self.task.task_id, agent_id="engineer", objective="continue",
+            payload={"handoff_depth": 4}, lease_owner_id="worker-1",
+        )
+        arguments["to_agent"] = "planner"
+        denied_depth = runtime.execute(
+            name="agent.handoff", arguments=arguments, spec=spec,
+            task=deep_task, run_id="run-handoff-depth", tool_call_id="call-depth",
+        )
+        self.assertFalse(denied_depth["ok"])
+        self.assertIn("depth limit", denied_depth["result"]["error"])
