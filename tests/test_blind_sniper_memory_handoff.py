@@ -87,6 +87,19 @@ class HandoffTests(unittest.TestCase):
             with self.assertRaisesRegex(HandoffError, "does not own"):
                 recover_handoff(root, item["handoff_id"], "reviewer", task_state_reader=lambda _id: {"status": "PENDING"})
 
+    def test_recovery_rejects_unapproved_knowledge(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "handoffs"
+            item = packet()
+            write_handoff(root, item)
+            claim_handoff(root, item["handoff_id"], "implementer")
+            with self.assertRaisesRegex(HandoffError, "non-approved"):
+                recover_handoff(
+                    root, item["handoff_id"], "implementer",
+                    task_state_reader=lambda _task_id: {"status": "PENDING"},
+                    approved_knowledge_reader=lambda _task_id: [{"status": "proposed"}],
+                )
+
     def test_rejects_path_traversal_and_non_owner_storage(self):
         with self.assertRaisesRegex(HandoffError, "safe repository-relative"):
             packet(files_touched=["../private.txt"])
