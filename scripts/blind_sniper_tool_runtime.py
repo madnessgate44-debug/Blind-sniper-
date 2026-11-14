@@ -19,7 +19,7 @@ from typing import Any
 
 from blind_sniper_redact import redact, redact_text
 from blind_sniper_browser import BrowserAdapter
-from blind_sniper_memory_handoff import HandoffError, build_handoff, write_handoff
+from blind_sniper_memory_handoff import HandoffError, build_handoff, list_handoffs, write_handoff
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_READ_BYTES = 256_000
@@ -421,9 +421,16 @@ class NativeToolRuntime:
         depth = task.payload.get("handoff_depth", 0) if isinstance(task.payload, dict) else 0
         if isinstance(depth, bool) or not isinstance(depth, int) or not 0 <= depth < 4:
             raise NativeToolError("Handoff chain reached the configured depth limit")
-        identity = f"{task.task_id}:{run_id}:{tool_call_id}"
+        identity = f"{task.task_id}:{spec.agent_id}:{recipient}:{_digest(arguments)}"
         handoff_id = "handoff:" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
         try:
+            existing = next((item for item in list_handoffs(self.handoff_state_dir) if item["handoff_id"] == handoff_id), None)
+            if existing is not None:
+                return {
+                    "handoff_id": handoff_id, "status": "DUPLICATE",
+                    "from_agent": spec.agent_id, "to_agent": recipient,
+                    "task_id": task.task_id, "handoff_depth": depth,
+                }
             packet = build_handoff(
                 handoff_id=handoff_id,
                 task_id=task.task_id,
