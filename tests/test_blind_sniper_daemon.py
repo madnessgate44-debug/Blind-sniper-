@@ -19,6 +19,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from blind_sniper_agent_runtime import _canonical_digest, dispatch_task
 from blind_sniper_daemon import BlindSniperDaemon, DaemonError, PrivateTaskStore, host_execution_policy_from_env
 from blind_sniper_ledger import TaskLedger
+from blind_sniper_memory_handoff import build_handoff, claim_handoff, write_handoff
+from blind_sniper_handoff_runtime import reconcile_handoffs
 from blind_sniper_model_worker import AgentSpec, ModelTask, ModelWorker
 from blind_sniper_tool_runtime import NativeToolRuntime
 from blind_sniper_worker import DurableQueue
@@ -418,6 +420,58 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         third = daemon.run_once()
         self.assertEqual(third["counts"]["skipped"], 2)
         self.assertEqual(len(calls), 2)
+
+
+    def test_claimed_handoff_is_materialized_after_daemon_interruption(self):
+        parent_id = "DAEMON-HANDOFF-RECOVER"
+        self.queue.enqueue(
+            task_id=parent_id, kind="native_model_agent",
+            payload_digest="a" * 64, max_attempts=3,
+        )
+        self.queue.claim(task_id=parent_id, owner_id="parent-worker", lease_seconds=120)
+        self.queue.complete(task_id=parent_id, owner_id="parent-worker", result_digest="b" * 64)
+        packet = build_handoff(
+            handoff_id="handoff:recovery-test",
+            task_id=parent_id,
+            from_agent="researcher",
+            to_agent="planner",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            objective="Recover after the daemon stopped.",
+            verified_state={"status": "COMPLETED", "attempt": 1},
+            open_questions=["Was the child task created?"],
+            files_touched=["README.md"],
+            evidence_refs=["test:handoff-restart"],
+            next_action="Inspect the recovered parent state and continue.",
+        )
+        write_handoff(self.store.handoff_dir, packet)
+        claim_handoff(self.store.handoff_dir, packet["handoff_id"], "planner")
+
+        # Simulate interruption after claim but before child task creation.
+        recovered = reconcile_handoffs(
+            handoff_dir=self.store.handoff_dir,
+            task_dir=self.store.task_dir,
+            queue=self.queue,
+            allowed_agent_ids=frozenset({"researcher", "planner"}),
+        )
+        self.assertEqual(recovered["delivered"], 1)
+        child_id = "handoff-" + __import__("hashlib").sha256(
+            packet["handoff_id"].encode("utf-8")
+        ).hexdigest()[:32]
+        child_path = self.store.task_dir / f"{child_id}.json"
+        self.assertTrue(child_path.is_file())
+        self.assertEqual(stat.S_IMODE(child_path.stat().st_mode), 0o600)
+        child = self.store.read_task(child_path)
+        self.assertEqual(child["payload"]["current_task_state"]["status"], "COMPLETED")
+
+        replay = reconcile_handoffs(
+            handoff_dir=self.store.handoff_dir,
+            task_dir=self.store.task_dir,
+            queue=self.queue,
+            allowed_agent_ids=frozenset({"researcher", "planner"}),
+        )
+        self.assertEqual(replay["delivered"], 0)
+        self.assertEqual(len(self.store.task_files()), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
