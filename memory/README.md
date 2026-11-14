@@ -11,12 +11,12 @@ This is Blind Sniper's native knowledge-memory plane. It is separate from the ta
 - M3 deterministic consolidation: immutable Markdown proposals with provenance and supersession; explicit reviewer approval is required.
 - M4 lexical retrieval: approved pages only, project/scope filtered, bounded context and provenance.
 - M5 handoff/recovery: model-callable `agent.handoff`, registered-recipient validation, private immutable packets, atomic claim-once, daemon reconciliation into deterministic child tasks, parent-state re-read through `DurableQueue.status`, one handoff per source task/agent and depth limit four.
-- M6 synthetic evaluation: 60 focused memory/tool-runtime/daemon tests PASS; Runtime Registry 283 tests PASS; OS Compliance PASS on code head `5e4985b`. Latest handoff fan-out guard/test changes are awaiting exact-head CI.
+- M6 synthetic evaluation: 62 focused memory/tool-runtime/daemon tests PASS; Runtime Registry 285 tests PASS; OS Compliance PASS on code head `5f16548`.
 - M7 semantic/vector retrieval: deferred pending measured lexical failure cases and a verified zero-cost path.
 
 ## Operational boundary
 
-- Private host activation, persistent cross-session storage and real model-provider-to-recipient handoff are NOT VERIFIED. The integration is enabled only when the host allowlists `agent.handoff`.
+- Private host activation, persistent cross-session storage and real model-provider-to-recipient handoff are NOT VERIFIED. The integration is enabled only when the host sets `BLIND_SNIPER_DAEMON_TOOL_ALLOWLIST=agent.handoff` (or includes it in the existing comma-separated tool allowlist).
 - No personal-memory payload, ChatGPT transcript, credential, or sensitive user data is captured or stored.
 - This public repository contains code, contracts and synthetic fixtures only.
 
