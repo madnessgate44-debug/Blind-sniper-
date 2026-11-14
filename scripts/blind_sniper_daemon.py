@@ -610,10 +610,13 @@ def main(argv: list[str] | None = None) -> int:
             os.chmod(store.ledger_path, 0o600)
         queue = DurableQueue(ledger)
         browser_state_dir = _ensure_private_dir(store.state_dir / "browser", workspace_root=workspace_root)
+        allowed_agent_ids = load_native_agent_ids(workspace_root)
         tool_runtime = NativeToolRuntime(
             queue, workspace_root=workspace_root,
             command_timeout=min(600, args.timeout_seconds),
             browser_state_dir=browser_state_dir,
+            handoff_state_dir=store.handoff_dir,
+            allowed_agent_ids=allowed_agent_ids,
         )
         invoker = NativeModelInvoker.from_env(tool_runtime=tool_runtime)
         worker = ModelWorker(
@@ -625,7 +628,7 @@ def main(argv: list[str] | None = None) -> int:
             queue=queue, worker=worker, owner_id=args.owner_id, store=store,
             lease_seconds=lease_seconds, max_tasks_per_cycle=args.max_tasks_per_cycle,
             host_policy=host_execution_policy_from_env(),
-            allowed_agent_ids=load_native_agent_ids(workspace_root),
+            allowed_agent_ids=allowed_agent_ids,
         )
         if args.once:
             print(json.dumps(daemon.run_once(), sort_keys=True))
