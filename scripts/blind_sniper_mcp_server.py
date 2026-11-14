@@ -194,9 +194,6 @@ class BrowserMCP:
     def resume(self, task_id: str, run_id: str, session_id: str) -> dict[str, Any]:
         if self.active:
             raise RuntimeError("A browser session is already active")
-        lease = self.ledger.lease_status(task_id)
-        if not lease or lease.get("owner_id") != OWNER_ID:
-            raise RuntimeError("No active native lease for that browser session")
         rows = self.ledger.events(task_id)
         state = next(
             (row.get("payload", {}).get("state") for row in reversed(rows)
@@ -205,6 +202,9 @@ class BrowserMCP:
         )
         if not isinstance(state, dict) or state.get("status") != "EXECUTING":
             raise RuntimeError("No resumable EXECUTING task snapshot exists for that session")
+        # Reclaim or renew the lease atomically. An expired lease is expected
+        # after a host interruption; only the same native owner may reclaim it.
+        self._lease(task_id, f"resume:{uuid.uuid4().hex}")
         self.active = {
             "task_id": task_id, "run_id": run_id,
             "session_id": session_id, "task_state": state,
