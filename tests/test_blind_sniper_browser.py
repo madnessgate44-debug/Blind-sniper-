@@ -161,6 +161,14 @@ class BrowserPolicyTests(unittest.TestCase):
                 with self.assertRaisesRegex(BrowserPolicyError, "Sensitive credential"):
                     adapter.execute("fill", "fill-password-field", "#field", "not-a-secret")
 
+    def test_press_allows_select_all_for_copy_workflow(self):
+        adapter = self.adapter(approval_reference="test")
+        adapter.state["current_url"] = "https://example.test/"
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_WRITE_APPROVED": "1"}):
+            with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "{}", "")) as run:
+                adapter.execute("press", "select-all", "CTRL+A")
+        self.assertTrue(any(call.args[0][-2:] == ["press", "CTRL+A"] for call in run.call_args_list))
+
     def test_fill_allows_verified_non_sensitive_form_field(self):
         adapter = self.adapter(approval_reference="OWNER-APPROVED")
         adapter.state["current_url"] = "http://127.0.0.1/"
@@ -257,6 +265,7 @@ class BrowserPolicyTests(unittest.TestCase):
         adapter = self.adapter()
         policy = json.loads(adapter.policy_file.read_text(encoding="utf-8"))
         self.assertEqual(policy["default"], "deny")
+        self.assertIn("press", policy["allow"])
         self.assertNotIn("eval", policy["allow"])
         self.assertIn("upload", policy["allow"])
         self.assertIn("download", policy["allow"])
@@ -334,7 +343,18 @@ class BrowserPolicyTests(unittest.TestCase):
                 with patch.object(resumed, "_command", return_value=(0, "{}", "", ["agent-browser", "open", "https://example.org/"])) as command:
                     resumed._ensure_page_restored()
         self.assertEqual(command.call_args.args, ("open", "https://example.org/"))
-        self.assertEqual(resumed.state["current_url"], "https://example.org/")
+        self.assertEqual(resumed.state["current_url"], "https://example.org/[REDACTED]")
+
+    def test_ensure_page_restored_reopens_stale_nonblank_page_to_checkpoint(self):
+        adapter = self.adapter()
+        adapter.state["current_url"] = "https://example.org/old"
+        adapter.state["restore_url"] = "https://example.org/new"
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "example.org"}):
+            with patch.object(adapter, "_current_url", side_effect=["https://example.org/old", "https://example.org/new"]):
+                with patch.object(adapter, "_command", return_value=(0, "{}", "", ["agent-browser", "open", "https://example.org/new"])) as command:
+                    adapter._ensure_page_restored()
+        self.assertEqual(command.call_args.args, ("open", "https://example.org/new"))
+        self.assertEqual(adapter.state["current_url"], "https://example.org/[REDACTED]")
 
     def test_get_title_action_maps_to_agent_browser_title_command(self):
         adapter = self.adapter()
