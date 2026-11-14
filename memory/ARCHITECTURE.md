@@ -152,9 +152,10 @@ Remaining M2 work: connect only verified native runtime event producers; do not 
 
 ### M6 — Evaluation — SYNTHETIC GATE PASS
 - Synthetic privacy/leakage, duplicate, provenance, conflicting-evidence, approval, retrieval, handoff and recovery fixtures.
-- Exact-head Memory Tests run `43607134001`: 28 tests PASS.
-- Exact-head Runtime Registry run `43607134010`: 280 tests PASS.
-- Exact-head OS Compliance run `43607134009`: PASS.
+- Exact-head Memory Tests run `43607326400`: 28 tests PASS.
+- Exact-head Runtime Registry run `43607326369`: 280 tests PASS.
+- Exact-head OS Compliance run `43607326385`: PASS.
+- All three checks ran on commit `ed16dc40d731ec01550fb5c6ffe3d2d5cbef5935`.
 - Live-host stress/fault injection remains NOT RUN.
 
 ### M7 — Optional semantic retrieval
