@@ -10,7 +10,8 @@
 - [B] B1 acceptance remains NOT PASSED: this session has no ChatGPT custom MCP stdio registration/invocation action. The live browser run used a test harness launched inside Vercel sandbox, not ChatGPT direct control.
 - [V] B2 profile/cookie snapshot-resume behavior is verified in the named Vercel sandbox. [U] Permanent-host retention, billing and no-card eligibility are not verified; do not assume this is a zero-cost production host.
 - [B] B3 remains open: public HTTPS navigation was exercised with host controls, but redirect/SSRF/DNS-rebinding review and authenticated user-profile handling have not passed adversarial acceptance.
-- [V] Draft PR #58 remains OPEN and unmerged; latest branch head before this update was `acea7a01c80920b09eccda7f10ca6904ff5692ab`.
+- [V] Draft PR #58 remains OPEN and unmerged; current evidence is on the PR feature branch.
+
 ## Live browser execution verification — 2026-11-13
 
 - [V] Commit `994bee7da31d6d50831ac2db19923846344abe88` adds a read-only Miss Noor browser smoke runner and a main-branch GitHub Actions job using the native lease-gated dispatcher.
