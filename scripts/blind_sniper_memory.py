@@ -149,6 +149,8 @@ def _ensure_private_external_path(journal_path: str | Path) -> Path:
         raise MemoryError("memory journal must be outside the repository checkout")
     target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     resolved_parent = target.parent.resolve(strict=True)
+    if os.stat(resolved_parent).st_mode & 0o077:
+        raise MemoryError("journal directory permissions must exclude group and other users")
     resolved = resolved_parent / target.name
     try:
         resolved.relative_to(repo)
@@ -189,6 +191,9 @@ def append_observation(journal_path: str | Path, record: dict[str, Any]) -> str:
         flags |= os.O_NOFOLLOW
     fd = os.open(path, flags, 0o600)
     try:
+        file_stat = os.fstat(fd)
+        if not stat.S_ISREG(file_stat.st_mode) or file_stat.st_nlink != 1:
+            raise MemoryError("journal must be a regular, singly linked file")
         os.fchmod(fd, stat.S_IRUSR | stat.S_IWUSR)
         with os.fdopen(fd, "r+", encoding="utf-8", closefd=False) as stream:
             fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
