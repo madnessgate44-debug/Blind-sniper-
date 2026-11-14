@@ -1,64 +1,78 @@
-# BS-BROWSER-001 — B1 native MCP browser bridge
+# BS-BROWSER-001 — native MCP browser bridge
 
-**Status:** IMPLEMENTED IN SOURCE / NOT TESTED HERE / NOT CONNECTED TO CHATGPT
+**Status:** Live native browser workflow and sandbox snapshot/resume verified; ChatGPT invocation remains BLOCKED. B1 is not accepted.
 
-## Scope
+## MCP interface
 
-This tranche adds an MCP stdio server inside Blind Sniper. It exposes the existing native browser adapter through five tools:
+The native stdio server is `scripts/blind_sniper_mcp_server.py`. It speaks newline-delimited JSON-RPC using MCP protocol `2025-03-26` and exposes six tools:
 
-- `browser.start` — creates a native task record, claims a task lease, transitions it to EXECUTING, and opens the requested URL.
-- `browser.action` — dispatches one registered adapter action using internally generated step IDs.
-- `browser.status` — returns the current URL, accessibility snapshot, screenshot artifact path and action receipts.
-- `browser.resume` — restores a session only when the same private host state and a still-active lease are available.
+- `browser.start` — creates a native task/run/session, claims the task lease, transitions to EXECUTING and opens the initial URL.
+- `browser.action` — dispatches one registered browser action through `dispatch_browser_action` with an internally generated step ID.
+- `browser.status` — returns URL, title, accessibility snapshot, screenshot reference and action receipts.
+- `browser.detach` — closes the browser process while preserving the resumable session/profile and task lease.
+- `browser.resume` — restores the private profile and saved URL; atomically renews or reclaims the lease for the same native owner only while the task remains EXECUTING.
 - `browser.close` — closes the browser and releases the task lease.
 
-Run from a checked-out repository on a host with Python 3.12+, the pinned `agent-browser` CLI, Chromium and the existing browser host policy configured:
+Run on a host with Python 3.12+, the pinned `agent-browser` CLI, Chromium and the host browser policy:
 
 ```bash
 python scripts/blind_sniper_mcp_server.py
 ```
 
-The process speaks newline-delimited JSON-RPC over stdin/stdout using MCP protocol version `2025-03-26`. It is intended to be registered by an MCP-capable host as a stdio server. It does not open a network listener.
+The stdio process does not expose a network listener. An MCP-capable host must launch and register it. The current ChatGPT session still has no direct stdio registration/invocation action.
 
 ## Host configuration
 
-Required for actual browser execution:
-
-- `BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS` — existing explicit host allowlist; B3 will separately design and test the safe general-public-HTTPS policy.
-- `AGENT_BROWSER_BIN` / `AGENT_BROWSER_EXECUTABLE_PATH` — optional existing adapter overrides.
-- `BLIND_SNIPER_MCP_STATE_DIR` — persistent private directory outside the public repository.
-- `BLIND_SNIPER_MCP_LEDGER` — optional private ledger path, also outside the public repository.
-- `BLIND_SNIPER_BROWSER_STATE_DIR` — optional persistent private browser state path, outside the public repository.
+- `BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS` — explicit host allowlist when general HTTPS mode is disabled.
+- `BLIND_SNIPER_BROWSER_GENERAL_HTTPS=1` — enables public HTTPS destinations after host/IP policy checks; do not treat this flag alone as a completed B3 security review.
+- `BLIND_SNIPER_BROWSER_REQUIRE_IPV6_DISABLE=1` — requires host IPv6 egress disablement before general browsing.
+- `BLIND_SNIPER_BROWSER_PERSISTENT_PROFILE=1` — enables a private browser profile and agent-browser autosave/restore state.
+- `BLIND_SNIPER_MCP_STATE_DIR`, `BLIND_SNIPER_MCP_LEDGER` and `BLIND_SNIPER_BROWSER_STATE_DIR` — private persistent paths outside the public repository.
 - `BLIND_SNIPER_MCP_OWNER_ID` — stable host owner identity; defaults to `blind-sniper-mcp-host`.
-
-Mutating browser actions additionally require both `BLIND_SNIPER_BROWSER_WRITE_APPROVED=1` and `BLIND_SNIPER_BROWSER_APPROVAL_REFERENCE`. These host controls are not set by an MCP request. No credential values are accepted as tool arguments.
+- Mutating actions require host-set `BLIND_SNIPER_BROWSER_WRITE_APPROVED=1` and `BLIND_SNIPER_BROWSER_APPROVAL_REFERENCE`; MCP request arguments cannot grant this approval.
 
 ## Safety and lifecycle
 
-- Browser actions still pass through `dispatch_browser_action`; the MCP layer does not invoke the adapter directly.
-- Task identity, run identity, session identity and step IDs are created internally or validated on resume.
-- The native task ledger enforces EXECUTING state, matching implementer, lease ownership, lease duration and idempotent step reservation.
-- Browser policy continues to reject non-HTTP(S), embedded URL credentials and destinations outside the host allowlist.
-- Existing sensitive selector checks and host approval checks remain active.
-- Private task ledger, browser state, screenshots, downloads and receipts are kept outside the public repository.
-- CAPTCHA and MFA are user handoffs. The bridge does not bypass them.
+- Every action remains lease-gated through `dispatch_browser_action`; MCP does not call the adapter directly.
+- Task/run/session/step identities are generated internally or validated on resume.
+- Resume only accepts an EXECUTING task and attempts an atomic lease claim/renewal for the configured native owner. A closed/terminal task is not revived.
+- URL validation rejects non-HTTP(S), embedded URL credentials, local/non-public hostnames and non-global IP resolutions. The host must verify IPv6 egress controls for general browsing.
+- Sensitive form fields remain blocked; form writes require host approval. The test form below was filled but deliberately not submitted.
+- Ledger, browser profile, screenshots, downloads and receipts remain outside the public repository.
+- CAPTCHA/MFA are user handoffs; the browser does not bypass them.
 
-## B1 acceptance and known blockers
+## Live verification — 2026-11-14
 
-| Requirement | Acceptance | Current result |
+**Native MCP/Chromium workflow:** A JSON-RPC test harness launched the real MCP stdio process inside a named Vercel sandbox and exercised it against public websites:
+
+1. Opened an unfamiliar MDN search-results page for `browser automation` and captured its accessibility snapshot.
+2. Selected page text and invoked `clipboard-copy`; action receipt exit code was 0. Browser permission policy denied clipboard read-back, so clipboard contents were not independently verified.
+3. Filled `custname` and `comments` on `https://httpbin.org/forms/post`; both fill receipts exit code 0; form was not submitted.
+4. Downloaded the sample HTML file from `https://freetoolsforweb.com/sample-files/documents/html`; download receipt exit code 0, 3,624 bytes, SHA-256 `302b7f0b3f441ea2c56a47dd2233a01f7cf12ce2785d75908a3a22173f750fa5`.
+5. Called `browser.detach`, snapshotted the named sandbox, resumed it in a new sandbox session, and called `browser.resume` with the same task/run/session IDs. `browser.status` returned the same final URL and title; the downloaded file remained present; `browser.close` returned `lease_released=true`.
+
+**Separate cookie test:** A test cookie set by `httpbin.org` survived detach → sandbox snapshot → new sandbox session → resume. This proves test-cookie persistence, not a logged-in user profile or authenticated account workflow.
+
+**Verification commands and results:**
+
+- `python -m unittest discover -s tests -v` → exit 0; 287 tests; `OK`.
+- `python -m unittest discover -s tests -p 'test_blind_sniper_browser.py' -v` → 40 tests; `OK`.
+- `python -m unittest discover -s tests -p 'test_blind_sniper_browser_dispatch.py' -v` → 9 tests; `OK`.
+- `python -m unittest discover -s tests -p 'test_blind_sniper_mcp_server.py' -v` → 17 tests; `OK`.
+- `python scripts/validate_blind_sniper_runtime.py` → registry cross-references and safety invariants PASS.
+- `python scripts/validate_codex_config.py` → six Codex config templates PASS.
+- `python -m py_compile scripts/blind_sniper_browser.py scripts/blind_sniper_mcp_server.py` → exit 0.
+- `git diff --check` → exit 0.
+
+## Acceptance status and remaining blockers
+
+| Requirement | Evidence | Status |
 |---|---|---|
-| R1 MCP protocol | Initialize, list tools, call tool dispatch and reject malformed arguments | 9 protocol tests PASS within 261-test CI suite; live MCP client handshake NOT RUN |
-| R2 conversational session interface | Start, action, status, resume, close with internal task/session IDs | Source added; NOT RUN |
-| R3 native policy integration | Every action uses the lease-gated dispatcher and existing approval/domain checks | Source review + unit suite PASS; real browser dispatch NOT RUN |
-| R4 structured result | Return URL, page snapshot, screenshot reference and receipts | Source added; runtime NOT RUN |
-| R5 ChatGPT invocation | ChatGPT can invoke the MCP server as a callable tool | BLOCKED: current session exposes no custom MCP registration or direct MCP stdio tool |
-| R6 live browser E2E | ChatGPT starts a new session and controls an unconfigured site through one conversation | BLOCKED until R5 and a configured browser host are available |
+| Native MCP protocol and tool dispatch | Live stdio JSON-RPC initialize/tool calls plus 17 MCP unit tests | [V] Runtime verified |
+| Browser open/search/copy/fill/download | Live Chromium receipts; clipboard copy command passed, read-back denied | [V] Workflow actions verified with clipboard read-back limitation |
+| Detach/restart/resume | Same task/run/session IDs and final page restored after sandbox snapshot/resume | [V] Snapshot/resume verified |
+| ChatGPT direct invocation | No custom MCP stdio registration/invocation tool is exposed in this ChatGPT session | [B] B1 acceptance blocked |
+| Persistent production host and zero-cost eligibility | Vercel sandbox snapshot works; host lifetime, billing and no-card eligibility not independently verified | [U] Not accepted as a permanent free host |
+| General browsing security and authenticated profiles | Public HTTPS was exercised with host controls; redirect/SSRF/DNS-rebinding review and authenticated-profile workflow remain unverified | [B] B3 not complete |
 
-Runtime Registry CI run `43438707670` passed 261 unit tests (including all nine MCP protocol tests); OS compliance `43438705592` and environment validation `43438705523` also passed. This is a real stdio MCP server implementation, not a live ChatGPT connection. A stdio server requires an MCP host to launch it; a hosted HTTP MCP endpoint requires a persistent browser execution host and a separately verified remote transport. The existing Vercel health function is stateless and cannot itself host the Chromium process. Do not claim B1 passed until the real ChatGPT-to-MCP-to-Chromium loop is exercised.
-
-## Deliberately deferred
-
-- B2 cross-turn/cross-job persistent browser host beyond the local host state/lease recovery implemented here.
-- B3 general HTTPS browsing policy, local-network/SSRF containment redesign, authenticated profiles and cookie persistence.
-- CAPTCHA/MFA bypass (prohibited).
-- Any paid service, paid compute, or external browser/agent runtime.
+The live browser workflow above was driven by a test harness inside the sandbox, **not by ChatGPT invoking Blind Sniper directly**. Do not mark B1 complete until the real ChatGPT-to-MCP-to-Chromium path works in one conversation. Do not mark B2 as a permanent host until zero-cost eligibility, retention and restart behavior are verified. Do not mark B3 complete until redirect/SSRF controls and authenticated-profile handling pass adversarial tests.
