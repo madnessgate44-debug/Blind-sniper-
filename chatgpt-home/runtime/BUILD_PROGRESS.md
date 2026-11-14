@@ -1,17 +1,16 @@
 # Blind Sniper build progress — current status
 
-## BS-BROWSER-001 — B1 native MCP bridge — 2026-11-13
+## BS-BROWSER-001 — live native browser workflow — 2026-11-14
 
-- [VERIFIED] Added stdio MCP server at `scripts/blind_sniper_mcp_server.py` with five browser tools: start, action, status, resume and close. The bridge creates native task/session identities and routes browser actions through `dispatch_browser_action`; lease and step reservation remain mandatory.
-- [VERIFIED] Private ledger/browser-state paths are required to remain outside the public repository. Mutating actions still require host approval and an approval reference. Failed browser close does not release the lease.
-- [VERIFIED] Added nine protocol unit tests in `tests/test_blind_sniper_mcp_server.py` and B1 deployment/configuration/acceptance documentation in `docs/BS-BROWSER-001-B1-MCP-BRIDGE.md`.
-- [VERIFIED] Runtime Registry run `43438890577` SUCCESS on final documentation head `1b3a4dbf13125f00f41113ebb07856ce73df0c1c`: 261 unit tests passed, including all nine `test_blind_sniper_mcp_server` protocol tests. OS Compliance `43438890403` SUCCESS. Source-fix head run `43438707670` also passed; earlier failure `43438598796` was corrected.
-- [UNPROVEN] No MCP client has connected and no browser action has been executed through the new server. CI unit tests do not prove a live stdio client or Chromium session.
-- [BLOCKED] ChatGPT cannot call a stdio MCP server in this session; no MCP registration/stdio invocation tool is available. A host must launch the process and expose it to an MCP-capable client. Existing Vercel Python function is stateless and cannot host Chromium.
-- [VERIFIED] Draft PR #58 is OPEN at `https://github.com/madnessgate44-debug/Blind-sniper-/pull/58`; feature branch is ahead of main with no base divergence.
-- [FAILED] Local test checkout attempt `git clone --depth 1 --branch feat/bs-browser-001-mcp-bridge https://github.com/madnessgate44-debug/Blind-sniper-.git /tmp/blind-sniper-b1` -> exit 128; raw output: `fatal: unable to access 'https://github.com/madnessgate44-debug/Blind-sniper-.git/': Could not resolve host: github.com`. Tests therefore remain NOT RUN.
-- [GATE] B1 remains OPEN / NOT PASSED. Do not start B2 or B3 until ChatGPT invokes this bridge and a live browser action succeeds.
-
+- [V] MCP server now exposes six tools: `browser.start`, `browser.action`, `browser.status`, `browser.detach`, `browser.resume`, `browser.close`. `browser.detach` closes the browser but preserves resumable session/profile and lease.
+- [V] Real MCP stdio JSON-RPC harness executed Chromium actions on public sites: MDN search page, select-all + `clipboard-copy` (exit 0; clipboard read-back denied by browser permission), two approved `httpbin` form fills without submission, and sample HTML download (3,624 bytes; SHA-256 `302b7f0b3f441ea2c56a47dd2233a01f7cf12ce2785d75908a3a22173f750fa5`).
+- [V] Detach → named Vercel sandbox snapshot → new sandbox session → resume restored identical task/run/session IDs, final URL/title and downloaded artifact. `browser.close` then reported `lease_released=true`. Separate httpbin test cookie survived detach/snapshot/resume.
+- [V] Root-cause fixes: include `press` in default-deny browser action policy; allow safe `CTRL+A` selection for copy; atomically reclaim/renew an expired task lease for the same native owner on resume; restore the saved checkpoint URL if the profile exposes a stale nonblank tab.
+- [V] Verification: `python -m unittest discover -s tests -v` → exit 0, 287 tests, `OK`; targeted browser 40, dispatcher 9, MCP 17 tests all `OK`; runtime registry validator PASS; Codex config validator PASS; `py_compile` PASS; `git diff --check` PASS.
+- [B] B1 is not accepted: the server was invoked by a test harness inside Vercel sandbox, not directly by ChatGPT. This session exposes no custom MCP stdio registration/invocation action.
+- [V] B2 browser-profile and test-cookie snapshot/resume is verified on this Vercel sandbox. [U] Permanent retention, billing and no-card eligibility are not verified; no paid production host is claimed.
+- [B] B3 remains open: public HTTPS navigation was exercised with host controls, but redirect/SSRF/DNS-rebinding tests and authenticated-profile workflows are not complete.
+- [V] PR #58 remains OPEN, DRAFT and unmerged; prior head `acea7a01c80920b09eccda7f10ca6904ff5692ab`.
 ## Live Miss Noor browser inspection — 2026-11-13
 
 - [V] Added `scripts/run_blind_sniper_miss_noor_smoke.py`: creates a native task lease, invokes the checked-in BrowserAdapter only through `dispatch_browser_action`, performs read-only navigation/snapshot/screenshot, verifies the observed host, closes the session, and releases the lease.
