@@ -19,6 +19,7 @@ from typing import Any
 
 from blind_sniper_redact import redact, redact_text
 from blind_sniper_browser import BrowserAdapter
+from blind_sniper_memory_handoff import HandoffError, build_handoff, write_handoff
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_READ_BYTES = 256_000
@@ -70,6 +71,37 @@ TOOL_DEFINITIONS = {
                 "additionalProperties": False,
             },
         },
+    },
+    "agent.handoff": {
+        "type": "function",
+        "function": {
+            "name": "agent.handoff",
+            "description": "Create one durable private handoff to another registered Blind Sniper agent. Use only when another agent must continue this task; the native daemon will claim and dispatch the continuation after the current task completes.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "to_agent": {"type": "string", "minLength": 1, "maxLength": 64},
+                    "objective": {"type": "string", "minLength": 1, "maxLength": 1000},
+                    "verified_state": {
+                        "type": "object",
+                        "properties": {
+                            "status": {"type": "string", "maxLength": 64},
+                            "attempt": {"type": "integer", "minimum": 0},
+                            "receipt_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+                            "last_event": {"type": "string", "maxLength": 128}
+                        },
+                        "required": ["status"],
+                        "additionalProperties": False
+                    },
+                    "open_questions": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 500}, "maxItems": 10},
+                    "files_touched": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 240}, "maxItems": 50},
+                    "evidence_refs": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 512}, "maxItems": 20},
+                    "next_action": {"type": "string", "minLength": 1, "maxLength": 1000}
+                },
+                "required": ["to_agent", "objective", "verified_state", "open_questions", "files_touched", "evidence_refs", "next_action"],
+                "additionalProperties": False
+            }
+        }
     },
     "browser.navigate": {
         "type": "function",
@@ -175,6 +207,8 @@ class NativeToolRuntime:
         command_timeout: int = MAX_COMMAND_TIMEOUT,
         browser_state_dir: Path | None = None,
         browser_adapter_factory: Any = BrowserAdapter,
+        handoff_state_dir: Path | None = None,
+        allowed_agent_ids: frozenset[str] | None = None,
     ) -> None:
         if not hasattr(queue, "reserve_tool_call") or not hasattr(queue, "complete_tool_call"):
             raise NativeToolError("Native tool runtime requires durable lease-bound tool receipts")
@@ -193,6 +227,8 @@ class NativeToolRuntime:
         else:
             raise NativeToolError("Browser state/artifacts must remain outside the public repository workspace")
         self.browser_adapter_factory = browser_adapter_factory
+        self.handoff_state_dir = handoff_state_dir
+        self.allowed_agent_ids = allowed_agent_ids or frozenset()
 
     @staticmethod
     def definitions(allowlist: tuple[str, ...] | list[str]) -> list[dict[str, Any]]:
@@ -374,6 +410,46 @@ class NativeToolRuntime:
             "browser_receipt_digest": _digest(receipt),
         }
 
+    def _create_agent_handoff(self, arguments: dict[str, Any], *, spec: Any, task: Any, run_id: str, tool_call_id: str) -> dict[str, Any]:
+        if self.handoff_state_dir is None:
+            raise NativeToolError("Native private handoff storage is not configured")
+        recipient = arguments.get("to_agent")
+        if not isinstance(recipient, str) or recipient not in self.allowed_agent_ids:
+            raise NativeToolError("Handoff recipient is not in the native registered agent roster")
+        if recipient == spec.agent_id:
+            raise NativeToolError("An agent cannot hand a task off to itself")
+        depth = task.payload.get("handoff_depth", 0) if isinstance(task.payload, dict) else 0
+        if isinstance(depth, bool) or not isinstance(depth, int) or not 0 <= depth < 4:
+            raise NativeToolError("Handoff chain reached the configured depth limit")
+        identity = f"{task.task_id}:{run_id}:{tool_call_id}"
+        handoff_id = "handoff:" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
+        try:
+            packet = build_handoff(
+                handoff_id=handoff_id,
+                task_id=task.task_id,
+                from_agent=spec.agent_id,
+                to_agent=recipient,
+                created_at=datetime.now(timezone.utc).isoformat(),
+                objective=arguments.get("objective"),
+                verified_state=arguments.get("verified_state"),
+                open_questions=arguments.get("open_questions"),
+                files_touched=arguments.get("files_touched"),
+                evidence_refs=arguments.get("evidence_refs"),
+                next_action=arguments.get("next_action"),
+                handoff_depth=depth,
+            )
+            outcome = write_handoff(self.handoff_state_dir, packet)
+        except (HandoffError, TypeError, ValueError) as exc:
+            raise NativeToolError(f"Native handoff rejected ({type(exc).__name__})") from exc
+        return {
+            "handoff_id": handoff_id,
+            "status": outcome,
+            "from_agent": spec.agent_id,
+            "to_agent": recipient,
+            "task_id": task.task_id,
+            "handoff_depth": depth,
+        }
+
     def execute(
         self, *, name: str, arguments: dict[str, Any], spec: Any, task: Any,
         run_id: str, tool_call_id: str,
@@ -401,6 +477,9 @@ class NativeToolRuntime:
                 status = "PASS"
             elif name == "verification.run":
                 result = self._run_verification(arguments)
+                status = "PASS"
+            elif name == "agent.handoff":
+                result = self._create_agent_handoff(arguments, spec=spec, task=task, run_id=run_id, tool_call_id=tool_call_id)
                 status = "PASS"
             elif name.startswith("browser."):
                 result = self._run_browser(name, arguments, spec=spec, task=task, run_id=run_id, tool_call_id=tool_call_id)
