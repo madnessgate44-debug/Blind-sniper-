@@ -101,19 +101,19 @@ Controls:
 - no automatic promotion of model-generated claims to approved memory;
 - deletion/forget workflows must cover observation, derived index and page references, with an auditable tombstone where appropriate.
 
-## 9. Interfaces (target; not yet implemented)
+## 9. Interfaces (native implementation status)
 
 - `memory.capture(observation)`
 - `memory.propose(observation_ids)`
 - `memory.approve(page_id, reviewer)`
 - `memory.search(query, project_id, scope)`
 - `memory.retrieve(page_ids, scope)`
-- `memory.handoff.create(packet)`
-- `memory.handoff.claim(handoff_id, agent_id)`
-- `memory.recover(task_id, agent_id)`
+- `agent.handoff` — native lease-bound model tool; creates one immutable private handoff per source task/agent.
+- `reconcile_handoffs(...)` — native daemon claims, validates and materializes the recipient continuation task idempotently.
+- `recover_native_handoff(...)` — re-reads the parent task through `DurableQueue.status` before delivery.
 - `memory.audit(record_id)`
 
-Implemented on this branch: capture, deterministic validation, proposal generation, explicit approval, bounded lexical search, and typed handoff/recovery APIs. Runtime-driven handoff creation/consumption remains a separate integration gate.
+Implemented on this branch: native metadata capture, deterministic proposal generation and approval, bounded lexical retrieval, model-callable `agent.handoff`, daemon-driven recipient task creation, atomic claim-once and ledger-authoritative recovery. Live provider/host activation remains unverified.
 
 ## 10. Phase plan and acceptance
 
@@ -127,36 +127,44 @@ Implemented on this branch: capture, deterministic validation, proposal generati
 - [x] Add typed observation builder and closed-schema validator in `scripts/blind_sniper_memory.py`.
 - [x] Add deterministic redaction, sensitive-key rejection, source/event allowlists and bounded payload checks.
 - [x] Add private external JSONL journal with file permissions, locking, idempotent append and repository-path rejection.
-- [x] Add synthetic tests and isolated GitHub Actions workflow; execution is pending CI.
-- [x] Dedicated GitHub Actions memory-contract suite passed on PR head `346845dc0846ba1d64e0627b8f8cc6713fd0a246`: compile PASS; 13 synthetic tests PASS (`Ran 13 tests in 0.038s / OK`).
-- [ ] Independent code review and integration with verified native runtime event producers.
+- [x] Add synthetic tests and isolated GitHub Actions workflow.
+- [x] Wire task-created and task-transition metadata capture into the native daemon; exclude task objectives, prompts, payloads and model output.
+- [x] Exact-head CI: 28 memory tests, 13 native tool-runtime tests and 19 daemon tests passed on `5e4985ba4083e08e0ec4fab5555eab357a189786`.
+- [ ] Independent code review and live private-host acceptance.
 
-Remaining M2 work: connect only verified native runtime event producers; do not add ChatGPT transcript capture. The journal primitive has CI evidence but is not wired into the daemon or any live host.
+Remaining M2 work: prove the daemon journal on an owner-controlled persistent host. Do not add ChatGPT transcript capture.
 - Keep private journal path owner-controlled and outside the repository; no private data has been written by this implementation.
 - Do not capture ChatGPT messages or assistant text automatically; no such source is verified.
 
-### M3 — Consolidation
-- Deterministic proposal builder; provenance preserved.
-- Human approval before durable knowledge-page promotion.
-- Optional provider-assisted summaries only after separate evaluation.
+### M3 — Consolidation — IMPLEMENTED / SYNTHETIC CI VERIFIED
+- Deterministic proposal builder preserves observation provenance and immutable supersession history.
+- Proposals remain `proposed`; explicit human approval creates a separate approved copy.
+- Conflict evidence remains visible and is not automatically resolved.
+- Provider-assisted summaries remain deferred.
 
-### M4 — Retrieval
+### M4 — Retrieval — IMPLEMENTED / SYNTHETIC CI VERIFIED
 - Deterministic lexical search and bounded context pack.
-- SQLite FTS5 only if a private persistent runtime can host it; index remains rebuildable.
+- Only approved pages are eligible; project/scope filters and provenance are retained.
+- SQLite FTS5 and vector search remain deferred until a measured need and private host exist.
 
 ### M5 — Handoff and recovery — IMPLEMENTED / CI VERIFIED
 - Typed, bounded handoff packet with private immutable storage and atomic claim-once sidecar.
 - Recovery verifies packet/claim integrity and reads current task state through `DurableQueue.status`; it does not mutate task state.
 - Optional approved-knowledge callback rejects non-approved records.
-- Automatic model-worker handoff creation/consumption remains an integration gate.
+- `agent.handoff` is exposed to a model agent only when the host explicitly includes it in the tool allowlist.
+- The daemon validates the registered recipient, atomically claims the packet and creates a deterministic child task after the parent task reaches `COMPLETED`.
+- Delivery is idempotent across daemon restarts; the receiving task gets the parent ledger state, not a stale snapshot.
+- One distinct handoff per source task/agent and a maximum chain depth of four prevent uncontrolled fan-out/loops.
+- Live model-provider invocation and private-host restart acceptance remain unverified.
 
 ### M6 — Evaluation — SYNTHETIC GATE PASS
 - Synthetic privacy/leakage, duplicate, provenance, conflicting-evidence, approval, retrieval, handoff and recovery fixtures.
-- Exact-head Memory Tests run `43607413604`: 28 tests PASS.
-- Exact-head Runtime Registry run `43607413492`: 280 tests PASS.
-- Exact-head OS Compliance run `43607413515`: PASS.
-- All three checks ran on commit `57750da9d2192614ae296e3e519117ad4df3255d`.
-- Live-host stress/fault injection remains NOT RUN.
+- Memory Tests run `43609017044`: 28 + 13 + 19 tests PASS (60 total).
+- Runtime Registry run `43609016954`: 283 tests PASS.
+- OS Compliance run `43609017199`: PASS.
+- All three checks ran on commit `5e4985ba4083e08e0ec4fab5555eab357a189786`.
+- Browser Adapter workflow run `43609016977` was still in progress at this checkpoint.
+- Live-host stress/fault injection and real provider-to-recipient handoff remain NOT RUN.
 
 ### M7 — Optional semantic retrieval
 - Defer embeddings/vector search until lexical baseline has a measured failure set and a zero-cost provider/local model path.
