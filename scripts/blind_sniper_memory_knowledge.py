@@ -157,6 +157,62 @@ def build_proposals(journal_path: str | Path, knowledge_dir: str | Path) -> dict
     return {"created": created, "duplicates": duplicates, "tasks_seen": len(grouped)}
 
 
+def approve_proposal(
+    proposal_path: str | Path,
+    approved_dir: str | Path,
+    *,
+    reviewer: str,
+    expected_proposal_id: str,
+) -> str:
+    """Create an immutable approved copy after an explicit reviewer action."""
+    if not isinstance(reviewer, str) or not reviewer.strip() or len(reviewer.strip()) > 128:
+        raise KnowledgeError("reviewer must be a non-empty bounded identifier")
+    source = Path(proposal_path).expanduser().resolve(strict=True)
+    source_info = source.stat()
+    if not stat.S_ISREG(source_info.st_mode) or source_info.st_nlink != 1:
+        raise KnowledgeError("proposal must be a regular singly-linked file")
+    if stat.S_IMODE(source_info.st_mode) & 0o077:
+        raise KnowledgeError("proposal must be owner-only (0600)")
+    lines = source.read_text(encoding="utf-8").splitlines()
+    if len(lines) < 4 or lines[0] != "---" or lines[2] != "---":
+        raise KnowledgeError("proposal frontmatter is invalid")
+    try:
+        metadata = json.loads(lines[1])
+    except json.JSONDecodeError as exc:
+        raise KnowledgeError("proposal metadata is invalid") from exc
+    if metadata.get("status") != "proposed":
+        raise KnowledgeError("only proposed pages can be approved")
+    if metadata.get("proposal_id") != expected_proposal_id:
+        raise KnowledgeError("proposal identity changed; review the current version")
+    if not PAGE_ID_RE.fullmatch(str(metadata.get("page_id", ""))):
+        raise KnowledgeError("proposal page_id is invalid")
+    metadata["status"] = "approved"
+    metadata["approved_by"] = reviewer.strip()
+    metadata["approved_at"] = datetime.now().astimezone().isoformat()
+    metadata["approved_from"] = source.name
+    approved_dir_path = Path(approved_dir).expanduser().absolute()
+    safe_probe = _ensure_private_external_path(approved_dir_path / ".approval-probe")
+    target = safe_probe.parent / source.name
+    safe_target = _ensure_private_external_path(target)
+    markdown = "\\n".join(["---", json.dumps(metadata, sort_keys=True, ensure_ascii=False), "---", *lines[3:]]) + "\\n"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        fd = os.open(safe_target, flags, 0o600)
+    except FileExistsError:
+        return "DUPLICATE"
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(markdown)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except Exception:
+        safe_target.unlink(missing_ok=True)
+        raise
+    return "APPROVED"
+
+
 def main() -> int:
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
