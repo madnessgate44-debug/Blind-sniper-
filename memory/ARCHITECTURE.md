@@ -162,8 +162,9 @@ Remaining M2 work: prove the daemon journal on an owner-controlled persistent ho
 - Memory Tests run `43609450977`: 28 memory + 13 tool-runtime + 21 daemon tests PASS (62 total).
 - Runtime Registry run `43609450949`: 285 tests PASS.
 - OS Compliance run `43609450996`: PASS.
-- All three checks ran on code commit `5f16548f8e5d4292c2383d95c0ff615b1766855c`.
-- Browser Adapter workflow run `43609450976` was still in progress at this checkpoint.
+- These checks ran on code commit `5f16548f8e5d4292c2383d95c0ff615b1766855c`; the final exact PR head `ad51941e7cf6e88a1d14e8a3ada277a61f5329f4` reran the suites successfully (runs `43609588105`, `43609588165`, `43609588150`).
+- Environment Validation run `43609588173`: PASS.
+- Browser Adapter run `43609588114`: 22 + 9 tests PASS (31 total).
 - Live-host stress/fault injection and real provider-to-recipient handoff remain NOT RUN.
 
 ### M7 — Optional semantic retrieval
