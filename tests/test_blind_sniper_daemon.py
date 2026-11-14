@@ -35,7 +35,11 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         self.state.mkdir(mode=0o700)
         self.store = PrivateTaskStore(self.state, workspace_root=self.workspace)
         self.queue = DurableQueue(TaskLedger(self.store.ledger_path))
-        self.tool_runtime = NativeToolRuntime(self.queue, workspace_root=self.workspace)
+        self.tool_runtime = NativeToolRuntime(
+            self.queue, workspace_root=self.workspace,
+            handoff_state_dir=self.store.handoff_dir,
+            allowed_agent_ids=frozenset({"researcher", "planner", "engineer"}),
+        )
         self.invocations = 0
 
         def invoker(*, spec, task, timeout_seconds):
@@ -351,3 +355,70 @@ class PrivateNativeDaemonTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+    def test_model_worker_handoff_is_claimed_and_dispatched_as_child_task(self):
+        calls = []
+
+        def handoff_invoker(*, spec, task, timeout_seconds):
+            calls.append((spec.agent_id, task.task_id))
+            if spec.agent_id == "researcher":
+                result = self.tool_runtime.execute(
+                    name="agent.handoff",
+                    arguments={
+                        "to_agent": "planner",
+                        "objective": "Planner continuation",
+                        "verified_state": {"status": "IN_PROGRESS", "attempt": 1},
+                        "open_questions": ["Confirm the next bounded step."],
+                        "files_touched": ["README.md"],
+                        "evidence_refs": ["test:daemon-handoff"],
+                        "next_action": "Review the verified state and decide the next action.",
+                    },
+                    spec=spec, task=task, run_id="handoff-run", tool_call_id="handoff-call",
+                )
+                self.assertTrue(result["ok"], result)
+            return {
+                "run_id": f"run-{task.task_id}",
+                "output_digest": "f" * 64,
+                "output_excerpt": "completed",
+                "output_text": "completed",
+                "tool_receipts": [],
+            }
+
+        worker = ModelWorker(handoff_invoker, max_retries=0)
+        policy = {
+            "permission_profile": "read_only",
+            "tool_allowlist": ("agent.handoff",),
+            "allowed_paths": (),
+            "browser_approval_reference": "",
+        }
+        daemon = BlindSniperDaemon(
+            queue=self.queue, worker=worker, owner_id="handoff-daemon",
+            store=self.store, lease_seconds=120, max_tasks_per_cycle=10,
+            host_policy=policy,
+            allowed_agent_ids=frozenset({"researcher", "planner"}),
+        )
+        parent, _ = self.write_task("DAEMON-HANDOFF-PARENT")
+        first = daemon.run_once()
+        self.assertEqual(first["status"], "HEALTHY", first)
+        self.assertEqual(first["counts"]["completed"], 1, first)
+        self.assertEqual(first["counts"]["handoffs_delivered"], 1, first)
+        self.assertEqual(self.queue.status(parent["task_id"])["status"], "COMPLETED")
+
+        child_files = [path for path in self.store.task_files() if path.stem.startswith("handoff-")]
+        self.assertEqual(len(child_files), 1)
+        child = self.store.read_task(child_files[0])
+        self.assertEqual(child["agent_id"], "planner")
+        self.assertEqual(child["payload"]["handoff"]["task_id"], parent["task_id"])
+        self.assertEqual(child["payload"]["current_task_state"]["status"], "COMPLETED")
+        self.assertEqual(child["payload"]["handoff_depth"], 1)
+
+        second = daemon.run_once()
+        self.assertEqual(second["status"], "HEALTHY", second)
+        self.assertEqual(second["counts"]["completed"], 1, second)
+        self.assertEqual(self.queue.status(child["task_id"])["status"], "COMPLETED")
+        self.assertEqual([agent for agent, _task in calls], ["researcher", "planner"])
+
+        third = daemon.run_once()
+        self.assertEqual(third["counts"]["skipped"], 2)
+        self.assertEqual(len(calls), 2)
+
