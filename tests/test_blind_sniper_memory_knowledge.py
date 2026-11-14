@@ -75,7 +75,8 @@ class KnowledgeProposalTests(unittest.TestCase):
             self.assertEqual(build_proposals(journal, knowledge)["created"], 1)
             pages = sorted(knowledge.glob("*.md"))
             self.assertEqual(len(pages), 2)
-            latest = json.loads(pages[-1].read_text(encoding="utf-8").splitlines()[1])
+            metadata = [json.loads(page.read_text(encoding="utf-8").splitlines()[1]) for page in pages]
+            latest = next(item for item in metadata if item["supersedes"])
             self.assertEqual(latest["status"], "proposed")
             self.assertEqual(len(latest["supersedes"]), 1)
             self.assertTrue(all("proposed" in p.read_text(encoding="utf-8") for p in pages))
