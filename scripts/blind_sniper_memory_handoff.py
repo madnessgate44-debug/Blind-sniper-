@@ -223,13 +223,18 @@ def recover_handoff(
     root = _private_directory(directory)
     packet_path = root / f"{handoff_id}.json"
     claim_path = root / f"{handoff_id}.claim.json"
-    if not packet_path.is_file() or not claim_path.is_file():
+    if (
+        not packet_path.is_file() or not claim_path.is_file()
+        or packet_path.is_symlink() or claim_path.is_symlink()
+    ):
         raise HandoffError("handoff must exist and be claimed before recovery")
-    packet = json.loads(packet_path.read_text(encoding="utf-8"))
-    claim_info = claim_path.stat()
-    if not stat.S_ISREG(claim_info.st_mode) or claim_info.st_nlink != 1 or stat.S_IMODE(claim_info.st_mode) & 0o077:
-        raise HandoffError("handoff claim must be owner-only and singly linked")
-    claim = json.loads(claim_path.read_text(encoding="utf-8"))
+    packet = _read_private_json(packet_path)
+    try:
+        if build_handoff(**packet) != packet:
+            raise HandoffError("handoff packet is not canonical")
+    except (TypeError, ValueError) as exc:
+        raise HandoffError("handoff packet failed schema validation") from exc
+    claim = _read_private_json(claim_path)
     if claim.get("packet_digest") != hashlib.sha256(_canonical(packet)).hexdigest():
         raise HandoffError("handoff claim does not match the packet digest")
     if claim.get("agent_id") != agent_id or packet.get("to_agent") != agent_id:
