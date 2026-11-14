@@ -424,8 +424,14 @@ class NativeToolRuntime:
         identity = f"{task.task_id}:{spec.agent_id}:{recipient}:{_digest(arguments)}"
         handoff_id = "handoff:" + hashlib.sha256(identity.encode("utf-8")).hexdigest()[:32]
         try:
-            existing = next((item for item in list_handoffs(self.handoff_state_dir) if item["handoff_id"] == handoff_id), None)
+            existing_packets = list_handoffs(self.handoff_state_dir)
+            existing = next((
+                item for item in existing_packets
+                if item["task_id"] == task.task_id and item["from_agent"] == spec.agent_id
+            ), None)
             if existing is not None:
+                if existing["handoff_id"] != handoff_id:
+                    raise NativeToolError("Only one distinct handoff is allowed per source task and agent")
                 return {
                     "handoff_id": handoff_id, "status": "DUPLICATE",
                     "from_agent": spec.agent_id, "to_agent": recipient,
