@@ -81,6 +81,7 @@ class MemoryRetrievalTests(unittest.TestCase):
             result = search_approved_pages("task lifecycle planner completed", approved, project_id="blind-sniper", max_context_bytes=256)
             self.assertLessEqual(result["context_bytes"], 256)
             self.assertTrue(result["truncated"])
+            self.assertEqual(len(result["results"]), 1)
 
 
 if __name__ == "__main__":
