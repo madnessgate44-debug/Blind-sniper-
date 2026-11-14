@@ -2,13 +2,13 @@
   "schema_version": "1.0.0",
   "runtime_name": "Blind Sniper",
   "runtime_model": "Blind Sniper native runtime + GitHub control plane + native browser and bounded host execution",
-  "snapshot_date": "2026-11-13",
+  "snapshot_date": "2026-11-14",
   "evidence_policy": "A capability is operational only when its trigger, permission, execution, output and verification path are proven.",
   "adapters": [
     {
       "id": "native_mcp_browser_bridge",
       "kind": "mcp_stdio_browser_control",
-      "status": "implemented_ci_verified_live_mcp_unverified",
+      "status": "live_mcp_browser_workflow_verified_chatgpt_invocation_blocked",
       "tools": [
         "scripts/blind_sniper_mcp_server.py"
       ],
@@ -21,15 +21,21 @@
         "browser_resume",
         "browser_close",
         "internal_task_and_session_identity",
-        "lease_gated_dispatch"
+        "lease_gated_dispatch",
+        "browser_detach",
+        "persistent_profile_snapshot_restore",
+        "same_owner_lease_reclaim_on_resume",
+        "browser_download",
+        "approved_form_fill",
+        "clipboard_copy"
       ],
       "limitations": [
-        "Nine MCP protocol tests pass within the 261-test Runtime Registry CI suite (run 43438707670).",
-        "No MCP client has connected and no live browser action has been executed through this server.",
-        "Current ChatGPT session exposes no MCP stdio registration or invocation action.",
-        "Requires a persistent private host with Python, pinned agent-browser CLI, Chromium and host browser policy.",
-        "Uses existing explicit browser domain allowlist; B3 general HTTPS policy is not implemented.",
-        "B2 persistent cross-job host and authenticated profile persistence remain deferred."
+        "A native MCP JSON-RPC harness launched the stdio server and completed live Chromium actions in a Vercel sandbox; ChatGPT itself still has no custom MCP stdio registration or invocation action in this session.",
+        "Live workflow: public search page, select/copy command, two non-sensitive form fills without submit, file download, detach, sandbox snapshot, resume with same task/run/session IDs, status and close. Clipboard read-back was denied by browser permission, so copied contents were not independently verified.",
+        "A test cookie survived detach and Vercel sandbox snapshot/resume; this is not proof of an authenticated user profile or login-session workflow.",
+        "Vercel snapshot retention, billing and no-card eligibility are not independently verified; do not claim a permanent zero-cost production host.",
+        "Public HTTPS navigation was exercised with host controls. Redirect-target SSRF/DNS-rebinding review and authenticated-profile handling remain open under B3.",
+        "CAPTCHA and MFA remain explicit user handoffs; no bypass is implemented."
       ]
     },
     {
