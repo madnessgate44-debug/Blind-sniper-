@@ -52,6 +52,23 @@ class KnowledgeProposalTests(unittest.TestCase):
             self.assertIn("Approval required", text)
             self.assertNotIn("objective", text)
 
+    def test_conflicting_status_evidence_is_preserved_without_auto_resolution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            journal = root / "observations.jsonl"
+            append_observation(journal, observation("task_transition", "2026-11-14T12:00:00Z", "COMPLETED", 1))
+            append_observation(journal, observation("task_transition", "2026-11-14T12:00:00Z", "FAILED", 2))
+            knowledge = root / "knowledge"
+            self.assertEqual(build_proposals(journal, knowledge)["created"], 1)
+            page = next(knowledge.glob("*.md"))
+            metadata = json.loads(page.read_text(encoding="utf-8").splitlines()[1])
+            body = page.read_text(encoding="utf-8")
+            self.assertEqual(metadata["status"], "proposed")
+            self.assertEqual(len(metadata["source_observation_ids"]), 2)
+            self.assertIn("COMPLETED", body)
+            self.assertIn("FAILED", body)
+            self.assertIn("Approval required", body)
+
     def test_duplicate_run_does_not_overwrite_or_duplicate(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
