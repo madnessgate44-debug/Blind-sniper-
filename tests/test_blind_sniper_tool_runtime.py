@@ -238,6 +238,15 @@ class NativeToolRuntimeTests(unittest.TestCase):
         self.assertTrue(duplicate["ok"], duplicate)
         self.assertEqual(duplicate["result"]["status"], "DUPLICATE")
         self.assertEqual(len(list(handoff_dir.glob("handoff:*.json"))), 1)
+        changed = dict(arguments)
+        changed["next_action"] = "A different continuation."
+        rejected_fanout = runtime.execute(
+            name="agent.handoff", arguments=changed, spec=spec,
+            task=self.task, run_id="run-handoff-fanout", tool_call_id="call-handoff-fanout",
+        )
+        self.assertFalse(rejected_fanout["ok"])
+        self.assertIn("Only one distinct handoff", rejected_fanout["result"]["error"])
+        self.assertEqual(len(list(handoff_dir.glob("handoff:*.json"))), 1)
 
     def test_agent_handoff_rejects_unregistered_recipient_and_depth_limit(self):
         handoff_dir = self.root / "private-handoffs"
