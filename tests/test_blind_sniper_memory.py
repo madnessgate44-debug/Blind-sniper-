@@ -80,6 +80,19 @@ class MemoryObservationTests(unittest.TestCase):
             self.assertEqual(len(journal.read_text(encoding="utf-8").splitlines()), 1)
             self.assertEqual(journal.stat().st_mode & 0o777, 0o600)
 
+    def test_rejects_group_readable_journal_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            private_dir = Path(tmp) / "memory"
+            private_dir.mkdir(mode=0o700)
+            private_dir.chmod(0o755)
+            record = build_observation(**sample())
+            try:
+                with self.assertRaisesRegex(MemoryError, "permissions"):
+                    append_observation(private_dir / "memory.jsonl", record)
+                self.assertFalse((private_dir / "memory.jsonl").exists())
+            finally:
+                private_dir.chmod(0o700)
+
     def test_rejects_id_collision(self):
         with tempfile.TemporaryDirectory() as tmp:
             journal = Path(tmp) / "memory.jsonl"
