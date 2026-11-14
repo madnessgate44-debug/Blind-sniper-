@@ -41,7 +41,7 @@ ALLOWED_SOURCES = {
 }
 ALLOWED_CLASSIFICATIONS = {"public_project", "private_owner"}
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
-PROJECT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
+PROJECT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 SENSITIVE_KEYS = {
     "password", "passwd", "token", "access_token", "refresh_token",
     "api_key", "apikey", "secret", "private_key", "authorization",
@@ -100,6 +100,7 @@ def build_observation(
         raise MemoryError("source is not allowlisted")
     if not isinstance(source_ref, str) or not source_ref or len(source_ref) > 512:
         raise MemoryError("source_ref must be a non-empty bounded string")
+    source_ref = redact(source_ref)
     if not isinstance(project_id, str) or not PROJECT_RE.fullmatch(project_id):
         raise MemoryError("invalid project_id")
     if classification not in ALLOWED_CLASSIFICATIONS:
@@ -109,7 +110,10 @@ def build_observation(
         raise MemoryError("content must be a JSON object")
     _reject_sensitive_keys(content)
     sanitized = redact(content)
-    encoded = _canonical(sanitized)
+    try:
+        encoded = _canonical(sanitized)
+    except (TypeError, ValueError) as exc:
+        raise MemoryError("content must contain JSON-compatible values") from exc
     if len(encoded) > MAX_CONTENT_BYTES:
         raise MemoryError(f"content exceeds {MAX_CONTENT_BYTES} bytes")
     record = {
@@ -133,11 +137,19 @@ def _repository_root() -> Path:
 
 
 def _ensure_private_external_path(journal_path: str | Path) -> Path:
-    target = Path(journal_path).expanduser()
+    target = Path(journal_path).expanduser().absolute()
+    repo = _repository_root()
+    # Reject lexically before mkdir so a refused path cannot create anything
+    # inside the public checkout as a side effect.
+    try:
+        target.relative_to(repo)
+    except ValueError:
+        pass
+    else:
+        raise MemoryError("memory journal must be outside the repository checkout")
     target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     resolved_parent = target.parent.resolve(strict=True)
     resolved = resolved_parent / target.name
-    repo = _repository_root()
     try:
         resolved.relative_to(repo)
     except ValueError:
