@@ -27,9 +27,9 @@ This matrix defines the synthetic evaluation gate for the native memory plane. F
 
 ## Latest exact-head evidence — 2026-11-14
 
-- PR head: `dcea04d63cf341c3809b4b015f726fbdffb4269f`.
-- Memory Tests run `43607134001`: 28 tests, 0 failures.
-- Runtime Registry run `43607134010`: 280 tests, 0 failures.
-- OS Compliance run `43607134009`: PASS.
+- PR head: `ed16dc40d731ec01550fb5c6ffe3d2d5cbef5935`.
+- Memory Tests run `43607326400`: 28 tests, 0 failures.
+- Runtime Registry run `43607326369`: 280 tests, 0 failures.
+- OS Compliance run `43607326385`: PASS.
 
 A passing synthetic suite is contract evidence, not proof of live deployment or operational persistence.
