@@ -15,6 +15,7 @@ from blind_sniper_memory_handoff import (  # noqa: E402
     build_handoff,
     claim_handoff,
     recover_handoff,
+    recover_native_handoff,
     write_handoff,
 )
 
@@ -37,6 +38,10 @@ def packet(**overrides):
     return build_handoff(**values)
 
 
+from blind_sniper_ledger import TaskLedger  # noqa: E402
+from blind_sniper_worker import DurableQueue  # noqa: E402
+
+
 class HandoffTests(unittest.TestCase):
     def test_create_claim_once_and_recover_from_authoritative_reader(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -55,6 +60,21 @@ class HandoffTests(unittest.TestCase):
             self.assertEqual(result["current_task_state"], state)
             self.assertEqual(result["task_state_source"], "native_task_ledger")
             self.assertEqual(result["approved_knowledge"][0]["page_id"], "approved-1")
+
+    def test_native_recovery_reads_current_state_from_durable_queue(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            queue = DurableQueue(TaskLedger(root / "ledger.jsonl"))
+            queue.enqueue(task_id="BS-HANDOFF-001", kind="test", payload_digest="d" * 64, max_attempts=2)
+            item = packet()
+            handoffs = root / "handoffs"
+            write_handoff(handoffs, item)
+            claim_handoff(handoffs, item["handoff_id"], "implementer")
+            result = recover_native_handoff(
+                handoffs, item["handoff_id"], "implementer", queue=queue,
+            )
+            self.assertEqual(result["current_task_state"]["status"], "PENDING")
+            self.assertEqual(result["current_task_state"]["task_id"], item["task_id"])
 
     def test_other_agent_cannot_claim_or_recover(self):
         with tempfile.TemporaryDirectory() as tmp:
