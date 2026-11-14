@@ -18,7 +18,7 @@ from blind_sniper_redact import redact
 HANDOFF_FIELDS = {
     "handoff_id", "task_id", "from_agent", "to_agent", "created_at",
     "objective", "verified_state", "open_questions", "files_touched",
-    "evidence_refs", "next_action", "claim_state",
+    "evidence_refs", "next_action", "claim_state", "handoff_depth",
 }
 IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 DIGEST = re.compile(r"^[a-f0-9]{64}$")
@@ -47,6 +47,7 @@ def build_handoff(
     evidence_refs: list[str],
     next_action: str,
     claim_state: str = "unclaimed",
+    handoff_depth: int = 0,
 ) -> dict[str, Any]:
     """Validate a bounded, redacted handoff packet without storing task prompts."""
     for label, value in (("handoff_id", handoff_id), ("task_id", task_id), ("from_agent", from_agent), ("to_agent", to_agent)):
@@ -62,6 +63,8 @@ def build_handoff(
         raise HandoffError("created_at must be timezone-aware ISO-8601")
     if claim_state != "unclaimed":
         raise HandoffError("new handoffs must begin unclaimed")
+    if isinstance(handoff_depth, bool) or not isinstance(handoff_depth, int) or not 0 <= handoff_depth <= 4:
+        raise HandoffError("handoff_depth must be an integer between 0 and 4")
     if not isinstance(objective, str) or not objective.strip() or len(objective) > 1000:
         raise HandoffError("objective must be a non-empty bounded string")
     if not isinstance(next_action, str) or not next_action.strip() or len(next_action) > 1000:
@@ -103,6 +106,7 @@ def build_handoff(
         "evidence_refs": redact(evidence_refs),
         "next_action": redact(next_action.strip()),
         "claim_state": "unclaimed",
+        "handoff_depth": handoff_depth,
     }
     if len(_canonical(packet)) > 16 * 1024:
         raise HandoffError("handoff packet exceeds 16 KiB")
@@ -271,3 +275,24 @@ def recover_native_handoff(
         task_state_reader=status_reader,
         approved_knowledge_reader=approved_knowledge_reader,
     )
+
+
+
+def list_handoffs(directory: str | Path) -> list[dict[str, Any]]:
+    """List validated immutable handoff packets; claim sidecars are excluded."""
+    root = _private_directory(directory)
+    packets: list[dict[str, Any]] = []
+    for path in sorted(root.glob("*.json"), key=lambda item: item.name):
+        if path.name.endswith(".claim.json"):
+            continue
+        packet = _read_private_json(path)
+        if set(packet) != HANDOFF_FIELDS:
+            raise HandoffError("handoff packet does not match the closed schema")
+        try:
+            validated = build_handoff(**packet)
+        except (TypeError, ValueError) as exc:
+            raise HandoffError("handoff packet failed schema validation") from exc
+        if validated != packet or path.name != f"{packet['handoff_id']}.json":
+            raise HandoffError("handoff packet is not canonical or filename-bound")
+        packets.append(packet)
+    return packets
