@@ -26,6 +26,8 @@ class FakeServer:
     def action(self, action, args):
         if action == "close":
             raise ValueError("use browser.close for session shutdown")
+        if action == "detach":
+            raise ValueError("use browser.detach for session detachment")
         self.calls.append(("action", action, args))
         return {"action": action, "args": args}
 
@@ -239,6 +241,24 @@ class BrowserMCPProtocolTests(unittest.TestCase):
         with self.assertRaisesRegex(BrowserDispatchError, "lease remains active"):
             server.detach()
         self.assertIsNotNone(server.active)
+
+    def test_resume_reclaims_expired_lease_for_same_native_owner(self):
+        class ExpiredLeaseLedger:
+            def __init__(self):
+                self.claims = []
+            def events(self, task_id):
+                return [{"payload": {"state": {"status": "EXECUTING", "implementer_id": "blind-sniper"}}}]
+            def claim_task(self, **kwargs):
+                self.claims.append(kwargs)
+                return {"claimed": True}
+        server = BrowserMCP.__new__(BrowserMCP)
+        server.active = None
+        server.ledger = ExpiredLeaseLedger()
+        server._dispatch = lambda action, args: {"receipt": {"exit_code": 0, "action": action}}
+        result = server.resume("task-1", "run-1", "session-1")
+        self.assertEqual(result["session"]["task_id"], "task-1")
+        self.assertEqual(server.ledger.claims[0]["owner_id"], "blind-sniper-mcp-host")
+        self.assertTrue(server.ledger.claims[0]["idempotency_key"].startswith("task-1:mcp-lease:resume:"))
 
     def test_generic_action_cannot_bypass_session_close_lifecycle(self):
         response = handle(FakeServer(), {
