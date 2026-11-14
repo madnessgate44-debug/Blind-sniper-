@@ -18,7 +18,7 @@ def _tokens(value: str) -> set[str]:
 
 
 def _read_page(path: Path) -> tuple[dict[str, Any], str]:
-    info = path.stat()
+    info = path.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
         raise RetrievalError("knowledge page must be a regular singly-linked file")
     if stat.S_IMODE(info.st_mode) & 0o077:
@@ -97,7 +97,6 @@ def search_approved_pages(
                 "updated_at", "source_observation_ids", "supersedes", "score",
             )
         }
-        results.append(citation)
         rendered = f"## {item['title']}\n\n{item['body']}\n\n[page_id: {item['page_id']}]"
         encoded = rendered.encode("utf-8")
         separator = "\n\n".encode("utf-8") if context_parts else b""
@@ -105,6 +104,7 @@ def search_approved_pages(
         if remaining <= 0:
             truncated = True
             break
+        results.append(citation)
         if len(encoded) > remaining:
             excerpt = encoded[:remaining].decode("utf-8", errors="ignore").rstrip()
             if excerpt:
