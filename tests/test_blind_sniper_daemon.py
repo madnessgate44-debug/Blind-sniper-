@@ -353,9 +353,6 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         self.assertEqual(self.invocations, 0)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
     def test_model_worker_handoff_is_claimed_and_dispatched_as_child_task(self):
         calls = []
 
@@ -422,3 +419,5 @@ if __name__ == "__main__":
         self.assertEqual(third["counts"]["skipped"], 2)
         self.assertEqual(len(calls), 2)
 
+if __name__ == "__main__":
+    unittest.main()
