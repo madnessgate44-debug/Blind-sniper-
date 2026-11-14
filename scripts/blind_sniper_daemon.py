@@ -29,6 +29,7 @@ if str(SCRIPTS) not in sys.path:
 
 from blind_sniper_agent_runtime import dispatch_task
 from blind_sniper_memory import append_observation, build_observation
+from blind_sniper_handoff_runtime import reconcile_handoffs
 from blind_sniper_ledger import TaskLedger
 from blind_sniper_model_worker import AgentSpec, ModelTask, ModelWorker, NativeModelInvoker
 from blind_sniper_tool_runtime import NativeToolRuntime
@@ -187,6 +188,7 @@ class PrivateTaskStore:
         self.notification_path = self.state_dir / "notifications.jsonl"
         self.memory_dir = _ensure_private_dir(self.state_dir / "memory", workspace_root=self.workspace_root)
         self.memory_journal_path = self.memory_dir / "observations.jsonl"
+        self.handoff_dir = _ensure_private_dir(self.state_dir / "handoffs", workspace_root=self.workspace_root)
 
     def task_files(self) -> list[Path]:
         return sorted(self.task_dir.glob("*.json"), key=lambda item: item.name)
@@ -472,7 +474,8 @@ class BlindSniperDaemon:
         counts = {
             "scanned": 0, "completed": 0, "retry_scheduled": 0, "failed": 0,
             "memory_capture_errors": 0,
-            "skipped": 0, "errors": 0, "recovered_stale_leases": 0,
+            "handoffs_scanned": 0, "handoffs_delivered": 0, "handoffs_pending": 0,
+            "skipped": 0, "errors": 0, "handoff_errors": 0, "recovered_stale_leases": 0,
             "notifications_reconciled": 0, "attempted": 0,
         }
         last_error_type = None
@@ -533,6 +536,22 @@ class BlindSniperDaemon:
                     else:
                         counts["retry_scheduled"] += 1
 
+        if self.allowed_agent_ids is not None:
+            try:
+                handoff_counts = reconcile_handoffs(
+                    handoff_dir=self.store.handoff_dir,
+                    task_dir=self.store.task_dir,
+                    queue=self.queue,
+                    allowed_agent_ids=self.allowed_agent_ids,
+                    limit=self.max_tasks_per_cycle,
+                )
+                counts["handoffs_scanned"] = handoff_counts["scanned"]
+                counts["handoffs_delivered"] = handoff_counts["delivered"]
+                counts["handoffs_pending"] = handoff_counts["pending"]
+            except Exception as exc:
+                counts["errors"] += 1
+                counts["handoff_errors"] += 1
+                last_error_type = type(exc).__name__
         with self._memory_capture_lock:
             counts["memory_capture_errors"] = self._memory_capture_errors
         now = datetime.now(timezone.utc).isoformat()
