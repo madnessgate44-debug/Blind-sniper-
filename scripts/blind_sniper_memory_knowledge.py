@@ -196,7 +196,7 @@ def approve_proposal(
     safe_probe = _ensure_private_external_path(approved_dir_path / ".approval-probe")
     target = safe_probe.parent / source.name
     safe_target = _ensure_private_external_path(target)
-    markdown = "\\n".join(["---", json.dumps(metadata, sort_keys=True, ensure_ascii=False), "---", *lines[3:]]) + "\\n"
+    markdown = "\n".join(["---", json.dumps(metadata, sort_keys=True, ensure_ascii=False), "---", *lines[3:]]) + "\n"
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
