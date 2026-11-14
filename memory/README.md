@@ -7,7 +7,7 @@ This directory defines Blind Sniper's native knowledge-memory plane. It is separ
 ## Status
 
 - M1 architecture and data contracts: documented on the BS-MEMORY-001 feature branch.
-- M2 native capture: next implementation phase.
+- M2 capture primitive: implemented; dedicated CI suite passed (13 synthetic tests). Native event wiring and private-host persistence remain unverified.
 - M3–M7: planned, gated by acceptance evidence.
 - Private persistence and automatic ChatGPT conversation capture: not configured or verified.
 
