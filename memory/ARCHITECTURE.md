@@ -1,6 +1,6 @@
 # BS-MEMORY-001 — Native Memory Architecture
 
-**Status:** M1 architecture baseline complete; M2 capture primitive implemented and its dedicated CI suite passed; native event wiring and private-host acceptance remain open.
+**Status:** M1–M4 implementation baselines complete on the feature branch; M2 native daemon event wiring, M3 immutable proposals, and M4 approval-gated lexical retrieval have passing CI. Private-host activation and end-to-end persistence remain unverified.
 **Issue:** #59
 **Reference reviewed:** https://github.com/akitaonrails/ai-memory
 **Governing policy:** Root `AGENTS.md`, `ENGINEERING_EXECUTION_OS.md` v2.3, and `chatgpt-home/AUTHORITY_DELEGATION.md`.
@@ -53,7 +53,7 @@ Every record has a classification:
 
 The public repository may contain schemas, code, synthetic fixtures, non-sensitive architecture, and project facts that are already intentionally public. It must not contain private observations or raw transcripts.
 
-**Storage decision:** no real user-memory storage is implemented in this phase. First target for private persistence must be a verified owner-controlled private store. The existing GitHub Contents ledger adapter is not suitable for memory payloads and already refuses public repositories. Do not create a new repository, enable permissions, or provision a host as part of this mission without a separate explicit decision.
+**Storage decision:** native daemon metadata observations and proposed/approved knowledge pages are written only beneath the daemon's owner-only state directory, outside the public repository. No real personal/user-memory payload is captured. A verified active private host is still required for persistent cross-session operation. The existing GitHub Contents ledger adapter is not suitable for memory payloads and already refuses public repositories. Do not create a new repository, enable permissions, or provision a host as part of this mission without a separate explicit decision.
 
 ## 6. Canonical record contracts
 
@@ -113,7 +113,7 @@ Controls:
 - `memory.recover(task_id, agent_id)`
 - `memory.audit(record_id)`
 
-Only capture and deterministic validation are in M2. The remaining interfaces are phased work.
+Implemented on this branch: capture, deterministic validation, proposal generation, explicit approval, and bounded lexical search. Handoff and task recovery remain phased work.
 
 ## 10. Phase plan and acceptance
 
