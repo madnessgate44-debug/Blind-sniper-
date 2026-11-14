@@ -34,6 +34,8 @@ def _canonical(value: Any) -> bytes:
 def _read_observations(journal_path: str | Path) -> list[dict[str, Any]]:
     path = Path(journal_path).expanduser().resolve(strict=True)
     info = path.stat()
+    if stat.S_IMODE(path.parent.stat().st_mode) & 0o077:
+        raise KnowledgeError("observation journal directory must be owner-only (0700)")
     if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
         raise KnowledgeError("observation journal must be a regular singly-linked file")
     if stat.S_IMODE(info.st_mode) & 0o077:
