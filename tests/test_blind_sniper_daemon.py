@@ -478,7 +478,7 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         data, _ = self.write_task("DAEMON-HANDOFF-FAILED")
         self.queue.enqueue(
             task_id=data["task_id"], kind="native_model_agent",
-            payload_digest="c" * 64, max_attempts=3,
+            payload_digest="c" * 64, max_attempts=1,
         )
         self.queue.claim(task_id=data["task_id"], owner_id="failed-parent", lease_seconds=120)
         task = ModelTask(
