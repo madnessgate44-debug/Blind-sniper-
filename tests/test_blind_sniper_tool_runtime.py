@@ -231,6 +231,13 @@ class NativeToolRuntimeTests(unittest.TestCase):
         self.assertEqual(packet["handoff_depth"], 0)
         self.assertEqual(packet["task_id"], self.task.task_id)
         self.assertEqual(packet_path.stat().st_mode & 0o777, 0o600)
+        duplicate = runtime.execute(
+            name="agent.handoff", arguments=arguments, spec=spec,
+            task=self.task, run_id="run-handoff-retry", tool_call_id="call-handoff-retry",
+        )
+        self.assertTrue(duplicate["ok"], duplicate)
+        self.assertEqual(duplicate["result"]["status"], "DUPLICATE")
+        self.assertEqual(len(list(handoff_dir.glob("handoff:*.json"))), 1)
 
     def test_agent_handoff_rejects_unregistered_recipient_and_depth_limit(self):
         handoff_dir = self.root / "private-handoffs"
