@@ -109,6 +109,24 @@ def build_handoff(
     return packet
 
 
+def _read_private_json(path: Path) -> dict[str, Any]:
+    try:
+        info = path.lstat()
+    except FileNotFoundError as exc:
+        raise HandoffError("private handoff record does not exist") from exc
+    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or stat.S_IMODE(info.st_mode) & 0o077:
+        raise HandoffError("private handoff records must be owner-only regular files")
+    if info.st_size > 16 * 1024:
+        raise HandoffError("private handoff record exceeds 16 KiB")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise HandoffError("private handoff record is invalid") from exc
+    if not isinstance(value, dict):
+        raise HandoffError("private handoff record must be a JSON object")
+    return value
+
+
 def _private_directory(path: str | Path) -> Path:
     directory = Path(path).expanduser().absolute()
     probe = _ensure_private_external_path(directory / ".handoff-probe")
@@ -136,7 +154,7 @@ def write_handoff(directory: str | Path, packet: dict[str, Any]) -> str:
     try:
         fd = os.open(path, flags, 0o600)
     except FileExistsError:
-        existing = json.loads(path.read_text(encoding="utf-8"))
+        existing = _read_private_json(path)
         if existing == packet:
             return "DUPLICATE"
         raise HandoffError("handoff_id already exists with different content")
@@ -161,7 +179,12 @@ def claim_handoff(directory: str | Path, handoff_id: str, agent_id: str) -> str:
     info = packet_path.stat()
     if stat.S_IMODE(info.st_mode) & 0o077 or not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
         raise HandoffError("handoff file must be owner-only and singly linked")
-    packet = json.loads(packet_path.read_text(encoding="utf-8"))
+    packet = _read_private_json(packet_path)
+    try:
+        if build_handoff(**packet) != packet:
+            raise HandoffError("handoff packet is not canonical")
+    except (TypeError, ValueError) as exc:
+        raise HandoffError("handoff packet failed schema validation") from exc
     if packet.get("handoff_id") != handoff_id or packet.get("to_agent") != agent_id:
         raise HandoffError("handoff is not assigned to this agent")
     claim_path = _ensure_private_external_path(root / f"{handoff_id}.claim.json")
@@ -177,7 +200,7 @@ def claim_handoff(directory: str | Path, handoff_id: str, agent_id: str) -> str:
     try:
         fd = os.open(claim_path, flags, 0o600)
     except FileExistsError:
-        existing = json.loads(claim_path.read_text(encoding="utf-8"))
+        existing = _read_private_json(claim_path)
         if existing.get("agent_id") == agent_id and existing.get("packet_digest") == claim["packet_digest"]:
             return "ALREADY_CLAIMED"
         raise HandoffError("handoff has already been claimed")
