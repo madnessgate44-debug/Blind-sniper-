@@ -1,6 +1,6 @@
 # BS-MEMORY-001 — Native Memory Architecture
 
-**Status:** M1 architecture baseline; implementation not yet operational.
+**Status:** M1 architecture baseline complete; M2 implementation candidate added, CI verification pending.
 **Issue:** #59
 **Reference reviewed:** https://github.com/akitaonrails/ai-memory
 **Governing policy:** Root `AGENTS.md`, `ENGINEERING_EXECUTION_OS.md` v2.3, and `chatgpt-home/AUTHORITY_DELEGATION.md`.
@@ -124,10 +124,14 @@ Only capture and deterministic validation are in M2. The remaining interfaces ar
 - [ ] Independent review and OS/registry integration.
 
 ### M2 — Native capture
-- Implement typed observation schema and validator.
-- Implement deterministic sanitizer/policy gate using existing redaction primitives.
-- Add idempotent append-only local/private observation journal abstraction.
-- Test allowed event, rejected event, sensitive content, duplicate replay, malformed input, size limit and untrusted text.
+- [x] Add typed observation builder and closed-schema validator in `scripts/blind_sniper_memory.py`.
+- [x] Add deterministic redaction, sensitive-key rejection, source/event allowlists and bounded payload checks.
+- [x] Add private external JSONL journal with file permissions, locking, idempotent append and repository-path rejection.
+- [x] Add synthetic tests and isolated GitHub Actions workflow; execution is pending CI.
+- [ ] Prove tests pass on the PR head and review implementation for filesystem edge cases.
+
+Remaining M2 work (after initial acceptance): connect only verified native runtime event producers; do not add ChatGPT transcript capture.
+- Keep private journal path owner-controlled and outside the repository; no private data has been written by this implementation.
 - Do not capture ChatGPT messages or assistant text automatically; no such source is verified.
 
 ### M3 — Consolidation
