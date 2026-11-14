@@ -28,13 +28,14 @@ This matrix defines the synthetic evaluation gate for the native memory plane. F
 - Lexical retrieval has not been benchmarked against a representative real workload; SQLite FTS5 and vector search remain deferred.
 - Model-assisted summarization and semantic retrieval are not part of this evaluation.
 
-## Latest code-checkpoint evidence — 2026-11-14
+## Latest exact PR-head evidence — 2026-11-14
 
-Code checkpoint: `5f16548f8e5d4292c2383d95c0ff615b1766855c`.
+PR head: `ad51941e7cf6e88a1d14e8a3ada277a61f5329f4`.
 
-- Memory workflow run `43609450977`: 28 memory + 13 native tool-runtime + 21 daemon tests PASS (62 total).
-- Runtime Registry run `43609450949`: 285 tests PASS.
-- OS Compliance run `43609450996`: PASS.
-- Browser Adapter run `43609450976`: pending at this checkpoint.
+- Memory workflow run `43609588105`: 28 memory + 13 native tool-runtime + 21 daemon tests PASS (62 total).
+- Runtime Registry run `43609588165`: 285 tests PASS.
+- OS Compliance run `43609588150`: PASS.
+- Environment Validation run `43609588173`: PASS (49 required assets, 14 skill contracts, 9 agent contracts, 9 workflows, 6 safe Codex config templates).
+- Browser Adapter run `43609588114`: 22 adapter + 9 dispatch tests PASS (31 total).
 
 A passing synthetic suite is contract evidence, not proof of live deployment, real provider handoff or operational persistence.
