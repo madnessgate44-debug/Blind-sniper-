@@ -126,8 +126,8 @@ def build_proposals(journal_path: str | Path, knowledge_dir: str | Path) -> dict
     for task_id, items in sorted(grouped.items()):
         page_id = "task-" + hashlib.sha256(task_id.encode("utf-8")).hexdigest()[:20]
         directory = Path(knowledge_dir).expanduser().absolute()
-        directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-        os.chmod(directory, 0o700)
+        safe_probe = _ensure_private_external_path(directory / ".knowledge-probe")
+        directory = safe_probe.parent
         prior = sorted(directory.glob(f"{page_id}--*.md"))
         prior_ids = [path.stem.split("--", 1)[1] for path in prior]
         _, markdown = _render_proposal(task_id, items, prior_ids)
