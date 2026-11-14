@@ -13,7 +13,10 @@ This matrix defines the synthetic evaluation gate for the native memory plane. F
 | Conflict handling | Competing statuses remain visible as evidence; no automatic conflict resolution | `test_blind_sniper_memory_knowledge.py` |
 | Approval | Only the exact reviewed proposal identity can be promoted to a separate approved copy | `test_blind_sniper_memory_retrieval.py` |
 | Retrieval | Only approved pages in the requested project/scope are returned; context is byte-bounded and provenance is retained | `test_blind_sniper_memory_retrieval.py` |
-| Handoff packet | Closed packet, atomic claim-once, owner-only storage, tamper checks and task-state re-read | `test_blind_sniper_memory_handoff.py` |\n| Model handoff tool | Lease-bound tool receipt, registered recipient, retry idempotency, one outgoing handoff per task/agent, depth bound | `test_blind_sniper_tool_runtime.py` |\n| Daemon delivery | Parent must be COMPLETED; claim and recovery precede idempotent child-task creation; child resumes with parent ledger state | `test_blind_sniper_daemon.py` |\n| No replay | Repeated daemon polls do not re-invoke completed parent or child tasks | `test_blind_sniper_daemon.py` |
+| Handoff packet | Closed packet, atomic claim-once, owner-only storage, tamper checks and task-state re-read | `test_blind_sniper_memory_handoff.py` |
+| Model handoff tool | Lease-bound tool receipt, registered recipient, retry idempotency, one outgoing handoff per task/agent, depth bound | `test_blind_sniper_tool_runtime.py` |
+| Daemon delivery | Parent must be COMPLETED; claim and recovery precede idempotent child-task creation; child resumes with parent ledger state | `test_blind_sniper_daemon.py` |
+| No replay | Repeated daemon polls do not re-invoke completed parent or child tasks | `test_blind_sniper_daemon.py` |
 | Recovery knowledge | Non-approved knowledge is rejected | `test_blind_sniper_memory_handoff.py` |
 
 ## Explicitly unproven
