@@ -540,7 +540,7 @@ class BlindSniperDaemon:
             self._last_success_at = now
         health = {
             "schema_version": 1,
-            "status": "DEGRADED" if counts["errors"] else "HEALTHY",
+            "status": "DEGRADED" if (counts["errors"] or counts["memory_capture_errors"]) else "HEALTHY",
             "owner_id": self.owner_id,
             "updated_at": now,
             "last_success_at": self._last_success_at,
