@@ -98,24 +98,40 @@ def reconcile_handoffs(
     root = _ensure_private_task_dir(task_dir)
     counts = {"scanned": 0, "delivered": 0, "pending": 0}
     packets = list_handoffs(handoff_dir)
-    for packet in packets[:limit]:
+    source_keys: set[tuple[str, str]] = set()
+    for packet in packets:
         counts["scanned"] += 1
+        source_key = (packet["task_id"], packet["from_agent"])
+        if source_key in source_keys:
+            raise HandoffRuntimeError("multiple distinct handoffs exist for one source task and agent")
+        source_keys.add(source_key)
         recipient = packet["to_agent"]
         if recipient not in allowed_agent_ids:
             raise HandoffRuntimeError("handoff recipient is not registered in the native agent roster")
+        child_id = "handoff-" + __import__("hashlib").sha256(
+            packet["handoff_id"].encode("utf-8")
+        ).hexdigest()[:32]
+        child_path = root / f"{child_id}.json"
+        child_state = queue.status(child_id)
+        if child_state and child_state.get("status") in {"COMPLETED", "FAILED", "CANCELLED"} and not child_path.exists():
+            continue
         parent_state = queue.status(packet["task_id"])
-        if not isinstance(parent_state, dict) or parent_state.get("status") != "COMPLETED":
+        if not isinstance(parent_state, dict):
+            raise HandoffRuntimeError("handoff references a task missing from the native ledger")
+        if parent_state.get("status") in {"FAILED", "CANCELLED"}:
+            raise HandoffRuntimeError("parent task failed or was cancelled; refusing handoff delivery")
+        if parent_state.get("status") != "COMPLETED":
             counts["pending"] += 1
             continue
         if packet["handoff_depth"] >= MAX_HANDOFF_DEPTH:
             raise HandoffRuntimeError("handoff chain reached the configured depth limit")
+        if not child_path.exists() and counts["delivered"] >= limit:
+            counts["pending"] += 1
+            continue
         claim_handoff(handoff_dir, packet["handoff_id"], recipient)
         recovered = recover_native_handoff(
             handoff_dir, packet["handoff_id"], recipient, queue=queue,
         )
-        child_id = "handoff-" + __import__("hashlib").sha256(
-            packet["handoff_id"].encode("utf-8")
-        ).hexdigest()[:32]
         child = {
             "task_id": child_id,
             "agent_id": recipient,
