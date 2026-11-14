@@ -11,7 +11,7 @@ This is Blind Sniper's native knowledge-memory plane. It is separate from the ta
 - M3 deterministic consolidation: immutable Markdown proposals with provenance and supersession; explicit reviewer approval is required.
 - M4 lexical retrieval: approved pages only, project/scope filtered, bounded context and provenance.
 - M5 handoff/recovery: typed private packets, atomic claim-once, and current-state re-read through native `DurableQueue.status`. Automatic model-worker handoff creation/consumption is not yet integrated.
-- M6 synthetic evaluation: 28 memory tests PASS; Runtime Registry 280 tests PASS; OS Compliance PASS on exact PR head `ed16dc4` (latest hardening included).
+- M6 synthetic evaluation: 28 memory tests PASS; Runtime Registry 280 tests PASS; OS Compliance PASS on exact PR head `57750da` (latest documentation and hardening included).
 - M7 semantic/vector retrieval: deferred pending measured lexical failure cases and a verified zero-cost path.
 
 ## Operational boundary
