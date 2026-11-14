@@ -473,5 +473,44 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         self.assertEqual(len(self.store.task_files()), 1)
 
 
+
+    def test_failed_parent_task_never_delivers_its_handoff(self):
+        data, _ = self.write_task("DAEMON-HANDOFF-FAILED")
+        self.queue.enqueue(
+            task_id=data["task_id"], kind="native_model_agent",
+            payload_digest="c" * 64, max_attempts=3,
+        )
+        self.queue.claim(task_id=data["task_id"], owner_id="failed-parent", lease_seconds=120)
+        task = ModelTask(
+            task_id=data["task_id"], agent_id="researcher",
+            objective=data["objective"], payload=data["payload"],
+            lease_owner_id="failed-parent",
+        )
+        spec = AgentSpec(agent_id="researcher", tool_allowlist=("agent.handoff",))
+        result = self.tool_runtime.execute(
+            name="agent.handoff",
+            arguments={
+                "to_agent": "planner",
+                "objective": "This continuation must not run after parent failure.",
+                "verified_state": {"status": "IN_PROGRESS"},
+                "open_questions": [],
+                "files_touched": [],
+                "evidence_refs": ["test:failed-parent"],
+                "next_action": "Do not execute this continuation.",
+            },
+            spec=spec, task=task, run_id="failed-parent-run", tool_call_id="failed-parent-call",
+        )
+        self.assertTrue(result["ok"], result)
+        self.queue.fail(task_id=data["task_id"], owner_id="failed-parent", error="simulated failure")
+        daemon = BlindSniperDaemon(
+            queue=self.queue, worker=self.worker, owner_id="failed-parent-daemon",
+            store=self.store, allowed_agent_ids=frozenset({"researcher", "planner"}),
+        )
+        health = daemon.run_once()
+        self.assertEqual(health["status"], "DEGRADED")
+        self.assertEqual(health["counts"]["handoff_errors"], 1)
+        self.assertFalse(any(path.stem.startswith("handoff-") for path in self.store.task_files()))
+
+
 if __name__ == "__main__":
     unittest.main()
