@@ -1,6 +1,6 @@
 # BS-MEMORY-001 — Native Memory Architecture
 
-**Status:** M1 architecture baseline complete; M2 implementation candidate added, CI verification pending.
+**Status:** M1 architecture baseline complete; M2 capture primitive implemented and its dedicated CI suite passed; native event wiring and private-host acceptance remain open.
 **Issue:** #59
 **Reference reviewed:** https://github.com/akitaonrails/ai-memory
 **Governing policy:** Root `AGENTS.md`, `ENGINEERING_EXECUTION_OS.md` v2.3, and `chatgpt-home/AUTHORITY_DELEGATION.md`.
@@ -128,9 +128,10 @@ Only capture and deterministic validation are in M2. The remaining interfaces ar
 - [x] Add deterministic redaction, sensitive-key rejection, source/event allowlists and bounded payload checks.
 - [x] Add private external JSONL journal with file permissions, locking, idempotent append and repository-path rejection.
 - [x] Add synthetic tests and isolated GitHub Actions workflow; execution is pending CI.
-- [ ] Prove tests pass on the PR head and review implementation for filesystem edge cases.
+- [x] Dedicated GitHub Actions memory-contract suite passed on PR head `346845dc0846ba1d64e0627b8f8cc6713fd0a246`: compile PASS; 13 synthetic tests PASS (`Ran 13 tests in 0.038s / OK`).
+- [ ] Independent code review and integration with verified native runtime event producers.
 
-Remaining M2 work (after initial acceptance): connect only verified native runtime event producers; do not add ChatGPT transcript capture.
+Remaining M2 work: connect only verified native runtime event producers; do not add ChatGPT transcript capture. The journal primitive has CI evidence but is not wired into the daemon or any live host.
 - Keep private journal path owner-controlled and outside the repository; no private data has been written by this implementation.
 - Do not capture ChatGPT messages or assistant text automatically; no such source is verified.
 
