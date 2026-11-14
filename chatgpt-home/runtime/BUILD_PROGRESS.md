@@ -10,7 +10,8 @@
 - [B] B1 is not accepted: the server was invoked by a test harness inside Vercel sandbox, not directly by ChatGPT. This session exposes no custom MCP stdio registration/invocation action.
 - [V] B2 browser-profile and test-cookie snapshot/resume is verified on this Vercel sandbox. [U] Permanent retention, billing and no-card eligibility are not verified; no paid production host is claimed.
 - [B] B3 remains open: public HTTPS navigation was exercised with host controls, but redirect/SSRF/DNS-rebinding tests and authenticated-profile workflows are not complete.
-- [V] PR #58 remains OPEN, DRAFT and unmerged; prior head `acea7a01c80920b09eccda7f10ca6904ff5692ab`.
+- [V] PR #58 remains OPEN, DRAFT and unmerged; evidence is on the feature branch.
+
 ## Live Miss Noor browser inspection — 2026-11-13
 
 - [V] Added `scripts/run_blind_sniper_miss_noor_smoke.py`: creates a native task lease, invokes the checked-in BrowserAdapter only through `dispatch_browser_action`, performs read-only navigation/snapshot/screenshot, verifies the observed host, closes the session, and releases the lease.
