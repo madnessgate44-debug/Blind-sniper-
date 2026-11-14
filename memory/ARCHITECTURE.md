@@ -1,6 +1,6 @@
 # BS-MEMORY-001 — Native Memory Architecture
 
-**Status:** M1–M5 implementation baselines complete on the feature branch; M2 native daemon capture, M3 immutable proposals, M4 approval-gated lexical retrieval, and M5 typed handoff/recovery have passing CI. Private-host activation and end-to-end persistence remain unverified.
+**Status:** M1–M6 implementation baselines complete on the feature branch. Native capture, proposals, approved lexical retrieval, typed handoff/recovery and synthetic evaluation have passing CI. Private-host activation and end-to-end persistence remain unverified.
 **Issue:** #59
 **Reference reviewed:** https://github.com/akitaonrails/ai-memory
 **Governing policy:** Root `AGENTS.md`, `ENGINEERING_EXECUTION_OS.md` v2.3, and `chatgpt-home/AUTHORITY_DELEGATION.md`.
@@ -144,13 +144,18 @@ Remaining M2 work: connect only verified native runtime event producers; do not 
 - Deterministic lexical search and bounded context pack.
 - SQLite FTS5 only if a private persistent runtime can host it; index remains rebuildable.
 
-### M5 — Handoff and recovery
-- Typed handoff records; atomic claim-once; native task ledger remains lifecycle authority.
-- Recovery packet resolves current task state from the ledger and attaches approved relevant knowledge.
+### M5 — Handoff and recovery — IMPLEMENTED / CI VERIFIED
+- Typed, bounded handoff packet with private immutable storage and atomic claim-once sidecar.
+- Recovery verifies packet/claim integrity and reads current task state through `DurableQueue.status`; it does not mutate task state.
+- Optional approved-knowledge callback rejects non-approved records.
+- Automatic model-worker handoff creation/consumption remains an integration gate.
 
-### M6 — Evaluation
-- Synthetic privacy/leakage, duplicate, provenance, contradiction, retrieval and recovery fixtures.
-- Exact test evidence recorded in CI.
+### M6 — Evaluation — SYNTHETIC GATE PASS
+- Synthetic privacy/leakage, duplicate, provenance, conflicting-evidence, approval, retrieval, handoff and recovery fixtures.
+- Exact-head Memory Tests run `43607134001`: 28 tests PASS.
+- Exact-head Runtime Registry run `43607134010`: 280 tests PASS.
+- Exact-head OS Compliance run `43607134009`: PASS.
+- Live-host stress/fault injection remains NOT RUN.
 
 ### M7 — Optional semantic retrieval
 - Defer embeddings/vector search until lexical baseline has a measured failure set and a zero-cost provider/local model path.
