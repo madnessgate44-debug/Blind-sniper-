@@ -69,7 +69,6 @@ jobs:
       - name: Run one bounded worker pass
         env:
           GITHUB_TOKEN: ${{ secrets.BLIND_SNIPER_LEDGER_TOKEN }}
-          OPENHANDS_CLOUD_API_KEY: ${{ secrets.OPENHANDS_CLOUD_API_KEY }}
           BLIND_SNIPER_NOTIFY_DIGEST: ${{ vars.BLIND_SNIPER_NOTIFY_DIGEST }}
         run: |
           python scripts/blind_sniper_autonomy.py \
