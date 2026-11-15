@@ -39,3 +39,11 @@ PR head: `ad51941e7cf6e88a1d14e8a3ada277a61f5329f4`.
 - Browser Adapter run `43609588114`: 22 adapter + 9 dispatch tests PASS (31 total).
 
 A passing synthetic suite is contract evidence, not proof of live deployment, real provider handoff or operational persistence.
+
+## Durability hardening — 2026-11-15
+
+- [V] Review found that `write_handoff` fsynced packet contents but did not fsync the parent directory entry. A crash could lose the new filename after a successful return.
+- [V] `scripts/blind_sniper_memory_handoff.py` now fsyncs the containing directory before returning `CREATED`, and also on the identical-packet retry path.
+- [V] Regression test `test_write_handoff_fsyncs_parent_directory_before_success` verifies that a directory descriptor is passed to `fsync`.
+- [V] Exact code/test head `233676877817beec895e4b82d9d09f70cb6e72ed`: Memory Tests run `43689998831` PASS; Runtime Registry `43689998742` PASS; OS Compliance `43689998739` PASS; Environment Validation `43689998726` PASS; Browser Adapter `43689998750` PASS.
+- [U] Independent third-party review, real provider handoff, owner-controlled private daemon activation, and live-host crash/restart testing remain outstanding.
