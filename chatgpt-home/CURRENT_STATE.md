@@ -257,3 +257,10 @@ Everything below this heading is the prior 2026-11-09 02:31 UTC snapshot. It is 
 - [U] Real provider-to-recipient model handoff, host activation, and persistent cross-process restart acceptance remain unverified. The handoff tool is disabled unless the private host explicitly includes `agent.handoff` in `BLIND_SNIPER_DAEMON_TOOL_ALLOWLIST`.
 - [V] No real Owner memory, raw ChatGPT transcript, credentials, or personal data are stored in this public repository. Synthetic fixtures only.
 - [V] PR #60 remains open and unmerged; no release or deployment was performed.
+
+## Memory handoff durability follow-up — 2026-11-15
+
+- [V] Review identified missing parent-directory fsync after writing a new private handoff packet. Fixed in commit `a442343952e13f04596546ada05db4fd3ca4954a`; identical-packet retries also fsync the directory.
+- [V] Regression test added in `233676877817beec895e4b82d9d09f70cb6e72ed`.
+- [V] Exact-head Actions: Memory Tests `43689998831` PASS; Runtime Registry `43689998742` PASS; OS Compliance `43689998739` PASS; Environment Validation `43689998726` PASS; Browser Adapter `43689998750` PASS.
+- [U] No independent external review or real private-host/provider acceptance has occurred. PR #60 remains open/unmerged; no deployment.
