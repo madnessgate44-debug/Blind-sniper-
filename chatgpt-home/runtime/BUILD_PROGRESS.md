@@ -202,3 +202,22 @@ Remaining:
 - [U] CI execution, browser CLI compatibility for clipboard commands, actual screenshot bytes and copy/paste behavior remain pending independent run/log/artifact inspection. Do not call this capability verified yet.
 - Latest commit: e0ba0a232810495451e65432e697d4a12d01594e.
 - Verification mapping: R1 screenshot file saved and artifacted — implementation complete, E2E NOT VERIFIED; R2 clipboard write/read — implementation complete, E2E NOT VERIFIED; R3 copy/paste — implementation complete, E2E NOT VERIFIED; R4 approval and receipt privacy — unit tests authored, NOT RUN in this checkpoint.
+
+## Native memory and internal handoff integration — 2026-11-14
+
+- [V] Added the `agent.handoff` native model tool to the task-scoped tool registry. Calls are recorded through the durable queue's tool-call reservation/completion receipts.
+- [V] Handoff packets are written outside the public checkout with owner-only permissions, closed schema, deterministic redaction, idempotent identity, registered-recipient validation and bounded chain depth.
+- [V] Added `scripts/blind_sniper_handoff_runtime.py`: daemon reconciliation claims packets, requires a COMPLETED parent task, re-reads authoritative queue state and creates an idempotent deterministic child task.
+- [V] Recovery handles interruption after packet claim but before child materialization; failed/cancelled parent tasks are rejected and cause degraded daemon health.
+- [V] One distinct handoff per source task/agent prevents fan-out; child task IDs are derived deterministically from handoff IDs.
+- [V] Code checkpoint `5f16548f8e5d4292c2383d95c0ff615b1766855c`: 62 focused memory/tool-runtime/daemon tests PASS, Runtime Registry 285 tests PASS, OS Compliance PASS.
+- [V] Final exact PR-head checks on `ad51941e7cf6e88a1d14e8a3ada277a61f5329f4`: Memory 62 focused tests PASS (`43609588105`), Runtime Registry 285 tests PASS (`43609588165`), OS Compliance PASS (`43609588150`), Environment Validation PASS (`43609588173`), Browser Adapter 31 tests PASS (`43609588114`).
+- [U] The native handoff path is code/CI verified with deterministic injected invokers, not yet a real provider round trip. Host activation requires the owner-controlled private daemon to allowlist `agent.handoff`; no host configuration or service was changed.
+- [V] No external agent runtime, Forge/OpenHands API, paid service, private memory payload or raw transcript was introduced.
+
+## Handoff durability hardening — 2026-11-15
+
+- [V] Fixed missing directory-entry durability in `write_handoff`: packet contents and the containing directory are both fsynced before success is reported. The duplicate retry path also fsyncs the directory.
+- [V] Added regression test `test_write_handoff_fsyncs_parent_directory_before_success`.
+- [V] Exact code/test head `233676877817beec895e4b82d9d09f70cb6e72ed`: Memory Tests 62 focused tests PASS (`43689998831`); Runtime Registry 285 PASS (`43689998742`); OS Compliance PASS (`43689998739`); Environment Validation PASS (`43689998726`); Browser Adapter 31 PASS (`43689998750`).
+- [U] Live daemon/provider operation, independent external review, and host fault-injection remain not run.

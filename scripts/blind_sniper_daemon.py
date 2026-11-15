@@ -28,6 +28,8 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from blind_sniper_agent_runtime import dispatch_task
+from blind_sniper_memory import append_observation, build_observation
+from blind_sniper_handoff_runtime import reconcile_handoffs
 from blind_sniper_ledger import TaskLedger
 from blind_sniper_model_worker import AgentSpec, ModelTask, ModelWorker, NativeModelInvoker
 from blind_sniper_tool_runtime import NativeToolRuntime
@@ -184,6 +186,9 @@ class PrivateTaskStore:
             os.close(fd)
         self.health_path = self.state_dir / "health.json"
         self.notification_path = self.state_dir / "notifications.jsonl"
+        self.memory_dir = _ensure_private_dir(self.state_dir / "memory", workspace_root=self.workspace_root)
+        self.memory_journal_path = self.memory_dir / "observations.jsonl"
+        self.handoff_dir = _ensure_private_dir(self.state_dir / "handoffs", workspace_root=self.workspace_root)
 
     def task_files(self) -> list[Path]:
         return sorted(self.task_dir.glob("*.json"), key=lambda item: item.name)
@@ -368,6 +373,40 @@ class BlindSniperDaemon:
         self.host_policy = validate_host_policy(host_policy or {})
         self.allowed_agent_ids = allowed_agent_ids
         self._last_success_at: str | None = None
+        self._memory_capture_errors = 0
+        self._memory_capture_lock = threading.Lock()
+
+    def _capture_memory(
+        self, *, task_id: str, event_type: str, agent_id: str,
+        status: str, attempt: int = 0, run_id: str = "", result_digest: str = "",
+    ) -> bool:
+        """Persist metadata-only native lifecycle evidence; never task prompts/results."""
+        identity = f"{event_type}:{task_id}:{attempt or 'initial'}"
+        observation_id = "obs:" + __import__("hashlib").sha256(identity.encode("utf-8")).hexdigest()[:32]
+        try:
+            record = build_observation(
+                observation_id=observation_id,
+                event_type=event_type,
+                occurred_at=datetime.now(timezone.utc).isoformat(),
+                source="blind_sniper_daemon",
+                source_ref=task_id,
+                project_id="blind-sniper",
+                classification="private_owner",
+                content={
+                    "task_id": task_id,
+                    "agent_id": agent_id,
+                    "status": status,
+                    "attempt": attempt,
+                    "run_id": run_id,
+                    "result_digest": result_digest,
+                },
+            )
+            append_observation(self.store.memory_journal_path, record)
+            return True
+        except Exception:
+            with self._memory_capture_lock:
+                self._memory_capture_errors += 1
+            return False
 
     def _dispatch_task_file(self, data: dict[str, Any]) -> str:
         task_id = data["task_id"]
@@ -411,6 +450,12 @@ class BlindSniperDaemon:
                 return "SKIPPED"
             raise
         status = receipt.get("queue_status", "")
+        self._capture_memory(
+            task_id=task_id, event_type="task_transition", agent_id=data["agent_id"],
+            status=status, attempt=int(receipt.get("queue_attempt", 0) or 0),
+            run_id=str(receipt.get("run_id", "")),
+            result_digest=str(receipt.get("output_digest", "")),
+        )
         if status == "COMPLETED":
             event = "task.completed"
         elif status == "FAILED":
@@ -424,9 +469,13 @@ class BlindSniperDaemon:
         return status
 
     def run_once(self) -> dict[str, Any]:
+        with self._memory_capture_lock:
+            self._memory_capture_errors = 0
         counts = {
             "scanned": 0, "completed": 0, "retry_scheduled": 0, "failed": 0,
-            "skipped": 0, "errors": 0, "recovered_stale_leases": 0,
+            "memory_capture_errors": 0,
+            "handoffs_scanned": 0, "handoffs_delivered": 0, "handoffs_pending": 0,
+            "skipped": 0, "errors": 0, "handoff_errors": 0, "recovered_stale_leases": 0,
             "notifications_reconciled": 0, "attempted": 0,
         }
         last_error_type = None
@@ -454,6 +503,11 @@ class BlindSniperDaemon:
                 ):
                     counts["skipped"] += 1
                     continue
+                if current is None:
+                    self._capture_memory(
+                        task_id=data["task_id"], event_type="task_created",
+                        agent_id=data["agent_id"], status="PENDING",
+                    )
                 if len(candidates) >= self.max_tasks_per_cycle:
                     break
                 candidates.append(data)
@@ -482,12 +536,30 @@ class BlindSniperDaemon:
                     else:
                         counts["retry_scheduled"] += 1
 
+        if self.allowed_agent_ids is not None:
+            try:
+                handoff_counts = reconcile_handoffs(
+                    handoff_dir=self.store.handoff_dir,
+                    task_dir=self.store.task_dir,
+                    queue=self.queue,
+                    allowed_agent_ids=self.allowed_agent_ids,
+                    limit=self.max_tasks_per_cycle,
+                )
+                counts["handoffs_scanned"] = handoff_counts["scanned"]
+                counts["handoffs_delivered"] = handoff_counts["delivered"]
+                counts["handoffs_pending"] = handoff_counts["pending"]
+            except Exception as exc:
+                counts["errors"] += 1
+                counts["handoff_errors"] += 1
+                last_error_type = type(exc).__name__
+        with self._memory_capture_lock:
+            counts["memory_capture_errors"] = self._memory_capture_errors
         now = datetime.now(timezone.utc).isoformat()
         if counts["errors"] == 0:
             self._last_success_at = now
         health = {
             "schema_version": 1,
-            "status": "DEGRADED" if counts["errors"] else "HEALTHY",
+            "status": "DEGRADED" if (counts["errors"] or counts["memory_capture_errors"]) else "HEALTHY",
             "owner_id": self.owner_id,
             "updated_at": now,
             "last_success_at": self._last_success_at,
@@ -538,10 +610,13 @@ def main(argv: list[str] | None = None) -> int:
             os.chmod(store.ledger_path, 0o600)
         queue = DurableQueue(ledger)
         browser_state_dir = _ensure_private_dir(store.state_dir / "browser", workspace_root=workspace_root)
+        allowed_agent_ids = load_native_agent_ids(workspace_root)
         tool_runtime = NativeToolRuntime(
             queue, workspace_root=workspace_root,
             command_timeout=min(600, args.timeout_seconds),
             browser_state_dir=browser_state_dir,
+            handoff_state_dir=store.handoff_dir,
+            allowed_agent_ids=allowed_agent_ids,
         )
         invoker = NativeModelInvoker.from_env(tool_runtime=tool_runtime)
         worker = ModelWorker(
@@ -553,7 +628,7 @@ def main(argv: list[str] | None = None) -> int:
             queue=queue, worker=worker, owner_id=args.owner_id, store=store,
             lease_seconds=lease_seconds, max_tasks_per_cycle=args.max_tasks_per_cycle,
             host_policy=host_execution_policy_from_env(),
-            allowed_agent_ids=load_native_agent_ids(workspace_root),
+            allowed_agent_ids=allowed_agent_ids,
         )
         if args.once:
             print(json.dumps(daemon.run_once(), sort_keys=True))

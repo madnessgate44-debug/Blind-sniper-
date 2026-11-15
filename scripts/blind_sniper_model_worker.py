@@ -192,6 +192,17 @@ class NativeModelInvoker:
             "file changed or a test passed unless the corresponding tool receipt/result says so. "
             "Never request credentials, bypass allowlists, or delegate to external agents."
         )
+        if "agent.handoff" in spec.tool_allowlist:
+            recipients = sorted(
+                set(getattr(self.tool_runtime, "allowed_agent_ids", ())) - {spec.agent_id}
+            )
+            system_content += (
+                " If a different registered Blind Sniper agent must continue the work, use the native "
+                "agent.handoff tool with a concise verified state, unresolved questions, touched paths, "
+                "evidence references and one explicit next action. Do not claim a handoff occurred unless "
+                "the tool returns ok=true. Do not attempt to hand off to an unregistered agent. "
+                f"Registered recipient IDs: {', '.join(recipients)}."
+            )
         if len(system_content) + len(user_content) > self.max_context_chars:
             raise ModelWorkerError("Fresh task context exceeds the configured character bound")
         endpoint = self.base_url if self.base_url.endswith("/chat/completions") else self.base_url + "/chat/completions"

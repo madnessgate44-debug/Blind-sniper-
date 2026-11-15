@@ -19,6 +19,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from blind_sniper_agent_runtime import _canonical_digest, dispatch_task
 from blind_sniper_daemon import BlindSniperDaemon, DaemonError, PrivateTaskStore, host_execution_policy_from_env
 from blind_sniper_ledger import TaskLedger
+from blind_sniper_memory_handoff import build_handoff, claim_handoff, write_handoff
+from blind_sniper_handoff_runtime import reconcile_handoffs
 from blind_sniper_model_worker import AgentSpec, ModelTask, ModelWorker
 from blind_sniper_tool_runtime import NativeToolRuntime
 from blind_sniper_worker import DurableQueue
@@ -35,7 +37,11 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         self.state.mkdir(mode=0o700)
         self.store = PrivateTaskStore(self.state, workspace_root=self.workspace)
         self.queue = DurableQueue(TaskLedger(self.store.ledger_path))
-        self.tool_runtime = NativeToolRuntime(self.queue, workspace_root=self.workspace)
+        self.tool_runtime = NativeToolRuntime(
+            self.queue, workspace_root=self.workspace,
+            handoff_state_dir=self.store.handoff_dir,
+            allowed_agent_ids=frozenset({"researcher", "planner", "engineer"}),
+        )
         self.invocations = 0
 
         def invoker(*, spec, task, timeout_seconds):
@@ -347,6 +353,163 @@ class PrivateNativeDaemonTests(unittest.TestCase):
         stop.set()
         self.daemon.run_forever(poll_interval=1, stop_event=stop)
         self.assertEqual(self.invocations, 0)
+
+
+    def test_model_worker_handoff_is_claimed_and_dispatched_as_child_task(self):
+        calls = []
+
+        def handoff_invoker(*, spec, task, timeout_seconds):
+            calls.append((spec.agent_id, task.task_id))
+            if spec.agent_id == "researcher":
+                result = self.tool_runtime.execute(
+                    name="agent.handoff",
+                    arguments={
+                        "to_agent": "planner",
+                        "objective": "Planner continuation",
+                        "verified_state": {"status": "IN_PROGRESS", "attempt": 1},
+                        "open_questions": ["Confirm the next bounded step."],
+                        "files_touched": ["README.md"],
+                        "evidence_refs": ["test:daemon-handoff"],
+                        "next_action": "Review the verified state and decide the next action.",
+                    },
+                    spec=spec, task=task, run_id="handoff-run", tool_call_id="handoff-call",
+                )
+                self.assertTrue(result["ok"], result)
+            return {
+                "run_id": f"run-{task.task_id}",
+                "output_digest": "f" * 64,
+                "output_excerpt": "completed",
+                "output_text": "completed",
+                "tool_receipts": [],
+            }
+
+        worker = ModelWorker(handoff_invoker, max_retries=0)
+        policy = {
+            "permission_profile": "read_only",
+            "tool_allowlist": ("agent.handoff",),
+            "allowed_paths": (),
+            "browser_approval_reference": "",
+        }
+        daemon = BlindSniperDaemon(
+            queue=self.queue, worker=worker, owner_id="handoff-daemon",
+            store=self.store, lease_seconds=120, max_tasks_per_cycle=10,
+            host_policy=policy,
+            allowed_agent_ids=frozenset({"researcher", "planner"}),
+        )
+        parent, _ = self.write_task("DAEMON-HANDOFF-PARENT")
+        first = daemon.run_once()
+        self.assertEqual(first["status"], "HEALTHY", first)
+        self.assertEqual(first["counts"]["completed"], 1, first)
+        self.assertEqual(first["counts"]["handoffs_delivered"], 1, first)
+        self.assertEqual(self.queue.status(parent["task_id"])["status"], "COMPLETED")
+
+        child_files = [path for path in self.store.task_files() if path.stem.startswith("handoff-")]
+        self.assertEqual(len(child_files), 1)
+        child = self.store.read_task(child_files[0])
+        self.assertEqual(child["agent_id"], "planner")
+        self.assertEqual(child["payload"]["handoff"]["task_id"], parent["task_id"])
+        self.assertEqual(child["payload"]["current_task_state"]["status"], "COMPLETED")
+        self.assertEqual(child["payload"]["handoff_depth"], 1)
+
+        second = daemon.run_once()
+        self.assertEqual(second["status"], "HEALTHY", second)
+        self.assertEqual(second["counts"]["completed"], 1, second)
+        self.assertEqual(self.queue.status(child["task_id"])["status"], "COMPLETED")
+        self.assertEqual([agent for agent, _task in calls], ["researcher", "planner"])
+
+        third = daemon.run_once()
+        self.assertEqual(third["counts"]["skipped"], 2)
+        self.assertEqual(len(calls), 2)
+
+
+    def test_claimed_handoff_is_materialized_after_daemon_interruption(self):
+        parent_id = "DAEMON-HANDOFF-RECOVER"
+        self.queue.enqueue(
+            task_id=parent_id, kind="native_model_agent",
+            payload_digest="a" * 64, max_attempts=3,
+        )
+        self.queue.claim(task_id=parent_id, owner_id="parent-worker", lease_seconds=120)
+        self.queue.complete(task_id=parent_id, owner_id="parent-worker", result_digest="b" * 64)
+        packet = build_handoff(
+            handoff_id="handoff:recovery-test",
+            task_id=parent_id,
+            from_agent="researcher",
+            to_agent="planner",
+            created_at=datetime.now(timezone.utc).isoformat(),
+            objective="Recover after the daemon stopped.",
+            verified_state={"status": "COMPLETED", "attempt": 1},
+            open_questions=["Was the child task created?"],
+            files_touched=["README.md"],
+            evidence_refs=["test:handoff-restart"],
+            next_action="Inspect the recovered parent state and continue.",
+        )
+        write_handoff(self.store.handoff_dir, packet)
+        claim_handoff(self.store.handoff_dir, packet["handoff_id"], "planner")
+
+        # Simulate interruption after claim but before child task creation.
+        recovered = reconcile_handoffs(
+            handoff_dir=self.store.handoff_dir,
+            task_dir=self.store.task_dir,
+            queue=self.queue,
+            allowed_agent_ids=frozenset({"researcher", "planner"}),
+        )
+        self.assertEqual(recovered["delivered"], 1)
+        child_id = "handoff-" + __import__("hashlib").sha256(
+            packet["handoff_id"].encode("utf-8")
+        ).hexdigest()[:32]
+        child_path = self.store.task_dir / f"{child_id}.json"
+        self.assertTrue(child_path.is_file())
+        self.assertEqual(stat.S_IMODE(child_path.stat().st_mode), 0o600)
+        child = self.store.read_task(child_path)
+        self.assertEqual(child["payload"]["current_task_state"]["status"], "COMPLETED")
+
+        replay = reconcile_handoffs(
+            handoff_dir=self.store.handoff_dir,
+            task_dir=self.store.task_dir,
+            queue=self.queue,
+            allowed_agent_ids=frozenset({"researcher", "planner"}),
+        )
+        self.assertEqual(replay["delivered"], 0)
+        self.assertEqual(len(self.store.task_files()), 1)
+
+
+
+    def test_failed_parent_task_never_delivers_its_handoff(self):
+        data, _ = self.write_task("DAEMON-HANDOFF-FAILED")
+        self.queue.enqueue(
+            task_id=data["task_id"], kind="native_model_agent",
+            payload_digest="c" * 64, max_attempts=1,
+        )
+        self.queue.claim(task_id=data["task_id"], owner_id="failed-parent", lease_seconds=120)
+        task = ModelTask(
+            task_id=data["task_id"], agent_id="researcher",
+            objective=data["objective"], payload=data["payload"],
+            lease_owner_id="failed-parent",
+        )
+        spec = AgentSpec(agent_id="researcher", tool_allowlist=("agent.handoff",))
+        result = self.tool_runtime.execute(
+            name="agent.handoff",
+            arguments={
+                "to_agent": "planner",
+                "objective": "This continuation must not run after parent failure.",
+                "verified_state": {"status": "IN_PROGRESS"},
+                "open_questions": [],
+                "files_touched": [],
+                "evidence_refs": ["test:failed-parent"],
+                "next_action": "Do not execute this continuation.",
+            },
+            spec=spec, task=task, run_id="failed-parent-run", tool_call_id="failed-parent-call",
+        )
+        self.assertTrue(result["ok"], result)
+        self.queue.fail(task_id=data["task_id"], owner_id="failed-parent", error="simulated failure")
+        daemon = BlindSniperDaemon(
+            queue=self.queue, worker=self.worker, owner_id="failed-parent-daemon",
+            store=self.store, allowed_agent_ids=frozenset({"researcher", "planner"}),
+        )
+        health = daemon.run_once()
+        self.assertEqual(health["status"], "DEGRADED")
+        self.assertEqual(health["counts"]["handoff_errors"], 1)
+        self.assertFalse(any(path.stem.startswith("handoff-") for path in self.store.task_files()))
 
 
 if __name__ == "__main__":
