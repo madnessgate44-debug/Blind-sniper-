@@ -221,3 +221,16 @@ Remaining:
 - [V] Added regression test `test_write_handoff_fsyncs_parent_directory_before_success`.
 - [V] Exact code/test head `233676877817beec895e4b82d9d09f70cb6e72ed`: Memory Tests 62 focused tests PASS (`43689998831`); Runtime Registry 285 PASS (`43689998742`); OS Compliance PASS (`43689998739`); Environment Validation PASS (`43689998726`); Browser Adapter 31 PASS (`43689998750`).
 - [U] Live daemon/provider operation, independent external review, and host fault-injection remain not run.
+
+
+## BS-AUTONOMY-002 — no-host architecture checkpoint — 2026-11-15
+
+- [V] Added `chatgpt-home/BS-AUTONOMY-002_SERVERLESS_ARCHITECTURE.md`: conditional GitHub Actions + private companion-repository design, privacy boundary, bounded worker model, platform limits, credential scope, and explicit activation gates.
+- [V] Inspection found `GitHubContentsLedger` already provides a private-repository check, hash-chained event log, blob-SHA compare-and-swap, bounded conflict retries, and server-Date-based lease time. It is capped at 512 KiB and is not a private task-payload store.
+- [V] Inspection found `scripts/blind_sniper_autonomy.py::run_once` currently fails each claimed task with `no_executor_wired_in_this_pass`; `activation_check` hardcodes the executor prerequisite false. This runner is not ready for model execution.
+- [V] Removed the obsolete `OPENHANDS_CLOUD_API_KEY` environment reference from `.github/workflows/blind-sniper-worker.yml`; tightened `tests/test_blind_sniper_worker_workflow.py` to allow only `BLIND_SNIPER_LEDGER_TOKEN`.
+- [V] Added the worker workflow contract test to both runtime-workflow path filters so the full runtime suite runs when this test changes.
+- [V] Runtime Registry run `43692675601` PASS on commit `0ae35404690d3c91ec3665980de5321fc421ddc5`; Engineering Execution OS Compliance run `43692675773` PASS on the same commit.
+- [V] The public repo is confirmed `private: false`; the private-ledger adapter correctly refuses public repositories. No private companion repository, cross-repo token, provider credential, or private payload adapter is configured.
+- [U] Real GitHub API concurrent CAS, cross-run private payload recovery, and native model execution remain unverified.
+- [B] Owner must create the private companion repository and configure a narrowly scoped Contents read/write credential before private-store integration can be exercised. Production activation remains NO-GO.
