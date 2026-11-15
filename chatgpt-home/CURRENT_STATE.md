@@ -264,3 +264,15 @@ Everything below this heading is the prior 2026-11-09 02:31 UTC snapshot. It is 
 - [V] Regression test added in `233676877817beec895e4b82d9d09f70cb6e72ed`.
 - [V] Exact-head Actions: Memory Tests `43689998831` PASS; Runtime Registry `43689998742` PASS; OS Compliance `43689998739` PASS; Environment Validation `43689998726` PASS; Browser Adapter `43689998750` PASS.
 - [U] No independent external review or real private-host/provider acceptance has occurred. PR #60 remains open/unmerged; no deployment.
+
+
+## No-host autonomy checkpoint — 2026-11-15
+
+- [V] Main includes the conditional architecture decision in `chatgpt-home/BS-AUTONOMY-002_SERVERLESS_ARCHITECTURE.md`.
+- [V] Runtime Registry `43692675601` and OS Compliance `43692675773` passed on implementation commit `0ae35404690d3c91ec3665980de5321fc421ddc5`.
+- [V] The worker workflow no longer references an OpenHands secret; its workflow contract test permits only the private-ledger token. The runtime workflow now triggers when that contract test changes.
+- [V] Existing `run_once` is still a non-executor stub that claims then fails tasks. The native model-agent runtime is not integrated into this bounded runner.
+- [V] Public repo privacy is confirmed; existing GitHub ledger refuses public repositories.
+- [U] No owner-created private companion repo, cross-repository token, private payload/result adapter, live remote concurrency proof, or live model-provider invocation is available.
+- [B] Private-store implementation and cross-run acceptance are blocked until the Owner creates the private companion repository and configures the least-privilege token. No deployment, secret mutation, schedule enablement, or production activation occurred.
+- **Current verdict: NO-GO for autonomous production execution.**
