@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import json
+import os
+import stat
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -60,6 +63,21 @@ class HandoffTests(unittest.TestCase):
             self.assertEqual(result["current_task_state"], state)
             self.assertEqual(result["task_state_source"], "native_task_ledger")
             self.assertEqual(result["approved_knowledge"][0]["page_id"], "approved-1")
+
+    def test_write_handoff_fsyncs_parent_directory_before_success(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "handoffs"
+            real_fsync = os.fsync
+            directory_fsyncs = []
+
+            def track_fsync(fd):
+                if stat.S_ISDIR(os.fstat(fd).st_mode):
+                    directory_fsyncs.append(True)
+                return real_fsync(fd)
+
+            with patch("blind_sniper_memory_handoff.os.fsync", side_effect=track_fsync):
+                self.assertEqual(write_handoff(root, packet()), "CREATED")
+            self.assertEqual(directory_fsyncs, [True])
 
     def test_native_recovery_reads_current_state_from_durable_queue(self):
         with tempfile.TemporaryDirectory() as tmp:
