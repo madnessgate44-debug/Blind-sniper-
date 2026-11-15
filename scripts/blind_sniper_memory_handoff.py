@@ -140,6 +140,20 @@ def _private_directory(path: str | Path) -> Path:
     return resolved
 
 
+
+
+def _fsync_directory(directory: Path) -> None:
+    """Persist directory-entry changes before reporting a handoff as durable."""
+    flags = os.O_RDONLY
+    if hasattr(os, "O_DIRECTORY"):
+        flags |= os.O_DIRECTORY
+    fd = os.open(directory, flags)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
 def write_handoff(directory: str | Path, packet: dict[str, Any]) -> str:
     if not isinstance(packet, dict) or set(packet) != HANDOFF_FIELDS:
         raise HandoffError("handoff packet does not match the closed schema")
@@ -160,6 +174,7 @@ def write_handoff(directory: str | Path, packet: dict[str, Any]) -> str:
     except FileExistsError:
         existing = _read_private_json(path)
         if existing == packet:
+            _fsync_directory(root)
             return "DUPLICATE"
         raise HandoffError("handoff_id already exists with different content")
     try:
@@ -167,6 +182,7 @@ def write_handoff(directory: str | Path, packet: dict[str, Any]) -> str:
             handle.write(payload)
             handle.flush()
             os.fsync(handle.fileno())
+        _fsync_directory(root)
     except Exception:
         path.unlink(missing_ok=True)
         raise
