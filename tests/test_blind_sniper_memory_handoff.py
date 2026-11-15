@@ -77,7 +77,8 @@ class HandoffTests(unittest.TestCase):
 
             with patch("blind_sniper_memory_handoff.os.fsync", side_effect=track_fsync):
                 self.assertEqual(write_handoff(root, packet()), "CREATED")
-            self.assertEqual(directory_fsyncs, [True])
+                self.assertEqual(write_handoff(root, packet()), "DUPLICATE")
+            self.assertEqual(directory_fsyncs, [True, True])
 
     def test_native_recovery_reads_current_state_from_durable_queue(self):
         with tempfile.TemporaryDirectory() as tmp:
