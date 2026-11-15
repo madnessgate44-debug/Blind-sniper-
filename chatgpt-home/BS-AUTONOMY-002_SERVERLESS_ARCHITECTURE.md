@@ -1,0 +1,136 @@
+# BS-AUTONOMY-002 — No-host event-driven runtime architecture
+
+**Status:** PROPOSED — implementation and activation blocked on owner-created private state repository and credentials  
+**Date:** 2026-11-15  
+**Governing contract:** `ENGINEERING_EXECUTION_OS.md` v2.3  
+**Scope:** `madnessgate44-debug/Blind-sniper-` only
+
+## 1. Decision
+
+Use GitHub Actions on the existing public Blind Sniper repository as a **bounded, ephemeral compute runner**. Use a separate **owner-created private GitHub repository** as the durable private control-plane store for task events, private task envelopes, model receipts, and agent handoff packets.
+
+This is a conditional architecture decision, not an activation. The private repository does not currently exist in verified context, no cross-repository credential is configured or verified, and no live model provider invocation is approved or proven.
+
+No Forge or OpenHands service, API, session, browser, worker, issue route, or return path is part of this architecture.
+
+## 2. Why this is the selected candidate
+
+- [VERIFIED] The existing `GitHubContentsLedger` adapter already rejects any target repository whose metadata does not say `private: true`.
+- [VERIFIED] It maintains a hash-chained append-only JSONL ledger, uses the Contents API blob SHA on update, retries bounded 409/422 conflicts, and requires GitHub's response Date header for remote lease time.
+- [VERIFIED] The adapter's ledger file is capped at 512 KiB. It is a small control-plane event log, not a database or payload store.
+- [VERIFIED] The existing public Blind Sniper repository reports `private: false`; it cannot be used for owner-private state.
+- [VERIFIED] GitHub-hosted standard runners are free for public repositories and each run is an ephemeral VM/container. A worker must therefore persist all required state remotely before exit.
+- [INFERENCE] A private companion repository is the only currently evidenced zero-incremental-cost persistent store that can be introduced without an always-on host or payment-card signup. This is conditional on the owner creating it and supplying a narrowly scoped credential.
+
+### Rejected alternatives
+
+| Candidate | Decision | Reason |
+|---|---|---|
+| Public repository files, artifacts, caches, logs | REJECT | Public/private boundary violation; artifacts and caches are not the durable private ledger. |
+| Local runner filesystem | REJECT | Each hosted run is ephemeral; no cross-run durability. |
+| Vercel function local disk | REJECT | No durable shared filesystem or resident daemon. Existing Vercel adapter is health-only. |
+| New external database/object store | DEFER | No already-connected, verified, no-card service is established. Adding one would introduce an unapproved external dependency. |
+| Private GitHub companion repository | SELECT CONDITIONALLY | Existing adapter and GitHub Contents API support private-repo checks and blob-SHA conditional updates; no new paid service required. |
+
+## 3. Private data layout
+
+The companion repository is the only location for owner-private runtime state:
+
+```text
+state/events.jsonl                 # hash-chained task/lease lifecycle events
+payloads/<task-id>.json            # private task envelope; one bounded file per task
+results/<task-id>/<attempt>.json   # private model/tool result and recovery receipt
+handoffs/<handoff-id>.json         # private parent/child handoff packet
+memory/                            # explicitly approved private durable memory only
+```
+
+The existing event ledger must contain only identifiers, lifecycle metadata, digests, lease ownership/timestamps, and safe error codes. It must not contain raw prompts, transcripts, task payloads, provider responses, credentials, or private handoff contents.
+
+The payload/result adapter is **not implemented yet**. Each object must have a strict size limit, schema validation, idempotent create/update semantics, and blob-SHA conflict handling. Do not silently fall back to writing private payloads to the public repository.
+
+## 4. Worker and concurrency model
+
+1. A manual `workflow_dispatch` or best-effort scheduled trigger starts one bounded worker pass.
+2. The worker checks that it is running from the trusted default branch and that all activation gates are satisfied.
+3. The worker reads private task metadata and payloads using a repository-scoped credential.
+4. It claims one task with a server-time lease and persists the claim before model invocation.
+5. It invokes the native Blind Sniper model-agent runtime and allowlisted tool runtime. The model provider supplies inference only.
+6. It persists model/tool receipts and handoff packets privately before marking the task terminal or spawning the next agent task.
+7. On interruption, a later pass reconciles durable receipts, expires stale leases, and retries only within the task's explicit retry policy.
+8. It emits only redacted metadata to public workflow logs and exits before the runner is destroyed.
+
+### Concurrency rules
+
+- Initially permit only one active writer for a given private queue/ledger.
+- Keep blob-SHA compare-and-swap as a conflict detector; never treat a read followed by a write without SHA as atomic.
+- Retain bounded CAS retries and fail closed on exhausted conflicts.
+- GitHub Actions concurrency is a runner scheduling guard, not the durable queue. By default, a concurrency group keeps one running and one pending run; a new pending run can replace the previous pending run. Even with the extended queue option, the documented cap is finite and ordering is based on when runs enter the wait state. The private ledger remains authoritative; a later poll must rediscover pending tasks.
+- Do not claim exactly-once model execution. Use at-least-once task recovery with idempotent tool receipts and explicit reconciliation; an interrupted external model request may have completed remotely without its response being persisted.
+
+## 5. Platform limits and operational consequences
+
+- Public-repository standard GitHub-hosted runner use is free and uses ephemeral machines.
+- GitHub-hosted jobs have bounded execution time; the worker must checkpoint and exit rather than depend on a long-running process.
+- Scheduled workflows are best effort: GitHub documents possible delays/dropped runs during load; they run only from the default branch; public-repository schedules can be disabled after 60 days without repository activity.
+- GitHub Actions concurrency is not a database lock or durable task queue.
+- GitHub Contents API updates require the current blob SHA. The API documentation warns that concurrent content operations can conflict. The implementation must handle conflicts and serialize writes where possible.
+- Private repository storage/Actions allowances depend on the owner's GitHub plan. No workflow may spend beyond included free allowances; no paid usage or billing fallback is authorized.
+- A private repository is access-controlled by GitHub, but this architecture does not add application-level encryption. Do not store secrets or data whose exposure would be unacceptable under the GitHub account's security boundary.
+
+## 6. Credential boundary
+
+Required owner-side setup, not performed by this task:
+
+- Create a separate private repository, suggested name: `blind-sniper-private-state`.
+- Create a fine-grained personal access token restricted to that one repository.
+- Grant only **Contents: read and write** (plus Metadata read as required by GitHub); no Actions, Administration, workflow, account, or organization permissions.
+- Add it to the public repo as Actions secret `BLIND_SNIPER_PRIVATE_STATE_TOKEN`.
+- Configure non-secret repository variables for the private repository owner/name/default branch.
+- Configure the approved model-provider key separately as an Actions secret after selecting a provider and confirming its no-cost terms.
+- Do not send token values in chat, issues, commits, or logs. Never attempt to read secret values through the connector.
+
+The existing workflow's obsolete `OPENHANDS_CLOUD_API_KEY` reference must be removed; no OpenHands credential is required or permitted.
+
+## 7. Activation gates
+
+Production activation remains **NO-GO** until all are true:
+
+- [ ] Owner creates the private companion repository and confirms its exact owner/name.
+- [ ] Owner creates and stores the narrowly scoped private-state token in Actions secrets.
+- [ ] Runtime can read/write private task payloads, result receipts and handoff packets; public-repo refusal tests pass.
+- [ ] Real GitHub API tests prove sequential writes, concurrent conflict/retry behavior, server-time lease expiry, idempotency and no lost events.
+- [ ] Two separate hosted runs preserve state and do not double-claim a task.
+- [ ] An injected interruption is reconciled by a later run without duplicate tool execution.
+- [ ] Native model invocation is wired into the bounded worker and tested with a synthetic task.
+- [ ] Two distinct native agents complete a handoff across separate runs.
+- [ ] Synthetic privacy tests inspect logs/artifacts and prove no prompt, payload, transcript, provider output or handoff content leaks.
+- [ ] Provider credential and terms are owner-approved; no paid model use or card-required route.
+- [ ] Exact-PR-head CI passes; release-specific independent review and rollback criteria pass.
+- [ ] Owner separately approves live production activation.
+
+## 8. Current implementation blockers found during inspection
+
+- [VERIFIED] `scripts/blind_sniper_autonomy.py::run_once` currently claims tasks and immediately fails them with `no_executor_wired_in_this_pass`. It is a protocol placeholder, not an executing worker.
+- [VERIFIED] `activation_check` hardcodes `executor_configured = False`; unattended execution is intentionally blocked.
+- [VERIFIED] `.github/workflows/blind-sniper-worker.yml` is manual-only and still references the obsolete `OPENHANDS_CLOUD_API_KEY` secret.
+- [VERIFIED] The existing GitHub ledger tests use a fake Contents API transport; real concurrent remote CAS behavior is not yet proven.
+- [BLOCKED] No private companion repository or credential is currently available to the runtime.
+- [BLOCKED] The native agent/model runtime has not been integrated into `run_once` and live provider invocation is unverified.
+
+## 9. Official platform references
+
+- GitHub Actions billing and public-runner free usage: https://docs.github.com/en/actions/concepts/billing-and-usage
+- Standard GitHub-hosted runners for public repositories: https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job
+- Workflow concurrency and pending-run behavior: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
+- Scheduled workflow delays and public-repository inactivity behavior: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
+- GitHub Contents API create/update semantics and required blob SHA: https://docs.github.com/en/rest/repos/contents
+- Fine-grained token permission requirements: https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens
+
+## 10. Status
+
+**Architecture:** PROPOSED, conditional on owner-provisioned private state repository.  
+**Code implementation:** NOT COMPLETE.  
+**Private-state integration:** NOT CONFIGURED.  
+**Provider invocation:** NOT VERIFIED.  
+**Scheduled polling:** NOT ENABLED.  
+**Production activation/deployment:** NOT AUTHORIZED and NOT PERFORMED.
