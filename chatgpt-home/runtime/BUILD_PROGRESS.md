@@ -214,3 +214,10 @@ Remaining:
 - [V] Final exact PR-head checks on `ad51941e7cf6e88a1d14e8a3ada277a61f5329f4`: Memory 62 focused tests PASS (`43609588105`), Runtime Registry 285 tests PASS (`43609588165`), OS Compliance PASS (`43609588150`), Environment Validation PASS (`43609588173`), Browser Adapter 31 tests PASS (`43609588114`).
 - [U] The native handoff path is code/CI verified with deterministic injected invokers, not yet a real provider round trip. Host activation requires the owner-controlled private daemon to allowlist `agent.handoff`; no host configuration or service was changed.
 - [V] No external agent runtime, Forge/OpenHands API, paid service, private memory payload or raw transcript was introduced.
+
+## Handoff durability hardening — 2026-11-15
+
+- [V] Fixed missing directory-entry durability in `write_handoff`: packet contents and the containing directory are both fsynced before success is reported. The duplicate retry path also fsyncs the directory.
+- [V] Added regression test `test_write_handoff_fsyncs_parent_directory_before_success`.
+- [V] Exact code/test head `233676877817beec895e4b82d9d09f70cb6e72ed`: Memory Tests 62 focused tests PASS (`43689998831`); Runtime Registry 285 PASS (`43689998742`); OS Compliance PASS (`43689998739`); Environment Validation PASS (`43689998726`); Browser Adapter 31 PASS (`43689998750`).
+- [U] Live daemon/provider operation, independent external review, and host fault-injection remain not run.
