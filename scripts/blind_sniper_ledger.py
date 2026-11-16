@@ -539,6 +539,11 @@ class GitHubContentsLedger:
             raise GitHubLedgerError("GitHub response Date header is required for lease expiry")
         return self._server_time
 
+    def server_now(self) -> datetime:
+        """Read and return the authoritative GitHub server clock for queue decisions."""
+        self._read_remote()
+        return self._server_now()
+
     def _assert_private_repository(self) -> None:
         repo_url = f"https://api.github.com/repos/{quote(self.owner)}/{quote(self.repo)}"
         status, raw = self._request("GET", repo_url)
@@ -722,7 +727,7 @@ class GitHubContentsLedger:
                     result = local.reserve_browser_action_if_lease(
                         task_id=task_id, owner_id=owner_id, payload=payload,
                         idempotency_key=idempotency_key,
-                        min_remaining_seconds=min_remaining_seconds, now=now,
+                        min_remaining_seconds=min_remaining_seconds, now=self._server_now(),
                     )
                 except LedgerError as exc:
                     raise GitHubLedgerError(str(exc)) from exc
@@ -793,7 +798,7 @@ class GitHubContentsLedger:
                 try:
                     event = local.append_guarded(
                         guard=guard, task_id=task_id, event_type=event_type,
-                        payload=payload, idempotency_key=idempotency_key, now=now,
+                        payload=payload, idempotency_key=idempotency_key, now=self._server_now(),
                     )
                 except LedgerError as exc:
                     raise GitHubLedgerError(str(exc)) from exc
