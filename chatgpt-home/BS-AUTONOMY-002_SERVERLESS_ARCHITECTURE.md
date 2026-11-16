@@ -1,6 +1,6 @@
 # BS-AUTONOMY-002 — No-host event-driven runtime architecture
 
-**Status:** PROPOSED — implementation and activation blocked on owner-created private state repository and credentials  
+**Status:** CONDITIONAL ARCHITECTURE — bounded recovery and remote-clock safeguards are implemented and CI-verified; private state, live provider, notification delivery and autonomous activation remain blocked  
 **Date:** 2026-11-15  
 **Governing contract:** `ENGINEERING_EXECUTION_OS.md` v2.3  
 **Scope:** `madnessgate44-debug/Blind-sniper-` only
@@ -89,7 +89,7 @@ Required owner-side setup, not performed by this task:
 - Configure the approved model-provider key separately as an Actions secret after selecting a provider and confirming its no-cost terms.
 - Do not send token values in chat, issues, commits, or logs. Never attempt to read secret values through the connector.
 
-The existing workflow's obsolete `OPENHANDS_CLOUD_API_KEY` reference must be removed; no OpenHands credential is required or permitted.
+The obsolete `OPENHANDS_CLOUD_API_KEY` reference has been removed from the native worker workflow; regression tests reject external-agent secret dependencies.
 
 ## 7. Activation gates
 
@@ -110,12 +110,14 @@ Production activation remains **NO-GO** until all are true:
 
 ## 8. Current implementation blockers found during inspection
 
-- [VERIFIED] `scripts/blind_sniper_autonomy.py::run_once` currently claims tasks and immediately fails them with `no_executor_wired_in_this_pass`. It is a protocol placeholder, not an executing worker.
-- [VERIFIED] `activation_check` hardcodes `executor_configured = False`; unattended execution is intentionally blocked.
-- [VERIFIED] `.github/workflows/blind-sniper-worker.yml` is manual-only and still references the obsolete `OPENHANDS_CLOUD_API_KEY` secret.
-- [VERIFIED] The existing GitHub ledger tests use a fake Contents API transport; real concurrent remote CAS behavior is not yet proven.
-- [BLOCKED] No private companion repository or credential is currently available to the runtime.
-- [BLOCKED] The native agent/model runtime has not been integrated into `run_once` and live provider invocation is unverified.
+- [VERIFIED] `scripts/blind_sniper_autonomy.py::run_once` now recovers stale leases and emits aggregate-only health/digest artifacts without claiming pending tasks or consuming attempts. It is a recovery/health pass, not the native executor.
+- [VERIFIED] `activation_check` keeps `executor_configured = False` and notification delivery false for this ephemeral Actions entrypoint; unattended execution remains intentionally blocked.
+- [VERIFIED] `.github/workflows/blind-sniper-worker.yml` remains manual-only, has no schedule, and no longer references OpenHands or an external-agent secret.
+- [VERIFIED] PR #62 merged the remote server-clock API, queue clock routing, five independent-process queue tests and four remote-clock regressions. Exact-head Runtime Registry run `43843357824` passed 330 tests; Memory Tests `43843357777` passed 63; Environment Validation `43843357804`, OS Compliance `43843357693`, and Browser Adapter `43843357688` passed.
+- [UNVERIFIED] GitHub Contents API tests still use a fake transport for concurrency and remote clock behavior. Real private-repository CAS contention and cross-run payload/result recovery have not been proven.
+- [BLOCKED] No owner-created private companion repository or cross-repository credential is available to the runtime. The public repository is rejected by the private-ledger adapter.
+- [BLOCKED] Native model invocation and agent handoff code are present and contract-tested, but no approved live provider endpoint/key is configured or verified.
+- [BLOCKED] No real notification delivery adapter/route or persistent approved worker host is configured.
 
 ## 9. Official platform references
 
@@ -128,9 +130,10 @@ Production activation remains **NO-GO** until all are true:
 
 ## 10. Status
 
-**Architecture:** PROPOSED, conditional on owner-provisioned private state repository.  
-**Code implementation:** NOT COMPLETE.  
+**Architecture:** CONDITIONAL; GitHub Actions are bounded ephemeral compute only, with a separate private state repository still required.  
+**Code implementation:** PARTIAL; queue, remote-clock safeguards and fail-closed recovery are merged and CI-verified; private payload/result adapter and live integration remain incomplete.  
 **Private-state integration:** NOT CONFIGURED.  
-**Provider invocation:** NOT VERIFIED.  
+**Provider invocation:** NOT VERIFIED; no live provider is configured.  
 **Scheduled polling:** NOT ENABLED.  
-**Production activation/deployment:** NOT AUTHORIZED and NOT PERFORMED.
+**Production deployment:** Health-only Vercel service is deployed after explicit owner authorization; `/api/health` returns HTTP 200.  
+**Autonomous task execution:** NO-GO; worker remains not activated and task execution remains false.
