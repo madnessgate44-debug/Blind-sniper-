@@ -1,5 +1,14 @@
 # Blind Sniper — Current Technical State
 
+## Owner execution checkpoint — 2026-11-16
+
+- [V] PR #58 native MCP browser bridge merged to `main` at `98c173b78272cb2aa72a2299cd6b938f6c3b62a8`; Vercel production deployment `dpl_79pnApfwTm7aLagEGHsu2mv6d9vg` is READY and `https://blind-sniper-runtime.vercel.app/api/health` returns HTTP 200.
+- [V] The Ignored Build Step safety guard was cleared to permit the requested deployment; the first deployment attempt was canceled while the guard remained active, and the subsequent exact-SHA production deployment succeeded.
+- [V] PR #57 was not merged because its branch diverged 131 commits from current main. Its in-scope remote-clock and safe-recovery changes were ported to PR #62, based directly on current main.
+- [U] PR #62 CI and preview are pending; no merge or release claim for that branch.
+- [B] Live model-provider invocation, native task executor activation, private remote CAS cross-run recovery, notification delivery, persistent browser hosting and ChatGPT direct stdio MCP invocation remain incomplete. Production task execution remains disabled.
+
+
 ## BS-BROWSER-001 — native browser workflow — 2026-11-14
 
 - [V] Native MCP stdio server exposes six tools: start, action, status, detach, resume and close. All actions remain behind the lease-gated native dispatcher.
@@ -10,7 +19,7 @@
 - [B] B1 acceptance remains NOT PASSED: this session has no ChatGPT custom MCP stdio registration/invocation action. The live browser run used a test harness launched inside Vercel sandbox, not ChatGPT direct control.
 - [V] B2 profile/cookie snapshot-resume behavior is verified in the named Vercel sandbox. [U] Permanent-host retention, billing and no-card eligibility are not verified; do not assume this is a zero-cost production host.
 - [B] B3 remains open: public HTTPS navigation was exercised with host controls, but redirect/SSRF/DNS-rebinding review and authenticated user-profile handling have not passed adversarial acceptance.
-- [V] Draft PR #58 remains OPEN and unmerged; current evidence is on the PR feature branch.
+- [V] PR #58 was merged to `main` at `98c173b78272cb2aa72a2299cd6b938f6c3b62a8` on 2026-11-16. Production deployment `dpl_79pnApfwTm7aLagEGHsu2mv6d9vg` is READY and `/api/health` returns HTTP 200; worker remains not activated and task execution remains false.
 
 ## Live browser execution verification — 2026-11-13
 
