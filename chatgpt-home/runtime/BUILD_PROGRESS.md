@@ -1,5 +1,14 @@
 # Blind Sniper build progress — current status
 
+## Owner execution checkpoint — 2026-11-16
+
+- [V] PR #58 merged to `main` at `98c173b78272cb2aa72a2299cd6b938f6c3b62a8`; Vercel production deployment `dpl_79pnApfwTm7aLagEGHsu2mv6d9vg` is READY and `/api/health` returns HTTP 200.
+- [V] Git deployment guard was cleared to enable the requested production release. A direct production API deployment from the exact merged SHA completed successfully.
+- [V] PR #57 was not merged: it diverged 131 commits from current main. Safe recovery and remote-clock changes were ported to PR #62 on current main.
+- [U] PR #62 checks and preview remain pending; no merge is claimed.
+- [B] Provider invocation, live executor, private cross-run CAS/payload recovery, notification delivery, persistent browser hosting and direct ChatGPT MCP stdio invocation remain unverified. Worker/task execution remains disabled.
+
+
 ## BS-BROWSER-001 — live native browser workflow — 2026-11-14
 
 - [V] MCP server now exposes six tools: `browser.start`, `browser.action`, `browser.status`, `browser.detach`, `browser.resume`, `browser.close`. `browser.detach` closes the browser but preserves resumable session/profile and lease.
@@ -10,7 +19,7 @@
 - [B] B1 is not accepted: the server was invoked by a test harness inside Vercel sandbox, not directly by ChatGPT. This session exposes no custom MCP stdio registration/invocation action.
 - [V] B2 browser-profile and test-cookie snapshot/resume is verified on this Vercel sandbox. [U] Permanent retention, billing and no-card eligibility are not verified; no paid production host is claimed.
 - [B] B3 remains open: public HTTPS navigation was exercised with host controls, but redirect/SSRF/DNS-rebinding tests and authenticated-profile workflows are not complete.
-- [V] PR #58 remains OPEN, DRAFT and unmerged; evidence is on the feature branch.
+- [V] PR #58 MERGED to `main` at `98c173b78272cb2aa72a2299cd6b938f6c3b62a8`; production deployment `dpl_79pnApfwTm7aLagEGHsu2mv6d9vg` is READY and `/api/health` returned HTTP 200. Task execution remains disabled.
 
 ## Live Miss Noor browser inspection — 2026-11-13
 
