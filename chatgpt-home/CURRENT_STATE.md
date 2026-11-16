@@ -4,8 +4,10 @@
 
 - [V] PR #58 native MCP browser bridge merged to `main` at `98c173b78272cb2aa72a2299cd6b938f6c3b62a8`; Vercel production deployment `dpl_79pnApfwTm7aLagEGHsu2mv6d9vg` is READY and `https://blind-sniper-runtime.vercel.app/api/health` returns HTTP 200.
 - [V] The Ignored Build Step safety guard was cleared to permit the requested deployment; the first deployment attempt was canceled while the guard remained active, and the subsequent exact-SHA production deployment succeeded.
-- [V] PR #57 was not merged because its branch diverged 131 commits from current main. Its in-scope remote-clock and safe-recovery changes were ported to PR #62, based directly on current main.
-- [U] PR #62 CI and preview are pending; no merge or release claim for that branch.
+- [V] PR #62 merged to `main` at `f4f0e966f2564478d2cab6680b353bab7141b526`. Exact-head CI: Runtime Registry run `43843357824` PASS (330 tests); Memory Tests `43843357777` PASS (63 tests); Environment Validation `43843357804` PASS; OS Compliance `43843357693` PASS; Browser Adapter `43843357688` PASS (49 tests, two Chromium fixture cycles, 36 correlated receipts). Vercel preview PASS.
+- [V] PR #57 was closed as superseded, not merged; PR #47 was closed as a historical review artifact. PR #60 had already merged its native memory/handoff implementation. No open PRs remain.
+- [V] Current production deployment `dpl_BCErQUwP2moLEPQXZyj3oKTT7Nj6` is READY from `f4f0e966f2564478d2cab6680b353bab7141b526`; `https://blind-sniper-runtime.vercel.app/api/health` returns HTTP 200.
+- [B] These checks prove tests and bounded fixture execution, not live provider-to-agent execution, private remote CAS cross-run recovery, resident worker hosting, notification delivery, or direct ChatGPT MCP stdio invocation. Production task execution remains disabled.
 - [B] Live model-provider invocation, native task executor activation, private remote CAS cross-run recovery, notification delivery, persistent browser hosting and ChatGPT direct stdio MCP invocation remain incomplete. Production task execution remains disabled.
 
 
@@ -34,10 +36,10 @@
 
 - [V] Latest application/runtime code commit on `main` is `eacfb1091a4e22000125fcec79fe5f25994f5963`; subsequent commits `fdb4eb7` and `1517892` only synchronize the current-state and build-progress documents.
 - [V] PR #56 is **MERGED**, not draft: source head `7953e8399b1bc3cc0c53b8a306af9c5c84ae00e2`, merge commit `eacfb1091a4e22000125fcec79fe5f25994f5963`. It adds bounded per-cycle daemon concurrency and idempotent, file-locked notification outbox writes.
-- [V] PR #57 is OPEN and unmerged at `fc42b5aaf5b8edaeb284f8cc4cebe2df2a8d2648`; code/test head `c6270e44a2c6b1f5855fc1112e563bc5b97d73ce`. It adds independent-process queue tests, remote-clock handling and a fail-closed ephemeral runner.
+- [V] PR #57 was CLOSED as superseded on 2026-11-16. Its verified independent-process, remote-clock and fail-closed runner changes were ported to PR #62 and merged to current main at `f4f0e966f2564478d2cab6680b353bab7141b526`.
 - [V] PR #57 evidence: Runtime Registry `43174162100` PASS (258 tests); Environment Validation `43174161957` PASS; OS Compliance `43174162026` PASS; Browser Adapter `43174161996` PASS (local-fixture only); Vercel preview PASS.
 - [V] Both lifecycle E2E simulations explicitly report `actual_agent_spawned=false` and `execution_mode=SIMULATION_ONLY`. These are not live model-agent executions.
-- [V] PR #47 remains OPEN as a review-only Shadow report; it does not close implementation requirements. Issue #46 remains OPEN.
+- [V] PR #47 was CLOSED as a historical review-only artifact; its findings remain preserved in the PR. Issue #46 remains OPEN.
 - [U] Live provider invocation, private remote CAS/payload recovery across workflow runs, resident worker activation, persistent browser hosting and notification delivery remain unverified. Bounded ephemeral live-site browsing is now verified. No paid host or provider was activated.
 - [V] The production health endpoint is a health-only adapter; it reports `task_execution_enabled=false` and `worker=not_activated`. Native task execution is not live.
 - [V] Release remains **NO-GO**.
@@ -52,7 +54,7 @@
 **Browser acceptance:** Native Browser Adapter run `42929591208` on PR #52 implementation head `f680b24`: two native Chromium local-fixture cycles, 36 correlated receipts, interruption/no-replay/reconciliation PASS; persistent-host jobs skipped.
 **Vercel hosting:** [V] Project `blind-sniper-runtime` (`prj_AJpyM5PkAxfmeb4KQCZ7hlBgMZEi`) is linked to this GitHub repo in the Forge Hobby team. Latest Git-linked production deployment `dpl_HVwBwRYfa9CRcziujcyzZAiX6zPS` is READY from main commit `284b80b`; `https://blind-sniper-runtime.vercel.app/api/health` returned HTTP 200 with worker not activated and task execution disabled. Main pushes automatically trigger Vercel production builds. Hobby is not approved for commercial production use.
 **Release gate:** **NO-GO**. Native model invocation is not live-provider-verified; private remote CAS cross-run payload recovery remains unverified; native tool runtime is contract-tested but not host/live-provider-verified; persistent browser hosting and unattended autonomy remain host-unverified. Release-specific independent review, operational rollback/monitoring ownership and exact-target smoke test remain open. See `chatgpt-home/BS-RELEASE-001_RELEASE_ACCEPTANCE.md`.
-**Open PRs:** PR #47 (review-only); PR #57 (R2/R5 queue and fail-closed runner work). PR #48, #50, #51, #52, #53, #55 and #56 merged; PR #54 closed as superseded; duplicate external-adapter PR #49 closed as superseded.
+**Open PRs:** none. PR #47 closed as historical review-only; PR #57 closed as superseded by merged PR #62. PR #60, #58 and #62 merged; PR #48, #50, #51, #52, #53, #55 and #56 remain merged; PR #54 and #49 remain closed as superseded.
 **Branch protection:** `main` reports `protected=false`; no settings changed.
 **Authority:** Engineering Execution OS v2.3 and active repository-scoped Owner delegation. Exclusions remain in `chatgpt-home/AUTHORITY_DELEGATION.md`.
 
@@ -277,14 +279,14 @@ Everything below this heading is the prior 2026-11-09 02:31 UTC snapshot. It is 
 - [V] Final exact PR-head verification at `ad51941e7cf6e88a1d14e8a3ada277a61f5329f4`: Memory 62 focused tests PASS (`43609588105`), Runtime Registry 285 tests PASS (`43609588165`), OS Compliance PASS (`43609588150`), Environment Validation PASS (`43609588173`), Browser Adapter 31 tests PASS (`43609588114`).
 - [U] Real provider-to-recipient model handoff, host activation, and persistent cross-process restart acceptance remain unverified. The handoff tool is disabled unless the private host explicitly includes `agent.handoff` in `BLIND_SNIPER_DAEMON_TOOL_ALLOWLIST`.
 - [V] No real Owner memory, raw ChatGPT transcript, credentials, or personal data are stored in this public repository. Synthetic fixtures only.
-- [V] PR #60 remains open and unmerged; no release or deployment was performed.
+- [V] PR #60 merged to `main` at `cb14398d930e9fcb27492703faac159419873ce9`; no live provider or resident daemon was activated.
 
 ## Memory handoff durability follow-up — 2026-11-15
 
 - [V] Review identified missing parent-directory fsync after writing a new private handoff packet. Fixed in commit `a442343952e13f04596546ada05db4fd3ca4954a`; identical-packet retries also fsync the directory.
 - [V] Regression test added in `233676877817beec895e4b82d9d09f70cb6e72ed`.
 - [V] Exact-head Actions: Memory Tests `43689998831` PASS; Runtime Registry `43689998742` PASS; OS Compliance `43689998739` PASS; Environment Validation `43689998726` PASS; Browser Adapter `43689998750` PASS.
-- [U] No independent external review or real private-host/provider acceptance has occurred. PR #60 remains open/unmerged; no deployment.
+- [U] No independent external review or real private-host/provider acceptance has occurred. PR #60 merged to `main` at `cb14398d930e9fcb27492703faac159419873ce9`; no live provider or resident daemon was activated.
 
 
 ## No-host autonomy checkpoint — 2026-11-15
