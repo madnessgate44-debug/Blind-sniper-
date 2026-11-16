@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import sys
 import tempfile
 import unittest
@@ -71,7 +73,14 @@ class BrowserDispatchLeaseTests(unittest.TestCase):
         self.assertEqual([row["event_type"] for row in events[-2:]], [
             "BROWSER_ACTION_STARTED", "BROWSER_ACTION_COMPLETED",
         ])
-        self.assertEqual(events[-1]["payload"]["receipt"]["run_id"], "run-1")
+        payload = events[-1]["payload"]
+        self.assertEqual(payload["receipt_summary"]["action"], "snapshot")
+        receipt_path = Path(self.temp.name) / payload["receipt_ref"]
+        raw_receipt = receipt_path.read_bytes()
+        self.assertEqual(hashlib.sha256(raw_receipt).hexdigest(), payload["receipt_sha256"])
+        self.assertEqual(json.loads(raw_receipt)["run_id"], "run-1")
+        self.assertEqual(receipt_path.stat().st_mode & 0o777, 0o600)
+        self.assertEqual(receipt_path.parent.stat().st_mode & 0o777, 0o700)
 
     def test_missing_lease_blocks_before_browser_invocation(self):
         self.ledger.release_task(
