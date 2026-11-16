@@ -4,8 +4,10 @@
 
 - [V] PR #58 merged to `main` at `98c173b78272cb2aa72a2299cd6b938f6c3b62a8`; Vercel production deployment `dpl_79pnApfwTm7aLagEGHsu2mv6d9vg` is READY and `/api/health` returns HTTP 200.
 - [V] Git deployment guard was cleared to enable the requested production release. A direct production API deployment from the exact merged SHA completed successfully.
-- [V] PR #57 was not merged: it diverged 131 commits from current main. Safe recovery and remote-clock changes were ported to PR #62 on current main.
-- [U] PR #62 checks and preview remain pending; no merge is claimed.
+- [V] PR #62 merged to `main` at `f4f0e966f2564478d2cab6680b353bab7141b526` after exact-head CI passed: Runtime Registry 330 tests (`43843357824`), Memory Tests 63 tests (`43843357777`), Environment Validation (`43843357804`), OS Compliance (`43843357693`), Browser Adapter 49 tests and two Chromium fixture cycles/36 receipts (`43843357688`); Vercel preview PASS.
+- [V] PR #57 was closed as superseded; PR #47 was closed as a historical review artifact. No open PRs remain.
+- [V] Production deployment `dpl_BCErQUwP2moLEPQXZyj3oKTT7Nj6` is READY and `/api/health` returns HTTP 200.
+- [B] Live provider invocation, private remote CAS cross-run recovery, resident worker activation, notification delivery, persistent browser hosting and direct ChatGPT MCP stdio invocation remain incomplete. Production task execution remains disabled.
 - [B] Provider invocation, live executor, private cross-run CAS/payload recovery, notification delivery, persistent browser hosting and direct ChatGPT MCP stdio invocation remain unverified. Worker/task execution remains disabled.
 
 
@@ -36,16 +38,16 @@
 - [V] PR #56 merged to `main` at `eacfb1091a4e22000125fcec79fe5f25994f5963`; source head `7953e8399b1bc3cc0c53b8a306af9c5c84ae00e2`.
 - [V] Bounded daemon dispatch and file-locked/idempotent notification outbox are now in `main`.
 - [V] Exact-head CI before merge: Runtime Registry runs `42980352513` and `42980348236` PASS, 249 tests each; Environment Validation `42980352489` and `42980348128` PASS; OS Compliance `42980352502` and `42980348107` PASS; Vercel preview PASS.
-- [U] This is single-daemon-process concurrency evidence only. Multi-process queue contention and remote clock behavior are addressed by open PR #57, not PR #56.
+- [U] This is single-daemon-process concurrency evidence only. Multi-process queue contention and remote clock behavior were ported from PR #57 and merged through PR #62 at `f4f0e966f2564478d2cab6680b353bab7141b526`.
 - [V] No live provider, resident worker, production task execution, notification receiver, paid resource or production deployment was activated.
 
-## PR #57 — independent-process queue and fail-closed runner — 2026-11-12
+## PR #57 — independent-process queue and fail-closed runner — superseded and closed 2026-11-16
 
-- [V] OPEN, unmerged; branch head `fc42b5aaf5b8edaeb284f8cc4cebe2df2a8d2648`; code/test head `c6270e44a2c6b1f5855fc1112e563bc5b97d73ce`.
+- [V] CLOSED as superseded. The in-scope code/test changes were ported onto current main through PR #62 and merged at `f4f0e966f2564478d2cab6680b353bab7141b526`; the stale branch itself was not merged.
 - [V] PR evidence: Runtime Registry `43174162100` PASS (258 tests); Environment Validation `43174161957` PASS; OS Compliance `43174162026` PASS; Browser Adapter `43174161996` PASS (two local-fixture Chromium cycles; persistent-host job skipped); Vercel preview PASS.
 - [V] Independent-process tests cover competing claims, heartbeat, cancellation, interruption recovery and duplicate enqueue. Remote-clock tests use a deterministic fake GitHub transport.
 - [U] Live private remote CAS/payload recovery across independent workflow runs is not proven. The runner reports `BLOCKED_NO_EXECUTOR` and leaves tasks unclaimed when no native executor is wired; notification delivery remains `NOT_CONFIGURED`.
-- [V] Both lifecycle simulations explicitly report `actual_agent_spawned=false` and `SIMULATION_ONLY`. PR #57 does not activate a live model provider or resident worker.
+- [V] Both lifecycle simulations explicitly report `actual_agent_spawned=false` and `SIMULATION_ONLY`. The ported PR #62 changes do not activate a live model provider or resident worker.
 
 **Snapshot:** 2026-11-11 — PR #52 merged to `main` at `48dd744a1aaa9c93f4d416c5b9d79b2f69d99f8f` (source head `7133e3a`); native worker daemon code is merged but not host-activated.
 **Architecture:** Self-contained Blind Sniper. No external agent or browser handoff.
