@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from blind_sniper_ledger import GitHubContentsLedger, GitHubLedgerError, TaskLedger  # noqa: E402
+from blind_sniper_ledger import GitHubContentsLedger, GitHubLedgerError, GitHubPrivateObjectStore, TaskLedger  # noqa: E402
 import blind_sniper_runtime as runtime  # noqa: E402
 from blind_sniper_worker import DurableQueue, QueueError  # noqa: E402
 
@@ -75,6 +75,113 @@ class FakeContentsAPI:
     def _blob_sha(content):
         header = f"blob {len(content)}\0".encode()
         return hashlib.sha1(header + content).hexdigest()
+
+
+
+class FakePrivateObjectAPI:
+    def __init__(self):
+        self.files = {}
+        self.is_private = True
+        self.put_count = 0
+        self.conflict_once = False
+
+    def __call__(self, method, url, headers, body=None):
+        repo_url = "https://api.github.com/repos/example/private-state"
+        response_headers = {"Date": "Tue, 17 Nov 2026 10:00:00 GMT"}
+        if method == "GET" and url == repo_url:
+            return 200, json.dumps({"private": self.is_private}).encode(), response_headers
+        path = url.split("/contents/", 1)[1].split("?", 1)[0]
+        from urllib.parse import unquote
+        path = unquote(path)
+        if method == "GET":
+            content = self.files.get(path)
+            if content is None:
+                return 404, b'{"message":"Not Found"}', response_headers
+            return 200, json.dumps({
+                "sha": FakeContentsAPI._blob_sha(content),
+                "encoding": "base64",
+                "content": base64.b64encode(content).decode("ascii"),
+            }).encode(), response_headers
+        if method == "PUT":
+            payload = json.loads(body.decode("utf-8"))
+            content = base64.b64decode(payload["content"])
+            if self.conflict_once:
+                self.conflict_once = False
+                self.files[path] = content
+                return 409, b'{"message":"simulated concurrent create"}', response_headers
+            if path in self.files:
+                return 409, b'{"message":"immutable object already exists"}', response_headers
+            self.files[path] = content
+            self.put_count += 1
+            return 201, json.dumps({"commit": {"sha": "d" * 40}}).encode(), response_headers
+        raise AssertionError(f"Unexpected method: {method}")
+
+
+class GitHubPrivateObjectStoreTests(unittest.TestCase):
+    def setUp(self):
+        self.api = FakePrivateObjectAPI()
+        self.store = GitHubPrivateObjectStore(
+            owner="example", repo="private-state", branch="main",
+            base_path="blind-sniper-continuity/objects",
+            token="test-token", transport=self.api,
+        )
+
+    def test_private_object_round_trip_uses_content_address_and_verifies_digest(self):
+        value = {"task_id": "PRIVATE-1", "payload": {"purpose": "synthetic"}}
+        ref = self.store.put_json(value)
+        self.assertTrue(ref["created"])
+        self.assertEqual(ref["digest"], hashlib.sha256(
+            json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+        ).hexdigest())
+        self.assertIn(ref["digest"], ref["path"])
+        self.assertEqual(self.store.get_json(ref["digest"]), value)
+        self.assertEqual(self.api.put_count, 1)
+
+    def test_duplicate_put_is_idempotent_and_never_overwrites(self):
+        value = {"task_id": "PRIVATE-2"}
+        first = self.store.put_json(value)
+        second = self.store.put_json(value)
+        self.assertTrue(first["created"])
+        self.assertFalse(second["created"])
+        self.assertEqual(first["digest"], second["digest"])
+        self.assertEqual(self.api.put_count, 1)
+
+    def test_concurrent_create_conflict_reloads_and_verifies_existing_object(self):
+        self.api.conflict_once = True
+        ref = self.store.put_json({"task_id": "PRIVATE-RACE"})
+        self.assertFalse(ref["created"])
+        self.assertEqual(self.store.get_json(ref["digest"]), {"task_id": "PRIVATE-RACE"})
+        self.assertEqual(self.api.put_count, 0)
+
+    def test_public_repository_is_refused_before_object_access(self):
+        self.api.is_private = False
+        with self.assertRaisesRegex(GitHubLedgerError, "public repository"):
+            self.store.put_json({"must_not_leak": True})
+        self.assertEqual(self.api.put_count, 0)
+        self.assertEqual(self.api.files, {})
+
+    def test_tampered_object_is_rejected(self):
+        value = {"task_id": "PRIVATE-TAMPER"}
+        digest = hashlib.sha256(
+            json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+        ).hexdigest()
+        path = self.store.object_path(digest)
+        self.api.files[path] = b'{"task_id":"different"}'
+        with self.assertRaisesRegex(GitHubLedgerError, "digest mismatch"):
+            self.store.get_json(digest)
+
+    def test_invalid_digest_and_oversized_object_fail_before_network_write(self):
+        with self.assertRaisesRegex(GitHubLedgerError, "SHA-256"):
+            self.store.get_json("not-a-digest")
+        small_store = GitHubPrivateObjectStore(
+            owner="example", repo="private-state", branch="main", token="test-token",
+            transport=self.api, max_object_bytes=10,
+        )
+        before = self.api.put_count
+        with self.assertRaisesRegex(GitHubLedgerError, "size limit"):
+            small_store.put_json({"payload": "too large"})
+        self.assertEqual(self.api.put_count, before)
+
 
 
 class GitHubContentsLedgerTests(unittest.TestCase):
