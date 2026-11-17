@@ -43,6 +43,9 @@ on:
       - "tests/test_blind_sniper_autonomy.py"
       - ".github/workflows/blind-sniper-worker.yml"
       - ".github/workflows/blind-sniper-executor.yml"
+      - "scripts/run_blind_sniper_provider_smoke.py"
+      - "tests/test_blind_sniper_provider_smoke.py"
+      - ".github/workflows/blind-sniper-provider-smoke.yml"
       - ".github/workflows/blind-sniper-runtime.yml"
   push:
     branches:
@@ -87,6 +90,9 @@ on:
       - "tests/test_blind_sniper_autonomy.py"
       - ".github/workflows/blind-sniper-worker.yml"
       - ".github/workflows/blind-sniper-executor.yml"
+      - "scripts/run_blind_sniper_provider_smoke.py"
+      - "tests/test_blind_sniper_provider_smoke.py"
+      - ".github/workflows/blind-sniper-provider-smoke.yml"
       - ".github/workflows/blind-sniper-runtime.yml"
 
 permissions:
