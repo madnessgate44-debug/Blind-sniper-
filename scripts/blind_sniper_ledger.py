@@ -904,3 +904,159 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+MAX_PRIVATE_OBJECT_BYTES = 512 * 1024
+
+
+class GitHubPrivateObjectStore:
+    """Immutable content-addressed JSON objects in a verified private repository.
+
+    The append-only task ledger remains a small control-plane event log. Task
+    envelopes and model receipts are stored as separate immutable objects,
+    addressed by SHA-256 digest. A duplicate concurrent upload is accepted only
+    after the existing object is fetched and its content hash is verified.
+    """
+
+    def __init__(
+        self,
+        *,
+        owner: str,
+        repo: str,
+        branch: str,
+        token: str,
+        base_path: str = "blind-sniper-continuity/objects",
+        transport=None,
+        max_retries: int = 3,
+        max_object_bytes: int = MAX_PRIVATE_OBJECT_BYTES,
+    ) -> None:
+        parts = base_path.split("/")
+        if (
+            not base_path
+            or base_path.startswith("/")
+            or any(part in {"", ".", ".."} for part in parts)
+            or not all(value.strip() for value in (owner, repo, branch, token))
+        ):
+            raise GitHubLedgerError("private object store requires owner, repo, branch, token and a safe relative base_path")
+        if max_retries < 1:
+            raise GitHubLedgerError("private object store max_retries must be at least one")
+        if not 1 <= max_object_bytes <= MAX_PRIVATE_OBJECT_BYTES:
+            raise GitHubLedgerError(f"private object size must be between 1 and {MAX_PRIVATE_OBJECT_BYTES} bytes")
+        self.owner = owner
+        self.repo = repo
+        self.branch = branch
+        self.token = token
+        self.base_path = base_path
+        self.max_retries = max_retries
+        self.max_object_bytes = max_object_bytes
+        self._api = GitHubContentsLedger(
+            owner=owner,
+            repo=repo,
+            path=f"{base_path}/.private-store-check",
+            branch=branch,
+            token=token,
+            transport=transport,
+            max_retries=max_retries,
+        )
+
+    @staticmethod
+    def _validate_digest(digest: str) -> str:
+        value = str(digest).strip().lower()
+        if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
+            raise GitHubLedgerError("private object digest must be a lowercase SHA-256 hex value")
+        return value
+
+    def object_path(self, digest: str) -> str:
+        value = self._validate_digest(digest)
+        return f"{self.base_path}/sha256/{value[:2]}/{value}.json"
+
+    def _url(self, digest: str) -> str:
+        return (
+            f"https://api.github.com/repos/{quote(self.owner)}/{quote(self.repo)}"
+            f"/contents/{quote(self.object_path(digest), safe='/')}"
+        )
+
+    def _decode_object(self, raw: bytes, expected_digest: str) -> dict[str, Any]:
+        try:
+            response = json.loads(raw.decode("utf-8"))
+            if response.get("encoding") != "base64":
+                raise GitHubLedgerError("private object response is not base64 encoded")
+            content = base64.b64decode(response["content"], validate=False)
+        except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+            if isinstance(exc, GitHubLedgerError):
+                raise
+            raise GitHubLedgerError("private object response is malformed") from exc
+        if len(content) > self.max_object_bytes:
+            raise GitHubLedgerError("private object exceeds the configured size limit")
+        if hashlib.sha256(content).hexdigest() != expected_digest:
+            raise GitHubLedgerError("private object content digest mismatch")
+        try:
+            value = json.loads(content.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise GitHubLedgerError("private object JSON is malformed") from exc
+        if not isinstance(value, dict):
+            raise GitHubLedgerError("private object JSON must be an object")
+        return value
+
+    def put_json(self, value: dict[str, Any]) -> dict[str, Any]:
+        """Create or verify an immutable object; never overwrite an existing path."""
+        if not isinstance(value, dict):
+            raise GitHubLedgerError("private object value must be a JSON object")
+        content = _canonical(value)
+        if len(content) > self.max_object_bytes:
+            raise GitHubLedgerError("private object exceeds the configured size limit")
+        digest = hashlib.sha256(content).hexdigest()
+        path = self.object_path(digest)
+        url = self._url(digest)
+        for _ in range(self.max_retries):
+            self._api._assert_private_repository()
+            status, raw = self._api._request(
+                "GET", f"{url}?ref={quote(self.branch)}",
+            )
+            if status == 200:
+                existing = self._decode_object(raw, digest)
+                if _canonical(existing) != content:
+                    raise GitHubLedgerError("immutable private object path contains different content")
+                return {
+                    "digest": digest, "path": path, "size_bytes": len(content),
+                    "commit_sha": None, "created": False,
+                }
+            if status != 404:
+                raise GitHubLedgerError(f"private object read failed with HTTP {status}")
+            payload = {
+                "message": f"blind-sniper: store immutable object {digest[:12]}",
+                "content": base64.b64encode(content).decode("ascii"),
+                "branch": self.branch,
+            }
+            status, raw = self._api._request(
+                "PUT", url, json.dumps(payload, separators=(",", ":")).encode("utf-8"),
+            )
+            if status in (409, 422):
+                # Another runner may have created the same content-addressed
+                # object after our GET. Reload and verify it on the next pass.
+                continue
+            if status not in (200, 201):
+                raise GitHubLedgerError(f"private object write failed with HTTP {status}")
+            try:
+                response = json.loads(raw.decode("utf-8"))
+                commit_sha = response["commit"]["sha"]
+            except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError) as exc:
+                raise GitHubLedgerError("private object write receipt is malformed") from exc
+            return {
+                "digest": digest, "path": path, "size_bytes": len(content),
+                "commit_sha": commit_sha, "created": True,
+            }
+        raise GitHubLedgerError(f"private object create conflict after {self.max_retries} attempts")
+
+    def get_json(self, digest: str) -> dict[str, Any]:
+        """Fetch and verify a private object by its SHA-256 content address."""
+        value = self._validate_digest(digest)
+        self._api._assert_private_repository()
+        status, raw = self._api._request(
+            "GET", f"{self._url(value)}?ref={quote(self.branch)}",
+        )
+        if status == 404:
+            raise GitHubLedgerError("private object was not found")
+        if status != 200:
+            raise GitHubLedgerError(f"private object read failed with HTTP {status}")
+        return self._decode_object(raw, value)
