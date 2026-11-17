@@ -87,7 +87,7 @@ class ProviderWorkflowContractTests(unittest.TestCase):
         self.assertNotIn("pull_request:", self.workflow)
 
     def test_provider_smoke_has_read_only_repository_permissions(self):
-        self.assertIn("permissions:\\n  contents: read", self.workflow)
+        self.assertIn("permissions:\n  contents: read", self.workflow)
         self.assertNotIn("id-token:", self.workflow)
         self.assertNotIn("contents: write", self.workflow)
 
