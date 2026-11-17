@@ -137,7 +137,11 @@ Production activation remains **NO-GO** until all are true:
 
 - [VERIFIED] GitHub Actions `GITHUB_TOKEN` is scoped to the repository containing the workflow; it cannot directly read or write the separate private state repository.
 - [VERIFIED] GitHub recommends GitHub App installation tokens for granular cross-repository access. A fine-grained token restricted to the one private repository and Contents read/write is a fallback; never use a classic PAT or a personal SSH key for this purpose.
-- [BLOCKED] No GitHub App installation token or fine-grained private-state credential is configured for the Blind Sniper workflow. The existing private repository is selected; its identity and contents remain omitted from this public ADR.
+- [VERIFIED] PR #65 implemented `GitHubPrivateObjectStore`: immutable content-addressed JSON objects, private-repository verification on every access, SHA-256 path/content verification, a 512 KiB object cap, idempotent create-only writes, and bounded concurrent-create conflict recovery.
+- [VERIFIED] Native `dispatch_task` now writes the private task envelope before queue enqueue and the complete receipt before terminal queue transition; queue events retain the result object digest. `load_task_envelope` hydrates and verifies the payload by the queue digest. Credential-like task envelopes are refused before enqueue or inference.
+- [VERIFIED] Exact-head PR #65 Runtime Registry suite passed 347 tests; Memory Tests, OS Compliance, Browser Adapter tests and two Chromium fixture cycles (36 receipts) also passed; Vercel preview was READY.
+- [UNVERIFIED] These tests use a fake GitHub Contents API. No real write/read against the existing private repository or cross-run recovery across independent Actions runners has been executed.
+- [BLOCKED] No GitHub App installation token or fine-grained private-state credential is configured in Actions. The existing private repository is selected; its identity and contents remain omitted from this public ADR.
 
 ## 9. Official platform references
 
