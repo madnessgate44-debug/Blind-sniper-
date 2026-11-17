@@ -1,6 +1,7 @@
 """Tests for the native model-provider transport and durable queue integration."""
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import sys
@@ -12,7 +13,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from blind_sniper_agent_runtime import dispatch_task
+from blind_sniper_agent_runtime import dispatch_task, load_task_envelope
 from blind_sniper_ledger import TaskLedger
 from blind_sniper_model_worker import AgentSpec, ModelTask, ModelWorker, ModelWorkerError, NativeModelInvoker
 from blind_sniper_worker import DurableQueue
@@ -152,6 +153,22 @@ class NativeModelInvokerTests(unittest.TestCase):
             )
 
 
+
+
+class FakePrivateObjectStore:
+    def __init__(self):
+        self.objects = {}
+
+    def put_json(self, value):
+        content = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+        digest = hashlib.sha256(content).hexdigest()
+        self.objects[digest] = json.loads(content.decode("utf-8"))
+        return {"digest": digest, "path": f"objects/{digest}.json", "created": True}
+
+    def get_json(self, digest):
+        return self.objects[digest]
+
+
 class DurableModelLifecycleTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -162,6 +179,58 @@ class DurableModelLifecycleTests(unittest.TestCase):
             task_id="NATIVE-TASK-1", agent_id="researcher",
             objective="Produce a bounded research summary", payload={"topic": "native runtime"},
         )
+
+
+    def test_private_object_store_persists_payload_and_result_before_completion(self):
+        store = FakePrivateObjectStore()
+
+        def invoker(*, spec, task, timeout_seconds):
+            return {
+                "run_id": "private-run-001", "provider": "test-provider",
+                "output_digest": "model-output-digest", "output_excerpt": "private answer",
+                "output_text": "private answer",
+            }
+
+        receipt = dispatch_task(
+            self.queue, ModelWorker(invoker, max_retries=0), self.spec, self.task,
+            owner_id="private-runner", object_store=store,
+        )
+        state = self.queue.status(self.task.task_id)
+        self.assertEqual(state["status"], "COMPLETED")
+        self.assertEqual(state["result_digest"], receipt["result_object_digest"])
+        envelope = load_task_envelope(self.queue, store, self.task.task_id)
+        self.assertEqual(envelope["payload"], self.task.payload)
+        stored_result = store.get_json(state["result_digest"])
+        self.assertEqual(stored_result["output_digest"], "model-output-digest")
+        self.assertEqual(stored_result["queue_status"], "RESULT_READY")
+
+    def test_failed_private_result_digest_survives_bounded_retry_state(self):
+        store = FakePrivateObjectStore()
+
+        def invoker(**kwargs):
+            raise RuntimeError("synthetic provider failure")
+
+        receipt = dispatch_task(
+            self.queue, ModelWorker(invoker, max_retries=0), self.spec, self.task,
+            owner_id="private-runner", object_store=store,
+        )
+        state = self.queue.status(self.task.task_id)
+        self.assertEqual(receipt["status"], "FAIL")
+        self.assertEqual(state["status"], "PENDING")
+        self.assertEqual(state["result_digest"], receipt["result_object_digest"])
+        self.assertIn(state["result_digest"], store.objects)
+
+    def test_private_payload_store_failure_prevents_task_enqueue(self):
+        class BrokenStore:
+            def put_json(self, value):
+                raise RuntimeError("private store unavailable")
+
+        with self.assertRaisesRegex(RuntimeError, "private store unavailable"):
+            dispatch_task(
+                self.queue, ModelWorker(lambda **kwargs: {}), self.spec, self.task,
+                owner_id="private-runner", object_store=BrokenStore(),
+            )
+        self.assertIsNone(self.queue.status(self.task.task_id))
 
     def test_model_run_is_claimed_and_completed_in_durable_queue(self):
         def invoker(*, spec, task, timeout_seconds):
