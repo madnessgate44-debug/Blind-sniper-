@@ -113,13 +113,15 @@ def replay_task(rows: list[dict[str, Any]], task_id: str) -> dict[str, Any] | No
             state.update(
                 status="PENDING", owner_id=None, lease_expires_at=None,
                 heartbeat_at=None, attempt=int(payload.get("attempt", state["attempt"])),
+                result_digest=payload.get("result_digest", state.get("result_digest")),
             )
         elif event_type == COMPLETED:
             state.update(status="COMPLETED", owner_id=None, lease_expires_at=None,
                          result_digest=payload.get("result_digest"))
         elif event_type == FAILED:
             state.update(status="FAILED", owner_id=None, lease_expires_at=None,
-                         last_error=payload.get("error"))
+                         last_error=payload.get("error"),
+                         result_digest=payload.get("result_digest", state.get("result_digest")))
         elif event_type == CANCELLED:
             state.update(status="CANCELLED", owner_id=None, lease_expires_at=None,
                          cancel_reason=payload.get("reason"))
@@ -341,7 +343,8 @@ class DurableQueue:
         )
 
     def fail(
-        self, *, task_id: str, owner_id: str, error: str, now: datetime | None = None,
+        self, *, task_id: str, owner_id: str, error: str,
+        result_digest: str | None = None, now: datetime | None = None,
     ) -> dict[str, Any]:
         """Record a failure; requeue for a bounded retry or mark FAILED."""
         instant = self._now(now)
@@ -359,17 +362,21 @@ class DurableQueue:
         state = self.status(task_id)
         if state is None:
             raise QueueError(f"Unknown task {task_id}")
+        event_payload = {
+            "owner_id": owner_id, "attempt": state["attempt"], "error": error,
+            "failed_at": instant.isoformat(),
+        }
+        if result_digest:
+            event_payload["result_digest"] = result_digest
         if state["attempt"] < state["max_attempts"]:
             return self._append(
                 guard=guard, task_id=task_id, event_type=RETRY_SCHEDULED,
-                payload={"owner_id": owner_id, "attempt": state["attempt"], "error": error,
-                         "failed_at": instant.isoformat()},
+                payload=event_payload,
                 idempotency_key=f"{task_id}:retry:{state['attempt']}", now=instant,
             )
         return self._append(
             guard=guard, task_id=task_id, event_type=FAILED,
-            payload={"owner_id": owner_id, "attempt": state["attempt"], "error": error,
-                     "failed_at": instant.isoformat()},
+            payload=event_payload,
             idempotency_key=f"{task_id}:failed", now=instant,
         )
 

@@ -19,10 +19,11 @@ from typing import Any, Callable
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from blind_sniper_ledger import GitHubContentsLedger, LedgerError, TaskLedger  # noqa: E402
+from blind_sniper_ledger import GitHubContentsLedger, GitHubPrivateObjectStore, LedgerError, TaskLedger  # noqa: E402
 from blind_sniper_model_worker import AgentSpec, ModelTask, ModelWorker, NativeModelInvoker, ModelWorkerError  # noqa: E402
 from blind_sniper_worker import DurableQueue, QueueError  # noqa: E402
 from blind_sniper_tool_runtime import NativeToolRuntime  # noqa: E402
+from blind_sniper_redact import redact  # noqa: E402
 
 
 class AgentRuntimeError(RuntimeError):
@@ -43,6 +44,7 @@ def dispatch_task(
     owner_id: str,
     lease_seconds: int = 900,
     receipt_sink: Callable[[dict[str, Any]], None] | None = None,
+    object_store: GitHubPrivateObjectStore | None = None,
 ) -> dict[str, Any]:
     """Enqueue (if new), claim, invoke and commit one correlated model task."""
     if not owner_id.strip():
@@ -61,7 +63,13 @@ def dispatch_task(
         "allowed_paths": list(spec.allowed_paths),
         "browser_approval_reference": spec.browser_approval_reference,
     }
+    if redact(envelope) != envelope:
+        raise AgentRuntimeError("Task envelope contains credential-like content; refusing to persist or invoke it")
     payload_digest = _canonical_digest(envelope)
+    if object_store is not None:
+        payload_ref = object_store.put_json(envelope)
+        if payload_ref.get("digest") != payload_digest:
+            raise AgentRuntimeError("Private payload object digest does not match the task envelope")
     current = queue.status(task.task_id)
     if current is None:
         queue.enqueue(
@@ -87,6 +95,13 @@ def dispatch_task(
     # If the process stops after queue.complete/fail but before notification
     # delivery, the daemon reconciles this receipt against the queue attempt.
     receipt["queue_status"] = "RESULT_READY"
+    if object_store is not None:
+        result_ref = object_store.put_json(receipt)
+        receipt["result_object_digest"] = result_ref["digest"]
+        receipt["result_object_path"] = result_ref["path"]
+        result_digest = result_ref["digest"]
+    else:
+        result_digest = str(receipt["output_digest"] or _canonical_digest(receipt))
     if receipt_sink is not None:
         receipt_sink(dict(receipt))
     if receipt["status"] == "PASS":
@@ -95,16 +110,38 @@ def dispatch_task(
         queue.heartbeat(task_id=task.task_id, owner_id=owner_id, lease_seconds=lease_seconds)
         queue.complete(
             task_id=task.task_id, owner_id=owner_id,
-            result_digest=str(receipt["output_digest"] or _canonical_digest(receipt)),
+            result_digest=result_digest,
         )
         receipt["queue_status"] = "COMPLETED"
     else:
         queue.fail(
             task_id=task.task_id, owner_id=owner_id,
             error=str(receipt.get("error", "native model invocation failed"))[:1000],
+            result_digest=result_digest,
         )
         receipt["queue_status"] = queue.status(task.task_id)["status"]
     return receipt
+
+
+def load_task_envelope(
+    queue: DurableQueue,
+    object_store: GitHubPrivateObjectStore,
+    task_id: str,
+) -> dict[str, Any]:
+    """Hydrate one task from the private object store using its ledger digest."""
+    state = queue.status(task_id)
+    if state is None:
+        raise AgentRuntimeError(f"Unknown task_id: {task_id}")
+    digest = str(state.get("payload_digest") or "")
+    if not digest:
+        raise AgentRuntimeError("Queue task has no private payload digest")
+    try:
+        envelope = object_store.get_json(digest)
+    except LedgerError as exc:
+        raise AgentRuntimeError("Private task payload could not be loaded or verified") from exc
+    if _canonical_digest(envelope) != digest or envelope.get("task_id") != task_id:
+        raise AgentRuntimeError("Private task payload does not match its queue digest or task ID")
+    return envelope
 
 
 def configure_ledger(args) -> Any:
@@ -119,6 +156,18 @@ def configure_ledger(args) -> Any:
     return GitHubContentsLedger(
         owner=args.github_owner, repo=args.github_repo, path=args.github_path,
         branch=args.github_branch, token=token,
+    )
+
+
+def configure_object_store(args) -> GitHubPrivateObjectStore | None:
+    if not args.github_ledger:
+        return None
+    token = os.environ.get(args.github_token_env, "")
+    if not token:
+        raise AgentRuntimeError(f"Private GitHub object store requires token in {args.github_token_env}")
+    return GitHubPrivateObjectStore(
+        owner=args.github_owner, repo=args.github_repo, branch=args.github_branch,
+        base_path=args.github_object_base_path, token=token,
     )
 
 
@@ -144,6 +193,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--github-repo")
     parser.add_argument("--github-branch")
     parser.add_argument("--github-path", default="blind-sniper-continuity/QUEUE.jsonl")
+    parser.add_argument("--github-object-base-path", default="blind-sniper-continuity/objects")
     parser.add_argument("--github-token-env", default="GITHUB_TOKEN")
     return parser
 
@@ -177,6 +227,7 @@ def main(argv: list[str] | None = None) -> int:
             browser_approval_reference=str(data.get("browser_approval_reference", "")),
         )
         queue = DurableQueue(configure_ledger(args))
+        object_store = configure_object_store(args)
         tool_runtime = NativeToolRuntime(queue)
         invoker = NativeModelInvoker.from_env(tool_runtime=tool_runtime)
         worker = ModelWorker(
@@ -186,6 +237,7 @@ def main(argv: list[str] | None = None) -> int:
         receipt = dispatch_task(
             queue, worker, spec, task, owner_id=args.owner_id,
             lease_seconds=min(3600, max(60, (args.timeout_seconds * 2) + 60)),
+            object_store=object_store,
         )
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(json.dumps(receipt, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
