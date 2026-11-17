@@ -71,5 +71,38 @@ class ProviderSmokeTests(unittest.TestCase):
         self.assertNotIn("unexpected provider text", output.getvalue())
 
 
+class ProviderWorkflowContractTests(unittest.TestCase):
+    def setUp(self):
+        self.workflow = (
+            Path(__file__).resolve().parents[1]
+            / ".github"
+            / "workflows"
+            / "blind-sniper-provider-smoke.yml"
+        ).read_text(encoding="utf-8")
+
+    def test_provider_smoke_is_manual_only(self):
+        self.assertIn("workflow_dispatch:", self.workflow)
+        self.assertNotIn("schedule:", self.workflow)
+        self.assertNotIn("push:", self.workflow)
+        self.assertNotIn("pull_request:", self.workflow)
+
+    def test_provider_smoke_has_read_only_repository_permissions(self):
+        self.assertIn("permissions:\n  contents: read", self.workflow)
+        self.assertNotIn("id-token:", self.workflow)
+        self.assertNotIn("contents: write", self.workflow)
+
+    def test_provider_smoke_uses_only_the_gemini_secret_and_free_model(self):
+        self.assertIn("secrets.BLIND_SNIPER_MODEL_API_KEY", self.workflow)
+        self.assertIn("gemini-3.8-flash", self.workflow)
+        self.assertIn("generativelanguage.googleapis.com/v1beta/openai", self.workflow)
+        self.assertNotIn("OPENAI_API_KEY", self.workflow)
+        self.assertNotIn("GOOGLE_APPLICATION_CREDENTIALS", self.workflow)
+
+    def test_provider_smoke_cannot_enable_autonomy_or_write_tools(self):
+        self.assertNotIn("BLIND_SNIPER_AUTONOMY_ENABLED", self.workflow)
+        self.assertNotIn("BLIND_SNIPER_EXECUTOR_ENABLED", self.workflow)
+        self.assertNotIn("agent.handoff", self.workflow)
+
+
 if __name__ == "__main__":
     unittest.main()
