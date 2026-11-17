@@ -124,12 +124,14 @@ Production activation remains **NO-GO** until all are true:
 
 ### Model-provider route
 
-- [VERIFIED] GitHub Models is not a viable provider: GitHub's current documentation says the service was fully retired on 2026-07-30, including its inference API. Do not build against it.
-- [VERIFIED] Hugging Face Inference Providers exposes an OpenAI-compatible chat-completions endpoint at `https://router.huggingface.co/v1`, compatible with the existing `NativeModelInvoker` transport.
-- [VERIFIED] Hugging Face documents $0.10/month in inference credits for Free users (subject to change); additional usage requires purchasing credits. This allowance is experimental, not a production autonomy budget.
-- [UNVERIFIED] The current public documentation reviewed here does not establish whether every account can activate Inference Providers without adding a payment method. Do not claim no-card eligibility or configure automatic paid fallback.
-- [VERIFIED] Hugging Face Trusted Publishers can exchange a GitHub Actions OIDC identity for a short-lived one-hour token without storing a long-lived HF token. The account-level CI/CD identity must explicitly allow Inference Providers calls (`inference-api` scope) and pin the repository, `main` branch and exact workflow. The currently connected Hugging Face session credential does not include the `inference-api` scope, so it cannot perform inference in this session.
-- [DECISION] Hugging Face is a technically compatible, low-quota candidate only. Do not enable it until the Owner confirms no-card eligibility in the account and configures the OIDC identity with inference permission. Keep the native provider boundary generic; no provider-specific runtime dependency is required.
+- [VERIFIED] GitHub Models is not viable: GitHub's current documentation says the service was fully retired on 2026-07-30, including its inference API. Do not build against it.
+- [VERIFIED] Google Gemini Developer API Free tier is available without linking a billing account. New users receive a Free-tier project/API key; Paid tier requires linking a billing account and prepaying at least $10. Egypt is listed as a supported region.
+- [VERIFIED] Gemini 3.8 Flash (`gemini-3.8-flash`) is listed with free input/output tokens on the Free tier (subject to published rate limits and model availability). The Gemini OpenAI-compatible endpoint is `https://generativelanguage.googleapis.com/v1beta/openai/`; official docs demonstrate chat completions and function calling. This matches the existing `NativeModelInvoker` request contract.
+- [VERIFIED] Free-tier prompts and responses may be used to improve Google products. Therefore the manual smoke workflow sends only a fixed synthetic prompt. Do not send private owner memory, raw transcripts, personal data, or private task payloads on the Free tier. Public non-sensitive code tasks still require explicit data-boundary review.
+- [BLOCKED] A Gemini API key is not available to this workflow. The owner must create/use a Free-tier key and add it as the Actions secret `BLIND_SNIPER_MODEL_API_KEY`. The secret is never requested in chat, read by tools, or written to the repository. The new manual smoke workflow fails closed if the secret is absent.
+- [VERIFIED] Hugging Face Inference Providers is another OpenAI-compatible option, but its Free-user allowance is documented as $0.10/month and additional usage requires purchasing credits. It is inferior as the primary candidate for sustained agent work.
+- [UNVERIFIED] Do not enable a paid fallback for either provider. The Gemini Free-tier project must remain unlinked from billing; no payment method, prepayment, auto-reload or paid tier is authorized.
+- [DECISION] Gemini 3.8 Flash Free tier is the preferred candidate for a single synthetic connectivity test only. It is not yet a verified live provider and does not authorize production use of private task context.
 
 ### Private state access
 
@@ -141,6 +143,10 @@ Production activation remains **NO-GO** until all are true:
 
 - GitHub Actions billing and public-runner free usage: https://docs.github.com/en/actions/concepts/billing-and-usage
 - GitHub Models retirement notice (service retired 2026-07-30): https://docs.github.com/en/github-models
+- Gemini API free/paid tier requirements and minimum prepayment: https://ai.google.dev/gemini-api/docs/billing
+- Gemini 3.8 Flash Free-tier pricing: https://ai.google.dev/gemini-api/docs/pricing
+- Gemini OpenAI compatibility and function calling: https://ai.google.dev/gemini-api/docs/openai
+- Gemini API supported regions (includes Egypt): https://ai.google.dev/gemini-api/docs/available-regions
 - Hugging Face Inference Providers OpenAI-compatible API: https://huggingface.co/docs/inference-providers/index
 - Hugging Face Inference Providers free credits and pay-as-you-go: https://huggingface.co/docs/inference-providers/pricing
 - Hugging Face Trusted Publishers and GitHub Actions OIDC: https://huggingface.co/docs/hub/trusted-publishers

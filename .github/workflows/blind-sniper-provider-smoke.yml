@@ -1,0 +1,27 @@
+name: Blind Sniper Native Provider Smoke
+
+# Manual, single-request, synthetic test only. This does not enqueue work,
+# enable the worker, or send private task payloads to the model provider.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provider-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BLIND_SNIPER_MODEL_BASE_URL: https://generativelanguage.googleapis.com/v1beta/openai
+      BLIND_SNIPER_MODEL_NAME: gemini-3.8-flash
+      BLIND_SNIPER_MODEL_API_KEY: ${{ secrets.BLIND_SNIPER_MODEL_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run one synthetic native model invocation
+        run: python scripts/run_blind_sniper_provider_smoke.py
