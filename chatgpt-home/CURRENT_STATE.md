@@ -1,3 +1,13 @@
+## Owner continuation checkpoint — 2026-11-17 (latest)
+
+- [V] PR #63 added a manual-only Gemini Free-tier synthetic provider smoke workflow; PR #64 added workflow security-contract tests. Both are merged. No API key was configured and no live model call was made.
+- [V] PR #65 merged at `66dc3e53ea4850bcca9801fa38b167579f910a92`. It adds a private content-addressed object store and integrates task/result persistence with the native `dispatch_task` path.
+- [V] PR #65 exact-head CI: Runtime Registry 347 tests PASS (run `44064834867`); Memory Tests PASS (run `44064834629`); OS Compliance PASS (run `44064834433`); Browser Adapter PASS (40 adapter tests + 9 contract tests, two Chromium fixture cycles and 36 correlated receipts; run `44064834439`); Vercel preview PASS.
+- [V] Task envelopes are written to the private object store before queue enqueue; receipts are stored before terminal queue transitions; queue state retains the result digest. Payload retrieval validates SHA-256 and task ID. Credential-like task payloads are refused before enqueue/inference.
+- [U] Private object store tests use a fake GitHub Contents API. No live private-repo write/read or cross-run recovery across independent GitHub Actions runners has been performed.
+- [B] Owner must configure `BLIND_SNIPER_LEDGER_TOKEN` (least-privilege access to the existing private repository) and `BLIND_SNIPER_MODEL_API_KEY` (Gemini Free-tier API key) in GitHub Actions secrets before either integration can be exercised. Never paste either value into chat.
+- [B] Worker workflow remains manual-only; its executor gate remains false. No live model call, persistent host, notification route or ChatGPT direct MCP invocation is verified. Production autonomous execution remains NO-GO.
+
 ## Owner continuation checkpoint — 2026-11-17
 
 - [V] Boot completed from current `main`: root `AGENTS.md`, OS v2.3, authority delegation, primary operating instructions, current-state/build-progress and all six required runtime registries were fetched. Main technical state remains health-only production; no live task worker.
