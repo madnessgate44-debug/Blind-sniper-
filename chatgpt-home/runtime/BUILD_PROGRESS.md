@@ -1,3 +1,12 @@
+## Provider and credential investigation — 2026-11-17
+
+- [V] GitHub Models is retired as of 2026-07-30; it is not a provider option.
+- [V] Hugging Face Inference Providers supports the existing OpenAI-compatible model transport and documents $0.10/month in free-user credits, subject to change. Additional use requires purchased credits; this is not a production-scale allowance.
+- [U] No-card eligibility is not established by the official pricing documentation. Do not enable a paid fallback or claim a no-card route until account settings confirm it.
+- [V] Hugging Face Trusted Publishers support one-hour GitHub Actions OIDC tokens without storing a long-lived HF token. The account CI/CD identity must explicitly allow `inference-api`; the current connected HF OAuth scope set lacks that permission.
+- [V] GitHub Actions `GITHUB_TOKEN` cannot access a second private repository. GitHub recommends GitHub App installation tokens for granular cross-repository access; a repository-scoped fine-grained token is the fallback.
+- [B] Neither the HF OIDC inference identity nor a cross-repository private-state credential is configured. No secret, permission, billing, provider or production activation was changed.
+
 ## Owner continuation checkpoint — 2026-11-17
 
 - [V] Boot completed from current `main`: root `AGENTS.md`, OS v2.3, authority delegation, primary operating instructions, current-state/build-progress and all six required runtime registries were fetched. Main technical state remains health-only production; no live task worker.
