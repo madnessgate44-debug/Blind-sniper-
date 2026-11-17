@@ -13,7 +13,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from blind_sniper_agent_runtime import dispatch_task, load_task_envelope
+from blind_sniper_agent_runtime import AgentRuntimeError, dispatch_task, load_task_envelope
 from blind_sniper_ledger import TaskLedger
 from blind_sniper_model_worker import AgentSpec, ModelTask, ModelWorker, ModelWorkerError, NativeModelInvoker
 from blind_sniper_worker import DurableQueue
@@ -231,6 +231,27 @@ class DurableModelLifecycleTests(unittest.TestCase):
                 owner_id="private-runner", object_store=BrokenStore(),
             )
         self.assertIsNone(self.queue.status(self.task.task_id))
+
+    def test_credential_like_task_payload_is_rejected_before_enqueue_or_inference(self):
+        secret_task = ModelTask(
+            task_id="SECRET-PAYLOAD-1",
+            agent_id="researcher",
+            objective="Use this token: ghp_" + ("A" * 36),
+            payload={},
+        )
+        invoked = []
+
+        def invoker(**kwargs):
+            invoked.append(True)
+            return {"output_digest": "must-not-run"}
+
+        with self.assertRaisesRegex(AgentRuntimeError, "credential-like"):
+            dispatch_task(
+                self.queue, ModelWorker(invoker, max_retries=0), self.spec, secret_task,
+                owner_id="private-runner",
+            )
+        self.assertEqual(invoked, [])
+        self.assertIsNone(self.queue.status(secret_task.task_id))
 
     def test_model_run_is_claimed_and_completed_in_durable_queue(self):
         def invoker(*, spec, task, timeout_seconds):
