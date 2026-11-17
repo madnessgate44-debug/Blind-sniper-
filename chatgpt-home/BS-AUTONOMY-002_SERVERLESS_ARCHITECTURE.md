@@ -120,9 +120,31 @@ Production activation remains **NO-GO** until all are true:
 - [BLOCKED] Native model invocation and agent handoff code are present and contract-tested, but no approved live provider endpoint/key is configured or verified.
 - [BLOCKED] No real notification delivery adapter/route or persistent approved worker host is configured.
 
+## 9. Provider and cross-repository credential findings — 2026-11-17
+
+### Model-provider route
+
+- [VERIFIED] GitHub Models is not a viable provider: GitHub's current documentation says the service was fully retired on 2026-07-30, including its inference API. Do not build against it.
+- [VERIFIED] Hugging Face Inference Providers exposes an OpenAI-compatible chat-completions endpoint at `https://router.huggingface.co/v1`, compatible with the existing `NativeModelInvoker` transport.
+- [VERIFIED] Hugging Face documents $0.10/month in inference credits for Free users (subject to change); additional usage requires purchasing credits. This allowance is experimental, not a production autonomy budget.
+- [UNVERIFIED] The current public documentation reviewed here does not establish whether every account can activate Inference Providers without adding a payment method. Do not claim no-card eligibility or configure automatic paid fallback.
+- [VERIFIED] Hugging Face Trusted Publishers can exchange a GitHub Actions OIDC identity for a short-lived one-hour token without storing a long-lived HF token. The account-level CI/CD identity must explicitly allow Inference Providers calls (`inference-api` scope) and pin the repository, `main` branch and exact workflow. The currently connected Hugging Face session credential does not include the `inference-api` scope, so it cannot perform inference in this session.
+- [DECISION] Hugging Face is a technically compatible, low-quota candidate only. Do not enable it until the Owner confirms no-card eligibility in the account and configures the OIDC identity with inference permission. Keep the native provider boundary generic; no provider-specific runtime dependency is required.
+
+### Private state access
+
+- [VERIFIED] GitHub Actions `GITHUB_TOKEN` is scoped to the repository containing the workflow; it cannot directly read or write the separate private state repository.
+- [VERIFIED] GitHub recommends GitHub App installation tokens for granular cross-repository access. A fine-grained token restricted to the one private repository and Contents read/write is a fallback; never use a classic PAT or a personal SSH key for this purpose.
+- [BLOCKED] No GitHub App installation token or fine-grained private-state credential is configured for the Blind Sniper workflow. The existing private repository is selected; its identity and contents remain omitted from this public ADR.
+
 ## 9. Official platform references
 
 - GitHub Actions billing and public-runner free usage: https://docs.github.com/en/actions/concepts/billing-and-usage
+- GitHub Models retirement notice (service retired 2026-07-30): https://docs.github.com/en/github-models
+- Hugging Face Inference Providers OpenAI-compatible API: https://huggingface.co/docs/inference-providers/index
+- Hugging Face Inference Providers free credits and pay-as-you-go: https://huggingface.co/docs/inference-providers/pricing
+- Hugging Face Trusted Publishers and GitHub Actions OIDC: https://huggingface.co/docs/hub/trusted-publishers
+- GitHub Actions cross-repository credential boundaries: https://docs.github.com/en/actions/concepts/security/compromised-runners
 - Standard GitHub-hosted runners for public repositories: https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job
 - Workflow concurrency and pending-run behavior: https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax
 - Scheduled workflow delays and public-repository inactivity behavior: https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows
