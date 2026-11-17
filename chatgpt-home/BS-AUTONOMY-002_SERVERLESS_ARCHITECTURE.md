@@ -7,9 +7,9 @@
 
 ## 1. Decision
 
-Use GitHub Actions on the existing public Blind Sniper repository as a **bounded, ephemeral compute runner**. Use a separate **owner-created private GitHub repository** as the durable private control-plane store for task events, private task envelopes, model receipts, and agent handoff packets.
+Use GitHub Actions on the existing public Blind Sniper repository as a **bounded, ephemeral compute runner**. Use the already-existing owner-controlled private GitHub repository as the durable private control-plane store for task events, private task envelopes, model receipts, and agent handoff packets.
 
-This is a conditional architecture decision, not an activation. The private repository does not currently exist in verified context, no cross-repository credential is configured or verified, and no live model provider invocation is approved or proven.
+This is a conditional architecture decision, not an activation. [VERIFIED] GitHub repository metadata was read on 2026-11-17 and reports the existing owner repository `G` as `visibility=private`. Its identity is intentionally not repeated in this public ADR. [REPORTED] The active primary operating instructions record a five-file `blind-sniper-continuity/` scaffold in that private repository. [BLOCKED] The public Blind Sniper Actions runtime has no verified cross-repository credential, private payload/result adapter, or live model-provider configuration. The private repository exists; the missing item is the safe runtime access path, not repository creation.
 
 No Forge or OpenHands service, API, session, browser, worker, issue route, or return path is part of this architecture.
 
@@ -20,7 +20,8 @@ No Forge or OpenHands service, API, session, browser, worker, issue route, or re
 - [VERIFIED] The adapter's ledger file is capped at 512 KiB. It is a small control-plane event log, not a database or payload store.
 - [VERIFIED] The existing public Blind Sniper repository reports `private: false`; it cannot be used for owner-private state.
 - [VERIFIED] GitHub-hosted standard runners are free for public repositories and each run is an ephemeral VM/container. A worker must therefore persist all required state remotely before exit.
-- [INFERENCE] A private companion repository is the only currently evidenced zero-incremental-cost persistent store that can be introduced without an always-on host or payment-card signup. This is conditional on the owner creating it and supplying a narrowly scoped credential.
+- [VERIFIED] An owner-controlled private GitHub repository already exists and its metadata confirms `visibility=private`; no duplicate repository should be created.
+- [INFERENCE] Reusing that existing private repository is the only currently evidenced zero-incremental-cost persistent store that avoids an always-on host or payment-card signup. Runtime access still requires an explicitly configured narrowly scoped credential.
 
 ### Rejected alternatives
 
@@ -30,7 +31,7 @@ No Forge or OpenHands service, API, session, browser, worker, issue route, or re
 | Local runner filesystem | REJECT | Each hosted run is ephemeral; no cross-run durability. |
 | Vercel function local disk | REJECT | No durable shared filesystem or resident daemon. Existing Vercel adapter is health-only. |
 | New external database/object store | DEFER | No already-connected, verified, no-card service is established. Adding one would introduce an unapproved external dependency. |
-| Private GitHub companion repository | SELECT CONDITIONALLY | Existing adapter and GitHub Contents API support private-repo checks and blob-SHA conditional updates; no new paid service required. |
+| Existing owner-private GitHub repository | SELECT CONDITIONALLY | Private visibility is verified; existing adapter supports private-repo checks and blob-SHA conditional updates. Cross-repository runtime access and payload/result persistence are not configured. |
 
 ## 3. Private data layout
 
@@ -81,7 +82,7 @@ The payload/result adapter is **not implemented yet**. Each object must have a s
 
 Required owner-side setup, not performed by this task:
 
-- Create a separate private repository, suggested name: `blind-sniper-private-state`.
+- Reuse the existing owner-private repository; do not create a duplicate. Confirm its default branch and the intended `blind-sniper-continuity/` data layout.
 - Create a fine-grained personal access token restricted to that one repository.
 - Grant only **Contents: read and write** (plus Metadata read as required by GitHub); no Actions, Administration, workflow, account, or organization permissions.
 - Add it to the public repo as Actions secret `BLIND_SNIPER_PRIVATE_STATE_TOKEN`.
@@ -95,8 +96,8 @@ The obsolete `OPENHANDS_CLOUD_API_KEY` reference has been removed from the nativ
 
 Production activation remains **NO-GO** until all are true:
 
-- [ ] Owner creates the private companion repository and confirms its exact owner/name.
-- [ ] Owner creates and stores the narrowly scoped private-state token in Actions secrets.
+- [x] Existing owner-private repository metadata confirms `visibility=private` (repository identity intentionally omitted from this public ADR).
+- [ ] A narrowly scoped private-state credential is configured for the Blind Sniper workflow; secret values must never be read or printed.
 - [ ] Runtime can read/write private task payloads, result receipts and handoff packets; public-repo refusal tests pass.
 - [ ] Real GitHub API tests prove sequential writes, concurrent conflict/retry behavior, server-time lease expiry, idempotency and no lost events.
 - [ ] Two separate hosted runs preserve state and do not double-claim a task.
@@ -115,7 +116,7 @@ Production activation remains **NO-GO** until all are true:
 - [VERIFIED] `.github/workflows/blind-sniper-worker.yml` remains manual-only, has no schedule, and no longer references OpenHands or an external-agent secret.
 - [VERIFIED] PR #62 merged the remote server-clock API, queue clock routing, five independent-process queue tests and four remote-clock regressions. Exact-head Runtime Registry run `43843357824` passed 330 tests; Memory Tests `43843357777` passed 63; Environment Validation `43843357804`, OS Compliance `43843357693`, and Browser Adapter `43843357688` passed.
 - [UNVERIFIED] GitHub Contents API tests still use a fake transport for concurrency and remote clock behavior. Real private-repository CAS contention and cross-run payload/result recovery have not been proven.
-- [BLOCKED] No owner-created private companion repository or cross-repository credential is available to the runtime. The public repository is rejected by the private-ledger adapter.
+- [VERIFIED] An owner-private repository exists (`visibility=private`); the primary operating instructions record its continuity scaffold. [BLOCKED] No verified cross-repository credential is configured for the public workflow, and no private payload/result adapter currently connects the runtime to that repository. The public repository is correctly rejected by the private-ledger adapter.
 - [BLOCKED] Native model invocation and agent handoff code are present and contract-tested, but no approved live provider endpoint/key is configured or verified.
 - [BLOCKED] No real notification delivery adapter/route or persistent approved worker host is configured.
 
@@ -130,7 +131,7 @@ Production activation remains **NO-GO** until all are true:
 
 ## 10. Status
 
-**Architecture:** CONDITIONAL; GitHub Actions are bounded ephemeral compute only, with a separate private state repository still required.  
+**Architecture:** CONDITIONAL; GitHub Actions are bounded ephemeral compute only; an existing owner-private repository is available as the candidate state store, but runtime access is not configured.  
 **Code implementation:** PARTIAL; queue, remote-clock safeguards and fail-closed recovery are merged and CI-verified; private payload/result adapter and live integration remain incomplete.  
 **Private-state integration:** NOT CONFIGURED.  
 **Provider invocation:** NOT VERIFIED; no live provider is configured.  
