@@ -47,7 +47,7 @@ memory/                            # explicitly approved private durable memory 
 
 The existing event ledger must contain only identifiers, lifecycle metadata, digests, lease ownership/timestamps, and safe error codes. It must not contain raw prompts, transcripts, task payloads, provider responses, credentials, or private handoff contents.
 
-The payload/result adapter is **not implemented yet**. Each object must have a strict size limit, schema validation, idempotent create/update semantics, and blob-SHA conflict handling. Do not silently fall back to writing private payloads to the public repository.
+The payload/result adapter is implemented in PR #65 as immutable SHA-256-addressed JSON objects with a 512 KiB cap, JSON-object validation, digest verification, create-only idempotency and bounded concurrent-create conflict recovery. Formal per-object schemas and live private-repository/cross-run verification remain open. Never fall back to writing private payloads to the public repository.
 
 ## 4. Worker and concurrency model
 
@@ -116,7 +116,7 @@ Production activation remains **NO-GO** until all are true:
 - [VERIFIED] `.github/workflows/blind-sniper-worker.yml` remains manual-only, has no schedule, and no longer references OpenHands or an external-agent secret.
 - [VERIFIED] PR #62 merged the remote server-clock API, queue clock routing, five independent-process queue tests and four remote-clock regressions. Exact-head Runtime Registry run `43843357824` passed 330 tests; Memory Tests `43843357777` passed 63; Environment Validation `43843357804`, OS Compliance `43843357693`, and Browser Adapter `43843357688` passed.
 - [UNVERIFIED] GitHub Contents API tests still use a fake transport for concurrency and remote clock behavior. Real private-repository CAS contention and cross-run payload/result recovery have not been proven.
-- [VERIFIED] An owner-private repository exists (`visibility=private`); the primary operating instructions record its continuity scaffold. [BLOCKED] No verified cross-repository credential is configured for the public workflow, and no private payload/result adapter currently connects the runtime to that repository. The public repository is correctly rejected by the private-ledger adapter.
+- [VERIFIED] An owner-private repository exists (`visibility=private`); the primary operating instructions record its continuity scaffold. [BLOCKED] No verified cross-repository credential is configured for the public workflow, and the PR #65 private object adapter is integrated into native `dispatch_task`, but the public workflow still lacks a verified cross-repository credential and live object-store round-trip. The public repository is correctly rejected by the private-ledger adapter.
 - [BLOCKED] Native model invocation and agent handoff code are present and contract-tested, but no approved live provider endpoint/key is configured or verified.
 - [BLOCKED] No real notification delivery adapter/route or persistent approved worker host is configured.
 
