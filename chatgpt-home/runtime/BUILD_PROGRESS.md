@@ -1,3 +1,15 @@
+## Native private persistence delivery — 2026-11-17
+
+- [V] PR #65 merged at `66dc3e53ea4850bcca9801fa38b167579f910a92`. `GitHubPrivateObjectStore` writes immutable SHA-256-addressed JSON objects into a verified private repository; maximum object size 512 KiB; idempotent create-only writes; bounded conflict recovery; reads verify content hash.
+- [V] `dispatch_task` persists task envelopes before enqueue and model receipts before terminal state. Queue completed/failed events retain the private result-object digest. `load_task_envelope` retrieves by queue digest and verifies task ID + content hash.
+- [V] Credential-like task payloads are rejected before enqueue or model invocation.
+- [V] Exact-head Runtime Registry run `44064834867`: 347 tests PASS; Memory Tests `44064834629` PASS; OS Compliance `44064834433` PASS; Browser Adapter `44064834439` PASS (40 adapter tests, 9 contract tests, two Chromium cycles, 36 receipts); Vercel preview PASS.
+- [U] All private-store tests use a fake GitHub Contents API. No live private repository write/read, cross-run object retrieval, or independent-run CAS test has been performed.
+- [V] PR #63/#64 added a manual-only Gemini 3.8 Flash Free-tier synthetic smoke workflow with read-only repo permissions and contract tests. No key is configured and no live provider invocation has occurred.
+- [B] Owner-only setup: add `BLIND_SNIPER_LEDGER_TOKEN` for the existing private repo and `BLIND_SNIPER_MODEL_API_KEY` for Gemini Free tier to Actions secrets. Do not paste secrets into chat. The Free tier smoke test sends synthetic data only; it does not authorize sending private memory or transcripts.
+- [B] No executor activation, schedule, paid service, billing setup, or production autonomous execution. Health-only production remains separate from the task worker.
+
+
 ## Provider and credential investigation — 2026-11-17
 
 - [V] GitHub Models is retired as of 2026-07-30; it is not a provider option.
