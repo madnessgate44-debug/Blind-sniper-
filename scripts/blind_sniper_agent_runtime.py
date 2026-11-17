@@ -23,6 +23,7 @@ from blind_sniper_ledger import GitHubContentsLedger, GitHubPrivateObjectStore, 
 from blind_sniper_model_worker import AgentSpec, ModelTask, ModelWorker, NativeModelInvoker, ModelWorkerError  # noqa: E402
 from blind_sniper_worker import DurableQueue, QueueError  # noqa: E402
 from blind_sniper_tool_runtime import NativeToolRuntime  # noqa: E402
+from blind_sniper_redact import redact  # noqa: E402
 
 
 class AgentRuntimeError(RuntimeError):
@@ -62,6 +63,8 @@ def dispatch_task(
         "allowed_paths": list(spec.allowed_paths),
         "browser_approval_reference": spec.browser_approval_reference,
     }
+    if redact(envelope) != envelope:
+        raise AgentRuntimeError("Task envelope contains credential-like content; refusing to persist or invoke it")
     payload_digest = _canonical_digest(envelope)
     if object_store is not None:
         payload_ref = object_store.put_json(envelope)
