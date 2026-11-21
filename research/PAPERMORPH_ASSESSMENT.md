@@ -1,5 +1,6 @@
-# Papermorph — technical assessment and bounded pilot
+# Miss Noor Educational Media Engine — Papermorph technical assessment and bounded pilot
 
+**Product:** Miss Noor Educational Media Engine
 **Status:** STARTED — research/specification only until implementation gates pass  
 **Owner repository:** `madnessgate44-debug/Blind-sniper-`  
 **Upstream under read-only review:** https://github.com/DozenTwelve/Papermorph  
@@ -8,7 +9,36 @@
 
 ## Outcome
 
-Determine whether Papermorph can safely supply a reusable document-to-learning-media capability for Miss Noor, and whether any of its engine or production concepts can be integrated into Blind Sniper without importing its host-specific agent assumptions. Deliver a reproducible, phone-accessible pilot artifact only after the assessment gates pass.
+Build the product specification and prove whether Papermorph can safely supply reusable components for the **Miss Noor Educational Media Engine**. Papermorph is an upstream candidate/reference, not the product identity and not an assumed dependency. Blind Sniper is the engineering/orchestration environment for this work; Miss Noor is the educational product and learner-facing destination. Deliver a reproducible, phone-accessible pilot artifact only after the assessment gates pass.
+
+## Product definition — Miss Noor Educational Media Engine
+
+The engine converts curriculum-aligned source material into complete teaching experiences, not merely PDF-to-video conversions. It must ultimately produce a coherent set of reusable learning media:
+
+- Teacher-led animated lessons with clear explanations and age-appropriate pacing.
+- Narration synchronized with visual explanation, captions and subtitles.
+- Interactive diagrams, simulations and experiments where they improve understanding.
+- Embedded formative questions, practice, feedback and chapter assessments.
+- Illustrated/animated children's stories and read-along experiences.
+- Educational documentaries and short-form learning videos.
+- Reusable learning objects, lesson packages and course sequences that Miss Noor can assemble into a learner journey.
+
+The product must preserve curriculum objectives, terminology, concept sequence, grade level, language-track requirements and assessment intent. A media artifact is not considered a lesson merely because it looks animated or contains narration. It must teach the intended concept accurately and verify learner understanding.
+
+### Product principles
+
+1. **Curriculum first:** map each learning objective and source concept to explanation, visual, narration and assessment evidence.
+2. **Teacher, not slideshow:** explanations must be pedagogically coherent, not a sequence of decorative images or text cards.
+3. **Multimodal synchronization:** narration, captions, diagrams, motion and interaction must agree in meaning and timing.
+4. **Learner agency:** include purposeful pause, replay, exploration, checks for understanding and feedback.
+5. **Language fidelity:** Arabic RTL and Arabic educational terminology must be first-class; support the required English/French tracks where the curriculum calls for them.
+6. **Mobile-first:** usable on a real Android phone, with low-bandwidth behavior and accessible touch controls.
+7. **Reusable outputs:** separate content, lesson structure, media assets and player/runtime so lessons can be revised and reused.
+8. **Evidence-based quality:** curriculum coverage, factual correctness, pedagogical quality and technical behavior are independently checked.
+
+### Product boundary
+
+Papermorph may contribute an authoring workflow, animation/player engine, narration timing or static publishing components if the audit proves they are suitable. It does not define Miss Noor's curriculum model, teacher persona, pedagogy, learner experience, content governance or product architecture. Blind Sniper must own the host-neutral orchestration and durable task lifecycle; the media engine must remain a replaceable capability behind a stable interface.
 
 ## Verified upstream facts from inspected source
 
@@ -66,10 +96,11 @@ Determine whether Papermorph can safely supply a reusable document-to-learning-m
 - Keep private source material and production notes outside the public delivered folder/repository.
 - Acceptance: reproducible static artifact, deployment evidence if deployment is authorized and available, and a public demo containing only properly licensed/generated material.
 
-### R8 — Integration decision
+### R8 — Product architecture and integration decision
+- Define the Miss Noor Educational Media Engine architecture: curriculum model, lesson specification, authoring pipeline, media generation/rendering, narration/timing, player/runtime, assessment interactions, packaging and quality gates.
 - Compare (A) use upstream as a separate production tool, (B) vendor selected engine/player components, (C) implement a native Blind Sniper adapter, or (D) reject.
 - Evaluate maintenance burden, license obligations, update strategy, security, Arabic gaps, provider cost and mobile quality.
-- Acceptance: evidence-backed GO / CONDITIONAL GO / NO-GO recommendation. Do not merge an integration before the pilot passes.
+- Acceptance: product architecture and interface boundaries documented, plus an evidence-backed GO / CONDITIONAL GO / NO-GO recommendation for Papermorph. Do not merge an integration before the pilot passes.
 
 ## Execution sequence
 
@@ -97,4 +128,4 @@ For each check record: exact command/action; exit code or host result; raw outpu
 
 ## Initial disposition
 
-**CONDITIONAL GO for read-only assessment and one bounded pilot. NO-GO for production integration until R1–R7 have evidence and R8 recommends GO.**
+**CONDITIONAL GO for read-only assessment and one bounded pilot of the Miss Noor Educational Media Engine. NO-GO for production integration until R1–R7 have evidence and R8 delivers the product architecture and recommends GO.**
