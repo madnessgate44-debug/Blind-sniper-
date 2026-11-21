@@ -3,7 +3,7 @@
 **Status:** STARTED — research/specification only until implementation gates pass  
 **Owner repository:** `madnessgate44-debug/Blind-sniper-`  
 **Upstream under read-only review:** https://github.com/DozenTwelve/Papermorph  
-**Upstream revision reviewed:** current `main` at time of inspection; pin the exact SHA before any vendoring or integration.  
+**Upstream revision reviewed:** `DozenTwelve/Papermorph` `main` at `839a62cad3c74446944a167faff07c994f33e5b7` (observed 2026-11-21); use this immutable SHA for the audit baseline and re-pin before any later update.  
 **Hard constraints:** no payment, no card, no paid compute, no paid external service; no secrets, private memory, child data, textbook PDFs, transcripts, or private project artifacts in this public repository.
 
 ## Outcome
