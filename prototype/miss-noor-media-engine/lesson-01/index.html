@@ -42,9 +42,9 @@ footer{color:var(--muted);font-size:.82rem;margin-top:18px}
             <title id="svgTitle">Schéma simplifié du bras et de ses muscles</title>
             <desc id="svgDesc">Le bras est représenté de côté. Le biceps se trouve à l'avant et le triceps à l'arrière. L'avant-bras tourne autour du coude.</desc>
             <path id="upper" d="M180 65 L180 235" fill="none"/>
-            <path id="forearm" d="M180 235 L180 365" fill="none"/>
             <path id="boneUpper" d="M180 75 L180 224" fill="none"/>
-            <g id="foreBone" style="transform-origin:180px 235px;transition:transform .65s cubic-bezier(.2,.8,.2,1)">
+            <g id="forearmGroup" transform="rotate(0 180 235)">
+              <path id="forearm" d="M180 235 L180 365" fill="none"/>
               <path id="boneFore" d="M180 245 L180 355" fill="none"/>
             </g>
             <path class="muscle biceps" d="M203 105 C220 142 220 195 199 229"/>
@@ -110,8 +110,7 @@ footer{color:var(--muted);font-size:.82rem;margin-top:18px}
 <script>
 (() => {
   const diagram=document.getElementById('diagram');
-  const forearm=document.getElementById('forearm');
-  const foreBone=document.getElementById('foreBone');
+  const forearmGroup=document.getElementById('forearmGroup');
   const flexBtn=document.getElementById('flexBtn');
   const extendBtn=document.getElementById('extendBtn');
   const poseStatus=document.getElementById('poseStatus');
@@ -129,8 +128,7 @@ footer{color:var(--muted);font-size:.82rem;margin-top:18px}
     pose=next;
     const bent=next==='flexion';
     diagram.classList.toggle('flexed',bent);
-    forearm.style.transform=bent?'rotate(-100deg)':'rotate(0deg)';
-    foreBone.style.transform=bent?'rotate(-100deg)':'rotate(0deg)';
+    forearmGroup.setAttribute('transform',bent?'rotate(-100 180 235)':'rotate(0 180 235)');
     flexBtn.setAttribute('aria-pressed',String(bent));
     extendBtn.setAttribute('aria-pressed',String(!bent));
     poseStatus.textContent=bent?'Position : bras plié (flexion).':'Position : bras tendu (extension).';
