@@ -36,9 +36,11 @@ class LessonParser(HTMLParser):
             self.in_script = True
             if a.get("src"):
                 self.script_external += 1
-        if tag == "section" and "question" in (a.get("class") or "").split():
-            self.current_question = {"answer": a.get("data-answer"), "choices": []}
+        if tag == "div" and "question" in (a.get("class") or "").split():
+            self.current_question = {"answer": a.get("data-answer"), "choices": [], "depth": 1}
             self.questions.append(self.current_question)
+        elif tag == "div" and self.current_question is not None:
+            self.current_question["depth"] = int(self.current_question["depth"]) + 1
         if tag == "button":
             if a.get("id"):
                 self.buttons.add(a["id"] or "")
@@ -50,8 +52,12 @@ class LessonParser(HTMLParser):
     def handle_endtag(self, tag: str) -> None:
         if tag == "script" and self.in_script:
             self.in_script = False
-        if tag == "section" and self.current_question is not None:
-            self.current_question = None
+        if tag == "div" and self.current_question is not None:
+            depth = int(self.current_question["depth"]) - 1
+            if depth == 0:
+                self.current_question = None
+            else:
+                self.current_question["depth"] = depth
 
     def handle_data(self, data: str) -> None:
         if self.in_script:
