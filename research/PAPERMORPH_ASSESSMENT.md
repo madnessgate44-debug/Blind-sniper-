@@ -9,6 +9,11 @@
 
 ## Outcome
 
+Supporting deliverables:
+- [Papermorph source audit](PAPERMORPH_SOURCE_AUDIT.md)
+- [Miss Noor Educational Media Engine architecture](MISS_NOOR_EDUCATIONAL_MEDIA_ENGINE_ARCHITECTURE.md)
+- [Original Grade 5 French Science pilot blueprint](pilot/G5_FR_SCIENCE_CH01_01_MUSCLES_MOVEMENT.md)
+
 Build the product specification and prove whether Papermorph can safely supply reusable components for the **Miss Noor Educational Media Engine**. Papermorph is an upstream candidate/reference, not the product identity and not an assumed dependency. Blind Sniper is the engineering/orchestration environment for this work; Miss Noor is the educational product and learner-facing destination. Deliver a reproducible, phone-accessible pilot artifact only after the assessment gates pass.
 
 ## Product definition — Miss Noor Educational Media Engine
