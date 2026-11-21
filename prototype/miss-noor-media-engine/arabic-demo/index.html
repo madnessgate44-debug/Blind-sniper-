@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102d38">
+<title>مس نور | العلوم — كيف تتحرك الذراع؟</title>
+<style>
+:root{--ink:#17343b;--muted:#60777a;--paper:#fffdf7;--teal:#147d78;--gold:#f2bd58;--rose:#f4d8d2;--mint:#d9eee4}
+*{box-sizing:border-box}body{margin:0;background:#edf3ef;color:var(--ink);font-family:Tahoma,Arial,sans-serif;line-height:1.8}
+header{background:linear-gradient(125deg,#102d38,#176d68);color:white;padding:22px 18px 30px;border-radius:0 0 28px 28px}
+.wrap{max-width:760px;margin:auto;padding:0 16px}header .tag{font-size:13px;color:#f6d38b}h1{font-size:27px;line-height:1.45;margin:7px 0}header p{margin:0;color:#e0efea}
+main{padding:18px 0 42px}.card{background:white;border:1px solid #e1e9e3;border-radius:20px;padding:18px;margin:14px 0;box-shadow:0 7px 24px #163c3510}
+h2{font-size:20px;margin:0 0 8px}.muted{color:var(--muted);font-size:14px}.visual{background:#f8f5ec;border-radius:17px;padding:12px;text-align:center}
+svg{max-width:100%;height:auto}.bone{stroke:#fff0d1;stroke-width:17;stroke-linecap:round;fill:none}.boneEdge{stroke:#a66c4c;stroke-width:21;stroke-linecap:round;fill:none}.muscle{stroke:#c85f57;stroke-width:15;stroke-linecap:round;fill:none}.joint{fill:#e9b65d;stroke:#8d6138;stroke-width:3}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}button{border:0;border-radius:13px;padding:11px 15px;font:700 15px Tahoma;cursor:pointer;background:var(--teal);color:white}button.alt{background:#e9f2ed;color:#174b48}button:focus-visible{outline:3px solid #e4a83f;outline-offset:3px}
+#fore{transform-origin:180px 180px;transition:transform .65s cubic-bezier(.2,.8,.2,1)}.labels{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}.pill{background:#e7f1eb;padding:5px 10px;border-radius:30px;font-size:13px}
+.step{border-right:4px solid var(--gold);padding:4px 12px;margin:12px 0}.question{border:1px solid #e2eae4;border-radius:15px;padding:14px;margin-top:12px}.choice{display:block;width:100%;margin:8px 0;text-align:right;background:#f0f5f1;color:var(--ink)}.choice:focus,.choice:hover{background:#dcece5}.feedback{font-weight:bold;min-height:28px;margin-top:8px}.good{color:#18764d}.bad{color:#a9473f}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+</style></head>
+<body>
+<header><div class="wrap"><div class="tag">مس نور التعليمية • العلوم • الصف الخامس</div><h1>كيف تتحرك الذراع؟ 💪</h1><p>درس تفاعلي قصير: تعرّف على دور العضلات في ثني الذراع ومدّها.</p></div></header>
+<main class="wrap">
+<section class="card"><h2>🎯 هدف الدرس</h2><p>في نهاية الدرس، ستستطيع أن تشرح كيف تعمل عضلتا <b>العضد ذات الرأسين</b> و<b>العضد ثلاثية الرؤوس</b> معًا لتحريك الذراع.</p><p class="muted">فكّر: هل تستطيع العضلة أن تدفع العظمة وحدها؟</p></section>
+<section class="card"><h2>1. شاهد الحركة بنفسك</h2><p class="muted">اضغط على الزرين لمشاهدة ثني الذراع ومدّها. لاحظ تغيّر وضع الساعد عند مفصل المرفق.</p>
+<div class="visual"><svg viewBox="0 0 360 300" role="img" aria-label="رسم تعليمي مبسط لعظام الذراع وعضلاتها"><path d="M180 24 L180 158" class="boneEdge"/><path d="M180 24 L180 158" class="bone"/><path d="M180 44 Q143 82 180 140" class="muscle"/><path d="M180 44 Q217 82 180 140" stroke="#438e78" stroke-width="12" fill="none" stroke-linecap="round"/><circle cx="180" cy="165" r="12" class="joint"/><g id="fore"><path d="M180 174 L180 270" class="boneEdge"/><path d="M180 174 L180 270" class="bone"/><path d="M180 185 Q205 215 180 255" stroke="#438e78" stroke-width="10" fill="none" stroke-linecap="round"/></g><text x="24" y="68" font-size="12" fill="#a94e48">العضلة ذات الرأسين</text><path d="M135 72 L158 82" stroke="#a94e48" stroke-width="2"/><text x="238" y="105" font-size="12" fill="#28745f">العضلة ثلاثية الرؤوس</text><path d="M238 110 L204 120" stroke="#28745f" stroke-width="2"/><text x="195" y="188" font-size="12" fill="#805b2b">المرفق</text></svg>
+<div class="labels"><span class="pill">🔴 ذات الرأسين: أمام العضد</span><span class="pill">🟢 ثلاثية الرؤوس: خلف العضد</span></div></div>
+<div class="controls"><button id="bend">ثني الذراع</button><button id="straight" class="alt">مدّ الذراع</button><button id="speak" class="alt">🔊 استمع إلى الشرح</button></div><p id="motionText" aria-live="polite" class="muted">ابدأ بالضغط على «ثني الذراع».</p></section>
+<section class="card"><h2>2. افهم الفكرة</h2><div class="step"><b>عند ثني الذراع:</b> تنقبض العضلة ذات الرأسين، وتسترخي العضلة ثلاثية الرؤوس، فيرتفع الساعد.</div><div class="step"><b>عند مدّ الذراع:</b> تنقبض العضلة ثلاثية الرؤوس، وتسترخي العضلة ذات الرأسين، فينخفض الساعد ويستقيم.</div><p>💡 تعمل العضلتان في أزواج متعاكسة؛ لأن العضلة تسحب العظمة عندما تنقبض، ولا تدفعها.</p></section>
+<section class="card"><h2>3. اختبر فهمك 🧠</h2><p class="muted">اختر إجابة واحدة لكل سؤال.</p>
+<div class="question" data-answer="b"><b>1. أي عضلة تنقبض عند ثني الذراع؟</b><button class="choice" data-choice="a">العضلة ثلاثية الرؤوس</button><button class="choice" data-choice="b">العضلة ذات الرأسين</button><div class="feedback" aria-live="polite"></div></div>
+<div class="question" data-answer="a"><b>2. ماذا يحدث للعضلة ثلاثية الرؤوس عند ثني الذراع؟</b><button class="choice" data-choice="a">تسترخي</button><button class="choice" data-choice="b">تنقبض</button><div class="feedback" aria-live="polite"></div></div>
+<div class="question" data-answer="b"><b>3. لماذا تعمل عضلات الذراع في أزواج متعاكسة؟</b><button class="choice" data-choice="a">لأنها تدفع العظام</button><button class="choice" data-choice="b">لأن العضلة تسحب ولا تدفع</button><div class="feedback" aria-live="polite"></div></div>
+<div class="question" data-answer="a"><b>4. أي عضلة تنقبض لمدّ الذراع؟</b><button class="choice" data-choice="a">العضلة ثلاثية الرؤوس</button><button class="choice" data-choice="b">العضلة ذات الرأسين</button><div class="feedback" aria-live="polite"></div></div>
+<div class="controls"><button id="score">احسب نتيجتي</button><button id="reset" class="alt">إعادة المحاولة</button></div><h3 id="result" aria-live="polite"></h3></section>
+<footer>نموذج تجريبي تعليمي من محرك Miss Noor • محتوى عربي أصلي • ليس اعتمادًا رسميًا لمنهج دراسي</footer>
+</main>
+<script>
+const fore=document.getElementById('fore'),motion=document.getElementById('motionText');
+function setPose(bent){fore.style.transform=bent?'rotate(-105deg)':'rotate(0deg)';motion.textContent=bent?'الآن الذراع مثنية: تنقبض العضلة ذات الرأسين وتسترخي العضلة ثلاثية الرؤوس.':'الآن الذراع ممدودة: تنقبض العضلة ثلاثية الرؤوس وتسترخي العضلة ذات الرأسين.'}
+document.getElementById('bend').addEventListener('click',()=>setPose(true));
+document.getElementById('straight').addEventListener('click',()=>setPose(false));
+document.getElementById('speak').addEventListener('click',()=>{if(!('speechSynthesis'in window)){motion.textContent='ميزة القراءة الصوتية غير متاحة في هذا المتصفح.';return;}speechSynthesis.cancel();const u=new SpeechSynthesisUtterance('عندما نثني الذراع، تنقبض العضلة ذات الرأسين وتسترخي العضلة ثلاثية الرؤوس. وعندما نمد الذراع، يحدث العكس. العضلات تسحب العظام ولا تدفعها.');u.lang='ar-EG';u.rate=.88;speechSynthesis.speak(u)});
+document.querySelectorAll('.question').forEach(q=>q.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{q.dataset.selected=btn.dataset.choice;q.querySelectorAll('.choice').forEach(b=>b.style.outline=b===btn?'2px solid #147d78':'none');q.querySelector('.feedback').textContent='تم اختيار الإجابة.';q.querySelector('.feedback').className='feedback';})));
+document.getElementById('score').addEventListener('click',()=>{let total=0,answered=0;document.querySelectorAll('.question').forEach(q=>{const f=q.querySelector('.feedback');if(q.dataset.selected){answered++;const ok=q.dataset.selected===q.dataset.answer;if(ok)total++;f.textContent=ok?'✓ إجابة صحيحة':'✗ ليست الإجابة الصحيحة، حاول مرة أخرى.';f.className='feedback '+(ok?'good':'bad');}else{f.textContent='لم تختر إجابة بعد.';f.className='feedback bad';}});document.getElementById('result').textContent='نتيجتك: '+total+' من 4 — أجبت عن '+answered+' أسئلة.';});
+document.getElementById('reset').addEventListener('click',()=>{document.querySelectorAll('.question').forEach(q=>{delete q.dataset.selected;q.querySelector('.feedback').textContent='';q.querySelectorAll('.choice').forEach(b=>b.style.outline='none')});document.getElementById('result').textContent='';});
+</script></body></html>

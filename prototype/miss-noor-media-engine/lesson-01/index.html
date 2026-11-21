@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f4f1e8">
+<title>Miss Noor — Comment les muscles font-ils bouger le bras ?</title>
+<style>
+:root{color-scheme:light;--ink:#182534;--muted:#526273;--paper:#f4f1e8;--card:#fffdf8;--blue:#235b83;--orange:#b65b3b;--green:#28684f;--line:#d7d0c2}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:920px;margin:auto;padding:20px 16px 48px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:16px}.brand{font-weight:800;letter-spacing:.02em}.tag{font-size:.78rem;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:5px 10px}
+h1{font-size:clamp(1.6rem,4vw,2.5rem);line-height:1.15;margin:12px 0 8px}h2{font-size:1.25rem;margin:0 0 8px}.lead{color:var(--muted);margin:0 0 18px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 5px 20px #17212b0b}
+.stage{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(220px,.9fr);gap:18px;align-items:center}.diagram{background:#edf2f4;border-radius:14px;padding:8px;min-width:0}.diagram svg{display:block;width:100%;height:auto;max-height:380px}.explain{font-size:1.02rem}.controls{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+button{font:inherit;font-weight:650;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:white;color:var(--ink);min-height:44px;cursor:pointer}
+button.primary{background:var(--blue);color:white;border-color:var(--blue)}button[aria-pressed="true"]{outline:3px solid #235b8333;border-color:var(--blue)}
+button:focus-visible{outline:3px solid #d18b2c;outline-offset:2px}.status{color:var(--muted);font-size:.9rem;min-height:1.4em}
+#upper{stroke:#d6a47c;stroke-width:27;stroke-linecap:round}#forearm{stroke:#d6a47c;stroke-width:25;stroke-linecap:round;transition:transform .65s cubic-bezier(.2,.8,.2,1)}
+#boneUpper,#boneFore{stroke:#fff4d8;stroke-width:8;stroke-linecap:round}#forearmGroup{transition:transform .65s cubic-bezier(.2,.8,.2,1)}#joint{fill:#d9b08b;stroke:#8b604b;stroke-width:2}
+.muscle{stroke-width:13;stroke-linecap:round;fill:none;transition:all .55s ease}.biceps{stroke:var(--orange)}.triceps{stroke:var(--blue)}
+#diagram.flexed .biceps{stroke-width:17;transform:scaleY(.76);transform-origin:205px 178px}
+#diagram.flexed .triceps{stroke-width:10;transform:scaleY(1.12);transform-origin:155px 178px}
+.label{font-size:13px;font-weight:700;fill:var(--ink)}.small{font-size:11px;fill:var(--muted)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.pill{background:#eef0eb;border-radius:99px;padding:5px 10px;font-size:.85rem}
+.question{border-top:1px solid var(--line);padding:14px 0}.question:first-of-type{border-top:0}.choices{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.feedback{min-height:1.5em;font-weight:650;margin-top:8px}.good{color:var(--green)}.bad{color:#9b3c2c}
+footer{color:var(--muted);font-size:.82rem;margin-top:18px}
+@media(max-width:650px){main{padding:14px 12px 32px}.stage{grid-template-columns:1fr}.diagram svg{max-height:320px}.panel{padding:14px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top"><div class="brand">MISS NOOR · SCIENCES</div><div class="tag">Prototype interactif · Français · Niveau 5e année</div></div>
+  <h1>Comment les muscles font-ils bouger le bras ?</h1>
+  <p class="lead">Observe le coude, compare deux mouvements et découvre le rôle du biceps et du triceps.</p>
+
+  <section class="panel">
+    <div class="stage">
+      <div>
+        <div class="diagram" id="diagram">
+          <svg viewBox="0 0 360 390" role="img" aria-labelledby="svgTitle svgDesc">
+            <title id="svgTitle">Schéma simplifié du bras et de ses muscles</title>
+            <desc id="svgDesc">Le bras est représenté de côté. Le biceps se trouve à l'avant et le triceps à l'arrière. L'avant-bras tourne autour du coude.</desc>
+            <path id="upper" d="M180 65 L180 235" fill="none"/>
+            <path id="boneUpper" d="M180 75 L180 224" fill="none"/>
+            <g id="forearmGroup" transform="rotate(0 180 235)">
+              <path id="forearm" d="M180 235 L180 365" fill="none"/>
+              <path id="boneFore" d="M180 245 L180 355" fill="none"/>
+            </g>
+            <path class="muscle biceps" d="M203 105 C220 142 220 195 199 229"/>
+            <path class="muscle triceps" d="M157 105 C140 145 142 194 161 229"/>
+            <circle id="joint" cx="180" cy="235" r="15"/>
+            <text class="label" x="225" y="145">Biceps</text><path d="M218 150 L207 160" stroke="#b65b3b" stroke-width="2"/>
+            <text class="label" x="16" y="145">Triceps</text><path d="M93 150 L151 160" stroke="#235b83" stroke-width="2"/>
+            <text class="small" x="198" y="263">Coude</text>
+            <text class="small" x="180" y="25" text-anchor="middle">Bras (schéma simplifié)</text>
+          </svg>
+        </div>
+        <div class="controls" aria-label="Choisir un mouvement">
+          <button class="primary" id="flexBtn" aria-pressed="false">1 · Plier le bras</button>
+          <button id="extendBtn" aria-pressed="true">2 · Tendre le bras</button>
+          <button id="replayBtn">Revoir le mouvement</button>
+        </div>
+        <p class="status" id="poseStatus" aria-live="polite">Position : bras tendu (extension).</p>
+      </div>
+      <div class="explain">
+        <h2 id="beatTitle">Deux muscles, deux rôles</h2>
+        <p id="beatText">Le biceps est à l’avant du bras. Le triceps est à l’arrière. Ils travaillent ensemble pour permettre le mouvement du coude.</p>
+        <div class="pills"><span class="pill">🟠 Biceps</span><span class="pill">🔵 Triceps</span><span class="pill">Articulation : coude</span></div>
+        <div class="controls"><button class="primary" id="speakBtn">Écouter l’explication</button></div>
+        <p class="status" id="voiceStatus" aria-live="polite">La voix utilise les fonctions vocales disponibles dans ton navigateur.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Retenons l’essentiel</h2>
+    <p><strong>Quand tu plies le bras :</strong> le biceps se contracte et le triceps se relâche.</p>
+    <p><strong>Quand tu tends le bras :</strong> le triceps se contracte et le biceps se relâche.</p>
+    <p>Les muscles font bouger les os en tirant sur eux. Le coude est une articulation.</p>
+  </section>
+
+  <section class="panel" id="quiz">
+    <h2>À toi de vérifier !</h2>
+    <div class="question" data-answer="b">
+      <strong>1. Quand tu plies le bras, quel muscle se contracte ?</strong>
+      <div class="choices"><button data-choice="a">Le triceps</button><button data-choice="b">Le biceps</button></div>
+      <div class="feedback" aria-live="polite"></div>
+    </div>
+    <div class="question" data-answer="a">
+      <strong>2. Quand tu tends le bras, quel muscle se contracte ?</strong>
+      <div class="choices"><button data-choice="a">Le triceps</button><button data-choice="b">Le biceps</button></div>
+      <div class="feedback" aria-live="polite"></div>
+    </div>
+    <div class="question" data-answer="b">
+      <strong>3. Comment les muscles font-ils bouger les os ?</strong>
+      <div class="choices"><button data-choice="a">En poussant les os</button><button data-choice="b">En tirant sur les os</button></div>
+      <div class="feedback" aria-live="polite"></div>
+    </div>
+    <div class="question" data-answer="a">
+      <strong>4. Comment appelle-t-on l’endroit où les os se rencontrent ?</strong>
+      <div class="choices"><button data-choice="a">Une articulation</button><button data-choice="b">Un muscle</button></div>
+      <div class="feedback" aria-live="polite"></div>
+    </div>
+    <p class="feedback" id="score" aria-live="polite">Réponds aux quatre questions pour voir ton résultat.</p>
+    <button id="resetQuiz">Recommencer les questions</button>
+  </section>
+  <footer>Prototype pédagogique original. Schéma simplifié, non destiné à représenter tous les détails anatomiques. La voix dépend des langues installées sur l’appareil. Aucune donnée d’élève n’est envoyée ni enregistrée.</footer>
+</main>
+<script>
+(() => {
+  const diagram=document.getElementById('diagram');
+  const forearmGroup=document.getElementById('forearmGroup');
+  const flexBtn=document.getElementById('flexBtn');
+  const extendBtn=document.getElementById('extendBtn');
+  const poseStatus=document.getElementById('poseStatus');
+  const beatTitle=document.getElementById('beatTitle');
+  const beatText=document.getElementById('beatText');
+  const speakBtn=document.getElementById('speakBtn');
+  const voiceStatus=document.getElementById('voiceStatus');
+  let pose='extension';
+  const narration={
+    flexion:"Quand tu plies le bras, tu fais une flexion. Le biceps, situé à l’avant du bras, se contracte. En même temps, le triceps, situé à l’arrière, se relâche. Le biceps et le triceps ont des rôles opposés.",
+    extension:"Quand tu tends le bras, tu fais une extension. Cette fois, le triceps se contracte et le biceps se relâche. Les muscles font bouger les os en tirant sur eux.",
+    intro:"Les os donnent au corps une structure solide. Les muscles sont reliés aux os et les font bouger en tirant sur eux. Le coude est une articulation : c’est l’endroit où les os se rencontrent et où le bras peut bouger."
+  };
+  function setPose(next){
+    pose=next;
+    const bent=next==='flexion';
+    diagram.classList.toggle('flexed',bent);
+    forearmGroup.setAttribute('transform',bent?'rotate(-100 180 235)':'rotate(0 180 235)');
+    flexBtn.setAttribute('aria-pressed',String(bent));
+    extendBtn.setAttribute('aria-pressed',String(!bent));
+    poseStatus.textContent=bent?'Position : bras plié (flexion).':'Position : bras tendu (extension).';
+    beatTitle.textContent=bent?'Flexion : le biceps agit':'Extension : le triceps agit';
+    beatText.textContent=bent?'Le biceps se contracte et le triceps se relâche. L’avant-bras se rapproche du bras.':'Le triceps se contracte et le biceps se relâche. L’avant-bras revient vers la position tendue.';
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
+  }
+  flexBtn.addEventListener('click',()=>setPose('flexion'));
+  extendBtn.addEventListener('click',()=>setPose('extension'));
+  document.getElementById('replayBtn').addEventListener('click',()=>{
+    setPose('extension'); window.setTimeout(()=>setPose('flexion'),350); window.setTimeout(()=>setPose('extension'),1500);
+  });
+  speakBtn.addEventListener('click',()=>{
+    if(!('speechSynthesis' in window)){voiceStatus.textContent='La synthèse vocale n’est pas disponible dans ce navigateur. Lis le texte affiché.';return;}
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(narration[pose]);
+    u.lang='fr-FR';u.rate=.92;
+    const voices=window.speechSynthesis.getVoices();
+    const french=voices.find(v=>v.lang.toLowerCase().startsWith('fr'));
+    if(french)u.voice=french;
+    u.onstart=()=>voiceStatus.textContent='Lecture en français…';
+    u.onend=()=>voiceStatus.textContent=french?'Lecture terminée.':'Lecture terminée avec la voix française disponible par défaut.';
+    u.onerror=()=>voiceStatus.textContent='La voix n’a pas pu démarrer. Lis le texte affiché.';
+    window.speechSynthesis.speak(u);
+  });
+  const questions=[...document.querySelectorAll('.question[data-answer]')];
+  function score(){
+    const answered=questions.filter(q=>q.dataset.selected).length;
+    const correct=questions.filter(q=>q.dataset.selected===q.dataset.answer).length;
+    const el=document.getElementById('score');
+    if(answered<questions.length){el.textContent=answered+' / 4 réponses données.';return;}
+    el.textContent='Résultat : '+correct+' / 4. '+(correct===4?'Bravo ! Tu as compris les rôles des muscles.':'Revois les mouvements, puis recommence pour progresser.');
+    el.className='feedback '+(correct===4?'good':'');
+  }
+  questions.forEach(q=>{
+    q.querySelectorAll('button[data-choice]').forEach(btn=>btn.addEventListener('click',()=>{
+      q.dataset.selected=btn.dataset.choice;
+      q.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
+      const ok=btn.dataset.choice===q.dataset.answer;
+      const fb=q.querySelector('.feedback');
+      fb.textContent=ok?'Bonne réponse.':'Pas encore. Observe le mouvement et réessaie.';
+      fb.className='feedback '+(ok?'good':'bad');
+      score();
+    }));
+  });
+  document.getElementById('resetQuiz').addEventListener('click',()=>{
+    questions.forEach(q=>{delete q.dataset.selected;q.querySelectorAll('button').forEach(b=>b.removeAttribute('aria-pressed'));q.querySelector('.feedback').textContent='';q.querySelector('.feedback').className='feedback';});
+    const el=document.getElementById('score');el.textContent='Réponds aux quatre questions pour voir ton résultat.';el.className='feedback';
+  });
+})();
+</script>
+</body>
+</html>
