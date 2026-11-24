@@ -4,6 +4,20 @@ name: Blind Sniper Native Provider Smoke
 # enable the worker, or send private task payloads to the model provider.
 on:
   workflow_dispatch:
+    inputs:
+      base_url:
+        description: "OpenAI-compatible provider base URL"
+        required: true
+        default: "https://generativelanguage.googleapis.com/v1beta/openai"
+      model:
+        description: "Provider model name"
+        required: true
+        default: "gemini-3.8-flash"
+      allow_keyless:
+        description: "Allow one synthetic request without an API key against a keyless free endpoint"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -13,9 +27,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      BLIND_SNIPER_MODEL_BASE_URL: https://generativelanguage.googleapis.com/v1beta/openai
-      BLIND_SNIPER_MODEL_NAME: gemini-3.8-flash
+      BLIND_SNIPER_MODEL_BASE_URL: ${{ inputs.base_url }}
+      BLIND_SNIPER_MODEL_NAME: ${{ inputs.model }}
       BLIND_SNIPER_MODEL_API_KEY: ${{ secrets.BLIND_SNIPER_MODEL_API_KEY }}
+      BLIND_SNIPER_PROVIDER_SMOKE_ALLOW_KEYLESS: ${{ inputs.allow_keyless && '1' || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
