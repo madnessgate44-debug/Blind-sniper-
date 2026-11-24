@@ -27,7 +27,8 @@ def run_smoke(
     env = os.environ if environ is None else environ
     stream = output or sys.stdout
     api_key = env.get("BLIND_SNIPER_MODEL_API_KEY", "").strip()
-    if not api_key:
+    allow_keyless = env.get("BLIND_SNIPER_PROVIDER_SMOKE_ALLOW_KEYLESS", "").strip() == "1"
+    if not api_key and not allow_keyless:
         print(json.dumps({
             "status": "BLOCKED",
             "reason": "BLIND_SNIPER_MODEL_API_KEY secret is not configured",
@@ -87,6 +88,7 @@ def run_smoke(
         )
         summary = {
             "status": "PASS" if output_match else "FAIL",
+            "keyless": not api_key,
             "provider": receipt.get("provider"),
             "model": receipt.get("model") or model,
             "task_id": receipt.get("task_id"),
