@@ -28,7 +28,7 @@ class BoundedExecutorPlanTests(unittest.TestCase):
         self.assertEqual(plan["workflow"], "bounded-verification")
         self.assertEqual(
             [step["id"] for step in plan["steps"]],
-            ["run_unit_tests", "run_runtime_validator", "await_independent_review"],
+            ["run_unit_tests", "run_runtime_validator", "run_forge_patch_verify", "await_independent_review"],
         )
         self.assertTrue(all(step["status"] == "PENDING" for step in plan["steps"]))
 
@@ -38,9 +38,10 @@ class BoundedExecutorPlanTests(unittest.TestCase):
             {
                 "unit-tests": "run_unit_tests",
                 "runtime-validator": "run_runtime_validator",
+                "forge-patch-verify": "run_forge_patch_verify",
             },
         )
-        self.assertEqual(len(set(executor.COMMAND_STEPS.values())), 2)
+        self.assertEqual(len(set(executor.COMMAND_STEPS.values())), 3)
 
     def test_step_update_records_command_evidence_without_completing_review(self):
         plan = runtime.build_plan({
@@ -95,7 +96,7 @@ class BoundedExecutorPlanTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertEqual(receipt["status"], "REVIEWING")
         self.assertEqual([step["status"] for step in receipt["steps"]],
-                         ["PASS", "PASS", "AWAITING_INDEPENDENT_REVIEW"])
+                         ["PASS", "PASS", "NOT_REQUESTED", "AWAITING_INDEPENDENT_REVIEW"])
         self.assertEqual(receipt["review_status"], "AWAITING_INDEPENDENT_REVIEW")
         self.assertEqual(receipt["cross_run_exclusion"], False)
         self.assertEqual(receipt["cross_run_deduplication"], False)
@@ -115,7 +116,7 @@ class BoundedExecutorPlanTests(unittest.TestCase):
         self.assertEqual(exit_code, 1)
         self.assertEqual(receipt["status"], "FAILED")
         self.assertEqual([step["status"] for step in receipt["steps"]],
-                         ["FAIL", "BLOCKED", "AWAITING_INDEPENDENT_REVIEW"])
+                         ["FAIL", "BLOCKED", "NOT_REQUESTED", "AWAITING_INDEPENDENT_REVIEW"])
         self.assertEqual(calls, 1)
 
     def test_second_command_failure_preserves_first_pass_and_fails_task(self):
@@ -126,7 +127,7 @@ class BoundedExecutorPlanTests(unittest.TestCase):
         self.assertEqual(exit_code, 1)
         self.assertEqual(receipt["status"], "FAILED")
         self.assertEqual([step["status"] for step in receipt["steps"]],
-                         ["PASS", "FAIL", "AWAITING_INDEPENDENT_REVIEW"])
+                         ["PASS", "FAIL", "NOT_REQUESTED", "AWAITING_INDEPENDENT_REVIEW"])
         self.assertEqual(calls, 2)
 
     def test_timeout_is_a_terminal_step_receipt_and_blocks_following_command(self):

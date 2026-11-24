@@ -21,10 +21,12 @@ from blind_sniper_ledger import GitHubContentsLedger, GitHubLedgerError, TaskLed
 ALLOWLIST = {
     "unit-tests": [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py", "-v"],
     "runtime-validator": [sys.executable, "scripts/validate_blind_sniper_runtime.py"],
+    "forge-patch-verify": [sys.executable, "scripts/blind_sniper_forge_verify.py"],
 }
 COMMAND_STEPS = {
     "unit-tests": "run_unit_tests",
     "runtime-validator": "run_runtime_validator",
+    "forge-patch-verify": "run_forge_patch_verify",
 }
 WORKFLOW_ID = "bounded-verification"
 COMMAND_TIMEOUT_SECONDS = 600
