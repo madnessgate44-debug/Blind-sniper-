@@ -1,0 +1,5 @@
+{
+  "patch_path": "tests/fixtures/forge-verify/multiply.patch",
+  "target_dir": "tests/fixtures/forge-verify/target",
+  "checks": ["node-check", "node-test"]
+}
