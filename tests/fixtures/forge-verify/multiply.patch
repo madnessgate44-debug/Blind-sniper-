@@ -1,0 +1,29 @@
+diff --git a/sum.js b/sum.js
+index fb972d5..1091466 100644
+--- a/sum.js
++++ b/sum.js
+@@ -2,3 +2,7 @@
+ export function add(a, b) {
+   return a + b;
+ }
++
++export function multiply(a, b) {
++  return a * b;
++}
+diff --git a/sum.test.js b/sum.test.js
+index d6856eb..eefb412 100644
+--- a/sum.test.js
++++ b/sum.test.js
+@@ -1,7 +1,11 @@
+ import { test } from 'node:test';
+ import assert from 'node:assert/strict';
+-import { add } from './sum.js';
++import { add, multiply } from './sum.js';
+ 
+ test('add adds two numbers', () => {
+   assert.equal(add(2, 3), 5);
+ });
++
++test('multiply multiplies two numbers', () => {
++  assert.equal(multiply(4, 5), 20);
++});
