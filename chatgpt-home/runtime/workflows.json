@@ -450,6 +450,7 @@
       "steps": [
         "run_unit_tests",
         "run_runtime_validator",
+        "run_forge_patch_verify",
         "await_independent_review"
       ],
       "adapters": [],
