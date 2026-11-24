@@ -71,6 +71,34 @@ class ProviderSmokeTests(unittest.TestCase):
         self.assertNotIn("unexpected provider text", output.getvalue())
 
 
+    def test_keyless_requires_explicit_opt_in(self):
+        output = io.StringIO()
+
+        def forbidden_factory(**kwargs):
+            self.fail("provider factory must not run when keyless opt-in is not exactly enabled")
+
+        code = run_smoke(
+            environ={"BLIND_SNIPER_PROVIDER_SMOKE_ALLOW_KEYLESS": "true"},
+            invoker_factory=forbidden_factory,
+            output=output,
+        )
+        payload = json.loads(output.getvalue())
+        self.assertEqual(code, 2)
+        self.assertEqual(payload["status"], "BLOCKED")
+
+    def test_keyless_opt_in_invokes_provider_without_key(self):
+        output = io.StringIO()
+        code = run_smoke(
+            environ={"BLIND_SNIPER_PROVIDER_SMOKE_ALLOW_KEYLESS": "1"},
+            invoker_factory=FakeInvoker,
+            output=output,
+        )
+        payload = json.loads(output.getvalue())
+        self.assertEqual(code, 0)
+        self.assertEqual(payload["status"], "PASS")
+        self.assertTrue(payload["keyless"])
+
+
 class ProviderWorkflowContractTests(unittest.TestCase):
     def setUp(self):
         self.workflow = (
@@ -97,6 +125,12 @@ class ProviderWorkflowContractTests(unittest.TestCase):
         self.assertIn("generativelanguage.googleapis.com/v1beta/openai", self.workflow)
         self.assertNotIn("OPENAI_API_KEY", self.workflow)
         self.assertNotIn("GOOGLE_APPLICATION_CREDENTIALS", self.workflow)
+
+    def test_provider_smoke_dispatch_inputs_default_to_gemini_and_keyless_off(self):
+        self.assertIn("allow_keyless:", self.workflow)
+        self.assertIn("default: false", self.workflow)
+        self.assertIn('default: "gemini-3.8-flash"', self.workflow)
+        self.assertIn('default: "https://generativelanguage.googleapis.com/v1beta/openai"', self.workflow)
 
     def test_provider_smoke_cannot_enable_autonomy_or_write_tools(self):
         self.assertNotIn("BLIND_SNIPER_AUTONOMY_ENABLED", self.workflow)
