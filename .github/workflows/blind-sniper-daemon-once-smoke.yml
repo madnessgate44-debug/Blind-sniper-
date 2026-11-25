@@ -1,0 +1,34 @@
+name: Blind Sniper Daemon One-Shot Smoke
+
+# Manual only. Proves the native daemon runs one queue pass on a free GitHub-hosted
+# runner using a LOCAL STUB model and a synthetic task. No secrets, no schedule, no
+# network model calls. It does not prove a real model, notifications or a resident
+# service. Only aggregate health counts are uploaded, never receipts or ledgers.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  daemon-once:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run one-shot daemon smoke
+        run: python scripts/run_blind_sniper_daemon_once_smoke.py --output-dir artifacts/daemon-once-smoke
+      - name: Upload aggregate health only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daemon-once-smoke-${{ github.run_id }}
+          path: artifacts/daemon-once-smoke/daemon-once-smoke.json
+          if-no-files-found: warn
+          retention-days: 7
