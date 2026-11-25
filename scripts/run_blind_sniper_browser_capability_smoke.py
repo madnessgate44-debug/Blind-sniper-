@@ -17,6 +17,21 @@ from blind_sniper_ledger import TaskLedger
 
 
 class QuietHandler(SimpleHTTPRequestHandler):
+    bait_port = 0
+
+    def log_message(self, *_args):
+        pass
+
+    def do_GET(self):
+        if self.path.startswith("/redir"):
+            self.send_response(302)
+            self.send_header("Location", f"http://127.0.0.2:{self.bait_port}/bait.txt")
+            self.end_headers()
+            return
+        super().do_GET()
+
+
+class BaitHandler(SimpleHTTPRequestHandler):
     def log_message(self, *_args):
         pass
 
@@ -25,6 +40,12 @@ def main() -> int:
     os.environ["BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS"] = "127.0.0.1"
     os.environ["BLIND_SNIPER_BROWSER_BLOCKED_DOMAINS"] = ""
     os.environ["BLIND_SNIPER_BROWSER_WRITE_APPROVED"] = "1"
+    bait_dir = tempfile.mkdtemp(prefix="bs-bait-")
+    Path(bait_dir, "bait.txt").write_text("bait", encoding="utf-8")
+    bait = ThreadingHTTPServer(("127.0.0.2", 0), lambda *a, **k: BaitHandler(*a, directory=bait_dir, **k))
+    threading.Thread(target=bait.serve_forever, daemon=True).start()
+    os.environ["BS_BAIT_PORT"] = str(bait.server_port)
+    QuietHandler.bait_port = bait.server_port
     with tempfile.TemporaryDirectory(prefix="blind-sniper-browser-capabilities-") as temporary:
         root = Path(temporary)
         site = root / "site"
@@ -37,7 +58,16 @@ def main() -> int:
   <button id="select-copy" onclick="const r=document.createRange();r.selectNodeContents(document.querySelector('#copy-source'));const s=getSelection();s.removeAllRanges();s.addRange(r)">Select copy proof</button>
   <label for="paste-target">Paste target</label>
   <textarea id="paste-target"></textarea>
-</body></html>""", encoding="utf-8")
+  <pre id="contain">pending</pre>
+  <script>
+    const probe = (name, url) => fetch(url, {mode: "no-cors"}).then(() => name + "=REACHED", () => name + "=blocked");
+    Promise.all([
+      probe("loopback_alias", "http://127.0.0.2:__BAIT__/bait.txt"),
+      probe("redirect_to_alias", "/redir"),
+      probe("hostname", "http://example.com/"),
+    ]).then(r => { document.querySelector("#contain").textContent = "containment " + r.join(" "); });
+  </script>
+</body></html>""".replace("__BAIT__", os.environ["BS_BAIT_PORT"]), encoding="utf-8")
         handler = lambda *args, **kwargs: QuietHandler(*args, directory=str(site), **kwargs)
         server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -89,6 +119,10 @@ def main() -> int:
             if paste_text not in pasted_snapshot:
                 raise RuntimeError("Pasted text was not present in the browser accessibility snapshot")
 
+            snap = act("snapshot-containment", "snapshot").get("output", "")
+            if "containment loopback_alias=blocked redirect_to_alias=blocked hostname=blocked" not in snap:
+                raise RuntimeError("Clipboard-mode containment failed: " + snap[-400:])
+
             act("select-copy-source", "click", "#select-copy")
             act("clipboard-copy-proof", "clipboard-copy")
             copied = act("read-copied-text", "clipboard-read").get("output", "")
@@ -96,6 +130,7 @@ def main() -> int:
                 raise RuntimeError("Copied selection was not returned by clipboard read")
 
             print(f"PASS: screenshot_bytes={image_path.stat().st_size}")
+            print("PASS: containment loopback_alias/redirect/hostname all blocked while clipboard mode is on")
             print(f"PASS: paste_text_verified={paste_text!r}")
             print("PASS: copied_selection_verified='Blind Sniper copy proof 2026'")
             print(f"PASS: screenshot_artifact={image_path}")
