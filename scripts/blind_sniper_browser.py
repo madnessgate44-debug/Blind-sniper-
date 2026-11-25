@@ -20,6 +20,13 @@ from typing import Any
 from urllib.parse import urlsplit
 
 SCHEMA_VERSION = "1.0.0"
+# Fixture-only containment, verified against 127.0.0.2, [::1], redirects, subresources and
+# hostnames: all fail to resolve/connect except 127.0.0.1. A dead proxy is a second layer.
+CLIPBOARD_FIXTURE_ARGS = "\n".join([
+    "--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1",
+    "--proxy-server=http://127.0.0.1:9",
+    "--proxy-bypass-list=127.0.0.1;localhost;[::1]",
+])
 ACTIONS = {"open", "snapshot", "click", "fill", "press", "screenshot", "get-url", "get-title", "detach", "close", "tabs", "tab-new", "tab-switch", "tab-close", "frame", "upload", "download", "pdf", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
 MUTATING_ACTIONS = {"click", "fill", "press", "upload", "download", "clipboard-read", "clipboard-write", "clipboard-copy", "clipboard-paste"}
 SAFE_KEY_NAMES = {"ENTER", "TAB", "ESCAPE", "ARROWDOWN", "ARROWUP", "ARROWLEFT", "ARROWRIGHT", "CTRL+A"}
@@ -260,17 +267,22 @@ class BrowserAdapter:
             if parts.scheme not in {"http", "https"} or not parts.hostname or "*" in origin or parts.path not in {"", "/"} or parts.query or parts.fragment:
                 raise BrowserPolicyError("BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS entries must be plain http(s) origins without wildcards")
             host = parts.hostname.lower()
-            loopback = host in {"127.0.0.1", "localhost", "::1"}
-            if not loopback:
-                raise BrowserPolicyError("Clipboard origins must be loopback fixtures; agent-browser cannot combine --allowed-domains with a profile")
-            netloc = f"[{host}]" if ":" in host else host
+            if host != "127.0.0.1":
+                raise BrowserPolicyError("Clipboard origins must be http(s)://127.0.0.1 fixtures; agent-browser cannot combine --allowed-domains with a profile")
+            netloc = host
             if parts.port:
                 netloc += f":{parts.port}"
             exceptions[f"{parts.scheme}://{netloc},*"] = {"setting": 1}
+        allowed_domains = {item.strip().lower() for item in os.environ.get("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS", "").split(",") if item.strip()}
+        if allowed_domains != {"127.0.0.1"}:
+            raise BrowserPolicyError("Clipboard mode is fixture-only: BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS must be exactly 127.0.0.1")
+        if os.environ.get("BLIND_SNIPER_BROWSER_GENERAL_HTTPS") == "1" or os.environ.get("BLIND_SNIPER_BROWSER_PERSISTENT_PROFILE") == "1":
+            raise BrowserPolicyError("Clipboard mode cannot be combined with general HTTPS or a persistent (logged-in) profile")
         profile = self.profiles_dir / f"{self.session_id}-clipboard"
         (profile / "Default").mkdir(parents=True, exist_ok=True, mode=0o700)
         os.chmod(profile, 0o700)
         prefs = {"profile": {"content_settings": {"exceptions": {"clipboard": exceptions}}}}
+        # Rewritten before every command so the allow entry is always present at browser start.
         (profile / "Default" / "Preferences").write_text(json.dumps(prefs), encoding="utf-8")
         return profile
 
@@ -286,6 +298,8 @@ class BrowserAdapter:
         if not re.fullmatch(r"(?:0|[1-9][0-9]*(?:ms|s|m|h))", idle_timeout):
             raise BrowserPolicyError("BLIND_SNIPER_BROWSER_IDLE_TIMEOUT must be 0 or a positive duration such as 30m or 1h")
         persistent_profile = os.environ.get("BLIND_SNIPER_BROWSER_PERSISTENT_PROFILE") == "1"
+        if os.environ.get("BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS", "").strip():
+            self._clipboard_profile()  # validates fixture-only conditions, fails closed with BrowserPolicyError
         command = [self.binary, "--session", self.session_id, "--idle-timeout", idle_timeout]
         command_env = os.environ.copy()
         if persistent_profile:
@@ -303,11 +317,12 @@ class BrowserAdapter:
         elif not general_https:
             clipboard_profile = self._clipboard_profile()
             if clipboard_profile is not None:
+                for arg in args:
+                    if re.match(r"(?i)^[a-z][a-z0-9+.-]*:", arg) and (urlsplit(arg).hostname or "") != "127.0.0.1":
+                        raise BrowserPolicyError("Clipboard mode only opens http://127.0.0.1 fixture URLs")
                 command.extend([
                     "--profile", str(clipboard_profile),
-                    "--args", "--no-sandbox\n--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1"
-                    if os.environ.get("BLIND_SNIPER_BROWSER_NO_SANDBOX") == "1"
-                    else "--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1",
+                    "--args", CLIPBOARD_FIXTURE_ARGS,
                 ])
             else:
                 command.extend(["--allowed-domains", allowed_domains])

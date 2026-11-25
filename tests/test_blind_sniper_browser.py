@@ -33,32 +33,62 @@ class BrowserPolicyTests(unittest.TestCase):
             binary="missing-agent-browser", **kwargs,
         )
 
+    def _clip(self, **extra):
+        env = {"BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "127.0.0.1", "BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS": "http://127.0.0.1:8123"}
+        env.update(extra)
+        return patch.dict(os.environ, env)
+
     def test_clipboard_profile_is_opt_in_and_origin_scoped(self):
         adapter = self.adapter()
         self.assertIsNone(adapter._clipboard_profile())
-        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS": "http://127.0.0.1:8123"}):
+        with self._clip():
             profile = adapter._clipboard_profile()
             prefs = json.loads((profile / "Default" / "Preferences").read_text())
             self.assertEqual(
                 prefs["profile"]["content_settings"]["exceptions"]["clipboard"],
                 {"http://127.0.0.1:8123,*": {"setting": 1}},
             )
-        for bad in ("*", "http://*.example.test", "https://other.test", "http://example.test", "http://127.0.0.1/path", "ftp://127.0.0.1"):
-            with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS": bad}):
+        for bad in ("*", "http://*.example.test", "https://other.test", "http://example.test", "http://127.0.0.2:80",
+                    "http://localhost:80", "http://[::1]:80", "http://127.0.0.1/path", "ftp://127.0.0.1"):
+            with self._clip(BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS=bad):
                 with self.assertRaises(BrowserPolicyError, msg=bad):
                     adapter._clipboard_profile()
 
+    def test_clipboard_mode_is_fixture_only(self):
+        adapter = self.adapter()
+        for extra in (
+            {"BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "127.0.0.1,example.test"},
+            {"BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS": "example.test"},
+            {"BLIND_SNIPER_BROWSER_GENERAL_HTTPS": "1"},
+            {"BLIND_SNIPER_BROWSER_PERSISTENT_PROFILE": "1"},
+        ):
+            with self._clip(**extra):
+                with self.assertRaises(BrowserPolicyError, msg=str(extra)):
+                    adapter._command("get-url")
+
+    def test_clipboard_mode_refuses_non_loopback_urls(self):
+        adapter = self.adapter()
+        for url in ("http://127.0.0.2:8123/", "http://[::1]:8123/", "https://example.test/", "http://localhost:8123/", "file:///etc/passwd"):
+            with self._clip():
+                with patch("scripts.blind_sniper_browser.subprocess.run") as run:
+                    with self.assertRaises(BrowserPolicyError, msg=url):
+                        adapter._command("open", url)
+                    run.assert_not_called()
+
     def test_clipboard_mode_contains_browser_without_allowed_domains_flag(self):
         adapter = self.adapter()
-        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS": "http://127.0.0.1:8123"}):
+        with self._clip():
             with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "", "")) as run:
-                adapter._command("get-url")
+                adapter._command("open", "http://127.0.0.1:8123/")
         command = run.call_args.args[0]
         self.assertNotIn("--allowed-domains", command)
         self.assertIn("--profile", command)
-        self.assertTrue(any("host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1" in item for item in command))
-        with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "", "")) as run:
-            adapter._command("get-url")
+        args_value = command[command.index("--args") + 1]
+        self.assertIn("--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1", args_value)
+        self.assertIn("--proxy-server=http://127.0.0.1:9", args_value)
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS": ""}):
+            with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "", "")) as run:
+                adapter._command("get-url")
         self.assertIn("--allowed-domains", run.call_args.args[0])
 
     def test_allowlist_and_blocklist(self):
