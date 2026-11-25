@@ -1,0 +1,139 @@
+# Manual-only workflow (workflow_dispatch) that builds and runs a pinned third-party
+# MIT-licensed project (gryszzz/reverse-engineer-everything), uses no secrets,
+# and uploads only public-derived output.
+
+name: REE Wrapper Run
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ree-wrapper-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Print runner facts
+        run: |
+          nproc
+          free -m
+
+      - name: Clone and verify pinned REE commit
+        run: |
+          PINNED_SHA="ab07274e41fd0ba56c9e6796fdd2fea840d6be00"
+          GIT_TERMINAL_PROMPT=0 git -c credential.helper= clone https://github.com/gryszzz/reverse-engineer-everything.git "$RUNNER_TEMP/ree"
+          git -C "$RUNNER_TEMP/ree" checkout "$PINNED_SHA"
+          ACTUAL_SHA="$(git -C "$RUNNER_TEMP/ree" rev-parse HEAD)"
+          echo "Checked out SHA: $ACTUAL_SHA"
+          if [ "$ACTUAL_SHA" != "$PINNED_SHA" ]; then
+            echo "ERROR: Expected $PINNED_SHA but got $ACTUAL_SHA" >&2
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/ree-artifacts" "$RUNNER_TEMP/ree-demo"
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        working-directory: ${{ runner.temp }}/ree
+        run: npm ci
+
+      - name: Build project
+        working-directory: ${{ runner.temp }}/ree
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: npm run build:cached
+
+      - name: Run REE doctor
+        id: doctor
+        continue-on-error: true
+        working-directory: ${{ runner.temp }}/ree
+        run: |
+          set +e
+          node ree.mjs doctor 2>&1 | tee "$RUNNER_TEMP/ree-artifacts/doctor.log"
+          rc=${PIPESTATUS[0]}
+          echo "doctor: exit_code=$rc" >> "$RUNNER_TEMP/ree-artifacts/summary.txt"
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Run REE types
+        id: types
+        continue-on-error: true
+        working-directory: ${{ runner.temp }}/ree
+        run: |
+          set +e
+          node ree.mjs types 2>&1 | tee "$RUNNER_TEMP/ree-artifacts/types.log"
+          rc=${PIPESTATUS[0]}
+          echo "types: exit_code=$rc" >> "$RUNNER_TEMP/ree-artifacts/summary.txt"
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Run REE demo
+        id: demo
+        continue-on-error: true
+        working-directory: ${{ runner.temp }}/ree
+        run: |
+          set +e
+          node ree.mjs demo --run --out "$RUNNER_TEMP/ree-demo" 2>&1 | tee "$RUNNER_TEMP/ree-artifacts/demo.log"
+          rc=${PIPESTATUS[0]}
+          echo "demo: exit_code=$rc" >> "$RUNNER_TEMP/ree-artifacts/summary.txt"
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Run REE bench
+        id: bench
+        continue-on-error: true
+        working-directory: ${{ runner.temp }}/ree
+        run: |
+          set +e
+          node ree.mjs bench 2>&1 | tee "$RUNNER_TEMP/ree-artifacts/bench.log"
+          rc=${PIPESTATUS[0]}
+          echo "bench: exit_code=$rc" >> "$RUNNER_TEMP/ree-artifacts/summary.txt"
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Scrub artifacts for token-like strings
+        if: always()
+        run: |
+          FOUND=0
+          for target in "$RUNNER_TEMP/ree-artifacts" "$RUNNER_TEMP/ree-demo"; do
+            if [ -e "$target" ]; then
+              if grep -rlF -e 'ghs_' -e 'github_pat_' -e 'AKIA' -e 'Bearer ' "$target"; then
+                FOUND=1
+              fi
+            fi
+          done
+          if [ "$FOUND" -ne 0 ]; then
+            echo "WARNING: Token-like string found; removing artifacts before upload." >&2
+            rm -rf "$RUNNER_TEMP/ree-artifacts" "$RUNNER_TEMP/ree-demo"
+          else
+            echo "Scrub check passed: no token-like strings detected."
+          fi
+
+      - name: Upload results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ree-wrapper-results
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/ree-artifacts/
+            ${{ runner.temp }}/ree-demo/
+
+      - name: Verify demo and bench exit codes
+        if: always()
+        run: |
+          DEMO_RC="${{ steps.demo.outputs.exit_code }}"
+          BENCH_RC="${{ steps.bench.outputs.exit_code }}"
+          echo "demo exit code: ${DEMO_RC:-missing}"
+          echo "bench exit code: ${BENCH_RC:-missing}"
+          if [ -z "$DEMO_RC" ] || [ "$DEMO_RC" -ne 0 ] || [ -z "$BENCH_RC" ] || [ "$BENCH_RC" -ne 0 ]; then
+            echo "ERROR: demo or bench exited non-zero (demo=${DEMO_RC:-missing}, bench=${BENCH_RC:-missing})." >&2
+            exit 1
+          fi
