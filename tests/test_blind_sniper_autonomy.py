@@ -103,3 +103,16 @@ class RunOnceTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BlockerHonestyTests(unittest.TestCase):
+    def test_structural_blockers_cannot_be_cleared_by_configuration(self):
+        with unittest.mock.patch.dict(os.environ, {
+            "BLIND_SNIPER_MODEL_BASE_URL": "http://127.0.0.1:1", "BLIND_SNIPER_MODEL_NAME": "x",
+            "GITHUB_TOKEN": "placeholder-not-a-secret",
+        }):
+            check = autonomy.activation_check(github_ledger=True, ledger_path="unused", token_env="GITHUB_TOKEN")
+        self.assertFalse(check["activation_allowed"])
+        self.assertEqual(check["unmet"], ["executor_configured", "notification_route_configured"])
+        self.assertEqual(check["structural_blockers"], check["unmet"])
+        self.assertIn("blind_sniper_daemon.py", check["where_tasks_run"])
