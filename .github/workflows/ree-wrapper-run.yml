@@ -32,7 +32,7 @@ jobs:
             echo "ERROR: Expected $PINNED_SHA but got $ACTUAL_SHA" >&2
             exit 1
           fi
-          mkdir -p "$RUNNER_TEMP/ree-artifacts" "$RUNNER_TEMP/ree-demo"
+          mkdir -p "$RUNNER_TEMP/ree-artifacts"
 
       - name: Set up Node.js 24
         uses: actions/setup-node@v4
