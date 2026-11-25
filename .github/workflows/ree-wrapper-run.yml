@@ -129,11 +129,125 @@ jobs:
       - name: Verify demo and bench exit codes
         if: always()
         run: |
+          set -euo pipefail
+
           DEMO_RC="${{ steps.demo.outputs.exit_code }}"
           BENCH_RC="${{ steps.bench.outputs.exit_code }}"
+          BENCH_LOG="$RUNNER_TEMP/ree-artifacts/bench.log"
+
           echo "demo exit code: ${DEMO_RC:-missing}"
           echo "bench exit code: ${BENCH_RC:-missing}"
-          if [ -z "$DEMO_RC" ] || [ "$DEMO_RC" -ne 0 ] || [ -z "$BENCH_RC" ] || [ "$BENCH_RC" -ne 0 ]; then
-            echo "ERROR: demo or bench exited non-zero (demo=${DEMO_RC:-missing}, bench=${BENCH_RC:-missing})." >&2
+
+          if [ -z "$DEMO_RC" ]; then
+            echo "ERROR: demo exit code is missing." >&2
             exit 1
           fi
+          if ! [[ "$DEMO_RC" =~ ^-?[0-9]+$ ]]; then
+            echo "ERROR: demo exit code is not an integer: $DEMO_RC" >&2
+            exit 1
+          fi
+          if [ "$DEMO_RC" -ne 0 ]; then
+            echo "ERROR: demo exited non-zero ($DEMO_RC)." >&2
+            exit 1
+          fi
+
+          if [ -z "$BENCH_RC" ]; then
+            echo "ERROR: bench exit code is missing." >&2
+            exit 1
+          fi
+          if ! [[ "$BENCH_RC" =~ ^-?[0-9]+$ ]]; then
+            echo "ERROR: bench exit code is not an integer: $BENCH_RC" >&2
+            exit 1
+          fi
+
+          if [ ! -f "$BENCH_LOG" ]; then
+            echo "ERROR: bench.log not found at $BENCH_LOG." >&2
+            exit 1
+          fi
+
+          awk -F '\t' -v bench_rc="$BENCH_RC" '
+          BEGIN {
+            split("js-app ts-app archive js-calls js-effects web", req_list, " ")
+            for (i in req_list) {
+              required[req_list[i]] = 1
+              case_rows[req_list[i]] = 0
+            }
+            blocked_total = 0
+            native_blocked = 0
+            native_stripped_blocked = 0
+            unexpected_blocked = 0
+            metric_failures = 0
+            data_rows_checked = 0
+          }
+          {
+            line = $0
+            sub(/\r$/, "", line)
+            if (line == "") next
+
+            if ($1 == "note") next
+
+            case_name = $1
+            row_type = $2
+
+            has_blocked_word = (tolower(line) ~ /\bblocked\b/)
+
+            if (row_type == "blocked") {
+              blocked_total++
+              has_reason = (index(line, "analysis provider is unavailable") > 0)
+              if (case_name == "native" && has_reason) {
+                native_blocked++
+              } else if (case_name == "native-stripped" && has_reason) {
+                native_stripped_blocked++
+              } else {
+                unexpected_blocked++
+                printf "ERROR: Unexpected blocked row: %s\n", line > "/dev/stderr"
+              }
+              next
+            }
+
+            if (has_blocked_word) {
+              unexpected_blocked++
+              printf "ERROR: Non-blocked row contains word blocked: %s\n", line > "/dev/stderr"
+            }
+
+            if (case_name in required) {
+              case_rows[case_name]++
+              data_rows_checked++
+              precision = $3
+              recall = $4
+              false_claims = $7
+              if (precision != "1.00" || recall != "1.00" || false_claims != "0") {
+                metric_failures++
+                printf "ERROR: Metric check failed for case %s: precision=%s recall=%s false_claims=%s (row: %s)\n", case_name, precision, recall, false_claims, line > "/dev/stderr"
+              }
+            }
+          }
+          END {
+            missing_cases = 0
+            for (c in required) {
+              if (case_rows[c] < 1) {
+                missing_cases++
+                printf "ERROR: Supported case missing data row: %s\n", c > "/dev/stderr"
+              }
+            }
+
+            if (bench_rc != 0) {
+              if (blocked_total != 2 || native_blocked != 1 || native_stripped_blocked != 1 || unexpected_blocked != 0) {
+                printf "ERROR: bench exited with code %s, which is only allowed with exactly two blocked rows for native and native-stripped with \"analysis provider is unavailable\" and no other blocked rows (blocked_total=%d, native=%d, native-stripped=%d, unexpected=%d).\n", bench_rc, blocked_total, native_blocked, native_stripped_blocked, unexpected_blocked > "/dev/stderr"
+                exit 1
+              }
+            } else {
+              if (unexpected_blocked != 0) {
+                printf "ERROR: Unexpected blocked rows or blocked word detected in bench.log.\n" > "/dev/stderr"
+                exit 1
+              }
+            }
+
+            if (missing_cases != 0 || metric_failures != 0) {
+              printf "ERROR: Supported case gate failed (missing_cases=%d, metric_failures=%d).\n", missing_cases, metric_failures > "/dev/stderr"
+              exit 1
+            }
+
+            printf "Gate summary: demo_rc=%s, bench_rc=%s, supported_data_rows_checked=%d (all 6 cases present with precision=1.00, recall=1.00, false_claims=0), blocked_rows=%d (native=%d, native-stripped=%d).\n", bench_rc == 0 ? 0 : "0", bench_rc, data_rows_checked, blocked_total, native_blocked, native_stripped_blocked
+          }
+          ' "$BENCH_LOG"
