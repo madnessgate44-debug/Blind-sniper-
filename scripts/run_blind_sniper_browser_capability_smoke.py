@@ -43,6 +43,7 @@ def main() -> int:
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
 
+        os.environ["BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS"] = f"http://127.0.0.1:{server.server_port}"
         state_dir = Path(os.environ.get("BLIND_SNIPER_BROWSER_STATE_DIR", ".blind-sniper/browser-capabilities")).resolve()
         state_dir.mkdir(parents=True, exist_ok=True)
         ledger = TaskLedger(state_dir / "state" / "events.jsonl")

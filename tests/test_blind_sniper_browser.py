@@ -33,6 +33,34 @@ class BrowserPolicyTests(unittest.TestCase):
             binary="missing-agent-browser", **kwargs,
         )
 
+    def test_clipboard_profile_is_opt_in_and_origin_scoped(self):
+        adapter = self.adapter()
+        self.assertIsNone(adapter._clipboard_profile())
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS": "http://127.0.0.1:8123"}):
+            profile = adapter._clipboard_profile()
+            prefs = json.loads((profile / "Default" / "Preferences").read_text())
+            self.assertEqual(
+                prefs["profile"]["content_settings"]["exceptions"]["clipboard"],
+                {"http://127.0.0.1:8123,*": {"setting": 1}},
+            )
+        for bad in ("*", "http://*.example.test", "https://other.test", "http://example.test", "http://127.0.0.1/path", "ftp://127.0.0.1"):
+            with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS": bad}):
+                with self.assertRaises(BrowserPolicyError, msg=bad):
+                    adapter._clipboard_profile()
+
+    def test_clipboard_mode_contains_browser_without_allowed_domains_flag(self):
+        adapter = self.adapter()
+        with patch.dict(os.environ, {"BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS": "http://127.0.0.1:8123"}):
+            with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "", "")) as run:
+                adapter._command("get-url")
+        command = run.call_args.args[0]
+        self.assertNotIn("--allowed-domains", command)
+        self.assertIn("--profile", command)
+        self.assertTrue(any("host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1" in item for item in command))
+        with patch("scripts.blind_sniper_browser.subprocess.run", return_value=CompletedProcess([], 0, "", "")) as run:
+            adapter._command("get-url")
+        self.assertIn("--allowed-domains", run.call_args.args[0])
+
     def test_allowlist_and_blocklist(self):
         self.assertEqual(validate_url("http://127.0.0.1:8080/"), "127.0.0.1")
         with self.assertRaises(BrowserPolicyError):
