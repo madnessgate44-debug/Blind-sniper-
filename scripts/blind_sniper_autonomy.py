@@ -45,9 +45,16 @@ def activation_check(*, github_ledger: bool, ledger_path: str, token_env: str) -
         "executor_configured": executor,
         "notification_route_configured": False,
     }
+    blockers = [name for name, ok in prerequisites.items() if not ok]
     return {
         "activation_allowed": all(prerequisites.values()),
         "prerequisites": prerequisites,
+        "unmet": blockers,
+        # executor_configured is fixed False in this entrypoint: configuring variables
+        # or secrets cannot change it. Task execution is the native daemon's job.
+        "structural_blockers": ["executor_configured", "notification_route_configured"],
+        "where_tasks_run": "scripts/blind_sniper_daemon.py on a host the owner runs; "
+                           "the manual 'Daemon One-Shot Smoke' workflow proves one stub-model pass only",
         "note": "A schedule may only be enabled when every prerequisite is true.",
     }
 
@@ -154,7 +161,9 @@ def main(argv: list[str] | None = None) -> int:
     if not check["activation_allowed"]:
         print(
             "BLOCKED: unattended activation prerequisites are not configured: "
-            f"{check['prerequisites']}",
+            f"{check['prerequisites']}; unmet={check['unmet']}. This Actions entrypoint cannot "
+            "execute tasks and configuring secrets or variables will not change that; "
+            f"{check['where_tasks_run']}",
             file=sys.stderr,
         )
         return 2
