@@ -240,6 +240,40 @@ class BrowserAdapter:
             if candidate.is_symlink():
                 candidate.unlink(missing_ok=True)
 
+    def _clipboard_profile(self) -> Path | None:
+        """Seed a Chrome profile that allows clipboard only for explicitly listed origins.
+
+        Without a clipboard content-setting exception Chromium denies clipboard
+        read/write ("NotAllowedError ... permission denied"). This is opt-in via
+        BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS (comma separated loopback http(s)
+        origins, no wildcards, no path). agent-browser refuses --allowed-domains
+        together with --profile, so this mode contains the browser with Chromium's
+        own resolver rule instead: every hostname except 127.0.0.1 fails to resolve.
+        """
+        raw = os.environ.get("BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS", "")
+        origins = [item.strip() for item in raw.split(",") if item.strip()]
+        if not origins:
+            return None
+        exceptions: dict[str, Any] = {}
+        for origin in origins:
+            parts = urlsplit(origin)
+            if parts.scheme not in {"http", "https"} or not parts.hostname or "*" in origin or parts.path not in {"", "/"} or parts.query or parts.fragment:
+                raise BrowserPolicyError("BLIND_SNIPER_BROWSER_CLIPBOARD_ORIGINS entries must be plain http(s) origins without wildcards")
+            host = parts.hostname.lower()
+            loopback = host in {"127.0.0.1", "localhost", "::1"}
+            if not loopback:
+                raise BrowserPolicyError("Clipboard origins must be loopback fixtures; agent-browser cannot combine --allowed-domains with a profile")
+            netloc = f"[{host}]" if ":" in host else host
+            if parts.port:
+                netloc += f":{parts.port}"
+            exceptions[f"{parts.scheme}://{netloc},*"] = {"setting": 1}
+        profile = self.profiles_dir / f"{self.session_id}-clipboard"
+        (profile / "Default").mkdir(parents=True, exist_ok=True, mode=0o700)
+        os.chmod(profile, 0o700)
+        prefs = {"profile": {"content_settings": {"exceptions": {"clipboard": exceptions}}}}
+        (profile / "Default" / "Preferences").write_text(json.dumps(prefs), encoding="utf-8")
+        return profile
+
     def _command(self, *args: str) -> tuple[int, str, str, list[str]]:
         allowed_domains = ",".join(
             item.strip() for item in os.environ.get("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS", "").split(",")
@@ -267,7 +301,16 @@ class BrowserAdapter:
             command_env.setdefault("AGENT_BROWSER_AUTOSAVE_INTERVAL_MS", "1000")
             command.extend(["--profile", str(profile_dir), "--restore"])
         elif not general_https:
-            command.extend(["--allowed-domains", allowed_domains])
+            clipboard_profile = self._clipboard_profile()
+            if clipboard_profile is not None:
+                command.extend([
+                    "--profile", str(clipboard_profile),
+                    "--args", "--no-sandbox\n--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1"
+                    if os.environ.get("BLIND_SNIPER_BROWSER_NO_SANDBOX") == "1"
+                    else "--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1",
+                ])
+            else:
+                command.extend(["--allowed-domains", allowed_domains])
         command.extend([
             "--action-policy", str(self.policy_file),
             "--content-boundaries", "--max-output", "50000", "--json",
