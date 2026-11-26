@@ -26,7 +26,7 @@ _HTTP_CHILD = r'''import base64,json,sys,urllib.error,urllib.request
 url,limit=sys.argv[1],int(sys.argv[2])
 class NoRedirect(urllib.request.HTTPRedirectHandler):
  def redirect_request(self,req,fp,code,msg,headers,newurl):
-  raise RuntimeError("redirect refused")
+  sys.exit(3)
 opener=urllib.request.build_opener(NoRedirect)
 req=urllib.request.Request(url,headers={"Accept":"application/vnd.github+json","User-Agent":"BlindSniper-ReadOnly"},method="GET")
 try:
@@ -111,7 +111,7 @@ class GitHubReadOnlyConnector(Connector):
         if not result["group_dead"]:
             raise RuntimeError("GitHub request child process termination could not be verified")
         if result["returncode"] != 0:
-            if "redirect refused" in result["output"]:
+            if result["returncode"] == 3:
                 raise RuntimeError("GitHub redirect refused")
             raise RuntimeError("GitHub request failed")
         if result["output_truncated"]:
