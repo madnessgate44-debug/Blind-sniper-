@@ -1,6 +1,6 @@
 # Decision record: host, store, free model path, and minimal threat model (draft)
 
-**Status:** DRAFT for review. Docs only. Leads and constraints, not decisions and not promises. Nothing here was run or provisioned.
+**Status:** DRAFT for review. BS-001 is submitted and pending review, not accepted. Docs only. Leads and constraints, not decisions and not promises. Nothing here was run or provisioned.
 **Base:** `main` `f9cde15`. Written by the owner's assistant (Instinct). No code in this document. Any code that follows must be Gemini/Antigravity authored per the owner's standing rule.
 **Constraint from the owner (recorded in `ops/oracle-free/README.md` and the owner's standing rules):** zero money, no card, no paid plan.
 
@@ -18,7 +18,7 @@
 
 ## 2. Store
 - Existing: GitHub Contents API ledger in a private repository (`blind_sniper_ledger.py`, hash chain, compare-and-swap, 512 KiB cap, private-repo check). Tested only against a fake API. A live private round trip has never been done (`CURRENT_STATE.md`, 2026-11-17).
-- Token path (read from code and workflows): `blind-sniper-worker.yml` passes `secrets.BLIND_SNIPER_LEDGER_TOKEN` as `GITHUB_TOKEN` to the autonomy script, and `blind_sniper_ledger.py` refuses any repository that is not private (`_assert_private_repository`). This repository is public (GitHub API: `private: false`). The ephemeral per-run `GITHUB_TOKEN` is scoped to the running repository, so it would fail the private check here and cannot reach a different private repository. So the existing ledger path needs a separate private repository plus a token that can write to it, which does not exist in the workflows today. Not requested or created. Alternatives not yet evaluated: a different store, or keeping task state in public docs-safe receipts only.
+- Token path (read from code and workflows): `blind-sniper-worker.yml` passes `secrets.BLIND_SNIPER_LEDGER_TOKEN` as `GITHUB_TOKEN` to the autonomy script, and `blind_sniper_ledger.py` refuses any repository that is not private (`_assert_private_repository`). This repository is public (GitHub API: `private: false`). The ephemeral per-run `GITHUB_TOKEN` is scoped to the running repository, so it would fail the private check here and cannot reach a different private repository. Correction: an owner-private repository already exists (`visibility=private`, read on 2026-11-17 and recorded in the public ADR `chatgpt-home/BS-AUTONOMY-002_SERVERLESS_ARCHITECTURE.md`, identity omitted there), and the private object-store adapter exists. What is missing is the credential and configuration path and live proof: whether `BLIND_SNIPER_LEDGER_TOKEN` and the ledger owner/repo/branch variables are configured and usable is UNVERIFIED, and no live round trip has run. The separate `BLIND_SNIPER_LEDGER_TOKEN` is the intended cross-repository path and must not be conflated with the per-run `GITHUB_TOKEN`. Nothing was requested or created. Any credential is an owner-side action after its least-privilege scope is reviewed. Alternatives not yet evaluated: a different store, or keeping task state in public docs-safe receipts only.
 - Existing zero-secret precedent: `blind-sniper-executor.yml` publishes receipts to a `receipts/main` branch with the per-run `GITHUB_TOKEN` (`contents: write`, one job only). Public by nature, so only for non-private fixture data.
 - Plan BS-005 says GitHub Contents may not be treated as a production database without a justification. For one owner and a low task rate, the justification would be: single writer per run, CAS on every append, size cap. Not proven under concurrent runs. Flag for review.
 
@@ -28,6 +28,8 @@
 - Local small-model proof (Qwen2.5-0.5B via llama.cpp) proved plumbing and identity only, in a sandbox, not in the repo.
 - Unknown: quality, rate limits and uptime of any free model for coding work. The seeded task in section 5 is how to find out.
 
+- **Untested provider research (2026-11-26, docs read only, nothing tested or configured here):** GitHub Models is retired as of 2026-07-30 (https://docs.github.com/en/github-models/use-github-models/prototyping-with-ai-models). The Gemini API free tier is rate-limited per project (https://ai.google.dev/gemini-api/docs/rate-limits); one bounded free-tier attempt on 2026-11-26 got only HTTP 503 capacity errors and no generation completed, which is a capacity signal, not a quota finding. Cloudflare Workers AI gives 10,000 Neurons per day free and fails beyond that without a paid plan, and several larger models need a paid method (https://developers.cloudflare.com/workers-ai/platform/pricing/); tool-call reliability on the free models is untested. OpenRouter `:free` models allow 50 requests per day without purchased credits (https://openrouter.ai/docs/faq) and Groq's published limits are labelled for its Developer plan (https://console.groq.com/docs/rate-limits); both would need a new account. None of these is selected or approved. The `baidu/ernie-5.5-flash-preview:free` endpoint is not approved: its host, terms, privacy and quota are unverified. Use synthetic fixture data only.
+
 ## 4. Minimal threat model (proposed controls, none new are implemented)
 Assets: the owner's repositories and tokens, the private ledger, model prompts.
 Untrusted inputs: model output, task text, repository text, issue and PR comments, web pages.
@@ -35,7 +37,7 @@ Untrusted inputs: model output, task text, repository text, issue and PR comment
 | Risk | Control that exists today | Control the slice needs |
 |---|---|---|
 | Model output run as a command | Fixed command allowlist, no shell strings. `verification.run` allows `runtime-validator` and `unit-tests` (`blind_sniper_tool_runtime.py` lines 173-174). The executor map has the same two plus `forge-patch-verify` (executor lines 22-28; the third from the BS-001 audit) | Keep it. Model output is never executed; it may only fill an allowlisted file. |
-| Writes outside scope | Executor is read-only. Daemon has host tool and path allowlists. `forge_verify` refuses paths outside the repo and applies to a temp copy. | Writes only to a fixture or branch copy. No push to `main`. No merge. A write tool is allowed only if it is in the task allowlist. |
+| Writes outside scope | The fixed executor command surface is constrained, but the native tool runtime exposes `repo.write_file` behind task allowlists and permissions, so the boundary is allowlists, not read-only. Daemon has host tool and path allowlists. `forge_verify` refuses paths outside the repo and applies to a temp copy. | Writes only to a fixture or branch copy. No push to `main`. No merge. A write tool is allowed only if it is in the task allowlist. Tests must prove path confinement, task authorization and no writes outside the fixture workspace. |
 | Secrets reaching the model or logs | `blind_sniper_redact.py`; credential-like payload refusal | Secrets only as Actions secrets. Not in prompts. Token scope limited to one private ledger repo. |
 | Prompt injection from repo or issue text | None specific | Treat all such text as data. The agent's tool allowlist, not the prompt, limits actions. |
 | Runaway cost or loops | Executor timeout 600 s; autonomy refuses unattended mode | Hard job timeout, max model calls per task, free endpoints only. |
@@ -50,6 +52,7 @@ Untrusted inputs: model output, task text, repository text, issue and PR comment
 - **Not part of it:** BS-002 rename work, browser, memory, notifications, UI.
 
 ## 6. Open questions for the owner and reviewer
+A fixture test passing is necessary but not sufficient for the first gate. Live-agent acceptance needs a labelled live provider call, separate planner, builder and reviewer invocations with persisted outputs, receipts that survive restart, no duplicate work on retry, and negative tests showing a failed tool or failed verification can never produce `COMPLETED` or `PASS`. A bounded scheduled or dispatched Actions pass is ephemeral and should not be counted as a persistent worker. A reviewer comment on this PR states positions on the three questions below; those are reviewer opinions, not owner decisions.
 1. Is a bounded schedule-triggered worker on GitHub-hosted runners acceptable for "persistent" at this stage?
 2. May the owner provide a least-privilege ledger token (owner action) so a live private round trip can be tried?
 3. Which free model endpoint should the seeded-task test use, and is a coding-quality bar of "fixture test passes" enough for the first gate?
