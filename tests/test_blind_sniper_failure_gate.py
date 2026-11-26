@@ -35,6 +35,37 @@ class RedactorBoundaryTests(unittest.TestCase):
             self.assertNotIn(secret, redacted)
 
 
+class TextToolCallParserTests(unittest.TestCase):
+    ALLOW = ("repo.read_file", "repo.write_file")
+
+    def _parse(self, content):
+        from blind_sniper_model_worker import _text_tool_calls
+        return _text_tool_calls(content, self.ALLOW, 0)
+
+    def test_fenced_json_tool_call_accepted(self) -> None:
+        calls = self._parse('```json\n{"name": "repo.read_file", "arguments": {"path": "a.py"}}\n```')
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0]["function"]["name"], "repo.read_file")
+        self.assertEqual(json.loads(calls[0]["function"]["arguments"]), {"path": "a.py"})
+
+    def test_bare_json_tool_call_accepted(self) -> None:
+        self.assertEqual(len(self._parse('{"name": "repo.write_file", "arguments": {"path": "a", "content": "b"}}')), 1)
+
+    def test_rejects_unlisted_tool_extra_keys_prose_and_bad_args(self) -> None:
+        for content in (
+            '{"name": "shell.run", "arguments": {}}',
+            '{"name": "repo.read_file", "arguments": {}, "extra": 1}',
+            'Sure! {"name": "repo.read_file", "arguments": {}}',
+            '{"name": "repo.read_file", "arguments": "path"}',
+            '{"name": "repo.read_file"}',
+            "not json {",
+            None,
+            ["x"],
+            "x" * 30000,
+        ):
+            self.assertEqual(self._parse(content), [], content if isinstance(content, str) else repr(content))
+
+
 class RequireToolUseTests(unittest.TestCase):
     def _run(self, require, receipts):
         spec = AgentSpec(
