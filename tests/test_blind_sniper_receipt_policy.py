@@ -65,6 +65,21 @@ class ReceiptPolicyTests(unittest.TestCase):
         ])
         self.assertEqual(out["status"], "FAIL")
 
+    # Documented limitations: the worker does NOT globally require a verification receipt.
+    # Independent acceptance for code tasks lives in the caller (fixture unittest / CI).
+    def test_documented_limitation_read_only_receipts_pass_with_require_tool_use(self) -> None:
+        self.assertEqual(self._run([self._receipt("repo.read_file", "PASS")])["status"], "PASS")
+
+    def test_documented_limitation_write_without_any_verification_passes(self) -> None:
+        self.assertEqual(self._run([self._receipt("repo.write_file", "PASS")])["status"], "PASS")
+
+    def test_documented_limitation_write_after_passing_verification_passes_when_no_red(self) -> None:
+        out = self._run([
+            self._receipt("verification.run", "PASS"),
+            self._receipt("repo.write_file", "PASS"),
+        ])
+        self.assertEqual(out["status"], "PASS")
+
     def test_red_then_green_without_write_fails(self) -> None:
         self.assertEqual(self._run([
             self._receipt("verification.run", "FAIL", "verification_failed"),
