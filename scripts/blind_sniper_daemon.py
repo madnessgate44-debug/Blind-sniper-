@@ -557,6 +557,26 @@ class BlindSniperDaemon:
                 last_error_type = type(exc).__name__
         with self._memory_capture_lock:
             counts["memory_capture_errors"] = self._memory_capture_errors
+        task_summaries: dict[str, dict[str, str]] = {}
+        for state in self.queue.list_tasks():
+            if state.get("status") not in TERMINAL_STATUSES:
+                continue
+            task_id = str(state["task_id"])
+            summary = {"status": str(state["status"]), "result_digest": ""}
+            for receipt_path in sorted(self.store.receipt_dir.glob(f"{task_id}__*.json")):
+                try:
+                    _ensure_private_file(receipt_path, max_bytes=MAX_TASK_FILE_BYTES * 2)
+                    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+                except (OSError, UnicodeDecodeError, json.JSONDecodeError, DaemonError):
+                    continue
+                if (
+                    isinstance(receipt, dict)
+                    and receipt.get("queue_attempt") == state.get("attempt")
+                    and receipt.get("queue_task_id", receipt.get("task_id")) == task_id
+                ):
+                    summary["result_digest"] = str(receipt.get("output_digest") or "")
+                    break
+            task_summaries[task_id] = summary
         now = datetime.now(timezone.utc).isoformat()
         if counts["errors"] == 0:
             self._last_success_at = now
@@ -568,6 +588,7 @@ class BlindSniperDaemon:
             "last_success_at": self._last_success_at,
             "last_error_type": last_error_type,
             "counts": counts,
+            "tasks": task_summaries,
         }
         self.store.write_health(health)
         return health
