@@ -490,7 +490,7 @@ class NativeToolRuntime:
                 status = "PASS"
             elif name == "verification.run":
                 result = self._run_verification(arguments)
-                status = "PASS"
+                status = "PASS" if result.get("status") == "PASS" else "FAIL"
             elif name == "agent.handoff":
                 result = self._create_agent_handoff(arguments, spec=spec, task=task, run_id=run_id, tool_call_id=tool_call_id)
                 status = "PASS"
