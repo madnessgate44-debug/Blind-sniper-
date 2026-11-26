@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
+      - "tests/**"
+      - "scripts/**"
       - "chatgpt-home/runtime/**"
       - "deploy/blind-sniper-worker.service.example"
       - "scripts/validate_blind_sniper_runtime.py"
@@ -52,6 +54,8 @@ on:
       - main
       - "feat/**"
     paths:
+      - "tests/**"
+      - "scripts/**"
       - "chatgpt-home/runtime/**"
       - "scripts/validate_blind_sniper_runtime.py"
       - "scripts/blind_sniper_runtime.py"
