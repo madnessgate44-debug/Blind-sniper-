@@ -3,7 +3,7 @@
 **Status:** read-only inventory, docs only. No runtime behaviour changed.
 **Base:** `main` at `f9cde15b20f9aaac6095eb45e727da0dbdee3104` (re-checked 2026-11-26 13:12 Cairo; unchanged since audit #79).
 **Author:** the owner's assistant (Instinct). The code in this repository is Gemini/Antigravity authored per the owner's rule; this document contains no code.
-**Method:** static reading plus import-graph analysis of `scripts/`, `api/`, `.github/workflows/`, tests. Nothing was executed for this map. Test counts below are `def test_` counts, not pass results. Pass results come from the baseline in Issue #79 (376 tests, 3 environmental errors on Python 3.10.12) and were not re-run in this ticket. Python 3.11 was not available.
+**Method:** static reading plus import-graph analysis of `scripts/`, `api/`, `.github/workflows/`, tests. The document author executed nothing for this map. Test counts below are `def test_` counts, not pass results. Evidence kinds are kept apart: (1) static inventory, no tests run by the author; (2) CI workflows run by GitHub Actions on merge commit `b7ba53016268e6a103588a721983232d0ce231fe` (PR head `78405036796a9a4591f2ef151f5999256b18e45d` merged into base `f9cde15`), details in the matrix Limits section (Runtime Registry: 387 tests OK on Python 3.12.16; Environment Validation on Python 3.13.18); (3) simulation receipts from deterministic harnesses (`SIMULATION_ONLY`, `actual_agent_spawned=false`, `real_scheduler_present=false`); (4) capabilities that remain unproven on any live model or production path. The earlier baseline in Issue #79 was 376 tests, 3 environmental errors, Python 3.10.12.
 
 ## 1. What exists (22 core modules, 7,950 lines, plus 12 helper scripts)
 
@@ -75,7 +75,7 @@ Consequences (observed from imports): there are two separate execution paths. (a
 
 ## 7. Not covered or limited
 - Actions history: the 12 most recent runs (2026-11-25 to 2026-11-26) were read; all Engineering Execution OS Compliance runs on `f9cde15`, `1804a8f`, `4257e0f`, `fb2cfd0` succeeded, REE `45608107720` success. That is a doc-compliance workflow, not behavioural proof.
-- Not executed, so no new pass/fail evidence. Python 3.11 rerun still not done.
+- The author ran no tests. Current-head CI results are recorded in the matrix Limits section. They are CI and deterministic simulation, not live autonomy. No Python 3.11 run is claimed.
 - Not read line by line: `queue_schemas`, `memory_knowledge`, `memory_retrieval`, `handoff_runtime`, `memory_handoff`, `browser_dispatch` internals, `ops/oracle-free`. Their roles above come from module docstrings, imports and tests.
 - Deployment state: only the Vercel health endpoint was observed (HTTP 200, execution disabled) earlier today in the audit. No resident worker was observed.
 - `chatgpt-home/CURRENT_STATE.md` and `runtime/BUILD_PROGRESS.md` stop at 2026-11-17. This PR prepends a dated reconciliation notice to each (additions only, nothing deleted); the original dated entries are left as history, not rewritten.
