@@ -56,6 +56,9 @@ class TextToolCallParserTests(unittest.TestCase):
             '{"name": "shell.run", "arguments": {}}',
             '{"name": "repo.read_file", "arguments": {}, "extra": 1}',
             'Sure! {"name": "repo.read_file", "arguments": {}}',
+            '{"name": "repo.read_file", "arguments": {}} thanks',
+            '{"name": "repo.read_file", "arguments": {}} {"name": "repo.write_file", "arguments": {}}',
+            '[{"name": "repo.read_file", "arguments": {}}]',
             '{"name": "repo.read_file", "arguments": "path"}',
             '{"name": "repo.read_file"}',
             "not json {",
@@ -64,6 +67,13 @@ class TextToolCallParserTests(unittest.TestCase):
             "x" * 30000,
         ):
             self.assertEqual(self._parse(content), [], content if isinstance(content, str) else repr(content))
+
+    def test_tool_call_content_length_cap(self) -> None:
+        short = json.dumps({"name": "repo.read_file", "arguments": {"path": "a", "note": "short"}})
+        long = json.dumps({"name": "repo.read_file", "arguments": {"path": "a", "note": "x" * 20001}})
+        self.assertEqual(len(self._parse(short)), 1)
+        self.assertGreater(len(long), 20000)
+        self.assertEqual(self._parse(long), [])
 
 
 class RequireToolUseTests(unittest.TestCase):
