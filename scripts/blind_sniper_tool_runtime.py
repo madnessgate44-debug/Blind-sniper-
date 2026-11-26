@@ -522,7 +522,7 @@ class NativeToolRuntime:
         if status != "PASS":
             if caught_exception:
                 receipt["failure_kind"] = "tool_error"
-            elif name == "verification.run":
+            elif name == "verification.run" and isinstance(result, dict) and result.get("status") == "FAIL":
                 receipt["failure_kind"] = "verification_failed"
             else:
                 receipt["failure_kind"] = "tool_failed"
