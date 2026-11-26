@@ -122,6 +122,47 @@ def _text_tool_calls(content: Any, allowlist: tuple[str, ...], round_index: int)
     }]
 
 
+def _failing_receipt_tools(receipts: list[dict[str, Any]]) -> list[str]:
+    """Return unique failing tool names, forgiving only superseded red verifications."""
+    verification_indices = [
+        index for index, receipt in enumerate(receipts)
+        if receipt.get("tool_name") == "verification.run"
+    ]
+    last_verification_index = verification_indices[-1] if verification_indices else None
+    mutating_indices = [
+        index for index, receipt in enumerate(receipts)
+        if receipt.get("tool_name") not in {"repo.read_file", "verification.run"}
+    ]
+    last_mutating_index = max(mutating_indices, default=-1)
+    final_verification_pass = (
+        last_verification_index is not None
+        and receipts[last_verification_index].get("status") == "PASS"
+        and last_verification_index > last_mutating_index
+    )
+
+    failing_tools: set[str] = set()
+    for index, receipt in enumerate(receipts):
+        if receipt.get("status") == "PASS":
+            continue
+        forgiven = False
+        if (
+            receipt.get("tool_name") == "verification.run"
+            and receipt.get("failure_kind") == "verification_failed"
+            and final_verification_pass
+            and last_verification_index is not None
+            and index < last_verification_index
+        ):
+            write_indices = [
+                later for later in range(index + 1, last_verification_index)
+                if receipts[later].get("tool_name") == "repo.write_file"
+                and receipts[later].get("status") == "PASS"
+            ]
+            forgiven = bool(write_indices)
+        if not forgiven:
+            failing_tools.add(str(receipt.get("tool_name", "unknown")))
+    return sorted(failing_tools)
+
+
 class NativeModelInvoker:
     """OpenAI-compatible HTTP transport invoked directly by Blind Sniper.
 
@@ -425,13 +466,7 @@ class ModelWorker:
                     ),
                     "completed_at": datetime.now(timezone.utc).isoformat(),
                 }
-            failing_tools = sorted(
-                {
-                    str(r.get("tool_name", "unknown"))
-                    for r in tool_receipts
-                    if isinstance(r, dict) and r.get("status") != "PASS"
-                }
-            )
+            failing_tools = _failing_receipt_tools(tool_receipts)
             if failing_tools:
                 return {
                     "schema_version": "1.0.0",
