@@ -4,6 +4,12 @@
 The provider transport is owned here. It creates a fresh bounded request for
 each task and never delegates task orchestration, state, tools or verification
 to an external agent runtime.
+
+Acceptance caveat: a worker PASS means only that the model ran and its tool
+receipts were not failing under the narrow receipt policy. It is execution
+status, not code acceptance. Read-only runs, writes without verification and
+writes after a PASS verification are not rejected here. The caller must run an
+independent test (fixture unittest or CI) before accepting any code change.
 """
 from __future__ import annotations
 
