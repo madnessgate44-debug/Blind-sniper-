@@ -39,7 +39,7 @@ from blind_sniper_worker import DurableQueue, TERMINAL_STATUSES
 TASK_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 MAX_TASK_FILE_BYTES = 2 * 1024 * 1024
 ALLOWED_TASK_KEYS = {
-    "task_id", "agent_id", "objective", "payload",
+    "task_id", "agent_id", "objective", "payload", "require_tool_use",
 }
 
 
@@ -220,6 +220,8 @@ class PrivateTaskStore:
             value = data.get(key, [])
             if not isinstance(value, list) or any(not isinstance(item, str) or not item for item in value):
                 raise DaemonError(f"Private task {key} must be an array of non-empty strings")
+        if not isinstance(data.get("require_tool_use", False), bool):
+            raise DaemonError("Private task require_tool_use must be a boolean")
         approval = data.get("browser_approval_reference", "")
         if not isinstance(approval, str):
             raise DaemonError("browser_approval_reference must be a string")
@@ -422,6 +424,7 @@ class BlindSniperDaemon:
             permission_profile=self.host_policy["permission_profile"],
             allowed_paths=self.host_policy["allowed_paths"],
             browser_approval_reference=self.host_policy["browser_approval_reference"],
+            require_tool_use=bool(data.get("require_tool_use", False)),
         )
         task = ModelTask(
             task_id=task_id,
