@@ -554,3 +554,9 @@ class BlindSniperLiveEndpointSliceTests(unittest.TestCase):
                 "tool_receipts_count": receipt_count,
             }
             print(json.dumps(summary))
+            out = os.environ.get("BLIND_SNIPER_SLICE_LIVE_SUMMARY_PATH")
+            if out:
+                Path(out).write_text(json.dumps(summary), encoding="utf-8")
+            if os.environ.get("BLIND_SNIPER_SLICE_LIVE_REQUIRE_PASS") == "1":
+                self.assertTrue(summary["tests_passed"], summary)
+                self.assertEqual(summary["task_receipt_status"], "PASS", summary)
