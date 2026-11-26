@@ -44,7 +44,7 @@ class FakeConnector(Connector):
         return "files"
 
     def tools(self) -> list[dict]:
-        return [{"name": "read_file", "description": "Read a test item", "input_schema": {
+        return [{"name": "read_file", "side_effects": "read_only", "description": "Read a test item", "input_schema": {
             "type": "object", "properties": {"path": {"type": "string"}},
             "required": ["path"], "additionalProperties": False,
         }}]
@@ -193,6 +193,31 @@ class TestBlindSniperConnectors(unittest.TestCase):
         self.assertEqual(effects, [])             # execution actually stopped
         self.assertEqual(reg.unresolved_calls(), [])
         self.assertEqual(self.call_files(reg)["failure_kind"], "timeout")  # a stopped call may be retried
+
+    def test_mutating_call_that_stops_after_mutating_is_not_auto_replayed(self):
+        writes = []
+        class Mutator(FakeConnector):
+            def tools(self):
+                return [{"name": "write_file", "description": "Write", "input_schema": {
+                    "type": "object", "properties": {"path": {"type": "string"}},
+                    "required": ["path"], "additionalProperties": False}}]
+        def mutate_then_stop(tool, args, *, timeout_s, cancel):
+            writes.append(args["path"])          # side effect happens first
+            cancel.wait(5)                        # then honours cancel and stops
+            return {}
+        files_spec = BUILTIN_SPECS["files"]
+        reg = ConnectorRegistry(env={}, http=FakeHttpResponse({}), connectors=[Mutator(mutate_then_stop)],
+                                specs={"files": replace(files_spec, operations=files_spec.operations + ["write_file"])})
+        reg._statuses["files"] = ConnectorStatus(connector_id="files", auth_status="verified", health="healthy",
+                                                 last_verified_at=_utc_now_iso(),
+                                                 operations_available=list(files_spec.operations) + ["write_file"])
+        call = lambda: reg.call("engineer", "files", "write_file", {"path": "p"}, ["files.write_file"], timeout_s=0.1, confirmed=True)
+        first = call()
+        self.assertEqual(first.get("failure_kind"), "timeout_partial_unknown", first)
+        self.assertFalse(reg.unresolved_calls()[0]["still_running"])
+        self.assertEqual(call()["failure_kind"], "execution_state_unknown")
+        self.assertEqual(writes, ["p"])           # exactly one mutation, never replayed
+        self.assertTrue(reg.resolve_unknown(reg.unresolved_calls()[0]["call_sha256"], True))
 
     def test_stubborn_connector_leaves_unknown_state_and_blocks_replay(self):
         effects, release = [], threading.Event()
