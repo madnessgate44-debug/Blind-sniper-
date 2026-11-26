@@ -169,6 +169,26 @@ class GitHubIntakeTests(unittest.TestCase):
         self.assertEqual(receipt["reason_code"], "invalid_task_store")
         self.assertEqual(list(real.iterdir()), [])
 
+    def test_concurrent_identical_deliveries_create_one_task_and_all_succeed(self):
+        import threading
+        val = validate_issue_event(event(), CONFIG)
+        results, errors = [], []
+        barrier = threading.Barrier(8)
+        def go(i):
+            try:
+                barrier.wait()
+                results.append(write_task(self.store.task_dir, val["task_envelope"], state_dir=self.state,
+                                          repository=val["repository"], issue_number=90, delivery_id=f"d{i}"))
+            except Exception as exc:  # pragma: no cover
+                errors.append(exc)
+        threads = [threading.Thread(target=go, args=(i,)) for i in range(8)]
+        for t in threads: t.start()
+        for t in threads: t.join()
+        self.assertEqual(errors, [])
+        self.assertEqual(len(list(self.store.task_dir.glob("*.json"))), 1)
+        self.assertEqual({r["outcome"] for r in results}, {"accepted"})
+        self.assertEqual(sorted(r["reason_code"] for r in results).count("accepted"), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
