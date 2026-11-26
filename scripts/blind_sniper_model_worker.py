@@ -355,6 +355,64 @@ class ModelWorker:
                 if attempt < self.max_retries and self.backoff_seconds:
                     time.sleep(self.backoff_seconds)
                 continue
+            tool_receipts = result.get("tool_receipts", [])
+            malformed_count = None
+            if not isinstance(tool_receipts, list):
+                malformed_count = -1
+            else:
+                malformed_count = sum(1 for r in tool_receipts if not isinstance(r, dict))
+            if malformed_count:
+                container = type(tool_receipts).__name__
+                return {
+                    "schema_version": "1.0.0",
+                    "task_id": task.task_id,
+                    "agent_id": spec.agent_id,
+                    "run_id": result.get("run_id") or str(uuid.uuid4()),
+                    "provider": result.get("provider", "injected_test_or_host_invoker"),
+                    "model": result.get("model"),
+                    "status": "FAIL",
+                    "attempts": attempts,
+                    "permission_profile": spec.permission_profile,
+                    "tool_allowlist": list(spec.tool_allowlist),
+                    "fresh_context": spec.fresh_context,
+                    "output_digest": result.get("output_digest"),
+                    "output_excerpt": redact(result.get("output_excerpt", "")),
+                    "output_text": redact(result.get("output_text", ""))[:MAX_OUTPUT_CHARS],
+                    "tool_receipts": [],
+                    "error": (
+                        "tool_receipts_malformed: container_type=" + container
+                        if malformed_count < 0
+                        else f"tool_receipts_malformed: non_dict_entries={malformed_count}"
+                    ),
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                }
+            failing_tools = sorted(
+                {
+                    str(r.get("tool_name", "unknown"))
+                    for r in tool_receipts
+                    if isinstance(r, dict) and r.get("status") != "PASS"
+                }
+            )
+            if failing_tools:
+                return {
+                    "schema_version": "1.0.0",
+                    "task_id": task.task_id,
+                    "agent_id": spec.agent_id,
+                    "run_id": result.get("run_id") or str(uuid.uuid4()),
+                    "provider": result.get("provider", "injected_test_or_host_invoker"),
+                    "model": result.get("model"),
+                    "status": "FAIL",
+                    "attempts": attempts,
+                    "permission_profile": spec.permission_profile,
+                    "tool_allowlist": list(spec.tool_allowlist),
+                    "fresh_context": spec.fresh_context,
+                    "output_digest": result.get("output_digest"),
+                    "output_excerpt": redact(result.get("output_excerpt", "")),
+                    "output_text": redact(result.get("output_text", ""))[:MAX_OUTPUT_CHARS],
+                    "tool_receipts": tool_receipts,
+                    "error": redact("tool_receipts_not_passing: " + ", ".join(failing_tools)),
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                }
             return {
                 "schema_version": "1.0.0",
                 "task_id": task.task_id,
@@ -370,7 +428,7 @@ class ModelWorker:
                 "output_digest": result.get("output_digest"),
                 "output_excerpt": redact(result.get("output_excerpt", "")),
                 "output_text": redact(result.get("output_text", ""))[:MAX_OUTPUT_CHARS],
-                "tool_receipts": result.get("tool_receipts", []),
+                "tool_receipts": tool_receipts,
                 "completed_at": datetime.now(timezone.utc).isoformat(),
             }
         return {
