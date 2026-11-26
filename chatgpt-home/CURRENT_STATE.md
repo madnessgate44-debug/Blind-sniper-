@@ -10,7 +10,13 @@ Corrections to the 2026-11-17 text, each from evidence read on 2026-11-26:
 - Headings such as "native autonomous runtime" describe a plan or goal, not a delivered capability.
 - Local-only work not on `main`: a local small-model proof, a connector-registry branch (fake HTTP only), a frontend visual gate branch. None is merged or proven in CI.
 
-Not verified in this reconciliation: current Actions history beyond the 12 most recent runs, deployment state, any test pass counts (no re-run; Python 3.11 not available).
+Current evidence versus superseded claims (dated 2026-11-26):
+- Superseded: "no live model call was made" (see run `45505263658`, above). Superseded: the earlier limitation "no test pass counts, Python 3.11 not available". CI results are now read.
+- Verified by CI, merge commit `b7ba53016268e6a103588a721983232d0ce231fe` (PR head `78405036` into base `f9cde15`): Runtime Registry run `45818176838` ran 387 tests, OK, Python 3.12.16; Environment Validation run `45818176806` passed, Python 3.13.18; OS Compliance run `45818176675` passed. Runs on the later docs-only head `2a5db03` (`45819909148`, `45819909128`, `45819909310`) show success; their logs were not read.
+- Deterministic simulation receipts (`SIMULATION_ONLY`, `actual_agent_spawned=false`, `real_scheduler_present=false`) prove plumbing only. They are not a live agent, a real scheduler, a live model or production execution.
+- Historical, not re-verified: audit Issue #79 observations and all 2026-11-17 entries below.
+- Local-only, unpublished: failure-gate and fixture-slice work.
+- Unverified: deployment state beyond the health endpoint, ledger and model secrets configuration, any live private-store round trip, any real-model multi-agent run. Production autonomous execution remains NO-GO.
 
 ---
 
