@@ -1,3 +1,11 @@
+## Reconciliation notice, 2026-11-26 (BS-001, static, assistant-authored)
+
+This log ends at 2026-11-17 and does not include PRs #68 to #78 (2026-11-24 to 2026-11-25). Entries below are history. See `chatgpt-home/CURRENT_STATE.md` (reconciliation notice at its top), `docs/architecture/CURRENT_RUNTIME_MAP.md`, `docs/architecture/CAPABILITY_EVIDENCE_MATRIX.md` and Issue #79 for the current evidence picture.
+
+The 2026-11-17 statement that no live model call had been made is superseded: provider smoke run `45505263658` made one synthetic remote call on 2026-11-24. The statement that production autonomous execution is NO-GO still holds. Nothing in this log should be read as proof of a resident worker, notifications, connectors or end-to-end autonomy.
+
+---
+
 ## Native private persistence delivery — 2026-11-17
 
 - [V] PR #65 merged at `66dc3e53ea4850bcca9801fa38b167579f910a92`. `GitHubPrivateObjectStore` writes immutable SHA-256-addressed JSON objects into a verified private repository; maximum object size 512 KiB; idempotent create-only writes; bounded conflict recovery; reads verify content hash.
