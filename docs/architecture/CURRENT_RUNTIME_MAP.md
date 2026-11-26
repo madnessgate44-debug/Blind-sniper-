@@ -57,17 +57,19 @@ Consequences (observed from imports): there are two separate execution paths. (a
 | Forge/Firstborn | `blind_sniper_forge_verify.py`, executor command `forge-patch-verify` | name/format only: reads a fixture patch inside the repo; no network, no Forge call |
 | OpenHands mirror | `find_skill.py`, `adapt_skill.py`, `blind_sniper_runtime.py:214`, `validate_blind_sniper_runtime.py` | documentation/skill-catalog reference to `chatgpt-home/openhands-library/...` paths |
 | Instinct | no script, workflow or api file references it | none found in code; docs only |
-| Other hosts in script text | `generativelanguage.googleapis.com` (1), `amina-nine-sepia.vercel.app` (1) | **not traced in this ticket (UNKNOWN)** |
+| `generativelanguage.googleapis.com/v1beta/openai` | default endpoint in `run_blind_sniper_provider_smoke.py:41` and `blind-sniper-provider-smoke.yml:11` | inference-only (Gemini OpenAI-compatible endpoint, overridable input) |
+| `amina-nine-sepia.vercel.app` | default target of `run_blind_sniper_miss_noor_smoke.py:18`; `blind-sniper-browser.yml:85-87` sets it as the only allowed browser domain | test-only read-only live-site smoke against a separate owner product (Miss Noor); not a runtime dependency |
 
 ## 5. Standalone-boundary conflicts to review
 1. `forge-patch-verify` and the `forge` docstring tie the executor vocabulary to Forge. Not a call, but BS-002 would likely rename or re-contract it.
-2. Skill tooling points at an OpenHands mirror directory. Whether the directory exists on `main` was not verified here.
-3. The two untraced hosts above.
+2. Skill tooling points at an OpenHands mirror directory. Verified present on `main`: `chatgpt-home/openhands-library/` (contains AGENTS.md, BLIND_SNIPER_AUTHORITY_OVERLAY.md, IMPORT_MANIFEST.md and more). It is copied documentation/skills, not called at runtime by the scripts read; BS-002 should decide whether to keep it as docs.
+3. The two hosts are resolved above (provider default endpoint; Miss Noor test target). Neither is an orchestration dependency.
 4. Docs under `chatgpt-home/` mention Forge/OpenHands/Instinct widely. Not read for claims in this ticket.
 5. GitHub is both ledger store and CI host, so "standalone" in the plan does not cover GitHub; the owner should confirm that is intended.
 
 ## 6. Not covered or limited
+- Actions history: the 12 most recent runs (2026-11-25 to 2026-11-26) were read; all Engineering Execution OS Compliance runs on `f9cde15`, `1804a8f`, `4257e0f`, `fb2cfd0` succeeded, REE `45608107720` success. That is a doc-compliance workflow, not behavioural proof.
 - Not executed, so no new pass/fail evidence. Python 3.11 rerun still not done.
 - Not read line by line: `queue_schemas`, `memory_knowledge`, `memory_retrieval`, `handoff_runtime`, `memory_handoff`, `browser_dispatch` internals, `ops/oracle-free`. Their roles above come from module docstrings, imports and tests.
 - Deployment state: only the Vercel health endpoint was observed (HTTP 200, execution disabled) earlier today in the audit. No resident worker was observed.
-- `chatgpt-home/CURRENT_STATE.md` and `runtime/BUILD_PROGRESS.md` are not edited in this PR; they stop at 2026-11-17 and need a separate reconciliation.
+- `chatgpt-home/CURRENT_STATE.md` and `runtime/BUILD_PROGRESS.md` stop at 2026-11-17. This PR prepends a dated reconciliation notice to each (additions only, nothing deleted); the original dated entries are left as history, not rewritten.
