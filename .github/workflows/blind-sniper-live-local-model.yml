@@ -63,6 +63,7 @@ jobs:
           BLIND_SNIPER_SLICE_LIVE_REQUIRE_PASS: "1"
           BLIND_SNIPER_SLICE_LIVE_SUMMARY_PATH: ${{ github.workspace }}/live-summary.json
         run: |
+          set -euo pipefail
           timeout 3000 python -m unittest -v tests.test_blind_sniper_fixture_slice.BlindSniperLiveEndpointSliceTests 2>&1 | tee live-run.log
       - name: Print summary
         if: always()
