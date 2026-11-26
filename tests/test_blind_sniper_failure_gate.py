@@ -35,6 +35,51 @@ class RedactorBoundaryTests(unittest.TestCase):
             self.assertNotIn(secret, redacted)
 
 
+class RequireToolUseTests(unittest.TestCase):
+    def _run(self, require, receipts):
+        spec = AgentSpec(
+            agent_id="agent-1",
+            tool_allowlist=("repo.write_file",),
+            permission_profile="workspace_write",
+            require_tool_use=require,
+        )
+        task = ModelTask(task_id="task-1", agent_id="agent-1", objective="Fix code", payload={})
+
+        def invoker(spec=None, task=None, timeout_seconds=None):
+            return {
+                "run_id": "run-x",
+                "output_text": "I fixed it",
+                "output_digest": "sha256:abc",
+                "output_excerpt": "I fixed it",
+                "tool_receipts": receipts,
+            }
+
+        worker = ModelWorker(invoker, max_concurrency=1, timeout_seconds=30, max_retries=0)
+        return worker.run([spec], [task])["receipts"][0]
+
+    def test_no_op_run_fails_when_tool_use_required(self) -> None:
+        out = self._run(True, [])
+        self.assertEqual(out["status"], "FAIL")
+        self.assertEqual(out["error"], "tool_use_required_but_no_tool_receipts")
+
+    def test_no_op_run_passes_when_not_required_legitimate_read_only(self) -> None:
+        self.assertEqual(self._run(False, [])["status"], "PASS")
+
+    def test_required_with_passing_receipt_passes(self) -> None:
+        out = self._run(True, [{"tool_name": "repo.write_file", "status": "PASS"}])
+        self.assertEqual(out["status"], "PASS")
+
+    def test_required_with_failing_receipt_still_fails(self) -> None:
+        out = self._run(True, [{"tool_name": "repo.write_file", "status": "FAIL"}])
+        self.assertEqual(out["status"], "FAIL")
+
+    def test_spec_rejects_bad_require_tool_use(self) -> None:
+        with self.assertRaises(Exception):
+            AgentSpec(agent_id="agent-1", tool_allowlist=("repo.write_file",), require_tool_use="yes")
+        with self.assertRaises(Exception):
+            AgentSpec(agent_id="agent-1", tool_allowlist=(), require_tool_use=True)
+
+
 class ModelWorkerReceiptGateTests(unittest.TestCase):
     def _make_spec_and_task(self) -> tuple[AgentSpec, ModelTask]:
         spec = AgentSpec(
