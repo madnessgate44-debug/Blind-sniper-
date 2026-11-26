@@ -1,6 +1,6 @@
 # Blind Sniper capability evidence matrix (BS-001)
 
-Base `f9cde15b20f9aaac6095eb45e727da0dbdee3104`. Static inventory; nothing run for this document. Status vocabulary: IMPLEMENTED+EXERCISED, FIXTURE-ONLY, PARTIAL, UNWIRED, ABSENT, UNKNOWN. "Tests" are `def test_` counts per test file from `tests/`. Live evidence is taken from audit #79 (https://github.com/madnessgate44-debug/Blind-sniper-/issues/79) and was not re-verified here.
+Base `f9cde15b20f9aaac6095eb45e727da0dbdee3104`. Static inventory; the document author ran no tests. CI evidence below was read from GitHub Actions at the PR head. Status vocabulary: IMPLEMENTED+EXERCISED, FIXTURE-ONLY, PARTIAL, UNWIRED, ABSENT, UNKNOWN. "Tests" are `def test_` counts per test file from `tests/`. The Live evidence column is historical audit #79 evidence (https://github.com/madnessgate44-debug/Blind-sniper-/issues/79), not re-verified, except where a row says CI re-verified. Only the CI, simulation and test-count statements in the Limits section were re-verified against current-head CI. No row is verified against a live model or production path.
 
 | Capability | Source | Trigger path | Tests (methods) | Live evidence | Status |
 |---|---|---|---|---|---|
@@ -24,8 +24,21 @@ Base `f9cde15b20f9aaac6095eb45e727da0dbdee3104`. Static inventory; nothing run f
 | Browser/other smokes | `scripts/run_blind_sniper_*_smoke.py` | workflows | daemon_once_smoke 2 | daemon-once run 45587990290 (stub model) | stub/fixture |
 
 ## Limits
-- Test counts in the table are `def test_` counts, not pass/fail results. CI at PR head `7de0797` (Actions API read-back, 2026-11-26): Blind Sniper Runtime Registry run `45810983951`, Environment Validation `45810983965` and Engineering Execution OS Compliance `45810983888` all completed with conclusion `success`. A reviewer comment on this PR reports 387 tests OK in the Runtime Registry run, with interruption/recovery and scheduled-job simulations that state `SIMULATION_ONLY`, `actual_agent_spawned=false` and `real_scheduler_present=false`; the author of this document did not read those logs (they need an authenticated download), so the 387 figure and receipt fields are reported, not independently verified. These runs are CI and simulation evidence only. They are not a live agent, a real scheduler or production task execution. The earlier audit baseline was 376 tests with 3 environmental errors on Python 3.10.12.
+- Test counts in the table are `def test_` counts, not pass/fail results. CI evidence, read from GitHub Actions job logs (signed-in log view) on 2026-11-26: PR head `78405036796a9a4591f2ef151f5999256b18e45d`. CI ran on the pull-request merge commit `b7ba53016268e6a103588a721983232d0ce231fe` (PR head merged into base `f9cde15`). Runtime Registry run `45818176838`, job `139903208416`, Python 3.12.16: `Ran 387 tests in 6.944s`, `OK`. Environment Validation run `45818176806`, job `139903207975`, Python 3.13.18: success. OS Compliance run `45818176675`, job `139903273616`: success, interpreter not recorded here. The Runtime Registry log contains interruption/recovery and scheduled-job simulation receipts with `actual_agent_spawned=false`, `execution_mode=SIMULATION_ONLY`, `external_network_calls=0`, `real_scheduler_present=false` and `scheduler_kind=deterministic_test_harness_not_a_real_scheduler`. These are CI and deterministic-harness evidence only, not a live agent, a real scheduler, a live model or production task execution. No run on Python 3.11 is claimed. The earlier audit #79 baseline was 376 tests with 3 environmental errors on Python 3.10.12.
 - "IMPLEMENTED+EXERCISED" here means a CI or sandbox run was reported, not that it is production-proven. No production task execution exists.
-- Rows marked UNKNOWN need a fresh read of Actions run history; not done in this ticket.
+- Rows marked UNKNOWN need a fresh read of Actions run history for the workflows they name; only the three runs above were read.
 - Workflow trigger details were counted by string match and should be re-read before use.
 - Test method counts mix unit, fixture and simulation tests; the table does not separate them.
+
+## BS-001 acceptance criteria mapping (assistant mapping for review, not an acceptance verdict)
+Criteria are quoted from `docs/roadmap/ADVANCED_MASTER_BUILD_PLAN.md`, section "BS-001 - Final Architecture and Code Inventory", on the PR #80 branch. Status of the ticket: submitted, PENDING REVIEW.
+
+| # | Criterion | Evidence | Status | Gap |
+|---|---|---|---|---|
+| 1 | Every listed runtime capability maps to source files, trigger path, tests and evidence status | The capability table above (Source, Trigger path, Tests, Live evidence, Status columns) | Mapped, static | Some rows PARTIAL or UNKNOWN. Test counts are method counts. Some modules were read by docstring and imports only (map section 7). |
+| 2 | Every external dependency classified | `docs/architecture/CURRENT_RUNTIME_MAP.md` section 4; boundary conflicts in section 5 | Classified | Section 5 items are open for review. `chatgpt-home/` docs were not read for claims. |
+| 3 | No unsupported production or autonomy claim in current-state docs | Dated notices at the top of `chatgpt-home/CURRENT_STATE.md` and `chatgpt-home/runtime/BUILD_PROGRESS.md` | PENDING REVIEW | Older entries were not rewritten and some are stale. |
+| 4 | Inspection limitations and unverified deployment state explicit | Map section 7; the Limits section above; UNVERIFIED markers in `HOST_STORE_MODEL_DECISION_RECORD.md` | Stated | Deployment state beyond the health endpoint was not observed. |
+| 5 | No application or runtime behavior changed | PR diff is 5 docs files: the two notices above, this matrix, the map and the decision record. Nothing under code, workflows or config. | Met per diff | None known. |
+
+The plan also asks for a review against actual source paths and current GitHub state. That review is the reviewer's step and has not happened.
