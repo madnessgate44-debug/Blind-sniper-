@@ -71,3 +71,4 @@ jobs:
           cat live-summary.json 2>/dev/null || echo "no summary written"
           tail -30 llama-server.log || true
 # rerun trigger: strict text-form tool call parser added to the worker
+# rerun trigger: worker timeout raised to 600s for CPU multi-turn loop
