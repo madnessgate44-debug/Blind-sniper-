@@ -166,7 +166,9 @@ class TestGitHubReadOnly(unittest.TestCase):
             c = GitHubReadOnlyConnector("o/r", base_url=server.base_url)
             with self.assertRaisesRegex(RuntimeError, "HTTP 429"):
                 c.call("pr_status", {"number": 1}, timeout_s=3)
-        for url in ("http://example.com", "https://example.com", "https://api.github.com.evil.test"):
+        for url in ("http://example.com", "https://example.com", "https://api.github.com.evil.test",
+                    "https://evilgithub.com", "https://evil.github.com", "https://api.github.com:8443",
+                    "http://api.github.com", "https://u:p@api.github.com"):
             with self.assertRaises(ValueError):
                 GitHubReadOnlyConnector("o/r", base_url=url)
 
