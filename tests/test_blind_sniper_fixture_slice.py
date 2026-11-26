@@ -177,7 +177,7 @@ def build_stack(
     return store, ledger, queue, tool_runtime, invoker, worker, daemon
 
 
-def _write_task_file(task_dir: Path, task_id: str, objective: str) -> Path:
+def _write_task_file(task_dir: Path, task_id: str, objective: str, require_tool_use: bool = False) -> Path:
     task_path = task_dir / f"{task_id}.json"
     task_doc = {
         "task_id": task_id,
@@ -185,6 +185,8 @@ def _write_task_file(task_dir: Path, task_id: str, objective: str) -> Path:
         "objective": objective,
         "payload": {"target": "fixture_app/calc.py"},
     }
+    if require_tool_use:
+        task_doc["require_tool_use"] = True
     task_path.write_text(json.dumps(task_doc), encoding="utf-8")
     os.chmod(task_path, 0o600)
     return task_path
@@ -532,17 +534,21 @@ class BlindSniperLiveEndpointSliceTests(unittest.TestCase):
                 base_url=live_url, model=live_model, tool_runtime=runtime
             )
             task_id = "live-task-001"
-            _write_task_file(store.task_dir, task_id, "Fix add(a, b) in fixture_app/calc.py")
+            _write_task_file(store.task_dir, task_id, "Fix add(a, b) in fixture_app/calc.py", require_tool_use=True)
             daemon.run_once()
 
             proc = _run_fixture_unittest(ws)
             receipts = list(store.receipt_dir.glob("*.json"))
             receipt_count = 0
             task_receipt_status = None
+            receipt_error = None
+            receipt_excerpt = ""
             if receipts:
                 data = json.loads(receipts[0].read_text(encoding="utf-8"))
                 receipt_count = len(data.get("tool_receipts", []))
                 task_receipt_status = data.get("status")
+                receipt_error = data.get("error")
+                receipt_excerpt = str(data.get("output_excerpt", ""))[:600]
 
             q_status = queue.status(task_id)
             queue_status = q_status.get("status") if q_status else None
@@ -552,6 +558,8 @@ class BlindSniperLiveEndpointSliceTests(unittest.TestCase):
                 "task_receipt_status": task_receipt_status,
                 "tests_passed": proc.returncode == 0,
                 "tool_receipts_count": receipt_count,
+                "receipt_error": receipt_error,
+                "model_output_excerpt": receipt_excerpt,
             }
             print(json.dumps(summary))
             out = os.environ.get("BLIND_SNIPER_SLICE_LIVE_SUMMARY_PATH")
