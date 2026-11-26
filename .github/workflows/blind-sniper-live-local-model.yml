@@ -1,0 +1,74 @@
+name: Blind Sniper Live Local Model Slice
+
+# Qualification run, not a merge gate. Serves an open-weight coding model on the runner
+# (llama.cpp MIT; Qwen2.5-Coder-7B-Instruct GGUF Apache-2.0), loopback only, no secrets, no
+# external provider, no cost on a public repository. It points the native Blind Sniper model
+# worker at that endpoint and asks it to fix a seeded bug in a throwaway fixture workspace. The
+# test then runs the fixture unittest independently. A model failure is reported as a failed run.
+on:
+  push:
+    branches:
+      - "feat/live-local-model-slice"
+    paths:
+      - ".github/workflows/blind-sniper-live-local-model.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: blind-sniper-live-local-model
+  cancel-in-progress: false
+
+jobs:
+  live-slice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      LLAMA_TAG: b12709
+      LLAMA_TGZ_SHA256: "1bab2ad0c7268f2f081e490db7234928fdfc75b2ff60d3dcf406ac02cd45be0a"
+      MODEL_FILE: qwen2.5-coder-7b-instruct-q4_k_m.gguf
+      MODEL_BYTES: "4683073536"
+      MODEL_SHA256: "509287f78cb4d4cf6b3843734733b914b2c158e43e22a7f4bf5e963800894d3c"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch llama.cpp release binary and model weights (pinned, hash checked)
+        run: |
+          set -euo pipefail
+          curl -fsSL -o llama.tgz "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_TAG}/llama-${LLAMA_TAG}-bin-ubuntu-x64.tar.gz"
+          echo "${LLAMA_TGZ_SHA256}  llama.tgz" | sha256sum -c -
+          mkdir -p llama && tar xzf llama.tgz -C llama --strip-components=1
+          curl -fL --retry 3 -o "$MODEL_FILE" "https://huggingface.co/Qwen/Qwen2.5-Coder-7B-Instruct-GGUF/resolve/main/${MODEL_FILE}"
+          test "$(stat -c %s "$MODEL_FILE")" = "$MODEL_BYTES"
+          echo "${MODEL_SHA256}  ${MODEL_FILE}" | sha256sum -c -
+      - name: Start local model server (loopback only, tool calling enabled)
+        run: |
+          set -euo pipefail
+          nohup ./llama/llama-server -m "$MODEL_FILE" --host 127.0.0.1 --port 8080 -c 16384 -t "$(nproc)" --parallel 1 --jinja > llama-server.log 2>&1 &
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:8080/health >/dev/null 2>&1; then echo "model server ready after ${i}x5s"; exit 0; fi
+            sleep 5
+          done
+          tail -40 llama-server.log
+          exit 1
+      - name: Run the live slice (task intake, native worker, tool runtime, independent fixture tests)
+        env:
+          BLIND_SNIPER_SLICE_LIVE_BASE_URL: http://127.0.0.1:8080/v1
+          BLIND_SNIPER_SLICE_LIVE_MODEL: qwen2.5-coder-7b-instruct-q4_k_m
+          BLIND_SNIPER_SLICE_LIVE_REQUIRE_PASS: "1"
+          BLIND_SNIPER_SLICE_LIVE_SUMMARY_PATH: ${{ github.workspace }}/live-summary.json
+        run: |
+          set -euo pipefail
+          timeout 3000 python -m unittest -v tests.test_blind_sniper_fixture_slice.BlindSniperLiveEndpointSliceTests 2>&1 | tee live-run.log
+      - name: Print summary
+        if: always()
+        run: |
+          cat live-summary.json 2>/dev/null || echo "no summary written"
+          tail -30 llama-server.log || true
+# rerun trigger: strict text-form tool call parser added to the worker
+# rerun trigger: worker timeout raised to 600s for CPU multi-turn loop

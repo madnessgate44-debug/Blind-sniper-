@@ -481,6 +481,7 @@ class NativeToolRuntime:
             task_id=task.task_id, owner_id=owner_id, run_id=run_id,
             tool_call_id=tool_call_id, tool_name=name, arguments_digest=arguments_digest,
         )
+        caught_exception = False
         try:
             if name == "repo.read_file":
                 result = self._read_file(arguments, spec)
@@ -490,7 +491,7 @@ class NativeToolRuntime:
                 status = "PASS"
             elif name == "verification.run":
                 result = self._run_verification(arguments)
-                status = "PASS"
+                status = "PASS" if result.get("status") == "PASS" else "FAIL"
             elif name == "agent.handoff":
                 result = self._create_agent_handoff(arguments, spec=spec, task=task, run_id=run_id, tool_call_id=tool_call_id)
                 status = "PASS"
@@ -500,6 +501,7 @@ class NativeToolRuntime:
             else:
                 raise NativeToolError(f"Tool {name!r} is not implemented")
         except Exception as exc:
+            caught_exception = True
             result = {"error": redact(f"{type(exc).__name__}: {exc}")}
             status = "FAIL"
         result_digest = _digest(result)
@@ -508,16 +510,24 @@ class NativeToolRuntime:
             tool_call_id=tool_call_id, result_digest=result_digest, status=status,
         )
         self.queue.heartbeat(task_id=task.task_id, owner_id=owner_id, lease_seconds=task.lease_seconds)
+        receipt = {
+            "task_id": task.task_id,
+            "run_id": run_id,
+            "tool_call_id": tool_call_id,
+            "tool_name": name,
+            "status": status,
+            "result_digest": result_digest,
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if status != "PASS":
+            if caught_exception:
+                receipt["failure_kind"] = "tool_error"
+            elif name == "verification.run" and isinstance(result, dict) and result.get("status") == "FAIL":
+                receipt["failure_kind"] = "verification_failed"
+            else:
+                receipt["failure_kind"] = "tool_failed"
         return {
             "ok": status == "PASS",
             "result": result,
-            "receipt": {
-                "task_id": task.task_id,
-                "run_id": run_id,
-                "tool_call_id": tool_call_id,
-                "tool_name": name,
-                "status": status,
-                "result_digest": result_digest,
-                "completed_at": datetime.now(timezone.utc).isoformat(),
-            },
+            "receipt": receipt,
         }

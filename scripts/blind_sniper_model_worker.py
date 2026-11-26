@@ -4,6 +4,12 @@
 The provider transport is owned here. It creates a fresh bounded request for
 each task and never delegates task orchestration, state, tools or verification
 to an external agent runtime.
+
+Acceptance caveat: a worker PASS means only that the model ran and its tool
+receipts were not failing under the narrow receipt policy. It is execution
+status, not code acceptance. Read-only runs, writes without verification and
+writes after a PASS verification are not rejected here. The caller must run an
+independent test (fixture unittest or CI) before accepting any code change.
 """
 from __future__ import annotations
 
@@ -45,8 +51,15 @@ class AgentSpec:
     permission_profile: str = "read_only"
     allowed_paths: tuple[str, ...] = ()
     browser_approval_reference: str = ""
+    # When True, a run that makes no tool call cannot PASS. Default False keeps
+    # legitimate read-only or answer-only tasks valid (explicit opt-in per task).
+    require_tool_use: bool = False
 
     def __post_init__(self) -> None:
+        if not isinstance(self.require_tool_use, bool):
+            raise ModelWorkerError("require_tool_use must be a boolean")
+        if self.require_tool_use and not self.tool_allowlist:
+            raise ModelWorkerError("require_tool_use needs a non-empty tool_allowlist")
         if not AGENT_ID.match(self.agent_id):
             raise ModelWorkerError(f"Invalid agent_id: {self.agent_id!r}")
         if self.permission_profile not in PERMISSION_PROFILES:
@@ -83,6 +96,77 @@ class ModelTask:
             raise ModelWorkerError("payload must be an object")
         if not 1 <= self.lease_seconds <= 3600:
             raise ModelWorkerError("lease_seconds must be between 1 and 3600")
+
+
+_FENCED_JSON = re.compile(r"^\s*(?:```(?:json)?\s*)?(\{.*\})\s*(?:```)?\s*$", re.DOTALL)
+
+
+def _text_tool_calls(content: Any, allowlist: tuple[str, ...], round_index: int) -> list[dict[str, Any]]:
+    """Accept a text-form tool call from open-weight models that ignore the
+    structured tool_calls field. Strict: the whole message must be one JSON
+    object with exactly the keys name and arguments, name must be allowlisted
+    and arguments must be an object. Anything else is treated as plain text.
+    The tool runtime still enforces the allowlist, paths and permissions."""
+    if not isinstance(content, str) or len(content) > 20000:
+        return []
+    match = _FENCED_JSON.match(content)
+    if not match:
+        return []
+    try:
+        data = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(data, dict) or set(data) != {"name", "arguments"}:
+        return []
+    name, arguments = data["name"], data["arguments"]
+    if not isinstance(name, str) or name not in allowlist or not isinstance(arguments, dict):
+        return []
+    return [{
+        "id": f"textcall-{round_index}",
+        "type": "function",
+        "function": {"name": name, "arguments": json.dumps(arguments, ensure_ascii=False)},
+    }]
+
+
+def _failing_receipt_tools(receipts: list[dict[str, Any]]) -> list[str]:
+    """Return unique failing tool names, forgiving only superseded red verifications."""
+    verification_indices = [
+        index for index, receipt in enumerate(receipts)
+        if receipt.get("tool_name") == "verification.run"
+    ]
+    last_verification_index = verification_indices[-1] if verification_indices else None
+    mutating_indices = [
+        index for index, receipt in enumerate(receipts)
+        if receipt.get("tool_name") not in {"repo.read_file", "verification.run"}
+    ]
+    last_mutating_index = max(mutating_indices, default=-1)
+    final_verification_pass = (
+        last_verification_index is not None
+        and receipts[last_verification_index].get("status") == "PASS"
+        and last_verification_index > last_mutating_index
+    )
+
+    failing_tools: set[str] = set()
+    for index, receipt in enumerate(receipts):
+        if receipt.get("status") == "PASS":
+            continue
+        forgiven = False
+        if (
+            receipt.get("tool_name") == "verification.run"
+            and receipt.get("failure_kind") == "verification_failed"
+            and final_verification_pass
+            and last_verification_index is not None
+            and index < last_verification_index
+        ):
+            write_indices = [
+                later for later in range(index + 1, last_verification_index)
+                if receipts[later].get("tool_name") == "repo.write_file"
+                and receipts[later].get("status") == "PASS"
+            ]
+            forgiven = bool(write_indices)
+        if not forgiven:
+            failing_tools.add(str(receipt.get("tool_name", "unknown")))
+    return sorted(failing_tools)
 
 
 class NativeModelInvoker:
@@ -241,6 +325,8 @@ class NativeModelInvoker:
             except (KeyError, IndexError, TypeError) as exc:
                 raise ModelWorkerError("Native model provider response does not match the chat-completions contract") from exc
             tool_calls = message.get("tool_calls") or []
+            if not tool_calls and spec.tool_allowlist:
+                tool_calls = _text_tool_calls(message.get("content"), spec.tool_allowlist, round_index)
             if tool_calls:
                 if not spec.tool_allowlist or self.tool_runtime is None:
                     raise ModelWorkerError("Provider requested tools outside the task's native tool allowlist")
@@ -355,6 +441,78 @@ class ModelWorker:
                 if attempt < self.max_retries and self.backoff_seconds:
                     time.sleep(self.backoff_seconds)
                 continue
+            tool_receipts = result.get("tool_receipts", [])
+            malformed_count = None
+            if not isinstance(tool_receipts, list):
+                malformed_count = -1
+            else:
+                malformed_count = sum(1 for r in tool_receipts if not isinstance(r, dict))
+            if malformed_count:
+                container = type(tool_receipts).__name__
+                return {
+                    "schema_version": "1.0.0",
+                    "task_id": task.task_id,
+                    "agent_id": spec.agent_id,
+                    "run_id": result.get("run_id") or str(uuid.uuid4()),
+                    "provider": result.get("provider", "injected_test_or_host_invoker"),
+                    "model": result.get("model"),
+                    "status": "FAIL",
+                    "attempts": attempts,
+                    "permission_profile": spec.permission_profile,
+                    "tool_allowlist": list(spec.tool_allowlist),
+                    "fresh_context": spec.fresh_context,
+                    "output_digest": result.get("output_digest"),
+                    "output_excerpt": redact(result.get("output_excerpt", "")),
+                    "output_text": redact(result.get("output_text", ""))[:MAX_OUTPUT_CHARS],
+                    "tool_receipts": [],
+                    "error": (
+                        "tool_receipts_malformed: container_type=" + container
+                        if malformed_count < 0
+                        else f"tool_receipts_malformed: non_dict_entries={malformed_count}"
+                    ),
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                }
+            failing_tools = _failing_receipt_tools(tool_receipts)
+            if failing_tools:
+                return {
+                    "schema_version": "1.0.0",
+                    "task_id": task.task_id,
+                    "agent_id": spec.agent_id,
+                    "run_id": result.get("run_id") or str(uuid.uuid4()),
+                    "provider": result.get("provider", "injected_test_or_host_invoker"),
+                    "model": result.get("model"),
+                    "status": "FAIL",
+                    "attempts": attempts,
+                    "permission_profile": spec.permission_profile,
+                    "tool_allowlist": list(spec.tool_allowlist),
+                    "fresh_context": spec.fresh_context,
+                    "output_digest": result.get("output_digest"),
+                    "output_excerpt": redact(result.get("output_excerpt", "")),
+                    "output_text": redact(result.get("output_text", ""))[:MAX_OUTPUT_CHARS],
+                    "tool_receipts": tool_receipts,
+                    "error": redact("tool_receipts_not_passing: " + ", ".join(failing_tools)),
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                }
+            if spec.require_tool_use and not tool_receipts:
+                return {
+                    "schema_version": "1.0.0",
+                    "task_id": task.task_id,
+                    "agent_id": spec.agent_id,
+                    "run_id": result.get("run_id") or str(uuid.uuid4()),
+                    "provider": result.get("provider", "injected_test_or_host_invoker"),
+                    "model": result.get("model"),
+                    "status": "FAIL",
+                    "attempts": attempts,
+                    "permission_profile": spec.permission_profile,
+                    "tool_allowlist": list(spec.tool_allowlist),
+                    "fresh_context": spec.fresh_context,
+                    "output_digest": result.get("output_digest"),
+                    "output_excerpt": redact(result.get("output_excerpt", "")),
+                    "output_text": redact(result.get("output_text", ""))[:MAX_OUTPUT_CHARS],
+                    "tool_receipts": [],
+                    "error": "tool_use_required_but_no_tool_receipts",
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                }
             return {
                 "schema_version": "1.0.0",
                 "task_id": task.task_id,
@@ -370,7 +528,7 @@ class ModelWorker:
                 "output_digest": result.get("output_digest"),
                 "output_excerpt": redact(result.get("output_excerpt", "")),
                 "output_text": redact(result.get("output_text", ""))[:MAX_OUTPUT_CHARS],
-                "tool_receipts": result.get("tool_receipts", []),
+                "tool_receipts": tool_receipts,
                 "completed_at": datetime.now(timezone.utc).isoformat(),
             }
         return {
