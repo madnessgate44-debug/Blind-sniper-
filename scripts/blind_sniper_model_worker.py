@@ -45,8 +45,15 @@ class AgentSpec:
     permission_profile: str = "read_only"
     allowed_paths: tuple[str, ...] = ()
     browser_approval_reference: str = ""
+    # When True, a run that makes no tool call cannot PASS. Default False keeps
+    # legitimate read-only or answer-only tasks valid (explicit opt-in per task).
+    require_tool_use: bool = False
 
     def __post_init__(self) -> None:
+        if not isinstance(self.require_tool_use, bool):
+            raise ModelWorkerError("require_tool_use must be a boolean")
+        if self.require_tool_use and not self.tool_allowlist:
+            raise ModelWorkerError("require_tool_use needs a non-empty tool_allowlist")
         if not AGENT_ID.match(self.agent_id):
             raise ModelWorkerError(f"Invalid agent_id: {self.agent_id!r}")
         if self.permission_profile not in PERMISSION_PROFILES:
@@ -411,6 +418,26 @@ class ModelWorker:
                     "output_text": redact(result.get("output_text", ""))[:MAX_OUTPUT_CHARS],
                     "tool_receipts": tool_receipts,
                     "error": redact("tool_receipts_not_passing: " + ", ".join(failing_tools)),
+                    "completed_at": datetime.now(timezone.utc).isoformat(),
+                }
+            if spec.require_tool_use and not tool_receipts:
+                return {
+                    "schema_version": "1.0.0",
+                    "task_id": task.task_id,
+                    "agent_id": spec.agent_id,
+                    "run_id": result.get("run_id") or str(uuid.uuid4()),
+                    "provider": result.get("provider", "injected_test_or_host_invoker"),
+                    "model": result.get("model"),
+                    "status": "FAIL",
+                    "attempts": attempts,
+                    "permission_profile": spec.permission_profile,
+                    "tool_allowlist": list(spec.tool_allowlist),
+                    "fresh_context": spec.fresh_context,
+                    "output_digest": result.get("output_digest"),
+                    "output_excerpt": redact(result.get("output_excerpt", "")),
+                    "output_text": redact(result.get("output_text", ""))[:MAX_OUTPUT_CHARS],
+                    "tool_receipts": [],
+                    "error": "tool_use_required_but_no_tool_receipts",
                     "completed_at": datetime.now(timezone.utc).isoformat(),
                 }
             return {
