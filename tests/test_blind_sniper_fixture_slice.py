@@ -127,6 +127,7 @@ def build_stack(
     state_dir: Path,
     workspace_root: Path,
     base_url: str,
+    worker_timeout_seconds: int = 60,
 ) -> tuple[
     PrivateTaskStore,
     TaskLedger,
@@ -155,7 +156,7 @@ def build_stack(
     worker = ModelWorker(
         invoker=invoker,
         max_concurrency=1,
-        timeout_seconds=60,
+        timeout_seconds=worker_timeout_seconds,
         max_retries=0,
     )
     host_policy = {
@@ -529,7 +530,7 @@ class BlindSniperLiveEndpointSliceTests(unittest.TestCase):
                 json.dumps({"agents": [{"id": "builder"}]}), encoding="utf-8"
             )
 
-            store, _, queue, runtime, _, worker, daemon = build_stack(st, ws, live_url)
+            store, _, queue, runtime, _, worker, daemon = build_stack(st, ws, live_url, worker_timeout_seconds=600)
             worker.invoker = NativeModelInvoker(
                 base_url=live_url, model=live_model, tool_runtime=runtime
             )
