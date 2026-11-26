@@ -111,6 +111,21 @@ class DaemonIntakeGateTests(unittest.TestCase):
         self.assertEqual(health["counts"]["failed"], 1, health)
         self.assertEqual(state["status"], "FAILED")
 
+    def test_health_task_map_is_bounded_and_file_stays_private(self) -> None:
+        import blind_sniper_daemon
+
+        ok = [{"tool_name": "repo.write_file", "status": "PASS"},
+              {"tool_name": "verification.run", "status": "PASS"}]
+        original = blind_sniper_daemon.MAX_HEALTH_TASKS
+        blind_sniper_daemon.MAX_HEALTH_TASKS = 2
+        self.addCleanup(setattr, blind_sniper_daemon, "MAX_HEALTH_TASKS", original)
+        health = None
+        for task_id in ("HEALTH-1", "HEALTH-2", "HEALTH-3"):
+            health, _ = self._run_intake(task_id, ok)
+        self.assertEqual(sorted(health["tasks"]), ["HEALTH-2", "HEALTH-3"])
+        self.assertEqual(oct(os.stat(self.store.health_path).st_mode & 0o777), "0o600")
+        self.assertEqual(oct(os.stat(self.store.health_path.parent).st_mode & 0o777), "0o700")
+
 
 if __name__ == "__main__":
     unittest.main()
