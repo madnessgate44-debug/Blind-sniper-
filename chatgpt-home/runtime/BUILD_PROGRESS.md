@@ -2,7 +2,7 @@
 
 This log ends at 2026-11-17 and does not include PRs #68 to #78 (2026-11-24 to 2026-11-25). Entries below are history. See `chatgpt-home/CURRENT_STATE.md` (reconciliation notice at its top), `docs/architecture/CURRENT_RUNTIME_MAP.md`, `docs/architecture/CAPABILITY_EVIDENCE_MATRIX.md` and Issue #79 for the current evidence picture.
 
-The 2026-11-17 statement that no live model call had been made is superseded: provider smoke run `45505263658` made one synthetic remote call on 2026-11-24. The statement that production autonomous execution is NO-GO still holds. Nothing in this log should be read as proof of a resident worker, notifications, connectors or end-to-end autonomy.
+The 2026-11-17 statement that no live model call had been made is superseded: provider smoke run `45505263658` made one synthetic remote call on 2026-11-24. The statement that production autonomous execution is NO-GO still holds. Current CI evidence (2026-11-26): merge commit `b7ba53016268e6a103588a721983232d0ce231fe`, Runtime Registry run `45818176838` ran 387 tests OK (Python 3.12.16); Environment Validation `45818176806` and OS Compliance `45818176675` passed. Simulation receipts are plumbing proof only. Entries below remain dated history. Nothing in this log should be read as proof of a resident worker, notifications, connectors or end-to-end autonomy.
 
 ---
 
