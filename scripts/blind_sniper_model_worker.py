@@ -92,6 +92,36 @@ class ModelTask:
             raise ModelWorkerError("lease_seconds must be between 1 and 3600")
 
 
+_FENCED_JSON = re.compile(r"^\s*(?:```(?:json)?\s*)?(\{.*\})\s*(?:```)?\s*$", re.DOTALL)
+
+
+def _text_tool_calls(content: Any, allowlist: tuple[str, ...], round_index: int) -> list[dict[str, Any]]:
+    """Accept a text-form tool call from open-weight models that ignore the
+    structured tool_calls field. Strict: the whole message must be one JSON
+    object with exactly the keys name and arguments, name must be allowlisted
+    and arguments must be an object. Anything else is treated as plain text.
+    The tool runtime still enforces the allowlist, paths and permissions."""
+    if not isinstance(content, str) or len(content) > 20000:
+        return []
+    match = _FENCED_JSON.match(content)
+    if not match:
+        return []
+    try:
+        data = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(data, dict) or set(data) != {"name", "arguments"}:
+        return []
+    name, arguments = data["name"], data["arguments"]
+    if not isinstance(name, str) or name not in allowlist or not isinstance(arguments, dict):
+        return []
+    return [{
+        "id": f"textcall-{round_index}",
+        "type": "function",
+        "function": {"name": name, "arguments": json.dumps(arguments, ensure_ascii=False)},
+    }]
+
+
 class NativeModelInvoker:
     """OpenAI-compatible HTTP transport invoked directly by Blind Sniper.
 
@@ -248,6 +278,8 @@ class NativeModelInvoker:
             except (KeyError, IndexError, TypeError) as exc:
                 raise ModelWorkerError("Native model provider response does not match the chat-completions contract") from exc
             tool_calls = message.get("tool_calls") or []
+            if not tool_calls and spec.tool_allowlist:
+                tool_calls = _text_tool_calls(message.get("content"), spec.tool_allowlist, round_index)
             if tool_calls:
                 if not spec.tool_allowlist or self.tool_runtime is None:
                     raise ModelWorkerError("Provider requested tools outside the task's native tool allowlist")
