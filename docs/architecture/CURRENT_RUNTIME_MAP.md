@@ -67,7 +67,13 @@ Consequences (observed from imports): there are two separate execution paths. (a
 4. Docs under `chatgpt-home/` mention Forge/OpenHands/Instinct widely. Not read for claims in this ticket.
 5. GitHub is both ledger store and CI host, so "standalone" in the plan does not cover GitHub; the owner should confirm that is intended.
 
-## 6. Not covered or limited
+## 6. BS-001 acceptance status (for reviewer judgment)
+- Capabilities mapped to source, trigger, tests, evidence: met in the matrix, static only.
+- External dependencies classified: met (section 4).
+- No unsupported production or autonomy claim in the current-state docs: **PENDING REVIEW**. A dated notice now sits at the top of each file and says the older entries are history. The older text below it was not rewritten and some of it is stale, so this criterion is not claimed as met.
+- Limits explicit: met (section 7 below). No runtime change: met.
+
+## 7. Not covered or limited
 - Actions history: the 12 most recent runs (2026-11-25 to 2026-11-26) were read; all Engineering Execution OS Compliance runs on `f9cde15`, `1804a8f`, `4257e0f`, `fb2cfd0` succeeded, REE `45608107720` success. That is a doc-compliance workflow, not behavioural proof.
 - Not executed, so no new pass/fail evidence. Python 3.11 rerun still not done.
 - Not read line by line: `queue_schemas`, `memory_knowledge`, `memory_retrieval`, `handoff_runtime`, `memory_handoff`, `browser_dispatch` internals, `ops/oracle-free`. Their roles above come from module docstrings, imports and tests.
