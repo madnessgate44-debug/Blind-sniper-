@@ -1,3 +1,19 @@
+## Reconciliation notice, 2026-11-26 (BS-001, static, assistant-authored)
+
+This file was last updated 2026-11-17 and predates PRs #68 to #78 (2026-11-24 to 2026-11-25). Treat the dated entries below as history, not current state. Current evidence is in `docs/architecture/CURRENT_RUNTIME_MAP.md` and `docs/architecture/CAPABILITY_EVIDENCE_MATRIX.md` (base `f9cde15`) and Issue #79.
+
+Corrections to the 2026-11-17 text, each from evidence read on 2026-11-26:
+- "No live model call was made" is no longer true. Provider smoke run `45505263658` (2026-11-24) made one synthetic keyless remote model call. It is not proof of multi-agent autonomy or production operation.
+- A daemon one-shot smoke with a stub model passed (`45587990290`). It used a stub, not a real model.
+- REE (`reverse-engineer-everything`, pinned `ab07274`, MIT) is a manually dispatched CI wrapper around a third-party repo (runs `45596006799` fail, `45607329745` fail, `45608107720` success). It is not part of the native task lifecycle. Artifact files were not read.
+- Unchanged and still true as stated: no persistent worker, no notification delivery, no authenticated connectors, no private-store live round trip, health endpoint reports `task_execution_enabled=false`. Production autonomous execution is NO-GO.
+- Headings such as "native autonomous runtime" describe a plan or goal, not a delivered capability.
+- Local-only work not on `main`: a local small-model proof, a connector-registry branch (fake HTTP only), a frontend visual gate branch. None is merged or proven in CI.
+
+Not verified in this reconciliation: current Actions history beyond the 12 most recent runs, deployment state, any test pass counts (no re-run; Python 3.11 not available).
+
+---
+
 ## Owner continuation checkpoint — 2026-11-17 (latest)
 
 - [V] PR #63 added a manual-only Gemini Free-tier synthetic provider smoke workflow; PR #64 added workflow security-contract tests. Both are merged. No API key was configured and no live model call was made.
