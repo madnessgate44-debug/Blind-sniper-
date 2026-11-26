@@ -43,6 +43,9 @@ ALLOWED_TASK_KEYS = {
 }
 
 
+MAX_HEALTH_TASKS = 50  # bound the private health file: only the most recent terminal tasks
+
+
 class DaemonError(RuntimeError):
     """Private worker configuration, task-store or lifecycle failure."""
 
@@ -558,9 +561,12 @@ class BlindSniperDaemon:
         with self._memory_capture_lock:
             counts["memory_capture_errors"] = self._memory_capture_errors
         task_summaries: dict[str, dict[str, str]] = {}
-        for state in self.queue.list_tasks():
-            if state.get("status") not in TERMINAL_STATUSES:
-                continue
+        terminal_states = [
+            state for state in self.queue.list_tasks()
+            if state.get("status") in TERMINAL_STATUSES
+        ]
+        terminal_states.sort(key=lambda state: (state.get("enqueued_at") or "", str(state["task_id"])))
+        for state in terminal_states[-MAX_HEALTH_TASKS:]:
             task_id = str(state["task_id"])
             summary = {"status": str(state["status"]), "result_digest": ""}
             for receipt_path in sorted(self.store.receipt_dir.glob(f"{task_id}__*.json")):
