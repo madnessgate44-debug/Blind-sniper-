@@ -167,7 +167,9 @@ class Connector(ABC):
 
     Cancellation contract: a connector must set ``cancellable = True`` and accept a ``cancel``
     threading.Event keyword in call(); it must stop all work and side effects promptly once the
-    event is set. A thread cannot be killed, so a connector that does not declare this is refused
+    event is set. Tools must declare "side_effects": "read_only" to be retry-safe after a timeout;
+    anything else is treated as mutating and a stopped timeout stays an unresolved partial outcome.
+    A thread cannot be killed, so a connector that does not declare this is refused
     (fail closed) rather than run with a timeout that cannot stop it.
     """
 
@@ -870,8 +872,11 @@ class ConnectorRegistry:
                             if thread.is_alive():
                                 failure, message = "timeout_unknown_state", "Timed out; execution did not stop and its state is unknown"
                                 self._mark_unknown(connector_id, tool_name, arguments, thread)
-                            else:
-                                failure, message = "timeout", "Connector call timed out and execution stopped"
+                            elif definition.get("side_effects") == "read_only":
+                                failure, message = "timeout", "Read-only call timed out and execution stopped"
+                            else:  # a mutating (or undeclared) call may have changed state before it honoured cancel
+                                failure, message = "timeout_partial_unknown", "Timed out; execution stopped but partial effects are unknown"
+                                self._mark_unknown(connector_id, tool_name, arguments, thread)
         except Exception as exc:
             failure = failure or "connector_error"
             message = message or str(exc)
