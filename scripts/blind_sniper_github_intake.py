@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -143,7 +144,9 @@ def write_task(store_task_dir: str | Path, envelope: dict, *, state_dir: str | P
         raise ValueError("invalid issue number")
     index_path = index / f"{hashlib.sha256((repository + '#' + str(issue_number)).encode()).hexdigest()}.json"
     reason = "accepted"
+    lock_fd = os.open(intake / ".lock", os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0), 0o600)
     try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX)  # serialize concurrent deliveries of the same event
         if index_path.exists():
             previous = json.loads(index_path.read_text(encoding="utf-8"))
             if previous.get("payload_digest") == canonical_digest:
@@ -168,6 +171,8 @@ def write_task(store_task_dir: str | Path, envelope: dict, *, state_dir: str | P
                     reason = "task_write_failed"
     except (OSError, ValueError, json.JSONDecodeError):
         reason = "index_error"
+    finally:
+        os.close(lock_fd)
     outcome = "accepted" if reason in ("accepted", "idempotent") else "rejected"
     return _write_receipt(receipts, {"repository": repository, "issue_number": issue_number, "task_id": envelope.get("task_id"),
                "delivery_id": delivery_id, "timestamp": now, "payload_digest": canonical_digest,
