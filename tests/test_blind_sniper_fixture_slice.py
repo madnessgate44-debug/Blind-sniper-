@@ -541,12 +541,14 @@ class BlindSniperLiveEndpointSliceTests(unittest.TestCase):
             proc = _run_fixture_unittest(ws)
             receipts = list(store.receipt_dir.glob("*.json"))
             receipt_count = 0
+            receipt_trace = []
             task_receipt_status = None
             receipt_error = None
             receipt_excerpt = ""
             if receipts:
                 data = json.loads(receipts[0].read_text(encoding="utf-8"))
                 receipt_count = len(data.get("tool_receipts", []))
+                receipt_trace = [[r.get("tool_name"), r.get("status"), r.get("failure_kind")] for r in data.get("tool_receipts", []) if isinstance(r, dict)]
                 task_receipt_status = data.get("status")
                 receipt_error = data.get("error")
                 receipt_excerpt = str(data.get("output_excerpt", ""))[:600]
@@ -559,6 +561,7 @@ class BlindSniperLiveEndpointSliceTests(unittest.TestCase):
                 "task_receipt_status": task_receipt_status,
                 "tests_passed": proc.returncode == 0,
                 "tool_receipts_count": receipt_count,
+                "receipt_trace": receipt_trace,
                 "receipt_error": receipt_error,
                 "model_output_excerpt": receipt_excerpt,
             }
