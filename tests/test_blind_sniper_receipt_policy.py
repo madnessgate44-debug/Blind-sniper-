@@ -80,6 +80,15 @@ class ReceiptPolicyTests(unittest.TestCase):
         ])
         self.assertEqual(out["status"], "PASS")
 
+    def test_red_write_red_green_without_second_write_fails(self) -> None:
+        out = self._run([
+            self._receipt("verification.run", "FAIL", "verification_failed"),
+            self._receipt("repo.write_file", "PASS"),
+            self._receipt("verification.run", "FAIL", "verification_failed"),
+            self._receipt("verification.run", "PASS"),
+        ])
+        self.assertEqual(out["status"], "FAIL")
+
     def test_red_then_green_without_write_fails(self) -> None:
         self.assertEqual(self._run([
             self._receipt("verification.run", "FAIL", "verification_failed"),
@@ -164,6 +173,47 @@ class NativeRuntimeReceiptPolicyTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["receipt"]["status"], "FAIL")
         self.assertEqual(result["receipt"]["failure_kind"], "verification_failed")
+
+
+class RuntimeFailureKindIntegrationTests(unittest.TestCase):
+    def _execute(self, arguments, patch_run=None):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            queue = DurableQueue(TaskLedger(root / "ledger.jsonl"))
+            now = datetime.now(timezone.utc)
+            queue.enqueue(task_id="t", kind="native_model_agent", payload_digest="d", now=now)
+            queue.claim(owner_id="w", task_id="t", lease_seconds=3600, now=now)
+            task = ModelTask(task_id="t", agent_id="agent-1", objective="v", payload={}, lease_owner_id="w")
+            runtime = NativeToolRuntime(queue, workspace_root=root)
+            spec = AgentSpec(agent_id="agent-1", tool_allowlist=("verification.run",))
+            call = lambda: runtime.execute(
+                name="verification.run", arguments=arguments, spec=spec, task=task, run_id="r", tool_call_id="c",
+            )
+            if patch_run is None:
+                return call()
+            with patch("blind_sniper_tool_runtime.subprocess.run", **patch_run):
+                return call()
+
+    def test_denied_verification_command_is_tool_error_not_verification_failed(self) -> None:
+        result = self._execute({"command_id": "not-in-the-allowlist"})
+        self.assertEqual(result["receipt"]["status"], "FAIL")
+        self.assertEqual(result["receipt"]["failure_kind"], "tool_error")
+
+    def test_verification_timeout_is_not_a_recoverable_red(self) -> None:
+        import subprocess
+        exc = subprocess.TimeoutExpired(cmd="x", timeout=1)
+        result = self._execute({"command_id": "runtime-validator"}, {"side_effect": exc})
+        self.assertNotEqual(result["receipt"]["status"], "PASS")
+        self.assertNotEqual(result["receipt"].get("failure_kind"), "verification_failed")
+
+    def test_denied_verification_then_write_then_green_still_fails_the_task(self) -> None:
+        denied = self._execute({"command_id": "not-in-the-allowlist"})["receipt"]
+        out = ReceiptPolicyTests()._run([
+            denied,
+            ReceiptPolicyTests._receipt("repo.write_file", "PASS"),
+            ReceiptPolicyTests._receipt("verification.run", "PASS"),
+        ])
+        self.assertEqual(out["status"], "FAIL")
 
 
 if __name__ == "__main__":
