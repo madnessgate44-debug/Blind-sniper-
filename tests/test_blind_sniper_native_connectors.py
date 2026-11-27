@@ -10,6 +10,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 from dataclasses import replace
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -17,7 +18,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.blind_sniper_connectors import (  # noqa: E402
-    BUILTIN_SPECS, ConnectorRegistry, ConnectorStatus, _utc_now_iso,
+    BUILTIN_SPECS, ConnectorRegistry, ConnectorStatus, ROLES, _utc_now_iso,
 )
 from scripts.blind_sniper_native_connectors import (  # noqa: E402
     FilesConnector, GitConnector, TerminalConnector, run_process,
@@ -85,12 +86,13 @@ class TestNativeConnectors(unittest.TestCase):
             connector = TerminalConnector(tmp, {py})
             reg = registry(connector, ["run_command"])
             args = {"argv": [py, "-c", "import pathlib,sys,time; pathlib.Path(sys.argv[1]).write_text('yes'); time.sleep(30)", str(marker)]}
-            call = lambda: reg.call("engineer", "terminal", "run_command", args,
-                                    ["terminal.run_command"], timeout_s=0.4)
-            first = call()
-            self.assertTrue(marker.exists())
-            self.assertEqual(first["failure_kind"], "timeout_partial_unknown", first)
-            self.assertEqual(call()["failure_kind"], "execution_state_unknown")
+            with patch.dict(ROLES, {"test_terminal": [("terminal", "*")]}):
+                call = lambda: reg.call("test_terminal", "terminal", "run_command", args,
+                                         ["terminal.run_command"], timeout_s=0.4)
+                first = call()
+                self.assertTrue(marker.exists())
+                self.assertEqual(first["failure_kind"], "timeout_partial_unknown", first)
+                self.assertEqual(call()["failure_kind"], "execution_state_unknown")
 
     def test_readonly_timeout_is_retryable_timeout(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -103,8 +105,9 @@ class TestNativeConnectors(unittest.TestCase):
                 [sys.executable, "-c", "import time; time.sleep(20)"], root=tmp,
                 timeout_s=timeout_s, cancel=cancel)
             reg = registry(connector, ["read"])
-            got = reg.call("engineer", "terminal", "read", {}, ["terminal.read"], timeout_s=0.3)
-            self.assertEqual(got["failure_kind"], "timeout", got)
+            with patch.dict(ROLES, {"test_terminal": [("terminal", "*")]}):
+                got = reg.call("test_terminal", "terminal", "read", {}, ["terminal.read"], timeout_s=0.3)
+                self.assertEqual(got["failure_kind"], "timeout", got)
 
     def test_cancel_event_kills_process_group(self):
         with tempfile.TemporaryDirectory() as tmp:
