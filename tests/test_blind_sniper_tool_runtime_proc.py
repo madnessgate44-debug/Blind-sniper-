@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import signal
 import sys
 import tempfile
 import time
@@ -156,6 +157,80 @@ class VerificationProcessTests(unittest.TestCase):
             time.sleep(0.02)
         else:
             self.fail(f"background process {background_pid} still exists after normal exit cleanup")
+
+    def test_timeout_uses_term_before_kill_when_child_exits_on_term(self):
+        processes = []
+        real_popen = tool_runtime.PROCESS_POPEN
+
+        def capture_process(*args, **kwargs):
+            process = real_popen(*args, **kwargs)
+            processes.append(process)
+            return process
+
+        started = time.monotonic()
+        self.runtime.command_timeout = 0.2
+        with patch.dict(tool_runtime.COMMANDS, {
+            "unit-tests": [sys.executable, "-c", "import signal,time; signal.signal(signal.SIGTERM, lambda *_: exit(0)); time.sleep(30)"],
+        }), patch.object(tool_runtime, "PROCESS_POPEN", side_effect=capture_process):
+            result = self.runtime._run_verification({"command_id": "unit-tests"})
+        elapsed = time.monotonic() - started
+        self.assertEqual(result["status"], "TIMED_OUT")
+        self.assertLess(elapsed, 0.2 + tool_runtime.PROCESS_TERMINATION_GRACE_SECONDS / 2)
+        self.assertIsNotNone(processes[0].poll())
+        with self.assertRaises(ProcessLookupError):
+            os.killpg(processes[0].pid, 0)
+
+    def test_timeout_kills_child_that_ignores_term(self):
+        self.runtime.command_timeout = 0.2
+        processes = []
+        real_popen = tool_runtime.PROCESS_POPEN
+
+        def capture_process(*args, **kwargs):
+            process = real_popen(*args, **kwargs)
+            processes.append(process)
+            return process
+
+        with patch.object(tool_runtime, "PROCESS_TERMINATION_GRACE_SECONDS", 0.1), patch.dict(
+            tool_runtime.COMMANDS,
+            {"unit-tests": [sys.executable, "-c", "import signal,time; signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(30)"]},
+        ), patch.object(tool_runtime, "PROCESS_POPEN", side_effect=capture_process):
+            result = self.runtime._run_verification({"command_id": "unit-tests"})
+        process = processes[0]
+        self.assertEqual(result["status"], "TIMED_OUT")
+        self.assertIsNotNone(process.poll())
+        with self.assertRaises(ProcessLookupError):
+            os.killpg(process.pid, 0)
+
+    def test_selector_failure_closes_pipes_and_reaps_child(self):
+        processes = []
+        real_popen = tool_runtime.PROCESS_POPEN
+
+        def capture_process(*args, **kwargs):
+            process = real_popen(*args, **kwargs)
+            processes.append(process)
+            return process
+
+        with patch.dict(tool_runtime.COMMANDS, {
+            "unit-tests": [sys.executable, "-c", "import time; time.sleep(30)"],
+        }), patch.object(tool_runtime, "PROCESS_POPEN", side_effect=capture_process), patch.object(
+            tool_runtime.selectors.DefaultSelector, "register", side_effect=RuntimeError("injected selector failure"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "injected selector failure"):
+                self.runtime._run_verification({"command_id": "unit-tests"})
+        process = processes[0]
+        self.assertTrue(process.stdout.closed)
+        self.assertTrue(process.stderr.closed)
+        self.assertIsNotNone(process.poll())
+        with self.assertRaises(ProcessLookupError):
+            os.killpg(process.pid, 0)
+
+    def test_timeout_receipt_redacts_secret_sentinel(self):
+        sentinel = "sk-test-secret-sentinel-123456789"
+        result = self.run_python(
+            f"import sys,time; print({sentinel!r}, flush=True); time.sleep(30)", timeout=0.2,
+        )
+        self.assertEqual(result["status"], "TIMED_OUT")
+        self.assertNotIn(sentinel, result["stdout_excerpt"] + result["stderr_excerpt"])
 
 
 if __name__ == "__main__":
