@@ -904,8 +904,8 @@ class ConnectorRegistry:
                 if call_invoked and side_effects != "read_only" and call_thread is not None:
                     self._mark_unknown(connector_id, tool_name, arguments, call_thread)
                 return {"status": "UNKNOWN" if call_invoked and side_effects != "read_only" else "FAIL",
-                        "failure_kind": "receipt_persistence_failed",
-                        "error": "Durable audit receipt could not be persisted"}
+                        "failure_kind": failure if failure == "execution_state_unknown" else "receipt_persistence_failed",
+                        "error": "Execution remains unresolved; durable audit receipt could not be persisted"}
             return {"status": "FAIL", "failure_kind": failure, "error": safe_message}
         recorded = self._record_call(connector_id, tool_name, arguments, "SUCCESS", None, started)
         if not recorded:
