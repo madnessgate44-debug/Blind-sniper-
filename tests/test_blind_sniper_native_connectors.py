@@ -70,7 +70,8 @@ class TestNativeConnectors(unittest.TestCase):
             deadline = time.monotonic() + 4
             def alive(pid):
                 try:
-                    return open(f"/proc/{pid}/stat").read().rsplit(")", 1)[1].split()[0] != "Z"
+                    with open(f"/proc/{pid}/stat") as stat_file:
+                        return stat_file.read().rsplit(")", 1)[1].split()[0] != "Z"
                 except OSError:
                     return False
             while time.monotonic() < deadline and any(alive(p) for p in listed):
