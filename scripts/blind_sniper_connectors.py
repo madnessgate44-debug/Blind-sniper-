@@ -746,7 +746,7 @@ class ConnectorRegistry:
         return out
 
     def _record_call(self, connector_id: str, tool_name: str, arguments: Any,
-                     outcome: str, failure_kind: str | None, started: float) -> None:
+                     outcome: str, failure_kind: str | None, started: float) -> bool:
         try:
             canonical = json.dumps(arguments, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
         except Exception:
@@ -761,17 +761,21 @@ class ConnectorRegistry:
             "arguments_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
         }
         self.call_receipts.append(receipt)
-        if self.call_receipts_path is not None:
-            try:
-                path = self.call_receipts_path
-                path.parent.mkdir(parents=True, exist_ok=True)
-                fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
-                os.fchmod(fd, 0o600)
-                with os.fdopen(fd, "a", encoding="utf-8") as handle:
-                    handle.write(json.dumps(receipt, sort_keys=True) + "\n")
-            except Exception:
-                # Audit persistence must not leak call data or cause a call exception.
-                pass
+        if self.call_receipts_path is None:
+            return True
+        try:
+            path = self.call_receipts_path
+            path.parent.mkdir(parents=True, exist_ok=True)
+            fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+            os.fchmod(fd, 0o600)
+            with os.fdopen(fd, "a", encoding="utf-8") as handle:
+                handle.write(json.dumps(receipt, sort_keys=True) + "\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            return True
+        except Exception:
+            # A configured durable audit sink is mandatory: callers must fail closed.
+            return False
 
     @staticmethod
     def _validate_tool_arguments(schema: Any, arguments: Any) -> bool:
@@ -823,6 +827,9 @@ class ConnectorRegistry:
         failure: str | None = None
         message = ""
         result: dict[str, Any] | None = None
+        call_thread: threading.Thread | None = None
+        call_invoked = False
+        side_effects = "mutating"
         try:
             timeout = float(timeout_s)
             if timeout <= 0 or timeout > 120:
@@ -833,6 +840,8 @@ class ConnectorRegistry:
             else:
                 definitions = connector.tools()
                 definition = next((x for x in definitions if isinstance(x, dict) and x.get("name") == tool_name), None)
+                if definition is not None:
+                    side_effects = definition.get("side_effects", "mutating")
                 if definition is None:
                     failure, message = "unknown_tool", "Unknown tool"
                 elif f"{connector_id}.{tool_name}" not in task_allowlist:  # connector-qualified: a bare tool name never matches
@@ -852,11 +861,14 @@ class ConnectorRegistry:
                         cancel = threading.Event()
                         responses: queue.Queue[tuple[bool, Any]] = queue.Queue(maxsize=1)
                         def invoke() -> None:
+                            nonlocal call_invoked
+                            call_invoked = True
                             try:
                                 responses.put((True, connector.call(tool_name, arguments, timeout_s=timeout, cancel=cancel)))
                             except BaseException as exc:
                                 responses.put((False, exc))
                         thread = threading.Thread(target=invoke, daemon=True)
+                        call_thread = thread
                         thread.start()
                         try:
                             ok, value = responses.get(timeout=timeout)
@@ -880,12 +892,29 @@ class ConnectorRegistry:
         except Exception as exc:
             failure = failure or "connector_error"
             message = message or str(exc)
+            if call_invoked and side_effects != "read_only" and call_thread is not None:
+                self._mark_unknown(connector_id, tool_name, arguments, call_thread)
+                failure = "execution_state_unknown"
+                message = "Connector failed after invocation; side effects are unknown and replay is blocked"
         if failure:
             secrets = _collect_env_secrets({**os.environ, **self.env})
             safe_message = redact(message, secrets)
-            self._record_call(connector_id, tool_name, arguments, "FAIL", failure, started)
+            recorded = self._record_call(connector_id, tool_name, arguments, "FAIL", failure, started)
+            if not recorded:
+                if call_invoked and side_effects != "read_only" and call_thread is not None:
+                    self._mark_unknown(connector_id, tool_name, arguments, call_thread)
+                return {"status": "UNKNOWN" if call_invoked and side_effects != "read_only" else "FAIL",
+                        "failure_kind": "receipt_persistence_failed",
+                        "error": "Durable audit receipt could not be persisted"}
             return {"status": "FAIL", "failure_kind": failure, "error": safe_message}
-        self._record_call(connector_id, tool_name, arguments, "SUCCESS", None, started)
+        recorded = self._record_call(connector_id, tool_name, arguments, "SUCCESS", None, started)
+        if not recorded:
+            if call_invoked and side_effects != "read_only":
+                self._mark_unknown(connector_id, tool_name, arguments, threading.current_thread())
+                return {"status": "UNKNOWN", "failure_kind": "receipt_persistence_failed",
+                        "error": "Action returned but its durable audit receipt failed; replay is blocked"}
+            return {"status": "FAIL", "failure_kind": "receipt_persistence_failed",
+                    "error": "Durable audit receipt could not be persisted"}
         return result or {}
 
     @staticmethod
