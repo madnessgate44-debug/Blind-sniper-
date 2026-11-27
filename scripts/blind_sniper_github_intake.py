@@ -295,7 +295,6 @@ def _publish(task_dir: Path, index_path: Path, envelope: dict, repository: str, 
         return "index_error"
     record["state"] = "staged"
     staging: Path | None = None
-    staged_index: Path | None = None
     try:
         fd, name = tempfile.mkstemp(prefix=STAGING_PREFIX, dir=task_dir)
         staging = Path(name)
@@ -310,7 +309,6 @@ def _publish(task_dir: Path, index_path: Path, envelope: dict, repository: str, 
             os.fsync(dir_fd)
         finally:
             os.close(dir_fd)
-        staged_index = _prepare_index_temp(index_path, record)
         try:
             os.link(staging, final)  # fails if the task id exists; never overwrites
         except FileExistsError:
@@ -329,13 +327,6 @@ def _publish(task_dir: Path, index_path: Path, envelope: dict, repository: str, 
                 staging.unlink()
             except FileNotFoundError:
                 pass
-        if staged_index is not None:
-            try:
-                staged_index.unlink()
-            except FileNotFoundError:
-                pass
-
-
 def write_rejection(state_dir: str | Path, result: dict) -> dict[str, Any]:
     """Record a validation rejection (reason code only). Writes no task file."""
     _, receipts, _ = _intake_dirs(state_dir)
