@@ -494,6 +494,17 @@ class TestBlindSniperConnectors(unittest.TestCase):
         ok_missing_scope, _ = authorize("worker_executor", "google_drive", "create_file", reg_g, now=now, confirmed=False)
         self.assertFalse(ok_missing_scope)
 
+    def test_terminal_is_denied_to_all_runtime_roles_by_default(self) -> None:
+        now = 1_700_000_000.0
+        reg = ConnectorRegistry(env={}, http=FakeHttpResponse({}))
+        reg._statuses["terminal"] = ConnectorStatus(
+            connector_id="terminal", auth_status="verified", health="healthy",
+            last_verified_at=_utc_now_iso(now),
+            operations_available=list(reg.specs["terminal"].operations), checked_by="test")
+        for role in ("engineer", "qa_verifier", "worker_executor"):
+            allowed, _ = authorize(role, "terminal", "run_command", reg, now=now, confirmed=True)
+            self.assertFalse(allowed, role)
+
     def test_receipt_mode_0600_atomic_roundtrip_and_stale_receipt(self) -> None:
         now = 1_700_000_000.0
         env = {"GITHUB_TOKEN": "tok_abc", "GITHUB_REPOSITORY": "org/repo"}
