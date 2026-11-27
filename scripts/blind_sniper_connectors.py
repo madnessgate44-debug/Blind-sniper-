@@ -326,6 +326,16 @@ BUILTIN_SPECS: dict[str, ConnectorSpec] = {
         token_env_var=None,
         expires_env_var=None,
     ),
+    "git": ConnectorSpec(
+        connector_id="git",
+        display_name="Local Git (read-only)",
+        auth_kind="local_none",
+        env_vars=[],
+        scopes_required=[],
+        operations=["status", "diff", "log"],
+        token_env_var=None,
+        expires_env_var=None,
+    ),
     "terminal": ConnectorSpec(
         connector_id="terminal",
         display_name="Terminal",
@@ -553,6 +563,9 @@ ROLES: dict[str, list[tuple[str, str]]] = {
         ("model_gemini", "list_models"),
         ("files", "read_*"),
         ("files", "list_*"),
+        ("git", "status"),
+        ("git", "diff"),
+        ("git", "log"),
     ],
     "researcher": [
         ("github", "read_*"),
@@ -570,6 +583,9 @@ ROLES: dict[str, list[tuple[str, str]]] = {
         ("browser", "*"),
         ("files", "read_*"),
         ("files", "list_*"),
+        ("git", "status"),
+        ("git", "diff"),
+        ("git", "log"),
     ],
     "engineer": [
         ("github", "*"),
@@ -579,6 +595,9 @@ ROLES: dict[str, list[tuple[str, str]]] = {
         ("model_gemini", "list_models"),
         ("browser", "*"),
         ("files", "*"),
+        ("git", "status"),
+        ("git", "diff"),
+        ("git", "log"),
     ],
     "qa_verifier": [
         ("github", "read_*"),
@@ -586,6 +605,9 @@ ROLES: dict[str, list[tuple[str, str]]] = {
         ("browser", "*"),
         ("files", "read_*"),
         ("files", "list_*"),
+        ("git", "status"),
+        ("git", "diff"),
+        ("git", "log"),
     ],
     "release_manager": [
         ("github", "read_*"),
@@ -596,6 +618,9 @@ ROLES: dict[str, list[tuple[str, str]]] = {
         ("google_sheets", "get_*"),
         ("files", "read_*"),
         ("files", "list_*"),
+        ("git", "status"),
+        ("git", "diff"),
+        ("git", "log"),
     ],
     "watcher": [
         ("github", "read_*"),
@@ -607,6 +632,9 @@ ROLES: dict[str, list[tuple[str, str]]] = {
         ("whatsapp_business", "read_*"),
         ("files", "read_*"),
         ("files", "list_*"),
+        ("git", "status"),
+        ("git", "diff"),
+        ("git", "log"),
     ],
     "worker_executor": [
         ("github", "*"),
@@ -619,6 +647,9 @@ ROLES: dict[str, list[tuple[str, str]]] = {
         ("model_gemini", "*"),
         ("browser", "*"),
         ("files", "*"),
+        ("git", "status"),
+        ("git", "diff"),
+        ("git", "log"),
     ],
 }
 
