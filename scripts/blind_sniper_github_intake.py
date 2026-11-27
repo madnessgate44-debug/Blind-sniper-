@@ -9,9 +9,9 @@ bad signature rejects the event (fail closed). This CLI is not a network ingress
 fed a delivery that a trusted receiver on the private host already received from GitHub. No such
 receiver exists yet, so this is not live authenticated GitHub intake.
 
-Persistence is transactional. The task is staged under a name the daemon never reads, the
-idempotency index is written, and only then is the task published with a no-overwrite hard link.
-That link is the commit point. Any failure before it rolls back and leaves no task visible.
+Persistence is recoverable. The task is fsynced under a name the daemon never reads, then
+published with a no-overwrite hard link. That link is the commit point; the idempotency index and
+receipt are repaired afterward from the committed task.
 
 Body template: ```json
 {"task_id":"...","agent_id":"...","objective":"...","payload":{},"require_tool_use":false}
@@ -26,6 +26,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -35,7 +36,7 @@ SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
-from blind_sniper_daemon import DaemonError, PrivateTaskStore, TASK_ID, _atomic_private_json
+from blind_sniper_daemon import DaemonError, PrivateTaskStore, TASK_ID
 
 FIELDS = {"task_id", "agent_id", "objective", "payload", "require_tool_use"}
 MAX_BODY = 16 * 1024
@@ -166,6 +167,48 @@ def _exclusive_json(path: Path, value: dict[str, Any]) -> None:
             os.close(fd)
 
 
+def _prepare_index_temp(path: Path, value: dict[str, Any]) -> Path:
+    """Write and fsync a private index record without making it visible at its final name."""
+    fd, name = tempfile.mkstemp(prefix=".index-tmp-", dir=path.parent)
+    temp = Path(name)
+    complete = False
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            fd = -1
+            json.dump(value, stream, ensure_ascii=False, sort_keys=True)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        complete = True
+        return temp
+    finally:
+        if fd >= 0:
+            os.close(fd)
+        if not complete:
+            try:
+                temp.unlink()
+            except FileNotFoundError:
+                pass
+
+
+def _atomic_index(path: Path, value: dict[str, Any]) -> None:
+    """Write a complete private index record and atomically publish it."""
+    temp = _prepare_index_temp(path, value)
+    try:
+        os.replace(temp, path)
+        dir_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+    finally:
+        try:
+            temp.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def _write_receipt(receipts: Path, receipt: dict[str, Any]) -> dict[str, Any]:
     """Receipts are immutable evidence: one file per distinct event, created exclusively."""
     key = "|".join(str(receipt.get(k, "")) for k in ("delivery_id", "outcome", "reason_code", "payload_digest"))
@@ -180,18 +223,6 @@ def _write_receipt(receipts: Path, receipt: dict[str, Any]) -> dict[str, Any]:
 def _intake_dirs(state_dir: str | Path) -> tuple[Path, Path, Path]:
     intake = _private_dir(Path(state_dir) / "intake")
     return intake, _private_dir(intake / "receipts"), _private_dir(intake / "index")
-
-
-def sweep_staging(task_dir: str | Path) -> int:
-    """Remove staging leftovers from an interrupted intake. The daemon never reads these names."""
-    removed = 0
-    for path in Path(task_dir).glob(STAGING_PREFIX + "*"):
-        try:
-            path.unlink()
-            removed += 1
-        except OSError:
-            pass
-    return removed
 
 
 def write_task(store_task_dir: str | Path, envelope: dict, *, state_dir: str | Path,
@@ -211,9 +242,6 @@ def write_task(store_task_dir: str | Path, envelope: dict, *, state_dir: str | P
         fcntl.flock(lock_fd, fcntl.LOCK_EX)  # serialize deliveries across threads and processes
         if task_dir.is_symlink() or not task_dir.is_dir():
             reason = "invalid_task_store"
-        elif sweep_staging(task_dir) >= 0 and index_path.exists():
-            previous = json.loads(index_path.read_text(encoding="utf-8"))
-            reason = "idempotent" if previous.get("payload_digest") == canonical_digest else "changed_payload"
         else:
             reason = _publish(task_dir, index_path, envelope, repository, issue_number, delivery_id,
                               canonical_digest)
@@ -230,37 +258,82 @@ def write_task(store_task_dir: str | Path, envelope: dict, *, state_dir: str | P
 
 def _publish(task_dir: Path, index_path: Path, envelope: dict, repository: str, issue_number: int,
              delivery_id: str, digest: str) -> str:
-    """stage -> index -> link (commit point). Everything before the link rolls back on any failure."""
+    """Stage privately, link the task (commit point), then atomically repair the index."""
     final = task_dir / f"{envelope['task_id']}.json"
-    staging = task_dir / f"{STAGING_PREFIX}{os.getpid()}-{envelope['task_id']}"
-    index_created = False
-    try:
-        if os.path.lexists(final):
+    record = {"repository": repository, "issue_number": issue_number, "delivery_id": delivery_id,
+              "payload_digest": digest, "task_id": envelope["task_id"]}
+    if index_path.exists():
+        previous = json.loads(index_path.read_text(encoding="utf-8"))
+        if not isinstance(previous, dict) or previous.get("state") not in ("staged", "committed"):
+            return "index_error"
+        if previous.get("payload_digest") != digest:
+            return "changed_payload"
+        if (previous.get("repository") != repository or previous.get("issue_number") != issue_number
+                or previous.get("task_id") != envelope["task_id"]):
+            return "index_error"
+    if os.path.lexists(final):
+        try:
+            actual = json.loads(final.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
             return "task_id_collision"
-        _exclusive_json(staging, envelope)
-        _exclusive_json(index_path, {"repository": repository, "issue_number": issue_number,
-                                     "delivery_id": delivery_id, "payload_digest": digest,
-                                     "task_id": envelope["task_id"]})
-        index_created = True
+        if not isinstance(actual, dict) or actual.get("task_id") != envelope["task_id"]:
+            return "task_id_collision"
+        if hashlib.sha256(canonical(actual)).hexdigest() != digest:
+            return "changed_payload"
+        if not index_path.exists():
+            for other in index_path.parent.glob("*.json"):
+                try:
+                    other_record = json.loads(other.read_text(encoding="utf-8"))
+                except (OSError, ValueError, TypeError):
+                    return "index_error"
+                if isinstance(other_record, dict) and other_record.get("task_id") == envelope["task_id"]:
+                    return "task_id_collision"
+        record["state"] = "committed"
+        _atomic_index(index_path, record)
+        return "idempotent"
+    if index_path.exists() and previous.get("state") == "committed":
+        return "index_error"
+    record["state"] = "staged"
+    staging: Path | None = None
+    staged_index: Path | None = None
+    try:
+        fd, name = tempfile.mkstemp(prefix=STAGING_PREFIX, dir=task_dir)
+        staging = Path(name)
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump(envelope, stream, ensure_ascii=False, sort_keys=True)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        dir_fd = os.open(task_dir, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+        staged_index = _prepare_index_temp(index_path, record)
         try:
             os.link(staging, final)  # fails if the task id exists; never overwrites
         except FileExistsError:
-            index_path.unlink()
-            index_created = False
             return "task_id_collision"
-        return "accepted"
-    except BaseException:
-        if index_created:
-            try:
-                index_path.unlink()
-            except OSError:
-                pass
-        raise
-    finally:
+        dir_fd = os.open(task_dir, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
         try:
-            staging.unlink()
-        except OSError:
-            pass
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+        record["state"] = "committed"
+        _atomic_index(index_path, record)
+        return "accepted"
+    finally:
+        if staging is not None:
+            try:
+                staging.unlink()
+            except FileNotFoundError:
+                pass
+        if staged_index is not None:
+            try:
+                staged_index.unlink()
+            except FileNotFoundError:
+                pass
 
 
 def write_rejection(state_dir: str | Path, result: dict) -> dict[str, Any]:
