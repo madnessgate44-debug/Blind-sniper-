@@ -579,7 +579,6 @@ ROLES: dict[str, list[tuple[str, str]]] = {
         ("model_gemini", "list_models"),
         ("browser", "*"),
         ("files", "*"),
-        ("terminal", "*"),
     ],
     "qa_verifier": [
         ("github", "read_*"),
@@ -587,7 +586,6 @@ ROLES: dict[str, list[tuple[str, str]]] = {
         ("browser", "*"),
         ("files", "read_*"),
         ("files", "list_*"),
-        ("terminal", "*"),
     ],
     "release_manager": [
         ("github", "read_*"),
@@ -621,7 +619,6 @@ ROLES: dict[str, list[tuple[str, str]]] = {
         ("model_gemini", "*"),
         ("browser", "*"),
         ("files", "*"),
-        ("terminal", "*"),
     ],
 }
 
