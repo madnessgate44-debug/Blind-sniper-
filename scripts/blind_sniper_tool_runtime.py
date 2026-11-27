@@ -10,9 +10,12 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import selectors
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -26,6 +29,7 @@ MAX_READ_BYTES = 256_000
 MAX_WRITE_BYTES = 128_000
 MAX_TOOL_OUTPUT_CHARS = 8_000
 MAX_COMMAND_TIMEOUT = 600
+PROCESS_TERMINATION_GRACE_SECONDS = 0.5
 
 TOOL_DEFINITIONS = {
     "repo.read_file": {
@@ -188,6 +192,16 @@ class NativeToolError(RuntimeError):
     """Task-scoped native tool policy or execution failure."""
 
 
+PROCESS_POPEN = subprocess.Popen
+
+
+def _append_bounded(buffer: bytearray, chunk: bytes) -> None:
+    """Keep only the tail of a verification stream while continuously draining it."""
+    buffer.extend(chunk)
+    if len(buffer) > MAX_TOOL_OUTPUT_CHARS:
+        del buffer[:-MAX_TOOL_OUTPUT_CHARS]
+
+
 def _canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
@@ -339,28 +353,92 @@ class NativeToolRuntime:
         command = COMMANDS.get(command_id)
         if command is None:
             raise NativeToolError("Verification command is not in the fixed allowlist")
+        command_env = {"PATH": os.environ.get("PATH", ""), "PYTHONUNBUFFERED": "1"}
+        process = PROCESS_POPEN(
+            command,
+            cwd=self.workspace_root,
+            env=command_env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            start_new_session=True,
+        )
+        assert process.stdout is not None and process.stderr is not None
+        output = {process.stdout: bytearray(), process.stderr: bytearray()}
+        timed_out = False
+        deadline = time.monotonic() + self.command_timeout
+        parent_exit_drain_deadline: float | None = None
+        normal_drain_seconds = 0.2
+        with selectors.DefaultSelector() as selector:
+            for pipe in output:
+                os.set_blocking(pipe.fileno(), False)
+                selector.register(pipe, selectors.EVENT_READ)
+            while True:
+                now = time.monotonic()
+                returncode = process.poll()
+                if returncode is not None and parent_exit_drain_deadline is None:
+                    parent_exit_drain_deadline = now + normal_drain_seconds
+                if parent_exit_drain_deadline is not None and (
+                    not selector.get_map() or now >= parent_exit_drain_deadline
+                ):
+                    break
+                if returncode is None and now >= deadline:
+                    timed_out = True
+                    break
+                wake_at = deadline if returncode is None else parent_exit_drain_deadline
+                wait_for = max(0, min(0.05, wake_at - now))
+                for key, _ in selector.select(wait_for):
+                    try:
+                        chunk = os.read(key.fileobj.fileno(), 8192)
+                    except BlockingIOError:
+                        continue
+                    if chunk:
+                        _append_bounded(output[key.fileobj], chunk)
+                    else:
+                        selector.unregister(key.fileobj)
+                        key.fileobj.close()
+
+        # The process group is isolated by start_new_session. Once the parent exits,
+        # descendants get a short output drain window, then the whole group is stopped.
         try:
-            result = subprocess.run(
-                command,
-                cwd=self.workspace_root,
-                env={"PATH": os.environ.get("PATH", ""), "PYTHONUNBUFFERED": "1"},
-                capture_output=True,
-                text=True,
-                timeout=self.command_timeout,
-                check=False,
-            )
-            stdout = redact(result.stdout or "")[-MAX_TOOL_OUTPUT_CHARS:]
-            stderr = redact(result.stderr or "")[-MAX_TOOL_OUTPUT_CHARS:]
-            return {
-                "command_id": command_id,
-                "status": "PASS" if result.returncode == 0 else "FAIL",
-                "exit_code": result.returncode,
-                "stdout_excerpt": stdout,
-                "stderr_excerpt": stderr,
-            }
-        except subprocess.TimeoutExpired as exc:
-            stdout = exc.stdout.decode("utf-8", "replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-            stderr = exc.stderr.decode("utf-8", "replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        if process.poll() is None:
+            try:
+                process.wait(timeout=PROCESS_TERMINATION_GRACE_SECONDS)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                try:
+                    process.wait(timeout=PROCESS_TERMINATION_GRACE_SECONDS)
+                except subprocess.TimeoutExpired:
+                    pass
+        if timed_out:
+            # Final collection is deliberately nonblocking and time bounded: an
+            # escaped-session descendant may still hold either inherited pipe.
+            collect_deadline = time.monotonic() + PROCESS_TERMINATION_GRACE_SECONDS
+            with selectors.DefaultSelector() as selector:
+                for pipe in output:
+                    if not pipe.closed:
+                        selector.register(pipe, selectors.EVENT_READ)
+                while selector.get_map() and time.monotonic() < collect_deadline:
+                    for key, _ in selector.select(min(0.02, collect_deadline - time.monotonic())):
+                        try:
+                            chunk = os.read(key.fileobj.fileno(), 8192)
+                        except BlockingIOError:
+                            continue
+                        if chunk:
+                            _append_bounded(output[key.fileobj], chunk)
+                        else:
+                            selector.unregister(key.fileobj)
+                            key.fileobj.close()
+            for pipe in output:
+                if not pipe.closed:
+                    pipe.close()
+            stdout = output[process.stdout].decode("utf-8", "replace")
+            stderr = output[process.stderr].decode("utf-8", "replace")
             return {
                 "command_id": command_id,
                 "status": "TIMED_OUT",
@@ -369,6 +447,20 @@ class NativeToolRuntime:
                 "stderr_excerpt": redact(stderr)[-MAX_TOOL_OUTPUT_CHARS:],
                 "timeout_seconds": self.command_timeout,
             }
+
+        for pipe in output:
+            if not pipe.closed:
+                pipe.close()
+        returncode = process.poll()
+        stdout = output[process.stdout].decode("utf-8", "replace")
+        stderr = output[process.stderr].decode("utf-8", "replace")
+        return {
+            "command_id": command_id,
+            "status": "PASS" if returncode == 0 else "FAIL",
+            "exit_code": returncode,
+            "stdout_excerpt": redact(stdout)[-MAX_TOOL_OUTPUT_CHARS:],
+            "stderr_excerpt": redact(stderr)[-MAX_TOOL_OUTPUT_CHARS:],
+        }
 
     def _run_browser(self, name: str, arguments: dict[str, Any], *, spec: Any, task: Any, run_id: str, tool_call_id: str) -> dict[str, Any]:
         if not os.environ.get("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS", "").strip():
@@ -530,4 +622,4 @@ class NativeToolRuntime:
             "ok": status == "PASS",
             "result": result,
             "receipt": receipt,
-        }
+                          }
