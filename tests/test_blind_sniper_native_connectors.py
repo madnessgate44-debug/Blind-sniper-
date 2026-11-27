@@ -128,6 +128,10 @@ class TestNativeConnectors(unittest.TestCase):
             for path in ("../outside", str(Path(other) / "file"), "escape/file"):
                 with self.subTest(path=path), self.assertRaises(ValueError):
                     files.call("read_file", {"path": path}, timeout_s=1)
+            (root / "inside").mkdir()
+            (root / "inside-link").symlink_to(root / "inside", target_is_directory=True)
+            with self.assertRaises(RuntimeError):
+                files.call("list_dir", {"path": "inside-link"}, timeout_s=1)
 
     def test_files_read_write_list_and_size_caps(self):
         with tempfile.TemporaryDirectory() as tmp:
