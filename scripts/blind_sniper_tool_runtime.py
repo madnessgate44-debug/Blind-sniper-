@@ -622,4 +622,4 @@ class NativeToolRuntime:
             "ok": status == "PASS",
             "result": result,
             "receipt": receipt,
-                          }
+        }
