@@ -217,20 +217,14 @@ class PersistenceTests(Base):
         index_files = list((self.state / "intake" / "index").glob("*.json"))
         self.assertEqual(len(index_files), 1)  # the colliding issue left no index behind
 
-    def test_index_write_failure_leaves_no_visible_task(self):
-        real = intake._exclusive_json
-        def fail_on_index(path, value):
-            if "index" in str(path):
-                raise OSError("injected index failure")
-            return real(path, value)
-        with patch.object(intake, "_exclusive_json", side_effect=fail_on_index):
+    def test_index_write_failure_after_link_is_repaired_by_retry(self):
+        with patch.object(intake, "_atomic_index", side_effect=OSError("injected index failure")):
             receipt = self.publish()
         self.assertEqual(receipt["outcome"], "rejected")
-        self.assertEqual(self.tasks(), [])
-        self.assertEqual(list(self.store.task_dir.glob(".intake-staging-*")), [])
+        self.assertEqual(len(self.tasks()), 1)
         self.assertEqual(list((self.state / "intake" / "index").glob("*.json")), [])
         retry = self.publish(delivery="d2")
-        self.assertEqual(retry["outcome"], "accepted")
+        self.assertEqual(retry["reason_code"], "idempotent")
         self.assertEqual(len(self.tasks()), 1)
 
     def test_publish_link_failure_rolls_back_index_and_task(self):
@@ -249,13 +243,62 @@ class PersistenceTests(Base):
         self.assertEqual(list((self.state / "intake" / "index").glob("*.json")), [])
         self.assertEqual(self.publish(delivery="d2")["outcome"], "accepted")
 
-    def test_stale_staging_file_is_never_a_task_and_is_swept(self):
+    def test_stale_staging_file_is_never_a_task_or_removed_by_other_calls(self):
         leftover = self.store.task_dir / ".intake-staging-999-BS-GH-INTAKE-001"
         leftover.write_text("{}")
         self.assertEqual(self.tasks(), [])
         self.publish()
-        self.assertFalse(leftover.exists())
+        self.assertTrue(leftover.exists())
         self.assertEqual(len(self.tasks()), 1)
+
+    def test_deleted_final_task_is_not_idempotent_and_is_rebuilt_from_matching_index(self):
+        self.publish()
+        self.tasks()[0].unlink()
+        receipt = self.publish(delivery="d2")
+        self.assertEqual(receipt["reason_code"], "index_error")
+        self.assertEqual(self.tasks(), [])
+
+    def test_malformed_index_fails_closed(self):
+        self.publish()
+        index_path = next((self.state / "intake" / "index").glob("*.json"))
+        index_path.write_text("{")
+        receipt = self.publish(delivery="d2")
+        self.assertEqual(receipt["reason_code"], "index_error")
+
+    def test_subprocess_crashes_at_each_publication_boundary_recover_once(self):
+        root = Path(self.tmp.name)
+        script = r'''import os,sys
+sys.path.insert(0, sys.argv[1])
+import blind_sniper_github_intake as m
+from blind_sniper_github_intake import write_task
+task={"task_id":"BS-GH-INTAKE-001","agent_id":"researcher","objective":"Review intake","payload":{"case":"fixture"},"require_tool_use":False}
+point=sys.argv[4]
+if point == "after_stage":
+    original=m.os.link
+    def crash(*a, **k): os._exit(71)
+    m.os.link=crash
+elif point == "after_link":
+    original=m._atomic_index
+    def crash(*a, **k): os._exit(72)
+    m._atomic_index=crash
+else:
+    original=m._write_receipt
+    def crash(*a, **k): os._exit(73)
+    m._write_receipt=crash
+write_task(sys.argv[2],task,state_dir=sys.argv[3],repository="madnessgate44-debug/Blind-sniper-",issue_number=90,delivery_id="crash")
+'''
+        for point, code in (("after_stage", 71), ("after_link", 72), ("after_index", 73)):
+            with self.subTest(point=point):
+                crash_state = root / ("state-" + point)
+                crash_store = PrivateTaskStore(crash_state, workspace_root=root / "repo")
+                proc = subprocess.run([sys.executable, "-c", script, str(ROOT / "scripts"),
+                                       str(crash_store.task_dir), str(crash_state), point],
+                                      capture_output=True, text=True)
+                self.assertEqual(proc.returncode, code, proc.stderr)
+                receipt = write_task(crash_store.task_dir, TASK, state_dir=crash_state, repository=REPO,
+                                     issue_number=90, delivery_id="retry")
+                self.assertIn(receipt["reason_code"], ("accepted", "idempotent"))
+                self.assertEqual(len(list(crash_store.task_dir.glob("*.json"))), 1)
 
     def test_receipt_write_failure_after_commit_keeps_task_and_replay_heals(self):
         real = intake._write_receipt
