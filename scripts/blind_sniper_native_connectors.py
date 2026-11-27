@@ -250,28 +250,51 @@ class _NativeConnector(Connector):
         return {"output": result["output"], "output_truncated": result["output_truncated"]}
 
 
-_FILE_SCRIPT = r'''import json, os, pathlib, sys
+_FILE_SCRIPT = r'''import json, os, pathlib, sys, uuid
 root=pathlib.Path(sys.argv[1]).resolve(); op=sys.argv[2]; rel=pathlib.PurePosixPath(sys.argv[3])
-if rel.is_absolute() or ".." in rel.parts: raise SystemExit("invalid relative path")
-target=root.joinpath(*rel.parts)
-resolved=target.resolve(strict=False)
-if not resolved.is_relative_to(root): raise SystemExit("path escapes root")
-if op=="read":
- fd=os.open(target, os.O_RDONLY | getattr(os,"O_NOFOLLOW",0));
- with os.fdopen(fd,"rb") as f: data=f.read(int(sys.argv[4])+1)
- if len(data)>int(sys.argv[4]): raise SystemExit("file exceeds size cap")
- print(json.dumps({"data":data.decode("utf-8"),"size":len(data)}))
-elif op=="list":
- if target.is_symlink(): raise SystemExit("symlink directories are not allowed")
- if not target.is_dir(): raise SystemExit("not a directory")
- print(json.dumps({"entries":sorted(p.name for p in target.iterdir())}))
-elif op=="write":
- if target.exists() and target.is_symlink(): raise SystemExit("symlink targets are not allowed")
- data=sys.stdin.buffer.read(int(sys.argv[4])+1)
- if len(data)>int(sys.argv[4]): raise SystemExit("file exceeds size cap")
- fd=os.open(target,os.O_WRONLY|os.O_CREAT|os.O_TRUNC|getattr(os,"O_NOFOLLOW",0),0o600)
- with os.fdopen(fd,"wb") as f: f.write(data)
- print(json.dumps({"written":len(data)}))
+if rel.is_absolute() or any(part in ("..", "") for part in rel.parts): raise SystemExit("invalid relative path")
+parts=list(rel.parts)
+rootfd=os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+parentfd=rootfd
+owned_parent=False
+tmp_name=None
+try:
+ for part in parts[:-1]:
+  nextfd=os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parentfd)
+  if owned_parent: os.close(parentfd)
+  parentfd=nextfd; owned_parent=True
+ leaf=parts[-1] if parts else None
+ if op=="read":
+  if leaf is None: raise SystemExit("cannot read directory root")
+  fd=os.open(leaf, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parentfd)
+  with os.fdopen(fd,"rb") as f: data=f.read(int(sys.argv[4])+1)
+  if len(data)>int(sys.argv[4]): raise SystemExit("file exceeds size cap")
+  print(json.dumps({"data":data.decode("utf-8"),"size":len(data)}))
+ elif op=="list":
+  if leaf is None:
+   dfd=os.dup(rootfd)
+  else:
+   dfd=os.open(leaf, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parentfd)
+  try: print(json.dumps({"entries":sorted(os.listdir(dfd))}))
+  finally: os.close(dfd)
+ elif op=="write":
+  if leaf is None: raise SystemExit("cannot replace directory root")
+  data=sys.stdin.buffer.read(int(sys.argv[4])+1)
+  if len(data)>int(sys.argv[4]): raise SystemExit("file exceeds size cap")
+  tmp_name=".bs-write-"+uuid.uuid4().hex
+  fd=os.open(tmp_name,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600,dir_fd=parentfd)
+  try:
+   with os.fdopen(fd,"wb") as f: f.write(data); f.flush(); os.fsync(f.fileno())
+   os.rename(tmp_name,leaf,src_dir_fd=parentfd,dst_dir_fd=parentfd)
+   tmp_name=None
+  finally:
+   if tmp_name is not None:
+    try: os.unlink(tmp_name,dir_fd=parentfd)
+    except OSError: pass
+  print(json.dumps({"written":len(data)}))
+finally:
+ if owned_parent: os.close(parentfd)
+ os.close(rootfd)
 '''
 
 
