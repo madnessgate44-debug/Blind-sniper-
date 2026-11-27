@@ -63,17 +63,17 @@ Blind Sniper now has a native connector contract and process-isolated local conn
 
 - [B] Issue #100 is not connected. The signed-in ChatGPT UI showed a Tunnel option, but save and tool invocation on this account were not verified. Platform inspection showed no tunnel, no API keys, and no billing method; cost/free eligibility remains unknown.
 - [V] Issue #98 host inspection found Codex CLI 0.172.0 on the existing Cloud Shell host, outside default PATH. Cloud Shell is session-limited, not 24/7.
-- [V] The revised #98 design was accepted as a separate experimental host-executor, not a model-provider backend. It must preserve the native HTTP default, use read-only first, per-task worktrees, process-group cleanup, bounded/redacted JSONL, and UNKNOWN/no-auto-replay after an incomplete intent.
+- [V] The owner has clarified that Codex is a separate parallel project, not a Blind Sniper executor. Issue #98's proposed Codex-in-Blind-Sniper host executor was explicitly rejected and must not be implemented. Codex access belongs to Issue #100.
 - [B] Cloud Shell has no GitHub CLI authentication, so it cannot currently push branches or publish PRs itself. No host-side publication or live runner has been proven.
 
 ## 6. Remaining acceptance sequence
 
-1. Rebase and independently review #96 on current main; keep it public/read-only and prove redirect, response-size, timeout, rate-limit, and no-auth-header behavior.
-2. Rebase #97 on current main and update it to the merged connector implementation. A self-check must report skipped/blocked/unverified distinctly; never turn missing auth into PASS.
-3. Complete #98's read-only CLI JSONL contract capture and isolated host-executor implementation. Preserve the no-GitHub-auth publication blocker; do not call local-only proof end-to-end.
-4. Resolve #100 only if a supported, zero-cost ChatGPT-callable bridge can be proven. Do not create a tunnel, key, payment method, or paid resource without verified eligibility.
-5. Demonstrate one real, explicitly opted-in task with correlated task/run/branch/receipt IDs, cancellation, restart recovery, and private persistence before claiming durable autonomy.
-6. Add independent model-agent invocations only after distinct run IDs, fresh contexts, separate permissions, and correlated receipts are proven.
+1. Maintain #109 as public unauthenticated read-only GitHub access; add private/authenticated capabilities only through a separately reviewed least-privilege design and live credential proof.
+2. Keep #110 self-check honest: skipped/blocked/unverified remain distinct from PASS. Terminal stays disabled until a real OS sandbox and command policy are independently verified.
+3. Continue Blind Sniper's native model invocation, independent native agents, durable worker/recovery, native executor/tool runtime and native browser implementation. Do not dispatch Blind Sniper tasks to Codex.
+4. Resolve #100 as a separate Codex project access path only if a supported, zero-cost ChatGPT-callable bridge can be proven. No tunnel, key, payment method, paid plan or service without explicit owner authorization.
+5. Demonstrate one real, explicitly opted-in Blind Sniper task with correlated task/run/branch/receipt IDs, cancellation, restart recovery and private persistence before claiming durable autonomy.
+6. Add independent model-agent invocations only after distinct run IDs, fresh contexts, separate permissions and correlated receipts are proven.
 
 ## 7. Preserved constraints
 
