@@ -202,6 +202,41 @@ def _append_bounded(buffer: bytearray, chunk: bytes) -> None:
         del buffer[:-MAX_TOOL_OUTPUT_CHARS]
 
 
+def _process_group_exists(process_group_id: int) -> bool:
+    try:
+        os.killpg(process_group_id, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def _stop_process_group(process: subprocess.Popen[Any]) -> None:
+    """Stop an isolated command group with a bounded TERM-then-KILL sequence."""
+    try:
+        os.killpg(process.pid, signal.SIGTERM)
+    except (ProcessLookupError, PermissionError):
+        pass
+
+    deadline = time.monotonic() + PROCESS_TERMINATION_GRACE_SECONDS
+    while time.monotonic() < deadline:
+        if process.poll() is not None and not _process_group_exists(process.pid):
+            break
+        time.sleep(min(0.01, max(0, deadline - time.monotonic())))
+
+    if _process_group_exists(process.pid):
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
+
+    try:
+        process.wait(timeout=min(0.2, PROCESS_TERMINATION_GRACE_SECONDS))
+    except subprocess.TimeoutExpired:
+        pass
+
+
 def _canonical(value: Any) -> str:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
@@ -368,63 +403,26 @@ class NativeToolRuntime:
         deadline = time.monotonic() + self.command_timeout
         parent_exit_drain_deadline: float | None = None
         normal_drain_seconds = 0.2
-        with selectors.DefaultSelector() as selector:
-            for pipe in output:
-                os.set_blocking(pipe.fileno(), False)
-                selector.register(pipe, selectors.EVENT_READ)
-            while True:
-                now = time.monotonic()
-                returncode = process.poll()
-                if returncode is not None and parent_exit_drain_deadline is None:
-                    parent_exit_drain_deadline = now + normal_drain_seconds
-                if parent_exit_drain_deadline is not None and (
-                    not selector.get_map() or now >= parent_exit_drain_deadline
-                ):
-                    break
-                if returncode is None and now >= deadline:
-                    timed_out = True
-                    break
-                wake_at = deadline if returncode is None else parent_exit_drain_deadline
-                wait_for = max(0, min(0.05, wake_at - now))
-                for key, _ in selector.select(wait_for):
-                    try:
-                        chunk = os.read(key.fileobj.fileno(), 8192)
-                    except BlockingIOError:
-                        continue
-                    if chunk:
-                        _append_bounded(output[key.fileobj], chunk)
-                    else:
-                        selector.unregister(key.fileobj)
-                        key.fileobj.close()
-
-        # The process group is isolated by start_new_session. Once the parent exits,
-        # descendants get a short output drain window, then the whole group is stopped.
         try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
-        if process.poll() is None:
-            try:
-                process.wait(timeout=PROCESS_TERMINATION_GRACE_SECONDS)
-            except subprocess.TimeoutExpired:
-                try:
-                    os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                try:
-                    process.wait(timeout=PROCESS_TERMINATION_GRACE_SECONDS)
-                except subprocess.TimeoutExpired:
-                    pass
-        if timed_out:
-            # Final collection is deliberately nonblocking and time bounded: an
-            # escaped-session descendant may still hold either inherited pipe.
-            collect_deadline = time.monotonic() + PROCESS_TERMINATION_GRACE_SECONDS
             with selectors.DefaultSelector() as selector:
                 for pipe in output:
-                    if not pipe.closed:
-                        selector.register(pipe, selectors.EVENT_READ)
-                while selector.get_map() and time.monotonic() < collect_deadline:
-                    for key, _ in selector.select(min(0.02, collect_deadline - time.monotonic())):
+                    os.set_blocking(pipe.fileno(), False)
+                    selector.register(pipe, selectors.EVENT_READ)
+                while True:
+                    now = time.monotonic()
+                    returncode = process.poll()
+                    if returncode is not None and parent_exit_drain_deadline is None:
+                        parent_exit_drain_deadline = now + normal_drain_seconds
+                    if parent_exit_drain_deadline is not None and (
+                        not selector.get_map() or now >= parent_exit_drain_deadline
+                    ):
+                        break
+                    if returncode is None and now >= deadline:
+                        timed_out = True
+                        break
+                    wake_at = deadline if returncode is None else parent_exit_drain_deadline
+                    wait_for = max(0, min(0.05, wake_at - now))
+                    for key, _ in selector.select(wait_for):
                         try:
                             chunk = os.read(key.fileobj.fileno(), 8192)
                         except BlockingIOError:
@@ -434,33 +432,65 @@ class NativeToolRuntime:
                         else:
                             selector.unregister(key.fileobj)
                             key.fileobj.close()
-            for pipe in output:
-                if not pipe.closed:
-                    pipe.close()
+
+            # The process group is isolated by start_new_session. Once the parent
+            # exits, descendants get a short output drain window before cleanup.
+            if process.poll() is None or _process_group_exists(process.pid):
+                _stop_process_group(process)
+
+            if timed_out:
+                # An escaped-session descendant may still hold an inherited pipe.
+                collect_deadline = time.monotonic() + PROCESS_TERMINATION_GRACE_SECONDS
+                with selectors.DefaultSelector() as selector:
+                    for pipe in output:
+                        if not pipe.closed:
+                            selector.register(pipe, selectors.EVENT_READ)
+                    while selector.get_map() and time.monotonic() < collect_deadline:
+                        wait_for = min(0.02, max(0, collect_deadline - time.monotonic()))
+                        for key, _ in selector.select(wait_for):
+                            try:
+                                chunk = os.read(key.fileobj.fileno(), 8192)
+                            except BlockingIOError:
+                                continue
+                            if chunk:
+                                _append_bounded(output[key.fileobj], chunk)
+                            else:
+                                selector.unregister(key.fileobj)
+                                key.fileobj.close()
+
             stdout = output[process.stdout].decode("utf-8", "replace")
             stderr = output[process.stderr].decode("utf-8", "replace")
+            if timed_out:
+                return {
+                    "command_id": command_id,
+                    "status": "TIMED_OUT",
+                    "exit_code": None,
+                    "stdout_excerpt": redact(stdout)[-MAX_TOOL_OUTPUT_CHARS:],
+                    "stderr_excerpt": redact(stderr)[-MAX_TOOL_OUTPUT_CHARS:],
+                    "timeout_seconds": self.command_timeout,
+                }
+
+            returncode = process.poll()
             return {
                 "command_id": command_id,
-                "status": "TIMED_OUT",
-                "exit_code": None,
+                "status": "PASS" if returncode == 0 else "FAIL",
+                "exit_code": returncode,
                 "stdout_excerpt": redact(stdout)[-MAX_TOOL_OUTPUT_CHARS:],
                 "stderr_excerpt": redact(stderr)[-MAX_TOOL_OUTPUT_CHARS:],
-                "timeout_seconds": self.command_timeout,
             }
-
-        for pipe in output:
-            if not pipe.closed:
-                pipe.close()
-        returncode = process.poll()
-        stdout = output[process.stdout].decode("utf-8", "replace")
-        stderr = output[process.stderr].decode("utf-8", "replace")
-        return {
-            "command_id": command_id,
-            "status": "PASS" if returncode == 0 else "FAIL",
-            "exit_code": returncode,
-            "stdout_excerpt": redact(stdout)[-MAX_TOOL_OUTPUT_CHARS:],
-            "stderr_excerpt": redact(stderr)[-MAX_TOOL_OUTPUT_CHARS:],
-        }
+        finally:
+            for pipe in output:
+                try:
+                    if not pipe.closed:
+                        pipe.close()
+                except OSError:
+                    pass
+            try:
+                if process.poll() is None or _process_group_exists(process.pid):
+                    _stop_process_group(process)
+            except (OSError, subprocess.SubprocessError):
+                # Cleanup is best effort here so an earlier selector/read error propagates.
+                pass
 
     def _run_browser(self, name: str, arguments: dict[str, Any], *, spec: Any, task: Any, run_id: str, tool_call_id: str) -> dict[str, Any]:
         if not os.environ.get("BLIND_SNIPER_BROWSER_ALLOWED_DOMAINS", "").strip():
