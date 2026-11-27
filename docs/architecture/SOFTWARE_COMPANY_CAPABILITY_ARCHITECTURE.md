@@ -1,7 +1,9 @@
 # Blind Sniper — Software Company Capability Architecture
 
+> **Owner architecture decision — 2026-11-27:** Codex and Blind Sniper are separate, independent projects running in parallel. Codex is not a Blind Sniper provider, executor, worker, subprocess, orchestration service, or task store. Blind Sniper is not a Codex dependency. Each project owns its own runtime, agents, skills, connectors, credentials, task state, memory, logs, and release lifecycle. They must reach equivalent capability parity, implemented and operated independently. ChatGPT requires two distinct, separately authenticated and independently revocable access paths. This architecture decision supersedes any older Codex-host-executor language in this document. See Issue #100 for the separate Codex access work.
+
 **Work item:** BS-SOFTWARE-COMPANY-001 (#99)  
-**Baseline:** `main` at `92f411c56a21f0b3eb2b7c8373aed9900b463e96` (2026-11-27; includes merged PR #91)  
+**Baseline:** `main` branch, refreshed 2026-11-27; exact HEAD is recorded on the associated PR.  
 **Status:** Architecture proposal grounded in repository registries and open PR evidence. This is not a claim that every role runs as an independent process or that all connectors are operational.  
 **Scope:** Native-first software-engineering company. Blind Sniper owns task state, orchestration, permissions, tools, execution, evidence and recovery. A model provider supplies inference only.
 
@@ -14,7 +16,7 @@ Blind Sniper already has a meaningful native specification and several runtime c
 - [V] The model invocation boundary exists in `scripts/blind_sniper_model_worker.py`; durable lifecycle/ledger code exists in `scripts/blind_sniper_runtime.py`, `scripts/blind_sniper_ledger.py` and `scripts/blind_sniper_worker.py`; the host daemon is `scripts/blind_sniper_daemon.py`; bounded tools are in `scripts/blind_sniper_tool_runtime.py`; browser code is in `scripts/blind_sniper_browser.py` and its dispatch/MCP adapters.
 - [V] `chatgpt-home/runtime/EXECUTION_ENGINE.md` explicitly says the engine is not a distributed agent executor and that role contracts do not currently mean separate model processes. It also says the GitHub-backed ledger is mocked in tests and no live private-repository write was performed.
 - [V] `chatgpt-home/runtime/README.md` says the daemon is not started by GitHub Actions and no approved host service is active; R5 remains partial.
-- [V] The current connector PR stack (#92–#97) is still open/draft. It is staged work, not a completed operational connector layer. #97's self-check is explicitly incomplete; authenticated integrations and git/terminal permissions are not proven.
+- [V] Connector foundations #93, #103, #104, #109 and #110 are merged. #109 provides public unauthenticated GitHub reads only; #110 adds read-only Git permissions and an intentionally incomplete self-check. Merged code/tests are not proof of authenticated external integrations or daemon wiring.
 - [U] A live, durable, unattended native task run with separate agent identities, verified private persistence, real browser session recovery, notifications, and production task execution has not been demonstrated by the inspected repository evidence.
 
 **Conclusion:** retain the existing ten roles and six profiles. Do not add more named agents yet. Close the execution, permission, recovery and evidence gaps before expanding the roster.
@@ -96,9 +98,9 @@ The 33-file OpenHands mirror is reference material only. The index states that s
 |---|---|---|
 | P0.1 | PR #91 intake crash-consistency review — **CLOSED / MERGED** | [V] Exact reviewed head `813a3e1183ec968dd8f4536e68129212672774f1` merged to main as `92f411c56a21f0b3eb2b7c8373aed9900b463e96`. Exact-head Runtime Registry and OS compliance jobs passed; offline persistence/fault-injection tests passed. This does not prove a live webhook or external agent execution. |
 | P0.2 | Establish ChatGPT ↔ existing Codex host access (#100) | [B] Not connected. A Tunnel option was observed in the signed-in ChatGPT web UI, but save/tool invocation on this Free account is unverified; Platform showed no tunnel, no API keys and no billing method. Do not provision or incur cost without verified free eligibility. |
-| P0.3 | Optional Codex CLI host-executor (#98) | [V] Revised design accepted by ChatGPT reviewer in issue comment `7213934237`; implementation has not started. Must remain isolated/experimental, preserve native HTTP default, use read-only first, per-task worktrees, process-group cleanup, bounded/redacted JSONL, and UNKNOWN/no-auto-replay after an incomplete intent. Host `gh` auth is absent, so PR publication from Cloud Shell remains blocked. |
+| P0.3 | Independent Codex project access (#100) | [B] Separate project, not a Blind Sniper executor. Direct ChatGPT-callable access is not connected; zero-cost supported route and account eligibility must be proven before provisioning anything. Host/session and billing constraints remain. |
 | P0.4 | Controlled ChatGPT-callable task bridge | Blocked on P0.2: one harmless test task must produce correlated task ID, branch, bounded execution, status/logs, cancel and restart recovery. |
-| P0.5 | Durable native worker acceptance | Real host daemon run with opt-in task, checkpoint/restart, stale-lease recovery, private persistence round-trip and notification delivery; report Cloud Shell limits honestly. The local Codex CLI proposal in #98 is not evidence of native worker acceptance. |
+| P0.5 | Durable native worker acceptance | Real host daemon run with opt-in task, checkpoint/restart, stale-lease recovery, private persistence round-trip and notification delivery; report Cloud Shell limits honestly. Codex CLI is a separate project and is not part of Blind Sniper's worker acceptance. |
 | P1 | Connector stack #92–#97 | Land registry → contract → process isolation → read-only GitHub → self-check in dependency order; prove auth scopes and daemon integration before claiming connected. |
 | P1 | Independent agent evaluation | Two or more genuinely separate invocations with fresh contexts, distinct run IDs, constrained tools, correlated receipts; reviewer cannot share implementer context. |
 | P1 | Security and QA gates | SAST/SCA/secret scanning, adversarial path/SSRF tests, permission-denial tests, regression suite, fixture and real-host separation. |
@@ -110,7 +112,8 @@ The 33-file OpenHands mirror is reference material only. The index states that s
 ## 7. Explicit non-goals / prohibited shortcuts
 
 - No Forge, OpenHands, TinyFish or third-party agent runtime as a core dependency.
-- No second Codex host or paid always-on worker.
+- No Codex runtime dependency inside Blind Sniper; Codex remains a separate project with its own access and execution lifecycle.
+- No second paid host or paid always-on worker.
 - No Slack/Linear migration; GitHub remains the source of truth.
 - No agent proliferation to make the roster look larger.
 - No generic unrestricted MCP proxy or shell endpoint.
