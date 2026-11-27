@@ -1,3 +1,16 @@
+## Miss Noor Educational Media Engine — first vertical slice (2026-11-21)
+
+- [V] Product identity clarified: **Miss Noor Educational Media Engine**. Papermorph is an upstream candidate/reference only; it is not the product and is not a mandatory dependency.
+- [V] Papermorph baseline pinned to `DozenTwelve/Papermorph@839a62cad3c74446944a167faff07c994f33e5b7`. Scoped source/license/host/language/cost/security-path audit committed at `research/PAPERMORPH_SOURCE_AUDIT.md`; R1 is PARTIAL PASS, not a security certification.
+- [V] Host-neutral product architecture proposal committed at `research/MISS_NOOR_EDUCATIONAL_MEDIA_ENGINE_ARCHITECTURE.md`. Blind Sniper owns durable orchestration/task state; media generation remains a replaceable capability.
+- [V] Original Grade 5 French Science lesson blueprint created for a bounded arm-movement topic (biceps/triceps flexion and extension). It is not yet rendered, narrated as an audio asset, or pedagogically approved.
+- [V] Self-contained HTML/SVG prototype committed at `prototype/miss-noor-media-engine/lesson-01/index.html`: flexion/extension interaction, browser-provided French speech synthesis fallback, and four formative questions. This is a prototype, not a complete narrated media lesson.
+- [V] Prototype static-contract CI run `44864709574` PASS and Engineering Execution OS compliance run `44864709500` PASS, both on head `9ee27e8d07aadde148440753015daa8b54430d07`.
+- [V] Draft PR #67 opened: https://github.com/madnessgate44-debug/Blind-sniper-/pull/67. Issue #66 remains open for execution tracking.
+- [B] No browser-driven functional test or real Samsung phone review yet. Browser speech synthesis is device-provided and not synchronized MP3 narration; no verified zero-cost French MP3 route.
+- [B] Papermorph full security/dependency audit and component integration are not complete. No paid provider was called; no private source PDF or child data was added to the public repo.
+- [B] Exact school assignment and canonical edition identity for the reconstructed Grade 5 source remain unverified. Do not label the prototype an official Ministry lesson.
+
 ## Owner continuation checkpoint — 2026-11-17 (latest)
 
 - [V] PR #63 added a manual-only Gemini Free-tier synthetic provider smoke workflow; PR #64 added workflow security-contract tests. Both are merged. No API key was configured and no live model call was made.

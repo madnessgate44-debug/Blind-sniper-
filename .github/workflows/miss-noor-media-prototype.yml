@@ -1,0 +1,32 @@
+name: Miss Noor media prototype checks
+
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "prototype/miss-noor-media-engine/**"
+      - "scripts/check_miss_noor_media_prototype.py"
+      - ".github/workflows/miss-noor-media-prototype.yml"
+  pull_request:
+    paths:
+      - "prototype/miss-noor-media-engine/**"
+      - "scripts/check_miss_noor_media_prototype.py"
+      - ".github/workflows/miss-noor-media-prototype.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  static-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate lesson structure and JavaScript syntax
+        run: python scripts/check_miss_noor_media_prototype.py

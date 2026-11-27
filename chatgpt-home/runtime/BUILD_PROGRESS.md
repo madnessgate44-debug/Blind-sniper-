@@ -1,3 +1,17 @@
+## Miss Noor Educational Media Engine — first vertical slice (2026-11-21)
+
+- [V] Product scope registered: Miss Noor Educational Media Engine; Papermorph is a replaceable upstream candidate, not the product identity.
+- [V] Papermorph source audit added: `research/PAPERMORPH_SOURCE_AUDIT.md`. Upstream pinned at `839a62cad3c74446944a167faff07c994f33e5b7`. R1 partial pass only; full dependency/security audit remains open.
+- [V] Architecture proposal added: `research/MISS_NOOR_EDUCATIONAL_MEDIA_ENGINE_ARCHITECTURE.md`.
+- [V] Original Grade 5 French Science lesson blueprint added: `research/pilot/G5_FR_SCIENCE_CH01_01_MUSCLES_MOVEMENT.md`.
+- [V] Interactive static prototype added: `prototype/miss-noor-media-engine/lesson-01/index.html`. Includes SVG arm movement, flexion/extension controls, browser speech-synthesis fallback and four quiz items.
+- [V] Static contract test and CI workflow added: `scripts/check_miss_noor_media_prototype.py`, `.github/workflows/miss-noor-media-prototype.yml`.
+- [V] Prototype CI run `44864709574` PASS; OS compliance run `44864709500` PASS; both for head `9ee27e8d07aadde148440753015daa8b54430d07`.
+- [V] Draft PR #67 opened: https://github.com/madnessgate44-debug/Blind-sniper-/pull/67. Issue #66 remains open.
+- [B] Browser-driven interactions, real Samsung viewport, French teacher/science review, synchronized MP3 narration, zero-cost French TTS proof, static hosting and Papermorph adapter integration are NOT RUN / NOT VERIFIED.
+- [B] Source-rights guard: do not publish the private source PDF, scans, illustrations, textbook wording, exercises or answer layouts. Prototype is independently authored. No paid provider calls or private student data.
+- [B] No production deployment; no merge. Continue from PR #67 and keep all work inside Blind-sniper-.
+
 ## Native private persistence delivery — 2026-11-17
 
 - [V] PR #65 merged at `66dc3e53ea4850bcca9801fa38b167579f910a92`. `GitHubPrivateObjectStore` writes immutable SHA-256-addressed JSON objects into a verified private repository; maximum object size 512 KiB; idempotent create-only writes; bounded conflict recovery; reads verify content hash.
