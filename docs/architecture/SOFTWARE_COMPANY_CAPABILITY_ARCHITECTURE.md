@@ -1,7 +1,9 @@
 # Blind Sniper — Software Company Capability Architecture
 
+> **Owner architecture decision — 2026-11-27:** Codex and Blind Sniper are separate, independent projects running in parallel. Codex is not a Blind Sniper provider, executor, worker, subprocess, orchestration service, or task store. Blind Sniper is not a Codex dependency. Each project owns its own runtime, agents, skills, connectors, credentials, task state, memory, logs, and release lifecycle. They must reach equivalent capability parity, implemented and operated independently. ChatGPT requires two distinct, separately authenticated and independently revocable access paths. This architecture decision supersedes any older Codex-host-executor language in this document. See Issue #100 for the separate Codex access work.
+
 **Work item:** BS-SOFTWARE-COMPANY-001 (#99)  
-**Baseline:** `main` at `92f411c56a21f0b3eb2b7c8373aed9900b463e96` (2026-11-27; includes merged PR #91)  
+**Baseline:** `main` branch, refreshed 2026-11-27; exact HEAD is recorded on the associated PR.  
 **Status:** Architecture proposal grounded in repository registries and open PR evidence. This is not a claim that every role runs as an independent process or that all connectors are operational.  
 **Scope:** Native-first software-engineering company. Blind Sniper owns task state, orchestration, permissions, tools, execution, evidence and recovery. A model provider supplies inference only.
 
@@ -14,7 +16,7 @@ Blind Sniper already has a meaningful native specification and several runtime c
 - [V] The model invocation boundary exists in `scripts/blind_sniper_model_worker.py`; durable lifecycle/ledger code exists in `scripts/blind_sniper_runtime.py`, `scripts/blind_sniper_ledger.py` and `scripts/blind_sniper_worker.py`; the host daemon is `scripts/blind_sniper_daemon.py`; bounded tools are in `scripts/blind_sniper_tool_runtime.py`; browser code is in `scripts/blind_sniper_browser.py` and its dispatch/MCP adapters.
 - [V] `chatgpt-home/runtime/EXECUTION_ENGINE.md` explicitly says the engine is not a distributed agent executor and that role contracts do not currently mean separate model processes. It also says the GitHub-backed ledger is mocked in tests and no live private-repository write was performed.
 - [V] `chatgpt-home/runtime/README.md` says the daemon is not started by GitHub Actions and no approved host service is active; R5 remains partial.
-- [V] The current connector PR stack (#92–#97) is still open/draft. It is staged work, not a completed operational connector layer. #97's self-check is explicitly incomplete; authenticated integrations and git/terminal permissions are not proven.
+- [V] Connector foundations #93, #103, #104, #109 and #110 are merged. #109 provides public unauthenticated GitHub reads only; #110 adds read-only Git permissions and an intentionally incomplete self-check. Merged code/tests are not proof of authenticated external integrations or daemon wiring.
 - [U] A live, durable, unattended native task run with separate agent identities, verified private persistence, real browser session recovery, notifications, and production task execution has not been demonstrated by the inspected repository evidence.
 
 **Conclusion:** retain the existing ten roles and six profiles. Do not add more named agents yet. Close the execution, permission, recovery and evidence gaps before expanding the roster.
@@ -61,8 +63,8 @@ The 33-file OpenHands mirror is reference material only. The index states that s
 | GitHub | Issues, PRs, source, Actions, branches, release evidence | [V] Connected GitHub tools are callable in this ChatGPT session. [V] PRs #92–#97 propose native connector layers, but are not yet merged/integrated. | Separate read/write capabilities; repo allowlist; short-lived installation tokens where host integration is implemented; never log token values | [V] Existing GitHub repo is the control plane; no new service required. Fallback: current ChatGPT GitHub connector for this session only. |
 | Vercel | Deployments, logs, project/runtime management | [U] Connector namespace/tool actions may exist, but account/project authorization and Blind Sniper host availability must be verified action-by-action. | Project-scoped token; deployment approval gate; redact environment values | Prefer existing free tier only after checking limits; fallback to GitHub Actions/health endpoint where sufficient. |
 | Native browser | Browser navigation and approved UI actions | [V] Native browser adapter and MCP stdio source exist; CI/fixture evidence exists. [U] Persistent approved host session and production egress policy are not proven. | Domain allowlist, DNS/redirect/SSRF checks, explicit approval for click/fill/submit, isolated browser profile | Use web read/search for public read-only research; no third-party browser agent dependency. |
-| Codex CLI bridge | Direct ChatGPT control of existing Codex host | [B] No direct ChatGPT-callable bridge verified. Issue #100 tracks feasibility and read-only bridge. | TLS, authenticated scoped tools, replay protection, strict schemas, allowlisted workspace/commands, redacted audit; no arbitrary shell | No paid host or second machine. If custom remote MCP is unavailable to this ChatGPT account, document the product limitation; do not claim GitHub comments are direct access. |
-| External MCP connectors | Narrow external APIs needed by a task | [V] PRs #92–#97 define registry/contract/process isolation/GitHub read/self-check slices. [U] No complete authenticated, daemon-wired external connector stack is proven. | One connector = one manifest, explicit scopes, per-tool auth, timeouts, cancellation, egress allowlist, redaction | Add only when a real workflow needs it; local/mock test fallback; no generic unrestricted MCP proxy. |
+| Independent Codex project | Separate Codex environment and its own ChatGPT access path | [B] Codex is not a Blind Sniper connector or executor. Issue #100 tracks direct ChatGPT access to the independent Codex project; not connected yet. | Separate runtime, credentials, task state, permissions and revocation; no arbitrary shell bridge | No new spend or credentials without explicit owner authorization. GitHub comments are coordination, not direct Codex access. |
+| External MCP connectors | Narrow external APIs needed by a task | [V] Merged #93/#103/#109/#110 provide registry/contract/process runner/public GitHub read/self-check foundations. [U] No complete authenticated, daemon-wired external connector stack is proven. | One connector = one manifest, explicit scopes, per-tool auth, timeouts, cancellation, egress allowlist, redaction | Add only when a real workflow needs it; local/mock test fallback; no generic unrestricted MCP proxy. |
 | Database connector | Schema/query/migration work | [U] No verified generic DB connector in the current native registry. | Read-only by default; test DB writes only; production migration requires separate release gate | Use existing app/database tooling if present; do not add Supabase or another service by default. |
 | Notion / Canva / Figma | Optional documentation/design integrations | [U] Tool namespaces are not proof of account authorization or host-native availability. | User/workspace-scoped OAuth; minimum permissions; no cross-workspace indexing | GitHub Markdown remains source of truth; use only when a concrete deliverable requires it. |
 
@@ -72,10 +74,10 @@ The 33-file OpenHands mirror is reference material only. The index states that s
 - [V] #93 — connector contract and cancellation.
 - [V] #94 — process-isolated connector host, depends on #93.
 - [V] #95 — Dependabot/CODEOWNERS/security configuration; not evidence of active Dependabot until merged and its first PR appears.
-- [V] #96 — read-only public GitHub connector, depends on #94; public unauthenticated reads do not satisfy private-repo or write needs.
-- [V] #97 — self-check on #96; latest reported result is explicitly incomplete, with git/terminal blocked by role permissions and terminal execution skipped.
+- [V] #109 — merged replacement for #96: public unauthenticated read-only GitHub connector; it does not provide private-repo or write access.
+- [V] #110 — merged replacement for #97: read-only Git permissions and self-check; overall self-check remains incomplete, with terminal skipped and authenticated integration unverified.
 
-**Decision:** do not merge this stack as if it were one working product. Review and land in dependency order only after each PR has exact-head CI, cancellation/timeout/redaction tests, least-privilege proof, daemon wiring, and an end-to-end receipt. A registry entry is not a live connector.
+**Decision:** the connector foundations above are already merged, but they are not one operational product. Remaining acceptance requires exact-head CI, cancellation/timeout/redaction tests, least-privilege proof, daemon wiring, and an end-to-end receipt for each live integration. A registry entry or merged PR is not a live connector.
 
 ## 5. Security and execution contract
 
@@ -95,11 +97,11 @@ The 33-file OpenHands mirror is reference material only. The index states that s
 | Order | Work | Acceptance gate |
 |---|---|---|
 | P0.1 | PR #91 intake crash-consistency review — **CLOSED / MERGED** | [V] Exact reviewed head `813a3e1183ec968dd8f4536e68129212672774f1` merged to main as `92f411c56a21f0b3eb2b7c8373aed9900b463e96`. Exact-head Runtime Registry and OS compliance jobs passed; offline persistence/fault-injection tests passed. This does not prove a live webhook or external agent execution. |
-| P0.2 | Establish ChatGPT ↔ existing Codex host access (#100) | [B] Not connected. A Tunnel option was observed in the signed-in ChatGPT web UI, but save/tool invocation on this Free account is unverified; Platform showed no tunnel, no API keys and no billing method. Do not provision or incur cost without verified free eligibility. |
-| P0.3 | Optional Codex CLI host-executor (#98) | [V] Revised design accepted by ChatGPT reviewer in issue comment `7213934237`; implementation has not started. Must remain isolated/experimental, preserve native HTTP default, use read-only first, per-task worktrees, process-group cleanup, bounded/redacted JSONL, and UNKNOWN/no-auto-replay after an incomplete intent. Host `gh` auth is absent, so PR publication from Cloud Shell remains blocked. |
-| P0.4 | Controlled ChatGPT-callable task bridge | Blocked on P0.2: one harmless test task must produce correlated task ID, branch, bounded execution, status/logs, cancel and restart recovery. |
-| P0.5 | Durable native worker acceptance | Real host daemon run with opt-in task, checkpoint/restart, stale-lease recovery, private persistence round-trip and notification delivery; report Cloud Shell limits honestly. The local Codex CLI proposal in #98 is not evidence of native worker acceptance. |
-| P1 | Connector stack #92–#97 | Land registry → contract → process isolation → read-only GitHub → self-check in dependency order; prove auth scopes and daemon integration before claiming connected. |
+| P0.2 | Blind Sniper native runtime acceptance | [B] Native model/agent/worker/tool/browser capabilities exist at varying code maturity, but a live durable end-to-end task is not proven. Continue only within the native Blind Sniper runtime. |
+| P0.3 | Independent Codex project access (#100) | [B] Separate project, not a Blind Sniper executor. Direct ChatGPT-callable access is not connected; zero-cost supported route and account eligibility must be proven before provisioning anything. Host/session and billing constraints remain. |
+| P0.4 | ChatGPT ↔ Blind Sniper runtime access | [B] GitHub repository access is available in this ChatGPT session; direct callable access to the Blind Sniper native daemon/runtime is not proven. Build and test a separate, scoped access path without using Codex. |
+| P0.5 | Durable native worker acceptance | Real host daemon run with opt-in task, checkpoint/restart, stale-lease recovery, private persistence round-trip and notification delivery; report Cloud Shell limits honestly. Codex CLI is a separate project and is not part of Blind Sniper's worker acceptance. |
+| P1 | Connector foundations #93/#103/#104/#109/#110 | [V] These foundations are merged. Remaining work is daemon/runtime wiring, live authentication where needed, and end-to-end receipts; no connector is operational solely because its code is merged. |
 | P1 | Independent agent evaluation | Two or more genuinely separate invocations with fresh contexts, distinct run IDs, constrained tools, correlated receipts; reviewer cannot share implementer context. |
 | P1 | Security and QA gates | SAST/SCA/secret scanning, adversarial path/SSRF tests, permission-denial tests, regression suite, fixture and real-host separation. |
 | P2 | SRE/operations | Health, structured logs, alert delivery, bounded retries, cancellation, rollback rehearsal and runbook. No unattended schedule until a real scheduler and receiver are demonstrated. |
@@ -110,7 +112,8 @@ The 33-file OpenHands mirror is reference material only. The index states that s
 ## 7. Explicit non-goals / prohibited shortcuts
 
 - No Forge, OpenHands, TinyFish or third-party agent runtime as a core dependency.
-- No second Codex host or paid always-on worker.
+- No Codex runtime dependency inside Blind Sniper; Codex remains a separate project with its own access and execution lifecycle.
+- No second paid host or paid always-on worker.
 - No Slack/Linear migration; GitHub remains the source of truth.
 - No agent proliferation to make the roster look larger.
 - No generic unrestricted MCP proxy or shell endpoint.
