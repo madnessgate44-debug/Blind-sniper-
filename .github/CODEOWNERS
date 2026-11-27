@@ -1,0 +1,8 @@
+# Source: GitHub docs, "About code owners". Last matching pattern wins.
+# Default owner for everything.
+*                         @madnessgate44-debug
+# Workflows, runtime scripts and the controlling instructions need an owner review.
+/.github/                 @madnessgate44-debug
+/scripts/                 @madnessgate44-debug
+/ENGINEERING_EXECUTION_OS.md @madnessgate44-debug
+/AGENTS.md                @madnessgate44-debug

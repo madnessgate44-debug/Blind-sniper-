@@ -1,0 +1,12 @@
+# Keeps GitHub Actions versions current through reviewable pull requests.
+# Source: GitHub docs, "Dependabot version updates" and "Secure use reference".
+# Dependabot only opens PRs. Nothing is merged automatically.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
