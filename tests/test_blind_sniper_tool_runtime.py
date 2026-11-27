@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import sys
 import tempfile
 import unittest
@@ -94,18 +95,31 @@ class NativeToolRuntimeTests(unittest.TestCase):
     def test_verification_uses_only_fixed_command_without_shell(self):
         spec = AgentSpec(agent_id="qa-verifier", tool_allowlist=("verification.run",))
         class Result:
-            returncode = 0
-            stdout = "tests passed"
-            stderr = ""
-        with patch("blind_sniper_tool_runtime.subprocess.run", return_value=Result()) as run:
+            pid = 99_999_999
+
+            def __init__(self):
+                self.stdout = self._stream(b"tests passed")
+                self.stderr = self._stream(b"")
+
+            @staticmethod
+            def _stream(data):
+                read_fd, write_fd = os.pipe()
+                if data:
+                    os.write(write_fd, data)
+                os.close(write_fd)
+                return os.fdopen(read_fd, "rb", buffering=0)
+
+            def poll(self):
+                return 0
+        with patch("blind_sniper_tool_runtime.PROCESS_POPEN", return_value=Result()) as popen:
             result = self.runtime.execute(
                 name="verification.run", arguments={"command_id": "runtime-validator"},
                 spec=spec, task=self.task, run_id="run-4", tool_call_id="call-5",
             )
         self.assertTrue(result["ok"])
         self.assertEqual(result["result"]["status"], "PASS")
-        self.assertNotIn("shell", run.call_args.kwargs)
-        self.assertEqual(run.call_args.args[0][1:], ["scripts/validate_blind_sniper_runtime.py"])
+        self.assertNotIn("shell", popen.call_args.kwargs)
+        self.assertEqual(popen.call_args.args[0][1:], ["scripts/validate_blind_sniper_runtime.py"])
 
     def test_browser_tools_use_task_scoped_native_adapter_and_queue_receipts(self):
         captured = {}

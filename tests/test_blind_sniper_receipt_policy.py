@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import os
 import tempfile
 import unittest
 from datetime import datetime, timezone
@@ -160,11 +161,24 @@ class NativeRuntimeReceiptPolicyTests(unittest.TestCase):
             spec = AgentSpec(agent_id="agent-1", tool_allowlist=("verification.run",))
 
             class FailedCommand:
-                returncode = 1
-                stdout = "test failed"
-                stderr = ""
+                pid = 99_999_999
 
-            with patch("blind_sniper_tool_runtime.subprocess.run", return_value=FailedCommand()):
+                def __init__(self):
+                    self.stdout = self._stream(b"test failed")
+                    self.stderr = self._stream(b"")
+
+                @staticmethod
+                def _stream(data):
+                    read_fd, write_fd = os.pipe()
+                    if data:
+                        os.write(write_fd, data)
+                    os.close(write_fd)
+                    return os.fdopen(read_fd, "rb", buffering=0)
+
+                def poll(self):
+                    return 1
+
+            with patch("blind_sniper_tool_runtime.PROCESS_POPEN", return_value=FailedCommand()):
                 result = runtime.execute(
                     name="verification.run", arguments={"command_id": "runtime-validator"},
                     spec=spec, task=task, run_id="run-1", tool_call_id="call-1",
@@ -191,7 +205,7 @@ class RuntimeFailureKindIntegrationTests(unittest.TestCase):
             )
             if patch_run is None:
                 return call()
-            with patch("blind_sniper_tool_runtime.subprocess.run", **patch_run):
+            with patch("blind_sniper_tool_runtime.PROCESS_POPEN", **patch_run):
                 return call()
 
     def test_denied_verification_command_is_tool_error_not_verification_failed(self) -> None:
