@@ -227,6 +227,82 @@ class PersistenceTests(Base):
         self.assertEqual(retry["reason_code"], "idempotent")
         self.assertEqual(len(self.tasks()), 1)
 
+    def test_atomic_index_faults_leave_no_partial_commit_and_retry_repairs(self):
+        real_fdopen = intake.os.fdopen
+        real_fsync = intake.os.fsync
+
+        class WriteFault:
+            def __init__(self, stream):
+                self.stream = stream
+            def __getattr__(self, name):
+                return getattr(self.stream, name)
+            def __enter__(self):
+                return self
+            def __exit__(self, exc_type, exc, tb):
+                self.stream.close()
+            def write(self, data):
+                self.stream.write(data[:1])
+                raise OSError("injected index JSON write failure")
+
+        class FlushFault:
+            def __init__(self, stream):
+                self.stream = stream
+            def __getattr__(self, name):
+                return getattr(self.stream, name)
+            def __enter__(self):
+                return self
+            def __exit__(self, exc_type, exc, tb):
+                self.stream.close()
+            def flush(self):
+                raise OSError("injected index flush failure")
+
+        for fault in ("json_write", "flush", "file_fsync", "directory_fsync"):
+            with self.subTest(fault=fault):
+                state = Path(self.tmp.name) / ("fault-state-" + fault)
+                store = PrivateTaskStore(state, workspace_root=Path(self.tmp.name) / "repo")
+                task = dict(TASK, task_id="BS-GH-INTAKE-" + str(100 + ("json_write", "flush", "file_fsync", "directory_fsync").index(fault)))
+                calls = {"fdopen": 0, "fsync": 0}
+
+                def fdopen(fd, *args, **kwargs):
+                    stream = real_fdopen(fd, *args, **kwargs)
+                    calls["fdopen"] += 1
+                    if fault == "json_write" and calls["fdopen"] == 2:
+                        return WriteFault(stream)
+                    if fault == "flush" and calls["fdopen"] == 2:
+                        return FlushFault(stream)
+                    return stream
+
+                def fsync(fd):
+                    calls["fsync"] += 1
+                    if fault == "file_fsync" and calls["fsync"] == 4:
+                        raise OSError("injected index file fsync failure")
+                    if fault == "directory_fsync" and calls["fsync"] == 5:
+                        raise OSError("injected post-replace directory fsync failure")
+                    return real_fsync(fd)
+
+                with patch.object(intake.os, "fdopen", side_effect=fdopen), \
+                     patch.object(intake.os, "fsync", side_effect=fsync):
+                    failed = write_task(store.task_dir, task, state_dir=state, repository=REPO,
+                                        issue_number=100 + ("json_write", "flush", "file_fsync", "directory_fsync").index(fault),
+                                        delivery_id="fault")
+                self.assertEqual(failed["outcome"], "rejected")
+                committed = list(store.task_dir.glob("*.json"))
+                self.assertEqual(len(committed), 1)
+                self.assertEqual(json.loads(committed[0].read_text()), task)
+                index_dir = state / "intake" / "index"
+                indexes = list(index_dir.glob("*.json"))
+                if fault == "directory_fsync":
+                    self.assertEqual(len(indexes), 1)
+                    self.assertEqual(json.loads(indexes[0].read_text())["state"], "committed")
+                else:
+                    self.assertEqual(indexes, [])
+                self.assertEqual(list(index_dir.glob(".index-tmp-*")), [])
+                retry = write_task(store.task_dir, task, state_dir=state, repository=REPO,
+                                   issue_number=100 + ("json_write", "flush", "file_fsync", "directory_fsync").index(fault),
+                                   delivery_id="retry")
+                self.assertEqual(retry["reason_code"], "idempotent")
+                self.assertEqual(json.loads(next(index_dir.glob("*.json")).read_text())["state"], "committed")
+                self.assertEqual(list(index_dir.glob(".index-tmp-*")), [])
     def test_publish_link_failure_rolls_back_index_and_task(self):
         with patch.object(intake.os, "link", side_effect=OSError("injected link failure")):
             receipt = self.publish()
@@ -424,7 +500,10 @@ class CliAndProcessTests(Base):
                  "--signature", sign(raw), "--config-path", str(cfg), "--state-dir", str(self.state)],
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env))
         go.write_text("go")
-        outs = [(p.wait(timeout=60), p.stdout.read(), p.stderr.read()) for p in procs]
+        outs = []
+        for proc in procs:
+            stdout, stderr = proc.communicate(timeout=60)
+            outs.append((proc.returncode, stdout, stderr))
         self.assertTrue(all(code == 0 for code, _, _ in outs), outs)
         self.assertEqual(len(self.tasks()), 1)
         reasons = sorted(json.loads(o)["reason_code"] for _, o, _ in outs)
