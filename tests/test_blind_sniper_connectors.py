@@ -505,6 +505,22 @@ class TestBlindSniperConnectors(unittest.TestCase):
             allowed, _ = authorize(role, "terminal", "run_command", reg, now=now, confirmed=True)
             self.assertFalse(allowed, role)
 
+    def test_git_connector_is_registered_read_only_for_runtime_roles(self) -> None:
+        now = 1_700_000_000.0
+        reg = ConnectorRegistry(env={}, http=FakeHttpResponse({}))
+        self.assertEqual(reg.specs["git"].operations, ["status", "diff", "log"])
+        reg._statuses["git"] = ConnectorStatus(
+            connector_id="git", auth_status="verified", health="healthy",
+            last_verified_at=_utc_now_iso(now), operations_available=["status", "diff", "log"],
+            checked_by="test")
+        for role in ("planner", "researcher", "engineer", "qa_verifier",
+                     "release_manager", "watcher", "worker_executor"):
+            for operation in ("status", "diff", "log"):
+                allowed, _ = authorize(role, "git", operation, reg, now=now)
+                self.assertTrue(allowed, (role, operation))
+            denied, _ = authorize(role, "git", "commit", reg, now=now, confirmed=True)
+            self.assertFalse(denied, role)
+
     def test_receipt_mode_0600_atomic_roundtrip_and_stale_receipt(self) -> None:
         now = 1_700_000_000.0
         env = {"GITHUB_TOKEN": "tok_abc", "GITHUB_REPOSITORY": "org/repo"}
