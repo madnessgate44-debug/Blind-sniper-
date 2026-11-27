@@ -125,7 +125,7 @@ jobs:
         run: python scripts/simulate_blind_sniper_jobs_e2e.py --output-dir artifacts/blind-sniper-jobs-e2e
       - name: Upload end-to-end simulation receipts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: blind-sniper-e2e-${{ github.run_id }}
           path: |

@@ -71,7 +71,7 @@ jobs:
         run: python scripts/run_blind_sniper_browser_e2e.py
       - name: Upload browser evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: blind-sniper-browser-${{ github.run_id }}
           path: .blind-sniper/browser/
@@ -109,7 +109,7 @@ jobs:
         run: python scripts/run_blind_sniper_miss_noor_smoke.py
       - name: Upload Miss Noor inspection evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: miss-noor-live-inspection-${{ github.run_id }}
           path: .blind-sniper/browser-live/
@@ -189,7 +189,7 @@ jobs:
         run: python scripts/run_blind_sniper_miss_noor_smoke.py
       - name: Upload Grade 5 Science browser evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: grade5-science-browser-inspection-${{ github.run_id }}
           path: .blind-sniper/browser-science/
@@ -224,7 +224,7 @@ jobs:
         run: python scripts/run_blind_sniper_browser_capability_smoke.py
       - name: Upload browser capability evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: blind-sniper-browser-capabilities-${{ github.run_id }}
           path: .blind-sniper/browser-capabilities/

@@ -26,7 +26,7 @@ jobs:
         run: python scripts/run_blind_sniper_daemon_once_smoke.py --output-dir artifacts/daemon-once-smoke
       - name: Upload aggregate health only
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: daemon-once-smoke-${{ github.run_id }}
           path: artifacts/daemon-once-smoke/daemon-once-smoke.json
