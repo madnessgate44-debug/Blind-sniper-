@@ -58,6 +58,13 @@ class FakeConnector(Connector):
         return {"value": "test result"}
 
 
+class MutatingFakeConnector(FakeConnector):
+    def tools(self) -> list[dict]:
+        return [{"name": "write_file", "side_effects": "mutating", "description": "Write a test item",
+                 "input_schema": {"type": "object", "properties": {"path": {"type": "string"}},
+                                  "required": ["path"], "additionalProperties": False}}]
+
+
 class FakeHttpResponse:
     def __init__(self, routes: dict[tuple[str, str], tuple[int, dict[str, str], bytes]]) -> None:
         self.routes = routes
@@ -103,6 +110,38 @@ class TestBlindSniperConnectors(unittest.TestCase):
         encoded = json.dumps(receipt)
         self.assertNotIn("sample.txt", encoded)
         self.assertNotIn("test result", encoded)
+
+    def test_mutating_exception_after_invocation_blocks_replay(self):
+        effects = []
+        def fail_after_effect(tool, args, *, timeout_s, cancel=None):
+            effects.append(args["path"])
+            raise RuntimeError("failure after external write")
+        reg = self.connector_registry(connector=MutatingFakeConnector(fail_after_effect))
+        first = reg.call("engineer", "files", "write_file", {"path": "changed.txt"},
+                         ["files.write_file"], confirmed=True)
+        self.assertEqual(first["failure_kind"], "execution_state_unknown", first)
+        second = reg.call("engineer", "files", "write_file", {"path": "changed.txt"},
+                          ["files.write_file"], confirmed=True)
+        self.assertEqual(second["failure_kind"], "execution_state_unknown", second)
+        self.assertEqual(effects, ["changed.txt"])
+
+    def test_durable_receipt_failure_after_mutation_blocks_replay(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            receipt_target = Path(tmp) / "is-a-directory"
+            receipt_target.mkdir()
+            effects = []
+            def write(tool, args, *, timeout_s, cancel=None):
+                effects.append(args["path"])
+                return {"written": True}
+            reg = self.connector_registry(connector=MutatingFakeConnector(write), path=receipt_target)
+            first = reg.call("engineer", "files", "write_file", {"path": "changed.txt"},
+                             ["files.write_file"], confirmed=True)
+            self.assertEqual(first["status"], "UNKNOWN", first)
+            self.assertEqual(first["failure_kind"], "receipt_persistence_failed", first)
+            second = reg.call("engineer", "files", "write_file", {"path": "changed.txt"},
+                              ["files.write_file"], confirmed=True)
+            self.assertEqual(second["failure_kind"], "execution_state_unknown", second)
+            self.assertEqual(effects, ["changed.txt"])
 
     def test_call_denials_and_validation(self):
         reg = self.connector_registry()
