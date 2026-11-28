@@ -692,7 +692,7 @@ class BlindSniperLiveEndpointSliceTests(unittest.TestCase):
                 base_url=live_url, model=live_model, tool_runtime=runtime
             )
             task_id = "live-task-001"
-            _write_task_file(store.task_dir, task_id, "Fix add(a, b) in fixture_app/calc.py", require_tool_use=True)
+            _write_task_file(store.task_dir, task_id, "Fix add(a, b) in fixture_app/calc.py. After writing the fix, verify with verification.run using command_id unit-tests only; the runtime-validator command does not apply in this throwaway workspace.", require_tool_use=True)
             daemon.run_once()
 
             proc = _run_fixture_unittest(ws)
