@@ -7,6 +7,8 @@ per task.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import sys
 import threading
 import time
@@ -20,6 +22,7 @@ from blind_sniper_model_worker import (
     ModelTask,
     ModelWorker,
     ModelWorkerError,
+    NativeModelInvoker,
 )
 
 
@@ -140,6 +143,85 @@ class ModelWorkerContractTests(unittest.TestCase):
     def test_invalid_concurrency_configuration(self):
         with self.assertRaises(ModelWorkerError):
             ModelWorker(recording_invoker([]), max_concurrency=0)
+
+    def test_tool_limit_failure_preserves_receipts_and_digest_only_round_trace(self):
+        class FakeToolRuntime:
+            def validate_spec(self, spec):
+                pass
+
+            def definitions(self, allowlist):
+                return [{"type": "function", "function": {"name": name, "parameters": {}}} for name in allowlist]
+
+            def execute(self, *, name, arguments, spec, task, run_id, tool_call_id):
+                return {
+                    "ok": True,
+                    "receipt": {
+                        "tool_name": name,
+                        "tool_call_id": tool_call_id,
+                        "status": "PASS",
+                    },
+                }
+
+        secret_args = {"path": "secrets/private_key.pem", "token": "ghp_" + "a" * 30}
+        expected_digest = hashlib.sha256(
+            json.dumps(secret_args, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+        spec = AgentSpec(agent_id="engineer-1", tool_allowlist=("repo.read_file",))
+        task = ModelTask(task_id="T-limit", agent_id="engineer-1", objective="inspect")
+
+        cases = [
+            (1, "Native model exceeded the bounded tool-round limit", [0, 1, 2, 3]),
+            (3, "Native model exceeded the bounded tool-call limit", [0, 0, 0, 1, 1, 1, 2, 2]),
+        ]
+        for calls_per_round, expected_error, expected_rounds in cases:
+            with self.subTest(calls_per_round=calls_per_round):
+                counter = {"n": 0}
+
+                def fake_post(endpoint, body, headers, timeout_seconds):
+                    tool_calls = []
+                    for _ in range(calls_per_round):
+                        counter["n"] += 1
+                        tool_calls.append({
+                            "id": f"call-{counter['n']}",
+                            "type": "function",
+                            "function": {
+                                "name": "repo.read_file",
+                                "arguments": json.dumps(secret_args),
+                            },
+                        })
+                    return {
+                        "choices": [{
+                            "message": {"role": "assistant", "content": None, "tool_calls": tool_calls},
+                            "finish_reason": "tool_calls",
+                        }]
+                    }
+
+                invoker = NativeModelInvoker(
+                    base_url="https://example.invalid/v1",
+                    model="fake-model",
+                    tool_runtime=FakeToolRuntime(),
+                )
+                self.assertEqual(invoker.max_tool_rounds, 4)
+                self.assertEqual(invoker.max_tool_calls, 8)
+                invoker._post_chat_completion = fake_post
+
+                worker = ModelWorker(invoker, max_retries=0)
+                result = worker.run([spec], [task])
+                receipt = result["receipts"][0]
+                self.assertEqual(receipt["status"], "FAIL")
+                self.assertEqual(receipt["error"], f"ModelWorkerError: {expected_error}")
+                self.assertEqual(len(receipt["tool_receipts"]), len(expected_rounds))
+                self.assertEqual(len(receipt["round_trace"]), len(expected_rounds))
+                self.assertEqual([entry["round_index"] for entry in receipt["round_trace"]], expected_rounds)
+                for entry in receipt["round_trace"]:
+                    self.assertEqual(set(entry), {"round_index", "tool_name", "args_digest", "status"})
+                    self.assertEqual(entry["tool_name"], "repo.read_file")
+                    self.assertEqual(entry["args_digest"], expected_digest)
+                    self.assertEqual(entry["status"], "PASS")
+                serialized_trace = json.dumps(receipt["round_trace"])
+                self.assertNotIn("private_key.pem", serialized_trace)
+                self.assertNotIn("secrets/", serialized_trace)
+                self.assertNotIn("ghp_", serialized_trace)
 
 
 if __name__ == "__main__":
