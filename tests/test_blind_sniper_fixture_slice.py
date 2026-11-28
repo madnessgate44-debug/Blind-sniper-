@@ -69,17 +69,37 @@ def _summarize_first_receipt(receipt_dir: Path) -> dict[str, Any]:
     receipt_count = 0
     receipt_trace = []
     round_trace = []
+    verification_diagnostics = []
     task_receipt_status = None
     receipt_error = None
     receipt_excerpt = ""
     if receipts:
         data = json.loads(receipts[0].read_text(encoding="utf-8"))
-        receipt_count = len(data.get("tool_receipts", []))
-        receipt_trace = [
-            [r.get("tool_name"), r.get("status"), r.get("failure_kind")]
-            for r in data.get("tool_receipts", [])
-            if isinstance(r, dict)
-        ]
+        raw_tool_receipts = data.get("tool_receipts", [])
+        if isinstance(raw_tool_receipts, list):
+            receipt_count = len(raw_tool_receipts)
+            for idx, r in enumerate(raw_tool_receipts):
+                if isinstance(r, dict):
+                    receipt_trace.append([r.get("tool_name"), r.get("status"), r.get("failure_kind")])
+                    if r.get("tool_name") == "verification.run":
+                        diag = r.get("diagnostic") if isinstance(r.get("diagnostic"), dict) else {}
+                        cmd_id = r.get("command_id") or diag.get("command_id") or ""
+                        exit_code = diag.get("exit_code") if "exit_code" in diag else None
+                        if exit_code is not None and not isinstance(exit_code, int):
+                            try:
+                                exit_code = int(exit_code)
+                            except (TypeError, ValueError):
+                                exit_code = None
+                        stderr_ex = str(diag.get("stderr_excerpt") or "")[:200]
+                        verification_diagnostics.append(
+                            {
+                                "index": idx,
+                                "command_id": str(cmd_id),
+                                "status": str(r.get("status") or ""),
+                                "exit_code": exit_code,
+                                "stderr_excerpt": stderr_ex,
+                            }
+                        )
         raw_round_trace = data.get("round_trace")
         if isinstance(raw_round_trace, list):
             round_trace = []
@@ -105,6 +125,7 @@ def _summarize_first_receipt(receipt_dir: Path) -> dict[str, Any]:
         "tool_receipts_count": receipt_count,
         "receipt_trace": receipt_trace,
         "round_trace": round_trace,
+        "verification_diagnostics": verification_diagnostics,
         "task_receipt_status": task_receipt_status,
         "receipt_error": receipt_error,
         "receipt_excerpt": receipt_excerpt,
@@ -576,6 +597,61 @@ class BlindSniperFixtureSliceTests(unittest.TestCase):
         self.assertNotIn("fixture_app/calc.py", dumped_trace)
         self.assertNotIn("calc.py", dumped_trace)
 
+    def test_verification_diagnostics_captured_on_failure(self) -> None:
+        fixed_calc = "def add(a, b):\n    return a + b\n"
+        provider = ScriptedProvider(
+            [
+                _assistant_tool_reply(
+                    [_make_tool_call("call-diag-1", "repo.read_file", {"path": "fixture_app/calc.py"})]
+                ),
+                _assistant_tool_reply(
+                    [
+                        _make_tool_call(
+                            "call-diag-2",
+                            "repo.write_file",
+                            {"path": "fixture_app/calc.py", "content": fixed_calc},
+                        )
+                    ]
+                ),
+                _assistant_tool_reply(
+                    [_make_tool_call("call-diag-3", "verification.run", {"command_id": "runtime-validator"})]
+                ),
+                _assistant_tool_reply(
+                    [_make_tool_call("call-diag-4", "verification.run", {"command_id": "unit-tests"})]
+                ),
+                _assistant_text_reply("Attempted fix and ran verifications."),
+            ]
+        )
+        base_url = self._register_server(provider)
+
+        store, ledger, queue, runtime, invoker, worker, daemon = build_stack(
+            self.state_dir, self.workspace_root, base_url
+        )
+        task_id = "job-ver-diag-001"
+        _write_task_file(store.task_dir, task_id, "Fix calc.py and run verifications")
+
+        daemon.run_once()
+
+        summary = _summarize_first_receipt(store.receipt_dir)
+        self.assertIn("tool_receipts_not_passing", summary["receipt_error"] or "")
+
+        diagnostics = summary["verification_diagnostics"]
+        self.assertEqual(len(diagnostics), 2)
+
+        failing = diagnostics[0]
+        self.assertEqual(failing["index"], 2)
+        self.assertEqual(failing["command_id"], "runtime-validator")
+        self.assertNotEqual(failing["status"], "PASS")
+        self.assertIsInstance(failing["exit_code"], int)
+        self.assertNotEqual(failing["exit_code"], 0)
+        self.assertNotIn(str(self.workspace_root), failing["stderr_excerpt"])
+        self.assertNotIn(str(self.state_dir), failing["stderr_excerpt"])
+
+        passing = diagnostics[1]
+        self.assertEqual(passing["index"], 3)
+        self.assertEqual(passing["command_id"], "unit-tests")
+        self.assertEqual(passing["status"], "PASS")
+
 
 @unittest.skipUnless(
     bool(os.environ.get("BLIND_SNIPER_SLICE_LIVE_BASE_URL"))
@@ -632,6 +708,7 @@ class BlindSniperLiveEndpointSliceTests(unittest.TestCase):
                 "tool_receipts_count": rc_summary["tool_receipts_count"],
                 "receipt_trace": rc_summary["receipt_trace"],
                 "round_trace": rc_summary["round_trace"],
+                "verification_diagnostics": rc_summary["verification_diagnostics"],
                 "receipt_error": rc_summary["receipt_error"],
                 "model_output_excerpt": rc_summary["receipt_excerpt"],
             }
