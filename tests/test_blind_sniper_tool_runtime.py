@@ -107,6 +107,45 @@ class NativeToolRuntimeTests(unittest.TestCase):
         self.assertNotIn("shell", run.call_args.kwargs)
         self.assertEqual(run.call_args.args[0][1:], ["scripts/validate_blind_sniper_runtime.py"])
 
+    def test_verification_receipt_passing_has_command_id_and_no_diagnostic(self):
+        spec = AgentSpec(agent_id="qa-verifier", tool_allowlist=("verification.run",))
+        class Result:
+            returncode = 0
+            stdout = "tests passed"
+            stderr = ""
+        with patch("blind_sniper_tool_runtime.subprocess.run", return_value=Result()):
+            result = self.runtime.execute(
+                name="verification.run", arguments={"command_id": "runtime-validator"},
+                spec=spec, task=self.task, run_id="run-pass-rec", tool_call_id="call-pass-rec",
+            )
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["receipt"]["command_id"], "runtime-validator")
+        self.assertNotIn("diagnostic", result["receipt"])
+
+    def test_verification_receipt_failing_contains_command_id_and_diagnostic(self):
+        spec = AgentSpec(agent_id="qa-verifier", tool_allowlist=("verification.run",))
+        long_stderr = ("x" * 300) + f" Failure at {self.root}/src/sample.py"
+        class Result:
+            returncode = 2
+            stdout = "tests failed"
+            stderr = long_stderr
+        with patch("blind_sniper_tool_runtime.subprocess.run", return_value=Result()):
+            result = self.runtime.execute(
+                name="verification.run", arguments={"command_id": "runtime-validator"},
+                spec=spec, task=self.task, run_id="run-fail-rec", tool_call_id="call-fail-rec",
+            )
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["receipt"]["command_id"], "runtime-validator")
+        self.assertIn("diagnostic", result["receipt"])
+        diag = result["receipt"]["diagnostic"]
+        self.assertEqual(diag["command_id"], "runtime-validator")
+        self.assertIsInstance(diag["exit_code"], int)
+        self.assertEqual(diag["exit_code"], 2)
+        self.assertEqual(diag["result_status"], "FAIL")
+        self.assertLessEqual(len(diag["stderr_excerpt"]), 240)
+        self.assertNotIn(str(self.root), diag["stderr_excerpt"])
+        self.assertIn("<workspace>", diag["stderr_excerpt"])
+
     def test_browser_tools_use_task_scoped_native_adapter_and_queue_receipts(self):
         captured = {}
         class FakeBrowserAdapter:
