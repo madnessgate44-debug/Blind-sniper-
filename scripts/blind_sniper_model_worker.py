@@ -40,6 +40,17 @@ MAX_OUTPUT_CHARS = 12000
 class ModelWorkerError(RuntimeError):
     """Model worker contract violation."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        tool_receipts: list[dict[str, Any]] | None = None,
+        round_trace: list[dict[str, Any]] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.tool_receipts: list[dict[str, Any]] = list(tool_receipts) if tool_receipts is not None else []
+        self.round_trace: list[dict[str, Any]] = list(round_trace) if round_trace is not None else []
+
 
 @dataclass(frozen=True)
 class AgentSpec:
@@ -301,6 +312,7 @@ class NativeModelInvoker:
                 f"Bearer {self.api_key}" if self.api_key_header.lower() == "authorization" else self.api_key
             )
         tool_receipts: list[dict[str, Any]] = []
+        round_trace: list[dict[str, Any]] = []
         tool_call_count = 0
         finish_reason = None
         for round_index in range(self.max_tool_rounds + 1):
@@ -331,7 +343,11 @@ class NativeModelInvoker:
                 if not spec.tool_allowlist or self.tool_runtime is None:
                     raise ModelWorkerError("Provider requested tools outside the task's native tool allowlist")
                 if round_index >= self.max_tool_rounds:
-                    raise ModelWorkerError("Native model exceeded the bounded tool-round limit")
+                    raise ModelWorkerError(
+                        "Native model exceeded the bounded tool-round limit",
+                        tool_receipts=tool_receipts,
+                        round_trace=round_trace,
+                    )
                 messages.append({
                     "role": "assistant",
                     "content": message.get("content"),
@@ -340,7 +356,11 @@ class NativeModelInvoker:
                 for call in tool_calls:
                     tool_call_count += 1
                     if tool_call_count > self.max_tool_calls:
-                        raise ModelWorkerError("Native model exceeded the bounded tool-call limit")
+                        raise ModelWorkerError(
+                            "Native model exceeded the bounded tool-call limit",
+                            tool_receipts=tool_receipts,
+                            round_trace=round_trace,
+                        )
                     call_id = str(call.get("id", "")).strip()
                     function = call.get("function", {})
                     name = str(function.get("name", "")).strip()
@@ -356,7 +376,17 @@ class NativeModelInvoker:
                         name=name, arguments=arguments, spec=spec, task=task,
                         run_id=run_id, tool_call_id=call_id,
                     )
-                    tool_receipts.append(result["receipt"])
+                    receipt = result["receipt"]
+                    tool_receipts.append(receipt)
+                    canonical_args = json.dumps(
+                        arguments, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+                    )
+                    round_trace.append({
+                        "round_index": round_index,
+                        "tool_name": name,
+                        "args_digest": hashlib.sha256(canonical_args.encode("utf-8")).hexdigest(),
+                        "status": redact(str(receipt.get("status", ""))),
+                    })
                     messages.append({
                         "role": "tool",
                         "tool_call_id": call_id,
@@ -432,12 +462,26 @@ class ModelWorker:
     def _run_task(self, spec: AgentSpec, task: ModelTask) -> dict[str, Any]:
         attempts = 0
         last_error = None
+        last_tool_receipts: list[dict[str, Any]] = []
+        last_round_trace: list[dict[str, Any]] = []
         for attempt in range(self.max_retries + 1):
             attempts += 1
             try:
                 result = self._invoke_once(spec, task)
             except Exception as exc:
                 last_error = redact(f"{type(exc).__name__}: {exc}")
+                exc_receipts = getattr(exc, "tool_receipts", None)
+                exc_trace = getattr(exc, "round_trace", None)
+                last_tool_receipts = (
+                    [r for r in exc_receipts if isinstance(r, dict)]
+                    if isinstance(exc_receipts, list)
+                    else []
+                )
+                last_round_trace = (
+                    [entry for entry in exc_trace if isinstance(entry, dict)]
+                    if isinstance(exc_trace, list)
+                    else []
+                )
                 if attempt < self.max_retries and self.backoff_seconds:
                     time.sleep(self.backoff_seconds)
                 continue
@@ -545,6 +589,8 @@ class ModelWorker:
             "output_digest": None,
             "output_excerpt": "",
             "output_text": "",
+            "tool_receipts": last_tool_receipts,
+            "round_trace": last_round_trace,
             "error": last_error,
             "completed_at": datetime.now(timezone.utc).isoformat(),
         }
