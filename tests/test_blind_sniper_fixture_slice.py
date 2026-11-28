@@ -64,6 +64,53 @@ def _assistant_text_reply(text: str) -> dict[str, Any]:
     }
 
 
+def _summarize_first_receipt(receipt_dir: Path) -> dict[str, Any]:
+    receipts = list(receipt_dir.glob("*.json"))
+    receipt_count = 0
+    receipt_trace = []
+    round_trace = []
+    task_receipt_status = None
+    receipt_error = None
+    receipt_excerpt = ""
+    if receipts:
+        data = json.loads(receipts[0].read_text(encoding="utf-8"))
+        receipt_count = len(data.get("tool_receipts", []))
+        receipt_trace = [
+            [r.get("tool_name"), r.get("status"), r.get("failure_kind")]
+            for r in data.get("tool_receipts", [])
+            if isinstance(r, dict)
+        ]
+        raw_round_trace = data.get("round_trace")
+        if isinstance(raw_round_trace, list):
+            round_trace = []
+            for r in raw_round_trace:
+                if isinstance(r, dict):
+                    raw_idx = r.get("round_index")
+                    try:
+                        idx = int(raw_idx) if raw_idx is not None else 0
+                    except (TypeError, ValueError):
+                        idx = 0
+                    round_trace.append(
+                        {
+                            "round_index": idx,
+                            "tool_name": str(r.get("tool_name") or ""),
+                            "args_digest": str(r.get("args_digest") or "")[:12],
+                            "status": str(r.get("status") or ""),
+                        }
+                    )
+        task_receipt_status = data.get("status")
+        receipt_error = data.get("error")
+        receipt_excerpt = str(data.get("output_excerpt", ""))[:600]
+    return {
+        "tool_receipts_count": receipt_count,
+        "receipt_trace": receipt_trace,
+        "round_trace": round_trace,
+        "task_receipt_status": task_receipt_status,
+        "receipt_error": receipt_error,
+        "receipt_excerpt": receipt_excerpt,
+    }
+
+
 class ScriptedProvider:
     # This proves integration plumbing only and is not evidence of model quality.
     def __init__(self, scripted_replies: list[dict[str, Any]]) -> None:
@@ -495,6 +542,40 @@ class BlindSniperFixtureSliceTests(unittest.TestCase):
         self.assertNotEqual(status_after.get("status"), "COMPLETED")
         del daemon2, queue2
 
+    def test_tool_round_limit_failure_persists_receipt_and_trace(self) -> None:
+        provider = ScriptedProvider(
+            [
+                _assistant_tool_reply(
+                    [_make_tool_call(f"call-loop-{i}", "repo.read_file", {"path": "fixture_app/calc.py"})]
+                )
+                for i in range(6)
+            ]
+        )
+        base_url = self._register_server(provider)
+
+        store, ledger, queue, runtime, invoker, worker, daemon = build_stack(
+            self.state_dir, self.workspace_root, base_url
+        )
+        task_id = "job-tool-limit-001"
+        _write_task_file(store.task_dir, task_id, "Read file repeatedly", require_tool_use=True)
+
+        daemon.run_once()
+
+        summary = _summarize_first_receipt(store.receipt_dir)
+        self.assertEqual(summary["task_receipt_status"], "FAIL")
+        self.assertIn("bounded tool-round limit", summary["receipt_error"] or "")
+        self.assertGreaterEqual(summary["tool_receipts_count"], 1)
+        self.assertTrue(len(summary["round_trace"]) > 0)
+        for round_item in summary["round_trace"]:
+            self.assertEqual(
+                set(round_item.keys()),
+                {"round_index", "tool_name", "args_digest", "status"},
+            )
+            self.assertEqual(len(round_item["args_digest"]), 12)
+        dumped_trace = json.dumps(summary["round_trace"])
+        self.assertNotIn("fixture_app/calc.py", dumped_trace)
+        self.assertNotIn("calc.py", dumped_trace)
+
 
 @unittest.skipUnless(
     bool(os.environ.get("BLIND_SNIPER_SLICE_LIVE_BASE_URL"))
@@ -539,31 +620,20 @@ class BlindSniperLiveEndpointSliceTests(unittest.TestCase):
             daemon.run_once()
 
             proc = _run_fixture_unittest(ws)
-            receipts = list(store.receipt_dir.glob("*.json"))
-            receipt_count = 0
-            receipt_trace = []
-            task_receipt_status = None
-            receipt_error = None
-            receipt_excerpt = ""
-            if receipts:
-                data = json.loads(receipts[0].read_text(encoding="utf-8"))
-                receipt_count = len(data.get("tool_receipts", []))
-                receipt_trace = [[r.get("tool_name"), r.get("status"), r.get("failure_kind")] for r in data.get("tool_receipts", []) if isinstance(r, dict)]
-                task_receipt_status = data.get("status")
-                receipt_error = data.get("error")
-                receipt_excerpt = str(data.get("output_excerpt", ""))[:600]
+            rc_summary = _summarize_first_receipt(store.receipt_dir)
 
             q_status = queue.status(task_id)
             queue_status = q_status.get("status") if q_status else None
             summary = {
                 "status": queue_status,
                 "queue_status": queue_status,
-                "task_receipt_status": task_receipt_status,
+                "task_receipt_status": rc_summary["task_receipt_status"],
                 "tests_passed": proc.returncode == 0,
-                "tool_receipts_count": receipt_count,
-                "receipt_trace": receipt_trace,
-                "receipt_error": receipt_error,
-                "model_output_excerpt": receipt_excerpt,
+                "tool_receipts_count": rc_summary["tool_receipts_count"],
+                "receipt_trace": rc_summary["receipt_trace"],
+                "round_trace": rc_summary["round_trace"],
+                "receipt_error": rc_summary["receipt_error"],
+                "model_output_excerpt": rc_summary["receipt_excerpt"],
             }
             print(json.dumps(summary))
             out = os.environ.get("BLIND_SNIPER_SLICE_LIVE_SUMMARY_PATH")
