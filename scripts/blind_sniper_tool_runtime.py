@@ -519,6 +519,19 @@ class NativeToolRuntime:
             "result_digest": result_digest,
             "completed_at": datetime.now(timezone.utc).isoformat(),
         }
+        if name == "verification.run" and isinstance(result, dict):
+            if result.get("command_id") in COMMANDS:
+                receipt["command_id"] = result["command_id"]
+            if status != "PASS":
+                raw_stderr = str(result.get("stderr_excerpt") if result.get("stderr_excerpt") is not None else "")
+                sanitized = redact(raw_stderr.replace(str(self.workspace_root), "<workspace>"))[-240:]
+                exit_code = result.get("exit_code")
+                receipt["diagnostic"] = {
+                    "command_id": result.get("command_id"),
+                    "exit_code": exit_code if type(exit_code) is int else None,
+                    "result_status": str(result.get("status")),
+                    "stderr_excerpt": sanitized,
+                }
         if status != "PASS":
             if caught_exception:
                 receipt["failure_kind"] = "tool_error"
